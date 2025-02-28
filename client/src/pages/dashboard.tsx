@@ -105,6 +105,7 @@ function AddChildDialog() {
 
   const addChildMutation = useMutation({
     mutationFn: async (data: { name: string; age: number }) => {
+      console.log("Submitting data:", data); // Debug log
       const res = await apiRequest("POST", "/api/children", data);
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || "Failed to add child");
@@ -120,12 +121,29 @@ function AddChildDialog() {
       setIsOpen(false);
     },
     onError: (error: Error) => {
+      console.error("Mutation error:", error); // Debug log
       toast({
         title: "Error",
         description: error.message,
         variant: "destructive",
       });
     },
+  });
+
+  const onSubmit = form.handleSubmit((data) => {
+    console.log("Form data:", data); // Debug log
+    const age = Number(data.age);
+    if (isNaN(age) || age < 0 || age > 16) {
+      form.setError("age", {
+        type: "manual",
+        message: "Age must be between 0 and 16",
+      });
+      return;
+    }
+    addChildMutation.mutate({
+      name: data.name,
+      age,
+    });
   });
 
   return (
@@ -141,23 +159,7 @@ function AddChildDialog() {
           <DialogTitle>Add a Child</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit((data) => {
-              const age = Number(data.age);
-              if (isNaN(age) || age < 0 || age > 16) {
-                form.setError("age", {
-                  type: "manual",
-                  message: "Age must be between 0 and 16",
-                });
-                return;
-              }
-              addChildMutation.mutate({
-                name: data.name,
-                age,
-              });
-            })}
-            className="space-y-4"
-          >
+          <form onSubmit={onSubmit} className="space-y-4">
             <FormField
               control={form.control}
               name="name"

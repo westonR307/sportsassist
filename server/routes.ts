@@ -14,15 +14,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Children routes
   app.post("/api/children", async (req, res) => {
-    if (req.user?.role !== "parent") {
+    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+    if (req.user.role !== "parent") {
       return res.status(403).json({ message: "Only parents can add children" });
     }
-    
+
     const parsed = insertChildSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json(parsed.error);
-    
-    const child = await storage.createChild({ ...parsed.data, parentId: req.user.id });
-    res.status(201).json(child);
+    if (!parsed.success) {
+      console.log("Validation error:", parsed.error); // Debug log
+      return res.status(400).json(parsed.error);
+    }
+
+    try {
+      const child = await storage.createChild({ 
+        ...parsed.data, 
+        parentId: req.user.id 
+      });
+      res.status(201).json(child);
+    } catch (error) {
+      console.error("Server error:", error); // Debug log
+      res.status(500).json({ message: "Failed to create child" });
+    }
   });
 
   app.get("/api/children", async (req, res) => {
