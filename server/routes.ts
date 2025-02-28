@@ -25,6 +25,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(201).json(child);
   });
 
+  app.get("/api/children", async (req, res) => {
+    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+    if (req.user.role !== "parent") {
+      return res.status(403).json({ message: "Only parents can view children" });
+    }
+
+    const children = await storage.getChildrenByParent(req.user.id);
+    res.json(children);
+  });
+
   // Camp routes
   app.post("/api/camps", async (req, res) => {
     if (!["admin", "manager"].includes(req.user?.role || "")) {

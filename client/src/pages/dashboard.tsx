@@ -1,14 +1,39 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useQuery } from "@tanstack/react-query";
-import { Camp } from "@shared/schema";
-import { Loader2 } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Camp, Child, insertChildSchema } from "@shared/schema";
+import { Loader2, Plus } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
   const { user, logoutMutation } = useAuth();
-  const { data: camps, isLoading } = useQuery<Camp[]>({
+  const { data: camps, isLoading: isLoadingCamps } = useQuery<Camp[]>({
     queryKey: ["/api/camps"],
+  });
+
+  const { data: children, isLoading: isLoadingChildren } = useQuery<Child[]>({
+    queryKey: ["/api/children"],
+    enabled: user?.role === "parent",
   });
 
   return (
@@ -25,20 +50,153 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        {isLoading ? (
-          <div className="flex justify-center">
-            <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {camps?.map((camp) => (
-              <CampCard key={camp.id} camp={camp} />
-            ))}
-          </div>
+      <main className="container mx-auto px-4 py-8 space-y-8">
+        {user?.role === "parent" && (
+          <section>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">My Children</h2>
+              <AddChildDialog />
+            </div>
+            {isLoadingChildren ? (
+              <div className="flex justify-center">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {children?.map((child) => (
+                  <ChildCard key={child.id} child={child} />
+                ))}
+              </div>
+            )}
+          </section>
         )}
+
+        <section>
+          <h2 className="text-xl font-semibold mb-4">Available Camps</h2>
+          {isLoadingCamps ? (
+            <div className="flex justify-center">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {camps?.map((camp) => (
+                <CampCard key={camp.id} camp={camp} />
+              ))}
+            </div>
+          )}
+        </section>
       </main>
     </div>
+  );
+}
+
+function AddChildDialog() {
+  const { toast } = useToast();
+  const form = useForm({
+    resolver: zodResolver(insertChildSchema),
+    defaultValues: {
+      name: "",
+      age: 0,
+    },
+  });
+
+  const addChildMutation = useMutation({
+    mutationFn: async (data: typeof form.getValues) => {
+      const res = await apiRequest("POST", "/api/children", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/children"] });
+      toast({
+        title: "Success",
+        description: "Child added successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button>
+          <Plus className="h-4 w-4 mr-2" />
+          Add Child
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add a Child</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit((data) => addChildMutation.mutate(data))}
+            className="space-y-4"
+          >
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="age"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Age</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="16"
+                      {...field}
+                      onChange={(e) => field.onChange(parseInt(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={addChildMutation.isPending}
+            >
+              {addChildMutation.isPending && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
+              Add Child
+            </Button>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ChildCard({ child }: { child: Child }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{child.name}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-gray-600">Age: {child.age}</p>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -65,6 +223,7 @@ function CampCard({ camp }: { camp: Camp }) {
           <div>
             <strong>Capacity:</strong> {camp.capacity}
           </div>
+          <Button className="w-full mt-4">Register</Button>
         </div>
       </CardContent>
     </Card>
