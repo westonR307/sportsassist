@@ -27,6 +27,27 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
+  const { user } = useAuth();
+
+  if (!user) return null;
+
+  switch (user.role) {
+    case "parent":
+      return <ParentDashboard />;
+    case "admin":
+      return <AdminDashboard />;
+    case "manager":
+      return <ManagerDashboard />;
+    case "coach":
+      return <CoachDashboard />;
+    case "volunteer":
+      return <VolunteerDashboard />;
+    default:
+      return <div>Invalid role</div>;
+  }
+}
+
+function ParentDashboard() {
   const { user, logoutMutation } = useAuth();
   const { data: camps, isLoading: isLoadingCamps } = useQuery<Camp[]>({
     queryKey: ["/api/camps"],
@@ -34,7 +55,6 @@ export default function Dashboard() {
 
   const { data: children, isLoading: isLoadingChildren } = useQuery<Child[]>({
     queryKey: ["/api/children"],
-    enabled: user?.role === "parent",
   });
 
   return (
@@ -42,7 +62,7 @@ export default function Dashboard() {
       <header className="bg-white shadow">
         <div className="container mx-auto px-4 py-6 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold">Dashboard</h1>
+            <h1 className="text-2xl font-bold">Parent Dashboard</h1>
             <p className="text-gray-600">Welcome back, {user?.username}</p>
           </div>
           <Button variant="outline" onClick={() => logoutMutation.mutate()}>
@@ -52,25 +72,23 @@ export default function Dashboard() {
       </header>
 
       <main className="container mx-auto px-4 py-8 space-y-8">
-        {user?.role === "parent" && (
-          <section>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">My Children</h2>
-              <AddChildDialog />
+        <section>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">My Children</h2>
+            <AddChildDialog />
+          </div>
+          {isLoadingChildren ? (
+            <div className="flex justify-center">
+              <Loader2 className="h-8 w-8 animate-spin" />
             </div>
-            {isLoadingChildren ? (
-              <div className="flex justify-center">
-                <Loader2 className="h-8 w-8 animate-spin" />
-              </div>
-            ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {children?.map((child) => (
-                  <ChildCard key={child.id} child={child} />
-                ))}
-              </div>
-            )}
-          </section>
-        )}
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {children?.map((child) => (
+                <ChildCard key={child.id} child={child} />
+              ))}
+            </div>
+          )}
+        </section>
 
         <section>
           <h2 className="text-xl font-semibold mb-4">Available Camps</h2>
@@ -85,6 +103,159 @@ export default function Dashboard() {
               ))}
             </div>
           )}
+        </section>
+      </main>
+    </div>
+  );
+}
+
+function AdminDashboard() {
+  const { user, logoutMutation } = useAuth();
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow">
+        <div className="container mx-auto px-4 py-6 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+            <p className="text-gray-600">Welcome back, {user?.username}</p>
+          </div>
+          <Button variant="outline" onClick={() => logoutMutation.mutate()}>
+            Logout
+          </Button>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Organizations</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>Manage organizations and their settings</p>
+              <Button className="mt-4">Manage Organizations</Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Users</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>Manage user accounts and permissions</p>
+              <Button className="mt-4">Manage Users</Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>System Settings</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>Configure global system settings</p>
+              <Button className="mt-4">System Settings</Button>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function ManagerDashboard() {
+  const { user, logoutMutation } = useAuth();
+  const { data: camps, isLoading: isLoadingCamps } = useQuery<Camp[]>({
+    queryKey: ["/api/camps"],
+  });
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow">
+        <div className="container mx-auto px-4 py-6 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold">Manager Dashboard</h1>
+            <p className="text-gray-600">Welcome back, {user?.username}</p>
+          </div>
+          <Button variant="outline" onClick={() => logoutMutation.mutate()}>
+            Logout
+          </Button>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-8">
+        <section>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Camps</h2>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Camp
+            </Button>
+          </div>
+
+          {isLoadingCamps ? (
+            <div className="flex justify-center">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {camps?.map((camp) => (
+                <CampCard key={camp.id} camp={camp} isManager />
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
+    </div>
+  );
+}
+
+function CoachDashboard() {
+  const { user, logoutMutation } = useAuth();
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow">
+        <div className="container mx-auto px-4 py-6 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold">Coach Dashboard</h1>
+            <p className="text-gray-600">Welcome back, {user?.username}</p>
+          </div>
+          <Button variant="outline" onClick={() => logoutMutation.mutate()}>
+            Logout
+          </Button>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-8">
+        <section>
+          <h2 className="text-xl font-semibold mb-4">My Assigned Camps</h2>
+          {/* Add camp list with participant management */}
+        </section>
+      </main>
+    </div>
+  );
+}
+
+function VolunteerDashboard() {
+  const { user, logoutMutation } = useAuth();
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow">
+        <div className="container mx-auto px-4 py-6 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold">Volunteer Dashboard</h1>
+            <p className="text-gray-600">Welcome back, {user?.username}</p>
+          </div>
+          <Button variant="outline" onClick={() => logoutMutation.mutate()}>
+            Logout
+          </Button>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-8">
+        <section>
+          <h2 className="text-xl font-semibold mb-4">Assigned Activities</h2>
+          {/* Add assigned activities list */}
         </section>
       </main>
     </div>
@@ -239,7 +410,7 @@ function ChildCard({ child }: { child: Child }) {
   );
 }
 
-function CampCard({ camp }: { camp: Camp }) {
+function CampCard({ camp, isManager }: { camp: Camp; isManager?: boolean }) {
   return (
     <Card>
       <CardHeader>
@@ -262,7 +433,15 @@ function CampCard({ camp }: { camp: Camp }) {
           <div>
             <strong>Capacity:</strong> {camp.capacity}
           </div>
-          <Button className="w-full mt-4">Register</Button>
+          {isManager && (
+            <div>
+              <Button className="w-full mt-4">Edit Camp</Button>
+              <Button className="w-full mt-2" variant="destructive">
+                Delete Camp
+              </Button>
+            </div>
+          )}
+          {!isManager && <Button className="w-full mt-4">Register</Button>}
         </div>
       </CardContent>
     </Card>

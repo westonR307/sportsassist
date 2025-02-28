@@ -4,25 +4,27 @@ import { z } from "zod";
 
 export type Role = "admin" | "manager" | "coach" | "volunteer" | "parent";
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  role: text("role").$type<Role>().notNull(),
-  organizationId: integer("organization_id"),
-});
-
 export const organizations = pgTable("organizations", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   stripeAccountId: text("stripe_account_id"),
 });
 
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
+  role: text("role").$type<Role>().notNull(),
+  organizationId: integer("organization_id").references(() => organizations.id),
+});
+
 export const children = pgTable("children", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   age: integer("age").notNull(),
-  parentId: integer("parent_id").notNull(),
+  parentId: integer("parent_id").references(() => users.id).notNull(),
+  medicalInfo: text("medical_info"),
+  emergencyContact: text("emergency_contact"),
 });
 
 export const camps = pgTable("camps", {
@@ -32,26 +34,30 @@ export const camps = pgTable("camps", {
   location: text("location").notNull(),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
-  price: integer("price").notNull(),
+  price: integer("price").notNull(), // In cents
   capacity: integer("capacity").notNull(),
-  organizationId: integer("organization_id").notNull(),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
+  waitlistEnabled: boolean("waitlist_enabled").notNull().default(true),
 });
 
 export const campStaff = pgTable("camp_staff", {
   id: serial("id").primaryKey(),
-  campId: integer("camp_id").notNull(),
-  userId: integer("user_id").notNull(),
+  campId: integer("camp_id").references(() => camps.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
   role: text("role").$type<Role>().notNull(),
 });
 
 export const registrations = pgTable("registrations", {
   id: serial("id").primaryKey(),
-  campId: integer("camp_id").notNull(),
-  childId: integer("child_id").notNull(),
+  campId: integer("camp_id").references(() => camps.id).notNull(),
+  childId: integer("child_id").references(() => children.id).notNull(),
   paid: boolean("paid").notNull().default(false),
   stripePaymentId: text("stripe_payment_id"),
+  waitlisted: boolean("waitlisted").notNull().default(false),
+  registeredAt: timestamp("registered_at").notNull().defaultNow(),
 });
 
+// Schema for inserting new records
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -63,9 +69,11 @@ export const insertChildSchema = createInsertSchema(children).omit({
   id: true,
   parentId: true,
 });
+
 export const insertCampSchema = createInsertSchema(camps);
 export const insertRegistrationSchema = createInsertSchema(registrations);
 
+// Types for the application
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Child = typeof children.$inferSelect;

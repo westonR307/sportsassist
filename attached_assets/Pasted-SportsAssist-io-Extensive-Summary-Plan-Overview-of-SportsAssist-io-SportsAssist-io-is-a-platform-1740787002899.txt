@@ -1,0 +1,132 @@
+SportsAssist.io – Extensive Summary & Plan
+Overview of SportsAssist.io
+SportsAssist.io is a platform designed to streamline the creation, management, and registration process for sports camps. It provides a centralized solution for both organizations and individual coaches to host sports programs while making it easy for parents and participants to register, pay, and communicate.
+The platform solves the problem of scattered registration methods (Google Forms, social media posts, individual websites) by offering an all-in-one solution with features such as:
+Public & private camp listings
+Parent-guardian relationships for managing multiple children
+Role-based permissions for different organization members
+Participant & program management tools
+Payment handling and automated notifications
+
+Target Users & Role Breakdown
+The platform has two main user categories:
+Participants & Parents – Individuals who register for camps.
+Organizations – Those who run and manage camps.
+Each category has multiple role types with specific permissions.
+Participants & Parent Roles
+Role
+Description
+Participant
+A player/athlete who registers for a camp or program. They can manage their profile, view camp details, and communicate with coaches.
+Parent
+A guardian who manages their child's registration. Parents can register multiple children for different camps, handle payments, and receive updates.
+Child
+A sub-profile managed by a Parent. They cannot directly log in but can be assigned to camps by the parent.
+
+Participant-Parent Relationship
+A parent can manage multiple children, each with their own registration history.
+Parents can also register themselves for adult camps, but their primary function is managing their children's registrations.
+
+Organization Roles
+Role
+Permissions
+Admin (Organization Owner)
+Full control over the organization's settings, users, and financial setup. They can create camps, assign roles, and manage payments.
+Manager
+Can create and manage camps but cannot modify financial settings. They can invite coaches and manage participants.
+Coach
+Can manage participant lists, communicate with participants, and update camp details (dates, times, descriptions).
+Volunteer
+A flexible role for assisting with camps without full management access. Volunteers can be assigned to specific camps but have limited permissions.
+
+Organization Structure
+Admins create and manage organizations.
+They can invite Managers and Coaches to help run camps.
+Each camp can have assigned Coaches & Volunteers who interact with participants.
+
+Key Features & Functionality
+The platform is designed for scalability, ensuring that organizations of all sizes can efficiently run sports programs.
+1. Camp Management
+✅ Public vs Private Camps
+Public camps are searchable by anyone on the platform.
+Private camps are only accessible via unique invite links.
+✅ Customizable Camp Settings
+Age groups, skill levels, number of sessions
+Registration deadlines & participant limits
+✅ Coach & Staff Assignments
+Coaches can oversee specific programs
+Volunteers can assist but have limited access
+
+2. User Management
+✅ Role-Based Permissions
+The Admin assigns roles within an organization.
+Managers handle day-to-day camp operations.
+Coaches & volunteers focus on participant interaction.
+✅ Parent-Participant System
+Parents manage multiple children’s registrations under one account.
+✅ Account Registration & Login
+Email-based authentication
+Password recovery & profile management
+
+3. Registration & Payments
+✅ Registration Process
+Participants (or parents) can browse camps, register, and pay online.
+If a camp is full, users can join a waitlist.
+✅ Payment Handling
+Stripe or PayPal integration
+Payments go to the organization managing the camp
+Managers set fees, but Admins control financial settings
+✅ Automated Notifications
+Email/SMS for registration confirmations, reminders, updates
+
+4. Organization Management
+✅ Multi-Sport Support
+Organizations can host multiple types of sports under one account.
+✅ Team Collaboration
+Admins can invite managers, coaches, and volunteers.
+Each role has customized access permissions.
+✅ Data & Analytics
+Track registration numbers, revenue, and participant trends.
+
+Technical Plan
+1. Tech Stack
+Backend: Django (Django REST Framework)
+Frontend: React (for future scalability)
+Database: PostgreSQL
+Auth: Django’s built-in authentication with role-based permissions
+Payments: Stripe API / PayPal integration
+
+2. App Modules & Architecture
+App Name
+Purpose
+users
+Handles authentication, user profiles, and role assignments.
+organizations
+Manages organization details, roles, and permissions.
+programs
+Handles camp creation, schedules, and participant registrations.
+payments
+Manages transactions, invoices, and payout settings.
+
+
+Short-Term Plan (MVP)
+The MVP will focus on: ✅ Basic User Registration & Role Assignment
+✅ Camp Creation & Management
+✅ Public & Private Camp Listings
+✅ Parent-Participant Management
+✅ Payments & Waitlist Feature
+
+Long-Term Vision
+Once the MVP is functional, we will expand the platform to include: 🚀 Mobile App (React Native) for better accessibility
+📊 Advanced Analytics for camp performance tracking
+📅 Automated Scheduling & Notifications for camp updates
+🎥 Video Training Modules for virtual coaching
+🏆 Camp Reviews & Ratings for quality assurance
+
+Next Steps
+🔹 1. Set up Django project & modular structure
+🔹 2. Implement authentication & user roles
+🔹 3. Develop the organization & camp management features
+🔹 4. Integrate payments & automated notifications
+🔹 5. Deploy MVP & gather user feedback
+
