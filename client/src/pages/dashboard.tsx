@@ -1,3 +1,4 @@
+import React from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -92,6 +93,8 @@ export default function Dashboard() {
 
 function AddChildDialog() {
   const { toast } = useToast();
+  const [isOpen, setIsOpen] = React.useState(false);
+
   const form = useForm({
     resolver: zodResolver(insertChildSchema),
     defaultValues: {
@@ -103,7 +106,9 @@ function AddChildDialog() {
   const addChildMutation = useMutation({
     mutationFn: async (data: { name: string; age: number }) => {
       const res = await apiRequest("POST", "/api/children", data);
-      return await res.json();
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || "Failed to add child");
+      return json;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/children"] });
@@ -111,7 +116,8 @@ function AddChildDialog() {
         title: "Success",
         description: "Child added successfully",
       });
-      form.reset({ name: "", age: undefined });
+      form.reset();
+      setIsOpen(false);
     },
     onError: (error: Error) => {
       toast({
@@ -123,9 +129,9 @@ function AddChildDialog() {
   });
 
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button onClick={() => setIsOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Child
         </Button>
