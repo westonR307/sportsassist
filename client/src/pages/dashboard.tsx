@@ -130,9 +130,21 @@ function AddChildDialog() {
     },
   });
 
-  const onSubmit = (data: { name: string; age: number | undefined }) => {
-    console.log("Form submitted with data:", data); // Debug log
-    const age = Number(data.age);
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = form.getValues();
+    console.log("Form submitted with data:", formData); // Debug log
+
+    if (!formData.name || formData.age === undefined) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const age = Number(formData.age);
     if (isNaN(age) || age < 0 || age > 16) {
       form.setError("age", {
         type: "manual",
@@ -140,8 +152,9 @@ function AddChildDialog() {
       });
       return;
     }
+
     addChildMutation.mutate({
-      name: data.name,
+      name: formData.name,
       age,
     });
   };
@@ -159,13 +172,7 @@ function AddChildDialog() {
           <DialogTitle>Add a Child</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              form.handleSubmit(onSubmit)(e);
-            }}
-            className="space-y-4"
-          >
+          <form onSubmit={onSubmit} className="space-y-4">
             <FormField
               control={form.control}
               name="name"

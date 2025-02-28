@@ -14,15 +14,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Children routes
   app.post("/api/children", async (req, res) => {
-    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+    console.log("Received request to create child:", req.body); // Debug log
+
+    if (!req.user) {
+      console.log("Unauthorized - no user found"); // Debug log
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     if (req.user.role !== "parent") {
+      console.log("Forbidden - user is not a parent"); // Debug log
       return res.status(403).json({ message: "Only parents can add children" });
     }
 
     const parsed = insertChildSchema.safeParse(req.body);
     if (!parsed.success) {
       console.log("Validation error:", parsed.error); // Debug log
-      return res.status(400).json(parsed.error);
+      return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
     }
 
     try {
@@ -30,9 +37,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...parsed.data, 
         parentId: req.user.id 
       });
+      console.log("Child created successfully:", child); // Debug log
       res.status(201).json(child);
     } catch (error) {
-      console.error("Server error:", error); // Debug log
+      console.error("Server error creating child:", error); // Debug log
       res.status(500).json({ message: "Failed to create child" });
     }
   });
