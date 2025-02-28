@@ -101,7 +101,7 @@ function AddChildDialog() {
   });
 
   const addChildMutation = useMutation({
-    mutationFn: async (data: typeof form.getValues) => {
+    mutationFn: async (data: { name: string; age: number }) => {
       const res = await apiRequest("POST", "/api/children", data);
       return res.json();
     },
@@ -111,6 +111,7 @@ function AddChildDialog() {
         title: "Success",
         description: "Child added successfully",
       });
+      form.reset();
     },
     onError: (error: Error) => {
       toast({
@@ -135,7 +136,12 @@ function AddChildDialog() {
         </DialogHeader>
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit((data) => addChildMutation.mutate(data))}
+            onSubmit={form.handleSubmit((data) => {
+              addChildMutation.mutate({
+                name: data.name,
+                age: Number(data.age),
+              });
+            })}
             className="space-y-4"
           >
             <FormField
@@ -163,7 +169,7 @@ function AddChildDialog() {
                       min="0"
                       max="16"
                       {...field}
-                      onChange={(e) => field.onChange(parseInt(e.target.value))}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
                     />
                   </FormControl>
                   <FormMessage />
