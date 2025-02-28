@@ -1,4 +1,9 @@
 import {
+  users,
+  children,
+  camps,
+  registrations,
+  organizations,
   type User,
   type InsertUser,
   type Child,
@@ -6,121 +11,107 @@ import {
   type Registration,
   type Organization,
 } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 import session from "express-session";
-import createMemoryStore from "memorystore";
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
 
-const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
   sessionStore: session.Store;
-  
+
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+
   // Child operations
   createChild(child: Omit<Child, "id">): Promise<Child>;
   getChild(id: number): Promise<Child | undefined>;
   getChildrenByParent(parentId: number): Promise<Child[]>;
-  
+
   // Camp operations
   createCamp(camp: Omit<Camp, "id">): Promise<Camp>;
   getCamp(id: number): Promise<Camp | undefined>;
   listCamps(): Promise<Camp[]>;
-  
+
   // Registration operations
   createRegistration(registration: Omit<Registration, "id">): Promise<Registration>;
   getRegistration(id: number): Promise<Registration | undefined>;
   getRegistrationsByCamp(campId: number): Promise<Registration[]>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private children: Map<number, Child>;
-  private camps: Map<number, Camp>;
-  private registrations: Map<number, Registration>;
-  private organizations: Map<number, Organization>;
+export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
-  private currentId: number;
 
   constructor() {
-    this.users = new Map();
-    this.children = new Map();
-    this.camps = new Map();
-    this.registrations = new Map();
-    this.organizations = new Map();
-    this.currentId = 1;
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000,
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      createTableIfMissing: true,
     });
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentId++;
-    const user = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
   async createChild(child: Omit<Child, "id">): Promise<Child> {
-    const id = this.currentId++;
-    const newChild = { ...child, id };
-    this.children.set(id, newChild);
+    const [newChild] = await db.insert(children).values(child).returning();
     return newChild;
   }
 
   async getChild(id: number): Promise<Child | undefined> {
-    return this.children.get(id);
+    const [child] = await db.select().from(children).where(eq(children.id, id));
+    return child;
   }
 
   async getChildrenByParent(parentId: number): Promise<Child[]> {
-    return Array.from(this.children.values()).filter(
-      (child) => child.parentId === parentId,
-    );
+    return await db.select().from(children).where(eq(children.parentId, parentId));
   }
 
   async createCamp(camp: Omit<Camp, "id">): Promise<Camp> {
-    const id = this.currentId++;
-    const newCamp = { ...camp, id };
-    this.camps.set(id, newCamp);
+    const [newCamp] = await db.insert(camps).values(camp).returning();
     return newCamp;
   }
 
   async getCamp(id: number): Promise<Camp | undefined> {
-    return this.camps.get(id);
+    const [camp] = await db.select().from(camps).where(eq(camps.id, id));
+    return camp;
   }
 
   async listCamps(): Promise<Camp[]> {
-    return Array.from(this.camps.values());
+    return await db.select().from(camps);
   }
 
   async createRegistration(registration: Omit<Registration, "id">): Promise<Registration> {
-    const id = this.currentId++;
-    const newRegistration = { ...registration, id };
-    this.registrations.set(id, newRegistration);
+    const [newRegistration] = await db.insert(registrations).values({
+      ...registration,
+      paid: false,
+    }).returning();
     return newRegistration;
   }
 
   async getRegistration(id: number): Promise<Registration | undefined> {
-    return this.registrations.get(id);
+    const [registration] = await db.select().from(registrations).where(eq(registrations.id, id));
+    return registration;
   }
 
   async getRegistrationsByCamp(campId: number): Promise<Registration[]> {
-    return Array.from(this.registrations.values()).filter(
-      (registration) => registration.campId === campId,
-    );
+    return await db.select().from(registrations).where(eq(registrations.campId, campId));
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
