@@ -59,7 +59,10 @@ export const insertUserSchema = createInsertSchema(users).pick({
   organizationId: true,
 });
 
-export const insertChildSchema = createInsertSchema(children);
+export const insertChildSchema = createInsertSchema(children).omit({
+  id: true,
+  parentId: true,
+});
 export const insertCampSchema = createInsertSchema(camps);
 export const insertRegistrationSchema = createInsertSchema(registrations);
 
