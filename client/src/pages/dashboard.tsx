@@ -130,8 +130,8 @@ function AddChildDialog() {
     },
   });
 
-  const onSubmit = form.handleSubmit((data) => {
-    console.log("Form data:", data); // Debug log
+  const onSubmit = (data: { name: string; age: number | undefined }) => {
+    console.log("Form submitted with data:", data); // Debug log
     const age = Number(data.age);
     if (isNaN(age) || age < 0 || age > 16) {
       form.setError("age", {
@@ -144,7 +144,7 @@ function AddChildDialog() {
       name: data.name,
       age,
     });
-  });
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -159,7 +159,13 @@ function AddChildDialog() {
           <DialogTitle>Add a Child</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={onSubmit} className="space-y-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              form.handleSubmit(onSubmit)(e);
+            }}
+            className="space-y-4"
+          >
             <FormField
               control={form.control}
               name="name"
