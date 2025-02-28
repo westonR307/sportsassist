@@ -64,12 +64,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
+    const [user] = await db.insert(users).values({
+      username: insertUser.username,
+      password: insertUser.password,
+      role: insertUser.role,
+      organizationId: insertUser.organizationId,
+    }).returning();
     return user;
   }
 
   async createChild(child: Omit<Child, "id">): Promise<Child> {
-    const [newChild] = await db.insert(children).values(child).returning();
+    const [newChild] = await db.insert(children).values({
+      name: child.name,
+      age: child.age,
+      parentId: child.parentId,
+    }).returning();
     return newChild;
   }
 
@@ -83,7 +92,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createCamp(camp: Omit<Camp, "id">): Promise<Camp> {
-    const [newCamp] = await db.insert(camps).values(camp).returning();
+    const [newCamp] = await db.insert(camps).values({
+      name: camp.name,
+      description: camp.description,
+      location: camp.location,
+      startDate: camp.startDate,
+      endDate: camp.endDate,
+      price: camp.price,
+      capacity: camp.capacity,
+      organizationId: camp.organizationId,
+    }).returning();
     return newCamp;
   }
 
@@ -98,8 +116,10 @@ export class DatabaseStorage implements IStorage {
 
   async createRegistration(registration: Omit<Registration, "id">): Promise<Registration> {
     const [newRegistration] = await db.insert(registrations).values({
-      ...registration,
+      campId: registration.campId,
+      childId: registration.childId,
       paid: false,
+      stripePaymentId: registration.stripePaymentId,
     }).returning();
     return newRegistration;
   }
