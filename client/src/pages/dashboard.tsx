@@ -96,14 +96,14 @@ function AddChildDialog() {
     resolver: zodResolver(insertChildSchema),
     defaultValues: {
       name: "",
-      age: 0,
+      age: undefined,
     },
   });
 
   const addChildMutation = useMutation({
     mutationFn: async (data: { name: string; age: number }) => {
       const res = await apiRequest("POST", "/api/children", data);
-      return res.json();
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/children"] });
@@ -111,7 +111,7 @@ function AddChildDialog() {
         title: "Success",
         description: "Child added successfully",
       });
-      form.reset();
+      form.reset({ name: "", age: undefined });
     },
     onError: (error: Error) => {
       toast({
@@ -137,9 +137,17 @@ function AddChildDialog() {
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit((data) => {
+              const age = Number(data.age);
+              if (isNaN(age) || age < 0 || age > 16) {
+                form.setError("age", {
+                  type: "manual",
+                  message: "Age must be between 0 and 16",
+                });
+                return;
+              }
               addChildMutation.mutate({
                 name: data.name,
-                age: Number(data.age),
+                age,
               });
             })}
             className="space-y-4"
@@ -169,7 +177,11 @@ function AddChildDialog() {
                       min="0"
                       max="16"
                       {...field}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      value={field.value || ""}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        field.onChange(value === "" ? undefined : Number(value));
+                      }}
                     />
                   </FormControl>
                   <FormMessage />
