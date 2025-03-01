@@ -328,7 +328,10 @@ function AddChildDialog() {
   const addChildMutation = useMutation({
     mutationFn: async (data: z.infer<typeof insertChildSchema>) => {
       console.log("Submitting data:", data);
-      const res = await apiRequest("POST", "/api/children", data);
+      const res = await apiRequest("POST", "/api/children", {
+        ...data,
+        dateOfBirth: data.dateOfBirth.toISOString(), // Ensure proper date serialization
+      });
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to add child");
@@ -396,8 +399,12 @@ function AddChildDialog() {
                         <Input
                           type="date"
                           {...field}
-                          value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : field.value}
-                          onChange={(e) => field.onChange(new Date(e.target.value))}
+                          value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : ''}
+                          onChange={(e) => {
+                            const date = new Date(e.target.value);
+                            date.setHours(12); // Set to noon to avoid timezone issues
+                            field.onChange(date);
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
