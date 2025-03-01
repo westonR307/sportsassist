@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Camp, Child, insertChildSchema, Invitation, insertInvitationSchema, InsertInvitation, Sport, SportLevel, Gender, ContactMethod } from "@shared/schema";
+import { Camp, Child, insertChildSchema, Invitation, insertInvitationSchema, InsertInvitation, Sport, SportLevel, Gender, ContactMethod, insertCampSchema } from "@shared/schema";
 import { Loader2, Plus } from "lucide-react";
 import {
   Dialog,
@@ -311,46 +311,106 @@ function AdminDashboard() {
 
 function ManagerDashboard() {
   const { user, logoutMutation } = useAuth();
-  const { data: camps, isLoading: isLoadingCamps } = useQuery<Camp[]>({
-    queryKey: ["/api/camps"],
-  });
+  const [activeSection, setActiveSection] = React.useState<'overview' | 'camps' | 'staff'>('overview');
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="container mx-auto px-4 py-6 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold">Manager Dashboard</h1>
-            <p className="text-gray-600">Welcome back, {user?.username}</p>
-          </div>
-          <Button variant="outline" onClick={() => logoutMutation.mutate()}>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Side Navigation */}
+      <nav className="w-64 bg-white shadow-sm">
+        <div className="p-4 border-b">
+          <h2 className="text-xl font-semibold">Sports Camp</h2>
+          <p className="text-sm text-gray-600">Welcome, {user?.username}</p>
+        </div>
+        <div className="p-2">
+          <button
+            className={`w-full text-left px-4 py-2 rounded-lg mb-1 ${
+              activeSection === 'overview' ? 'bg-gray-100 font-medium' : ''
+            }`}
+            onClick={() => setActiveSection('overview')}
+          >
+            Dashboard Overview
+          </button>
+          <button
+            className={`w-full text-left px-4 py-2 rounded-lg mb-1 ${
+              activeSection === 'camps' ? 'bg-gray-100 font-medium' : ''
+            }`}
+            onClick={() => setActiveSection('camps')}
+          >
+            Manage Camps
+          </button>
+          <button
+            className={`w-full text-left px-4 py-2 rounded-lg mb-1 ${
+              activeSection === 'staff' ? 'bg-gray-100 font-medium' : ''
+            }`}
+            onClick={() => setActiveSection('staff')}
+          >
+            Staff Management
+          </button>
+        </div>
+        <div className="p-4 mt-auto border-t">
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => logoutMutation.mutate()}
+          >
             Logout
           </Button>
         </div>
-      </header>
+      </nav>
 
-      <main className="container mx-auto px-4 py-8">
-        <section>
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Camps</h2>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Camp
-            </Button>
-          </div>
-
-          {isLoadingCamps ? (
-            <div className="flex justify-center">
-              <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
-          ) : (
+      {/* Main Content */}
+      <main className="flex-1 p-8">
+        {activeSection === 'overview' && (
+          <div className="space-y-6">
+            <h1 className="text-2xl font-bold">Dashboard Overview</h1>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {camps?.map((camp) => (
-                <CampCard key={camp.id} camp={camp} isManager />
-              ))}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Active Camps</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">5</div>
+                  <p className="text-sm text-gray-500">Currently running</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Total Athletes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">128</div>
+                  <p className="text-sm text-gray-500">Across all camps</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Staff Members</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">12</div>
+                  <p className="text-sm text-gray-500">Active staff</p>
+                </CardContent>
+              </Card>
             </div>
-          )}
-        </section>
+          </div>
+        )}
+
+        {activeSection === 'camps' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h1 className="text-2xl font-bold">Manage Camps</h1>
+              <AddCampDialog />
+            </div>
+            <CampManagementList />
+          </div>
+        )}
+
+        {activeSection === 'staff' && (
+          <div className="space-y-6">
+            <h1 className="text-2xl font-bold">Staff Management</h1>
+            <p>Staff management features coming soon...</p>
+          </div>
+        )}
       </main>
     </div>
   );
@@ -948,5 +1008,239 @@ function InviteMemberDialog() {
         </Form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function AddCampDialog() {
+  const { toast } = useToast();
+  const [isOpen, setIsOpen] = React.useState(false);
+  const { user } = useAuth();
+
+  const form = useForm({
+    resolver: zodResolver(insertCampSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      location: "",
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      price: 0,
+      capacity: 20,
+      waitlistEnabled: true,
+      organizationId: user?.organizationId!,
+    },
+  });
+
+  const addCampMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof insertCampSchema>) => {
+      const res = await apiRequest("POST", "/api/camps", {
+        ...data,
+        price: data.price * 100, // Convert to cents
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to create camp");
+      }
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
+      toast({
+        title: "Success",
+        description: "Camp created successfully",
+      });
+      form.reset();
+      setIsOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button onClick={() => setIsOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Create New Camp
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Create New Camp</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit((data) => addCampMutation.mutate(data))} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Camp Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Start Date</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End Date</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Price ($)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        {...field}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="capacity"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Capacity</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="1"
+                        {...field}
+                        onChange={(e) => field.onChange(parseInt(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <textarea
+                      {...field}
+                      className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="waitlistEnabled"
+              render={({ field }) => (
+                <FormItem className="flex items-center space-x-2">
+                  <FormControl>
+                    <input
+                      type="checkbox"
+                      checked={field.value}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                      className="h-4 w-4"
+                    />
+                  </FormControl>
+                  <FormLabel>Enable waitlist when camp is full</FormLabel>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={addCampMutation.isPending}
+            >
+              {addCampMutation.isPending && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
+              Create Camp
+            </Button>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CampManagementList() {
+  const { data: camps, isLoading } = useQuery<Camp[]>({
+    queryKey: ["/api/camps"],
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {camps?.map((camp) => (
+        <CampCard key={camp.id} camp={camp} isManager />
+      ))}
+    </div>
   );
 }
