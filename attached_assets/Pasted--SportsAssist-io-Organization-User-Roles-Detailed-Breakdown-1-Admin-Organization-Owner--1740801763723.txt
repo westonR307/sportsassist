@@ -1,0 +1,104 @@
+🔹 SportsAssist.io Organization User Roles (Detailed Breakdown)
+
+1️⃣ Admin (Organization Owner)
+
+👤 Who They Are:
+	•	The highest-level user within an organization.
+	•	Usually the person who created the organization or the main decision-maker.
+
+🛠 What They Can Do:
+✔ Full control over all organization settings.
+✔ Manage finances & payments (view transactions, set fees, control payouts).
+✔ Create & delete camps (set up age groups, capacity, pricing).
+✔ Assign roles to other users (managers, coaches, volunteers).
+✔ Edit & remove any user within the organization.
+✔ Access all reports, analytics, and participant details.
+✔ Enable/disable features within the organization (e.g., waitlists, custom questions, notifications).
+
+🔒 Restrictions:
+❌ Cannot be removed by any other user (unless a system-level admin exists).
+
+📌 Admin Example Use Case:
+	•	A club director oversees multiple sports camps, manages funds, and assigns coaches to different programs.
+
+2️⃣ Manager (Operational Supervisor)
+
+👤 Who They Are:
+	•	A trusted assistant to the Admin.
+	•	Helps run day-to-day camp operations.
+	•	Usually a program coordinator or senior coach.
+
+🛠 What They Can Do:
+✔ Create & manage camps, but cannot change financial settings.
+✔ Invite and manage coaches & volunteers for specific camps.
+✔ Monitor registrations & waitlists.
+✔ Send communications to participants (emails, updates, alerts).
+✔ View limited reports & analytics (camp performance, participant numbers).
+✔ Handle customer support for participants (answer parent questions, manage refunds—if permitted by admin).
+
+🔒 Restrictions:
+❌ Cannot modify organization-wide settings (like payments or branding).
+❌ Cannot remove the Admin or assign financial permissions.
+
+📌 Manager Example Use Case:
+	•	A youth sports director manages multiple camps but doesn’t handle finances.
+
+3️⃣ Coach (Program Leader)
+
+👤 Who They Are:
+	•	The lead coach or trainer for a camp.
+	•	Directly interacts with participants & parents.
+
+🛠 What They Can Do:
+✔ View participant lists & attendance.
+✔ Send messages to participants/parents (email, in-app messages).
+✔ Update camp details (like schedule changes, activity plans).
+✔ Monitor & record participant progress.
+✔ View emergency contact information.
+
+🔒 Restrictions:
+❌ Cannot manage payments or refund participants.
+❌ Cannot add or remove users (except volunteers assigned to them).
+❌ Cannot change major camp settings (pricing, capacity, etc.)
+
+📌 Coach Example Use Case:
+	•	A baseball camp coach manages drills & player development but doesn’t control registrations.
+
+4️⃣ Volunteer (Assistant Coach or Helper)
+
+👤 Who They Are:
+	•	A temporary or support staff member who assists in running the camp.
+
+🛠 What They Can Do:
+✔ View schedules & basic camp details.
+✔ Assist in participant management (check-ins, setup, cleanup, etc.).
+✔ Communicate with Coaches (but not directly with parents).
+
+🔒 Restrictions:
+❌ No access to participant data (other than attendance records).
+❌ Cannot make changes to camp settings.
+❌ Cannot manage finances or organization details.
+
+📌 Volunteer Example Use Case:
+	•	A high school athlete helping at a youth soccer camp with warm-ups & drills.
+
+🔹 Organization Structure Flow
+
+Admin → Managers → Coaches → Volunteers
+          ↳ Full Access        ↳ Limited Access
+
+🔹 Role Comparison Chart
+
+Role	Manage Camps	Assign Coaches	View Payments	Edit Participants	Communicate with Parents	Modify Organization
+Admin	✅ Yes	✅ Yes	✅ Yes	✅ Yes	✅ Yes	✅ Yes
+Manager	✅ Yes	✅ Yes	❌ No	✅ Yes	✅ Yes	❌ No
+Coach	❌ No	❌ No	❌ No	✅ Yes (limited)	✅ Yes	❌ No
+Volunteer	❌ No	❌ No	❌ No	❌ No	❌ No	❌ No
+
+🔹 Final Thoughts
+	•	Admins = Full control, including payments & organization-wide settings.
+	•	Managers = Operational supervisors who can run camps but not control finances.
+	•	Coaches = Hands-on with participants but no admin privileges.
+	•	Volunteers = Limited support role with minimal permissions.
+
+Would you like any adjustments to permissions or additional roles? 🚀

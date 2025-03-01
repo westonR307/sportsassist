@@ -16,11 +16,25 @@ import { insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Redirect } from "wouter";
+import { useState } from "react";
+
+type Role = "admin" | "manager" | "coach" | "volunteer" | "parent";
 
 const loginSchema = insertUserSchema.pick({ username: true, password: true });
 
 const registerSchema = insertUserSchema.extend({
   role: z.enum(["admin", "manager", "coach", "volunteer", "parent"]).default("parent"),
+  organizationName: z.string().optional(),
+  organizationDescription: z.string().optional(),
+}).refine((data) => {
+  // Require organization name when registering as admin
+  if (data.role === "admin" && !data.organizationName) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Organization name is required when registering as admin",
+  path: ["organizationName"],
 });
 
 export default function AuthPage() {
@@ -119,12 +133,16 @@ function LoginForm() {
 
 function RegisterForm() {
   const { registerMutation } = useAuth();
+  const [role, setRole] = useState<Role>("parent");
   const form = useForm({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       username: "",
       password: "",
+      email: "",
       role: "parent" as const,
+      organizationName: "",
+      organizationDescription: "",
     },
   });
 
@@ -139,6 +157,19 @@ function RegisterForm() {
               <FormLabel>Username</FormLabel>
               <FormControl>
                 <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input type="email" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -167,8 +198,14 @@ function RegisterForm() {
                 <select
                   {...field}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                  onChange={(e) => {
+                    field.onChange(e);
+                    setRole(e.target.value as Role);
+                  }}
                 >
                   <option value="parent">Parent</option>
+                  <option value="admin">Organization Admin</option>
+                  <option value="manager">Manager</option>
                   <option value="coach">Coach</option>
                   <option value="volunteer">Volunteer</option>
                 </select>
@@ -177,6 +214,36 @@ function RegisterForm() {
             </FormItem>
           )}
         />
+        {role === "admin" && (
+          <>
+            <FormField
+              control={form.control}
+              name="organizationName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Organization Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="organizationDescription"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Organization Description</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </>
+        )}
         <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
           Register
         </Button>

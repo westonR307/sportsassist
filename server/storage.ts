@@ -10,6 +10,7 @@ import {
   type Camp,
   type Registration,
   type Organization,
+  type InsertOrganization,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -41,6 +42,11 @@ export interface IStorage {
   createRegistration(registration: Omit<Registration, "id">): Promise<Registration>;
   getRegistration(id: number): Promise<Registration | undefined>;
   getRegistrationsByCamp(campId: number): Promise<Registration[]>;
+
+  // Add organization methods
+  createOrganization(org: InsertOrganization): Promise<Organization>;
+  getOrganization(id: number): Promise<Organization | undefined>;
+  getOrganizationUsers(orgId: number): Promise<User[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -131,6 +137,29 @@ export class DatabaseStorage implements IStorage {
 
   async getRegistrationsByCamp(campId: number): Promise<Registration[]> {
     return await db.select().from(registrations).where(eq(registrations.campId, campId));
+  }
+
+  async createOrganization(org: InsertOrganization): Promise<Organization> {
+    const [organization] = await db.insert(organizations)
+      .values({
+        name: org.name,
+        description: org.description,
+      })
+      .returning();
+    return organization;
+  }
+
+  async getOrganization(id: number): Promise<Organization | undefined> {
+    const [organization] = await db.select()
+      .from(organizations)
+      .where(eq(organizations.id, id));
+    return organization;
+  }
+
+  async getOrganizationUsers(orgId: number): Promise<User[]> {
+    return await db.select()
+      .from(users)
+      .where(eq(users.organizationId, orgId));
   }
 }
 

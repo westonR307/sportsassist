@@ -2,8 +2,9 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertCampSchema, insertChildSchema, insertRegistrationSchema } from "@shared/schema";
+import { insertCampSchema, insertChildSchema, insertRegistrationSchema, insertOrganizationSchema } from "@shared/schema";
 import Stripe from "stripe";
+import { hashPassword } from "./utils"; // Assuming hashPassword is in a utils file
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2023-10-16",
@@ -11,6 +12,52 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
+
+  // Update the registration route to handle organization creation
+  app.post("/api/register", async (req, res, next) => {
+    const existingUser = await storage.getUserByUsername(req.body.username);
+    if (existingUser) {
+      return res.status(400).send("Username already exists");
+    }
+
+    try {
+      let user;
+      if (req.body.role === "admin" && req.body.organizationName) {
+        // Create organization first
+        const orgData = {
+          name: req.body.organizationName,
+          description: req.body.organizationDescription || "",
+        };
+        const parsedOrg = insertOrganizationSchema.safeParse(orgData);
+        if (!parsedOrg.success) {
+          return res.status(400).json({ message: "Invalid organization data" });
+        }
+
+        const organization = await storage.createOrganization(parsedOrg.data);
+
+        // Create user with organization
+        user = await storage.createUser({
+          ...req.body,
+          password: await hashPassword(req.body.password),
+          organizationId: organization.id,
+        });
+      } else {
+        // Create regular user
+        user = await storage.createUser({
+          ...req.body,
+          password: await hashPassword(req.body.password),
+        });
+      }
+
+      req.login(user, (err) => {
+        if (err) return next(err);
+        res.status(201).json(user);
+      });
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
 
   // Children routes
   app.post("/api/children", async (req, res) => {
@@ -33,9 +80,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const child = await storage.createChild({ 
-        ...parsed.data, 
-        parentId: req.user.id 
+      const child = await storage.createChild({
+        ...parsed.data,
+        parentId: req.user.id
       });
       console.log("Child created successfully:", child); // Debug log
       res.status(201).json(child);
@@ -76,7 +123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Registration routes
   app.post("/api/registrations", async (req, res) => {
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
-    
+
     const parsed = insertRegistrationSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json(parsed.error);
 

@@ -7,7 +7,9 @@ export type Role = "admin" | "manager" | "coach" | "volunteer" | "parent";
 export const organizations = pgTable("organizations", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  description: text("description"),
   stripeAccountId: text("stripe_account_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const users = pgTable("users", {
@@ -16,6 +18,8 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   role: text("role").$type<Role>().notNull(),
   organizationId: integer("organization_id").references(() => organizations.id),
+  email: text("email").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const children = pgTable("children", {
@@ -62,7 +66,10 @@ export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
   role: true,
-  organizationId: true,
+  email: true,
+}).extend({
+  organizationName: z.string().optional(),
+  organizationDescription: z.string().optional(),
 });
 
 export const insertChildSchema = createInsertSchema(children).omit({
@@ -72,6 +79,11 @@ export const insertChildSchema = createInsertSchema(children).omit({
 
 export const insertCampSchema = createInsertSchema(camps);
 export const insertRegistrationSchema = createInsertSchema(registrations);
+export const insertOrganizationSchema = createInsertSchema(organizations).omit({
+  id: true,
+  stripeAccountId: true,
+  createdAt: true,
+});
 
 // Types for the application
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -80,3 +92,4 @@ export type Child = typeof children.$inferSelect;
 export type Camp = typeof camps.$inferSelect;
 export type Registration = typeof registrations.$inferSelect;
 export type Organization = typeof organizations.$inferSelect;
+export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
