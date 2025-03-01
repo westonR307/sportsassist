@@ -330,7 +330,7 @@ function AddChildDialog() {
       console.log("Submitting data:", data);
       const res = await apiRequest("POST", "/api/children", {
         ...data,
-        dateOfBirth: data.dateOfBirth.toISOString(), // Ensure proper date serialization
+        dateOfBirth: new Date(data.dateOfBirth).toISOString().split('T')[0],
       });
       if (!res.ok) {
         const error = await res.json();
