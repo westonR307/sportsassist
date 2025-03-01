@@ -310,7 +310,7 @@ function AddChildDialog() {
     resolver: zodResolver(insertChildSchema),
     defaultValues: {
       fullName: "",
-      dateOfBirth: new Date(),
+      dateOfBirth: new Date().toISOString().split('T')[0],
       gender: "prefer_not_to_say" as Gender,
       emergencyContact: "",
       emergencyPhone: "",
@@ -328,10 +328,7 @@ function AddChildDialog() {
   const addChildMutation = useMutation({
     mutationFn: async (data: z.infer<typeof insertChildSchema>) => {
       console.log("Submitting data:", data);
-      const res = await apiRequest("POST", "/api/children", {
-        ...data,
-        dateOfBirth: new Date(data.dateOfBirth).toISOString().split('T')[0],
-      });
+      const res = await apiRequest("POST", "/api/children", data);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to add child");
@@ -399,12 +396,8 @@ function AddChildDialog() {
                         <Input
                           type="date"
                           {...field}
-                          value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : ''}
-                          onChange={(e) => {
-                            const date = new Date(e.target.value);
-                            date.setHours(12); // Set to noon to avoid timezone issues
-                            field.onChange(date);
-                          }}
+                          value={field.value}
+                          onChange={(e) => field.onChange(e.target.value)}
                         />
                       </FormControl>
                       <FormMessage />

@@ -135,7 +135,7 @@ export const insertChildSchema = createInsertSchema(children)
         currentTeam: z.string().optional(),
       })
     ).optional(),
-    dateOfBirth: z.string().transform((date) => new Date(date)),
+    dateOfBirth: z.string(),
     allergies: z.array(z.string()).optional().default([]),
     medicalConditions: z.array(z.string()).optional().default([]),
     medications: z.array(z.string()).optional().default([]),
