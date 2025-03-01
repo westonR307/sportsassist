@@ -505,7 +505,10 @@ function InviteMemberDialog() {
       const res = await apiRequest(
         "POST",
         `/api/organizations/${user.organizationId}/invitations`,
-        data
+        {
+          ...data,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        }
       );
       if (!res.ok) {
         const error = await res.json();

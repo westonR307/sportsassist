@@ -71,27 +71,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(403).json({ message: "Not authorized for this organization" });
     }
 
-    const parsed = insertInvitationSchema.safeParse({
-      ...req.body,
-      organizationId: orgId,
-    });
-
-    if (!parsed.success) {
-      return res.status(400).json({ 
-        message: "Invalid invitation data",
-        errors: parsed.error.flatten() 
-      });
-    }
-
     try {
+      const parsedData = {
+        ...req.body,
+        organizationId: orgId,
+        expiresAt: new Date(req.body.expiresAt),
+      };
+
+      const parsed = insertInvitationSchema.safeParse(parsedData);
+
+      if (!parsed.success) {
+        return res.status(400).json({ 
+          message: "Invalid invitation data",
+          errors: parsed.error.flatten() 
+        });
+      }
+
       const token = randomBytes(32).toString("hex");
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7); // Expires in 7 days
 
       const invitation = await storage.createInvitation({
         ...parsed.data,
         token,
-        expiresAt,
       });
 
       // TODO: Send invitation email
