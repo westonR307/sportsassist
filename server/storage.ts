@@ -26,7 +26,7 @@ export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  createUser(user: InsertUser & { organizationId?: number }): Promise<User>;
 
   // Child operations
   createChild(child: Omit<Child, "id">): Promise<Child>;
@@ -43,7 +43,7 @@ export interface IStorage {
   getRegistration(id: number): Promise<Registration | undefined>;
   getRegistrationsByCamp(campId: number): Promise<Registration[]>;
 
-  // Add organization methods
+  // Organization operations
   createOrganization(org: InsertOrganization): Promise<Organization>;
   getOrganization(id: number): Promise<Organization | undefined>;
   getOrganizationUsers(orgId: number): Promise<User[]>;
@@ -69,10 +69,11 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
+  async createUser(insertUser: InsertUser & { organizationId?: number }): Promise<User> {
     const [user] = await db.insert(users).values({
       username: insertUser.username,
       password: insertUser.password,
+      email: insertUser.email,
       role: insertUser.role,
       organizationId: insertUser.organizationId,
     }).returning();
@@ -84,6 +85,8 @@ export class DatabaseStorage implements IStorage {
       name: child.name,
       age: child.age,
       parentId: child.parentId,
+      medicalInfo: child.medicalInfo,
+      emergencyContact: child.emergencyContact,
     }).returning();
     return newChild;
   }
@@ -107,6 +110,7 @@ export class DatabaseStorage implements IStorage {
       price: camp.price,
       capacity: camp.capacity,
       organizationId: camp.organizationId,
+      waitlistEnabled: camp.waitlistEnabled ?? true,
     }).returning();
     return newCamp;
   }
@@ -124,8 +128,10 @@ export class DatabaseStorage implements IStorage {
     const [newRegistration] = await db.insert(registrations).values({
       campId: registration.campId,
       childId: registration.childId,
-      paid: false,
+      paid: registration.paid ?? false,
       stripePaymentId: registration.stripePaymentId,
+      waitlisted: registration.waitlisted ?? false,
+      registeredAt: new Date(),
     }).returning();
     return newRegistration;
   }
