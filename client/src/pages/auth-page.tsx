@@ -19,9 +19,13 @@ import { Redirect } from "wouter";
 
 const loginSchema = insertUserSchema.pick({ username: true, password: true });
 
+const registerSchema = insertUserSchema.extend({
+  role: z.enum(["admin", "manager", "coach", "volunteer", "parent"]).default("parent"),
+});
+
 export default function AuthPage() {
   const { user } = useAuth();
-  
+
   if (user) {
     return <Redirect to="/dashboard" />;
   }
@@ -40,7 +44,7 @@ export default function AuthPage() {
           </div>
         </div>
       </div>
-      
+
       <div className="p-8 flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardHeader>
@@ -116,7 +120,7 @@ function LoginForm() {
 function RegisterForm() {
   const { registerMutation } = useAuth();
   const form = useForm({
-    resolver: zodResolver(insertUserSchema),
+    resolver: zodResolver(registerSchema),
     defaultValues: {
       username: "",
       password: "",
@@ -148,6 +152,26 @@ function RegisterForm() {
               <FormLabel>Password</FormLabel>
               <FormControl>
                 <Input type="password" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="role"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Role</FormLabel>
+              <FormControl>
+                <select
+                  {...field}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                >
+                  <option value="parent">Parent</option>
+                  <option value="coach">Coach</option>
+                  <option value="volunteer">Volunteer</option>
+                </select>
               </FormControl>
               <FormMessage />
             </FormItem>
