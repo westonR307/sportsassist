@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Camp, Child, insertChildSchema, Invitation, insertInvitationSchema } from "@shared/schema";
+import { Camp, Child, insertChildSchema, Invitation, insertInvitationSchema, InsertInvitation } from "@shared/schema";
 import { Loader2, Plus } from "lucide-react";
 import {
   Dialog,
@@ -487,21 +487,30 @@ function InviteMemberDialog() {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = React.useState(false);
 
-  const form = useForm({
+  const form = useForm<InsertInvitation>({
     resolver: zodResolver(insertInvitationSchema),
     defaultValues: {
       email: "",
       role: "coach" as const,
+      organizationId: user?.organizationId,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
     },
   });
 
   const inviteMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: InsertInvitation) => {
+      if (!user?.organizationId) {
+        throw new Error("No organization ID found");
+      }
       const res = await apiRequest(
         "POST",
-        `/api/organizations/${user?.organizationId}/invitations`,
+        `/api/organizations/${user.organizationId}/invitations`,
         data
       );
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to send invitation");
+      }
       return await res.json();
     },
     onSuccess: () => {
@@ -524,6 +533,11 @@ function InviteMemberDialog() {
     },
   });
 
+  const onSubmit = form.handleSubmit((data) => {
+    console.log("Submitting invitation:", data);
+    inviteMutation.mutate(data);
+  });
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -537,10 +551,7 @@ function InviteMemberDialog() {
           <DialogTitle>Invite Team Member</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit((data) => inviteMutation.mutate(data))}
-            className="space-y-4"
-          >
+          <form onSubmit={onSubmit} className="space-y-4">
             <FormField
               control={form.control}
               name="email"
