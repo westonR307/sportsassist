@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Camp, Child, insertChildSchema } from "@shared/schema";
+import { Camp, Child, insertChildSchema, Invitation, insertInvitationSchema } from "@shared/schema";
 import { Loader2, Plus } from "lucide-react";
 import {
   Dialog,
@@ -111,6 +111,10 @@ function ParentDashboard() {
 
 function AdminDashboard() {
   const { user, logoutMutation } = useAuth();
+  const { data: invitations } = useQuery<Invitation[]>({
+    queryKey: [`/api/organizations/${user?.organizationId}/invitations`],
+    enabled: !!user?.organizationId,
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -127,7 +131,37 @@ function AdminDashboard() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid gap-6">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>Organization Members</CardTitle>
+                <InviteMemberDialog />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Pending Invitations</h3>
+                <div className="grid gap-4">
+                  {invitations?.map((invitation) => (
+                    <div
+                      key={invitation.id}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                    >
+                      <div>
+                        <p className="font-medium">{invitation.email}</p>
+                        <p className="text-sm text-gray-500">Role: {invitation.role}</p>
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        Expires: {new Date(invitation.expiresAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Organizations</CardTitle>
@@ -445,5 +479,114 @@ function CampCard({ camp, isManager }: { camp: Camp; isManager?: boolean }) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function InviteMemberDialog() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  const form = useForm({
+    resolver: zodResolver(insertInvitationSchema),
+    defaultValues: {
+      email: "",
+      role: "coach" as const,
+    },
+  });
+
+  const inviteMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest(
+        "POST",
+        `/api/organizations/${user?.organizationId}/invitations`,
+        data
+      );
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [`/api/organizations/${user?.organizationId}/invitations`],
+      });
+      toast({
+        title: "Success",
+        description: "Invitation sent successfully",
+      });
+      form.reset();
+      setIsOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button>
+          <Plus className="h-4 w-4 mr-2" />
+          Invite Member
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Invite Team Member</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit((data) => inviteMutation.mutate(data))}
+            className="space-y-4"
+          >
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input type="email" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Role</FormLabel>
+                  <FormControl>
+                    <select
+                      {...field}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                    >
+                      <option value="manager">Manager</option>
+                      <option value="coach">Coach</option>
+                      <option value="volunteer">Volunteer</option>
+                    </select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={inviteMutation.isPending}
+            >
+              {inviteMutation.isPending && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
+              Send Invitation
+            </Button>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }

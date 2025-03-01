@@ -4,6 +4,7 @@ import {
   camps,
   registrations,
   organizations,
+  invitations,
   type User,
   type InsertUser,
   type Child,
@@ -11,6 +12,8 @@ import {
   type Registration,
   type Organization,
   type InsertOrganization,
+  type Invitation,
+  type InsertInvitation,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -47,6 +50,12 @@ export interface IStorage {
   createOrganization(org: InsertOrganization): Promise<Organization>;
   getOrganization(id: number): Promise<Organization | undefined>;
   getOrganizationUsers(orgId: number): Promise<User[]>;
+
+  // Invitation operations
+  createInvitation(invitation: InsertInvitation & { token: string }): Promise<Invitation>;
+  getInvitation(token: string): Promise<Invitation | undefined>;
+  acceptInvitation(token: string): Promise<Invitation>;
+  listOrganizationInvitations(organizationId: number): Promise<Invitation[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -166,6 +175,40 @@ export class DatabaseStorage implements IStorage {
     return await db.select()
       .from(users)
       .where(eq(users.organizationId, orgId));
+  }
+
+  async createInvitation(invitation: InsertInvitation & { token: string }): Promise<Invitation> {
+    const [newInvitation] = await db.insert(invitations)
+      .values({
+        email: invitation.email,
+        role: invitation.role,
+        organizationId: invitation.organizationId,
+        token: invitation.token,
+        expiresAt: invitation.expiresAt,
+      })
+      .returning();
+    return newInvitation;
+  }
+
+  async getInvitation(token: string): Promise<Invitation | undefined> {
+    const [invitation] = await db.select()
+      .from(invitations)
+      .where(eq(invitations.token, token));
+    return invitation;
+  }
+
+  async acceptInvitation(token: string): Promise<Invitation> {
+    const [invitation] = await db.update(invitations)
+      .set({ accepted: true })
+      .where(eq(invitations.token, token))
+      .returning();
+    return invitation;
+  }
+
+  async listOrganizationInvitations(organizationId: number): Promise<Invitation[]> {
+    return await db.select()
+      .from(invitations)
+      .where(eq(invitations.organizationId, organizationId));
   }
 }
 

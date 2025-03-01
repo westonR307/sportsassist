@@ -2,9 +2,10 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertCampSchema, insertChildSchema, insertRegistrationSchema, insertOrganizationSchema } from "@shared/schema";
+import { insertCampSchema, insertChildSchema, insertRegistrationSchema, insertOrganizationSchema, insertInvitationSchema } from "@shared/schema";
 import Stripe from "stripe";
-import { hashPassword } from "./utils"; // Assuming hashPassword is in a utils file
+import { hashPassword } from "./utils";
+import { randomBytes } from "crypto";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2023-10-16",
@@ -59,23 +60,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Invitation routes
+  app.post("/api/organizations/:orgId/invitations", async (req, res) => {
+    if (!req.user || req.user.role !== "admin") {
+      return res.status(403).json({ message: "Only admins can send invitations" });
+    }
+
+    const orgId = parseInt(req.params.orgId);
+    if (req.user.organizationId !== orgId) {
+      return res.status(403).json({ message: "Not authorized for this organization" });
+    }
+
+    const parsed = insertInvitationSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Invalid invitation data" });
+    }
+
+    try {
+      const token = randomBytes(32).toString("hex");
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7); // Expires in 7 days
+
+      const invitation = await storage.createInvitation({
+        ...parsed.data,
+        organizationId: orgId,
+        token,
+        expiresAt,
+      });
+
+      // TODO: Send invitation email
+
+      res.status(201).json(invitation);
+    } catch (error) {
+      console.error("Invitation creation error:", error);
+      res.status(500).json({ message: "Failed to create invitation" });
+    }
+  });
+
+  app.get("/api/organizations/:orgId/invitations", async (req, res) => {
+    if (!req.user || req.user.role !== "admin") {
+      return res.status(403).json({ message: "Only admins can view invitations" });
+    }
+
+    const orgId = parseInt(req.params.orgId);
+    if (req.user.organizationId !== orgId) {
+      return res.status(403).json({ message: "Not authorized for this organization" });
+    }
+
+    const invitations = await storage.listOrganizationInvitations(orgId);
+    res.json(invitations);
+  });
+
+  app.post("/api/invitations/:token/accept", async (req, res) => {
+    const invitation = await storage.getInvitation(req.params.token);
+    if (!invitation) {
+      return res.status(404).json({ message: "Invitation not found" });
+    }
+
+    if (invitation.accepted) {
+      return res.status(400).json({ message: "Invitation already accepted" });
+    }
+
+    if (new Date() > invitation.expiresAt) {
+      return res.status(400).json({ message: "Invitation expired" });
+    }
+
+    try {
+      await storage.acceptInvitation(req.params.token);
+      res.json({ message: "Invitation accepted" });
+    } catch (error) {
+      console.error("Invitation acceptance error:", error);
+      res.status(500).json({ message: "Failed to accept invitation" });
+    }
+  });
+
   // Children routes
   app.post("/api/children", async (req, res) => {
-    console.log("Received request to create child:", req.body); // Debug log
+    console.log("Received request to create child:", req.body);
 
     if (!req.user) {
-      console.log("Unauthorized - no user found"); // Debug log
+      console.log("Unauthorized - no user found");
       return res.status(401).json({ message: "Unauthorized" });
     }
 
     if (req.user.role !== "parent") {
-      console.log("Forbidden - user is not a parent"); // Debug log
+      console.log("Forbidden - user is not a parent");
       return res.status(403).json({ message: "Only parents can add children" });
     }
 
     const parsed = insertChildSchema.safeParse(req.body);
     if (!parsed.success) {
-      console.log("Validation error:", parsed.error); // Debug log
+      console.log("Validation error:", parsed.error);
       return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
     }
 
@@ -84,10 +159,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...parsed.data,
         parentId: req.user.id
       });
-      console.log("Child created successfully:", child); // Debug log
+      console.log("Child created successfully:", child);
       res.status(201).json(child);
     } catch (error) {
-      console.error("Server error creating child:", error); // Debug log
+      console.error("Server error creating child:", error);
       res.status(500).json({ message: "Failed to create child" });
     }
   });
@@ -111,7 +186,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const parsed = insertCampSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json(parsed.error);
 
-    const camp = await storage.createCamp(parsed.data);
+    const camp = await storage.createCamp({
+      ...parsed.data,
+      organizationId: req.user.organizationId!,
+    });
     res.status(201).json(camp);
   });
 

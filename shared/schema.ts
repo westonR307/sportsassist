@@ -22,6 +22,17 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const invitations = pgTable("invitations", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull(),
+  role: text("role").$type<Role>().notNull(),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
+  token: text("token").notNull().unique(),
+  accepted: boolean("accepted").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
 export const children = pgTable("children", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -72,6 +83,13 @@ export const insertUserSchema = createInsertSchema(users).pick({
   organizationDescription: z.string().optional(),
 });
 
+export const insertInvitationSchema = createInsertSchema(invitations).omit({
+  id: true,
+  token: true,
+  accepted: true,
+  createdAt: true,
+});
+
 export const insertChildSchema = createInsertSchema(children).omit({
   id: true,
   parentId: true,
@@ -93,3 +111,5 @@ export type Camp = typeof camps.$inferSelect;
 export type Registration = typeof registrations.$inferSelect;
 export type Organization = typeof organizations.$inferSelect;
 export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
+export type Invitation = typeof invitations.$inferSelect;
+export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
