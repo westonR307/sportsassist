@@ -1,3 +1,11 @@
+function logError(location: string, error: any) {
+  console.error(`Error in ${location}:`, {
+    message: error.message,
+    code: error.code,
+    detail: error.detail,
+  });
+}
+
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
@@ -147,7 +155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sportsList = await db.select().from(sports);
       res.json(sportsList);
     } catch (error) {
-      console.error("Error fetching sports:", error);
+      logError("/api/sports GET", error);
       res.status(500).json({ message: "Failed to fetch sports" });
     }
   });
@@ -208,7 +216,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.status(201).json(child);
     } catch (error) {
-      console.error("Error creating child:", error);
+      logError("/api/children POST", error);
       res.status(500).json({ message: "Failed to create child" });
     }
   });
@@ -219,8 +227,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(403).json({ message: "Only parents can view children" });
     }
 
-    const childrenList = await storage.getChildrenByParent(req.user.id);
-    res.json(childrenList);
+    try {
+      const childrenList = await storage.getChildrenByParent(req.user.id);
+      res.json(childrenList);
+    } catch (error) {
+      logError("/api/children GET", error);
+      res.status(500).json({ message: "Failed to fetch children" });
+    }
   });
 
   // Camp routes

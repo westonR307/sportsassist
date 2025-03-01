@@ -106,7 +106,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getChildrenByParent(parentId: number): Promise<Child[]> {
-    return await db.select().from(children).where(eq(children.parentId, parentId));
+    return await db.select()
+      .from(children)
+      .where(eq(children.parentId, parentId))
+      .orderBy(children.fullName);
   }
 
   async createCamp(camp: Omit<Camp, "id">): Promise<Camp> {
