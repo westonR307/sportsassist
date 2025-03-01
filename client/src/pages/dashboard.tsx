@@ -50,62 +50,173 @@ export default function Dashboard() {
 
 function ParentDashboard() {
   const { user, logoutMutation } = useAuth();
-  const { data: camps, isLoading: isLoadingCamps } = useQuery<Camp[]>({
-    queryKey: ["/api/camps"],
-  });
-
-  const { data: children, isLoading: isLoadingChildren } = useQuery<Child[]>({
-    queryKey: ["/api/children"],
-  });
+  const [activeSection, setActiveSection] = React.useState<'overview' | 'athletes' | 'camps'>('overview');
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="container mx-auto px-4 py-6 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold">Parent Dashboard</h1>
-            <p className="text-gray-600">Welcome back, {user?.username}</p>
-          </div>
-          <Button variant="outline" onClick={() => logoutMutation.mutate()}>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Side Navigation */}
+      <nav className="w-64 bg-white shadow-sm">
+        <div className="p-4 border-b">
+          <h2 className="text-xl font-semibold">Sports Camp</h2>
+          <p className="text-sm text-gray-600">Welcome, {user?.username}</p>
+        </div>
+        <div className="p-2">
+          <button
+            className={`w-full text-left px-4 py-2 rounded-lg mb-1 ${
+              activeSection === 'overview' ? 'bg-gray-100 font-medium' : ''
+            }`}
+            onClick={() => setActiveSection('overview')}
+          >
+            Dashboard Overview
+          </button>
+          <button
+            className={`w-full text-left px-4 py-2 rounded-lg mb-1 ${
+              activeSection === 'athletes' ? 'bg-gray-100 font-medium' : ''
+            }`}
+            onClick={() => setActiveSection('athletes')}
+          >
+            Manage Athletes
+          </button>
+          <button
+            className={`w-full text-left px-4 py-2 rounded-lg mb-1 ${
+              activeSection === 'camps' ? 'bg-gray-100 font-medium' : ''
+            }`}
+            onClick={() => setActiveSection('camps')}
+          >
+            Available Camps
+          </button>
+        </div>
+        <div className="p-4 mt-auto border-t">
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => logoutMutation.mutate()}
+          >
             Logout
           </Button>
         </div>
-      </header>
+      </nav>
 
-      <main className="container mx-auto px-4 py-8 space-y-8">
-        <section>
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">My Children</h2>
-            <AddChildDialog />
+      {/* Main Content */}
+      <main className="flex-1 p-8">
+        {activeSection === 'overview' && (
+          <div className="space-y-6">
+            <h1 className="text-2xl font-bold">Dashboard Overview</h1>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Active Athletes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">3</div>
+                  <p className="text-sm text-gray-500">Registered athletes</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Upcoming Camps</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">2</div>
+                  <p className="text-sm text-gray-500">Starting soon</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Active Registrations</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">1</div>
+                  <p className="text-sm text-gray-500">Current camp enrollments</p>
+                </CardContent>
+              </Card>
+            </div>
           </div>
-          {isLoadingChildren ? (
-            <div className="flex justify-center">
-              <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
-          ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {children?.map((child) => (
-                <ChildCard key={child.id} child={child} />
-              ))}
-            </div>
-          )}
-        </section>
+        )}
 
-        <section>
-          <h2 className="text-xl font-semibold mb-4">Available Camps</h2>
-          {isLoadingCamps ? (
-            <div className="flex justify-center">
-              <Loader2 className="h-8 w-8 animate-spin" />
+        {activeSection === 'athletes' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h1 className="text-2xl font-bold">Manage Athletes</h1>
+              <AddChildDialog />
             </div>
-          ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {camps?.map((camp) => (
-                <CampCard key={camp.id} camp={camp} />
-              ))}
-            </div>
-          )}
-        </section>
+            <AthletesList />
+          </div>
+        )}
+
+        {activeSection === 'camps' && (
+          <div className="space-y-6">
+            <h1 className="text-2xl font-bold">Available Camps</h1>
+            <CampsList />
+          </div>
+        )}
       </main>
+    </div>
+  );
+}
+
+function AthletesList() {
+  const { data: athletes, isLoading } = useQuery<Child[]>({
+    queryKey: ["/api/children"],
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {athletes?.map((athlete) => (
+        <AthleteCard key={athlete.id} athlete={athlete} />
+      ))}
+    </div>
+  );
+}
+
+function AthleteCard({ athlete }: { athlete: Child }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{athlete.fullName}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          <p className="text-gray-600">
+            Age: {new Date().getFullYear() - new Date(athlete.dateOfBirth).getFullYear()}
+          </p>
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm">
+              View Profile
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function CampsList() {
+  const { data: camps, isLoading } = useQuery<Camp[]>({
+    queryKey: ["/api/camps"],
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {camps?.map((camp) => (
+        <CampCard key={camp.id} camp={camp} />
+      ))}
     </div>
   );
 }
@@ -331,7 +442,7 @@ function AddChildDialog() {
       const res = await apiRequest("POST", "/api/children", data);
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.message || "Failed to add child");
+        throw new Error(error.message || "Failed to add athlete");
       }
       return await res.json();
     },
@@ -339,7 +450,7 @@ function AddChildDialog() {
       queryClient.invalidateQueries({ queryKey: ["/api/children"] });
       toast({
         title: "Success",
-        description: "Child added successfully",
+        description: "Athlete added successfully",
       });
       form.reset();
       setSelectedSports([]);
@@ -360,12 +471,12 @@ function AddChildDialog() {
       <DialogTrigger asChild>
         <Button onClick={() => setIsOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          Add Child
+          Add Athlete
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add a Child</DialogTitle>
+          <DialogTitle>Add an Athlete</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit((data) => addChildMutation.mutate(data))} className="space-y-4">
@@ -461,7 +572,7 @@ function AddChildDialog() {
                   name="emergencyRelation"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Relationship to Child</FormLabel>
+                      <FormLabel>Relationship to Athlete</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -636,7 +747,7 @@ function AddChildDialog() {
               {addChildMutation.isPending && (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               )}
-              Add Child
+              Add Athlete
             </Button>
           </form>
         </Form>
