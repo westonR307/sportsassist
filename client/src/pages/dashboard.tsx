@@ -535,13 +535,16 @@ function InviteMemberDialog() {
 
   const onSubmit = form.handleSubmit((data) => {
     console.log("Submitting invitation:", data);
-    inviteMutation.mutate(data);
+    inviteMutation.mutate({
+      ...data,
+      organizationId: user?.organizationId!,
+    });
   });
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button onClick={() => setIsOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Invite Member
         </Button>

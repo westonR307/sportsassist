@@ -71,9 +71,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(403).json({ message: "Not authorized for this organization" });
     }
 
-    const parsed = insertInvitationSchema.safeParse(req.body);
+    const parsed = insertInvitationSchema.safeParse({
+      ...req.body,
+      organizationId: orgId,
+    });
+
     if (!parsed.success) {
-      return res.status(400).json({ message: "Invalid invitation data" });
+      return res.status(400).json({ 
+        message: "Invalid invitation data",
+        errors: parsed.error.flatten() 
+      });
     }
 
     try {
@@ -83,7 +90,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const invitation = await storage.createInvitation({
         ...parsed.data,
-        organizationId: orgId,
         token,
         expiresAt,
       });
