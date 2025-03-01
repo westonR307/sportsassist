@@ -65,10 +65,8 @@ export const children = pgTable("children", {
   medicalConditions: text("medical_conditions").array(),
   medications: text("medications").array(),
   specialNeeds: text("special_needs"),
-  preferredContact: text("preferred_contact").$type<ContactMethod>().notNull().default("email"),
-  communicationOptIn: boolean("communication_opt_in").notNull().default(true),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at"),
+  preferredContact: text("preferred_contact").$type<ContactMethod>().notNull(),
+  communicationOptIn: boolean("communication_opt_in").notNull(),
 });
 
 export const camps = pgTable("camps", {

@@ -183,19 +183,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // First create the child
         const [newChild] = await trx.insert(children).values({
           fullName: parsed.data.fullName,
-          dateOfBirth: parsed.data.dateOfBirth,
+          dateOfBirth: new Date(parsed.data.dateOfBirth),
           gender: parsed.data.gender,
           profilePhoto: parsed.data.profilePhoto,
           parentId: req.user!.id,
           emergencyContact: parsed.data.emergencyContact,
           emergencyPhone: parsed.data.emergencyPhone,
           emergencyRelation: parsed.data.emergencyRelation,
-          allergies: parsed.data.allergies,
-          medicalConditions: parsed.data.medicalConditions,
-          medications: parsed.data.medications,
+          allergies: parsed.data.allergies || [],
+          medicalConditions: parsed.data.medicalConditions || [],
+          medications: parsed.data.medications || [],
           specialNeeds: parsed.data.specialNeeds,
           preferredContact: parsed.data.preferredContact,
-          communicationOptIn: parsed.data.communicationOptIn,
+          communicationOptIn: parsed.data.communicationOptIn
         }).returning();
 
         // If sports interests are provided, create the child_sports records
