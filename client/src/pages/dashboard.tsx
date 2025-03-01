@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Camp, Child, insertChildSchema, Invitation, insertInvitationSchema, InsertInvitation } from "@shared/schema";
+import { Camp, Child, insertChildSchema, Invitation, insertInvitationSchema, InsertInvitation, Sport, SportLevel, Gender, ContactMethod } from "@shared/schema";
 import { Loader2, Plus } from "lucide-react";
 import {
   Dialog,
@@ -25,6 +25,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import * as z from 'zod'
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -299,22 +300,40 @@ function VolunteerDashboard() {
 function AddChildDialog() {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = React.useState(false);
+  const [selectedSports, setSelectedSports] = React.useState<Array<{ sportId: number, skillLevel: SportLevel }>>([]);
+
+  const { data: sports } = useQuery<Sport[]>({
+    queryKey: ["/api/sports"],
+  });
 
   const form = useForm({
     resolver: zodResolver(insertChildSchema),
     defaultValues: {
-      name: "",
-      age: undefined,
+      fullName: "",
+      dateOfBirth: new Date(),
+      gender: "prefer_not_to_say" as Gender,
+      emergencyContact: "",
+      emergencyPhone: "",
+      emergencyRelation: "",
+      allergies: [],
+      medicalConditions: [],
+      medications: [],
+      specialNeeds: "",
+      preferredContact: "email" as ContactMethod,
+      communicationOptIn: true,
+      sportsInterests: [],
     },
   });
 
   const addChildMutation = useMutation({
-    mutationFn: async (data: { name: string; age: number }) => {
-      console.log("Submitting data:", data); // Debug log
+    mutationFn: async (data: z.infer<typeof insertChildSchema>) => {
+      console.log("Submitting data:", data);
       const res = await apiRequest("POST", "/api/children", data);
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || "Failed to add child");
-      return json;
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to add child");
+      }
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/children"] });
@@ -323,10 +342,11 @@ function AddChildDialog() {
         description: "Child added successfully",
       });
       form.reset();
+      setSelectedSports([]);
       setIsOpen(false);
     },
     onError: (error: Error) => {
-      console.error("Mutation error:", error); // Debug log
+      console.error("Mutation error:", error);
       toast({
         title: "Error",
         description: error.message,
@@ -334,35 +354,6 @@ function AddChildDialog() {
       });
     },
   });
-
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = form.getValues();
-    console.log("Form submitted with data:", formData); // Debug log
-
-    if (!formData.name || formData.age === undefined) {
-      toast({
-        title: "Error",
-        description: "Please fill in all fields",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const age = Number(formData.age);
-    if (isNaN(age) || age < 0 || age > 16) {
-      form.setError("age", {
-        type: "manual",
-        message: "Age must be between 0 and 16",
-      });
-      return;
-    }
-
-    addChildMutation.mutate({
-      name: formData.name,
-      age,
-    });
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -372,51 +363,274 @@ function AddChildDialog() {
           Add Child
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add a Child</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={onSubmit} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="age"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Age</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="16"
-                      {...field}
-                      value={field.value || ""}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        field.onChange(value === "" ? undefined : Number(value));
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <form onSubmit={form.handleSubmit((data) => addChildMutation.mutate(data))} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Basic Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Basic Information</h3>
+                <FormField
+                  control={form.control}
+                  name="fullName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="dateOfBirth"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date of Birth</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          {...field}
+                          value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : field.value}
+                          onChange={(e) => field.onChange(new Date(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="gender"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Gender</FormLabel>
+                      <FormControl>
+                        <select
+                          {...field}
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                        >
+                          <option value="male">Male</option>
+                          <option value="female">Female</option>
+                          <option value="other">Other</option>
+                          <option value="prefer_not_to_say">Prefer not to say</option>
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Emergency Contact */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Emergency Contact</h3>
+                <FormField
+                  control={form.control}
+                  name="emergencyContact"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Emergency Contact Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="emergencyPhone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Emergency Phone</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="tel" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="emergencyRelation"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Relationship to Child</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Medical Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Medical Information</h3>
+                <FormField
+                  control={form.control}
+                  name="allergies"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Allergies</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Separate with commas"
+                          value={field.value.join(", ")}
+                          onChange={(e) => field.onChange(e.target.value.split(",").map(s => s.trim()).filter(Boolean))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="medicalConditions"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Medical Conditions</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Separate with commas"
+                          value={field.value.join(", ")}
+                          onChange={(e) => field.onChange(e.target.value.split(",").map(s => s.trim()).filter(Boolean))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="medications"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Medications</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Separate with commas"
+                          value={field.value.join(", ")}
+                          onChange={(e) => field.onChange(e.target.value.split(",").map(s => s.trim()).filter(Boolean))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="specialNeeds"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Special Needs/Accommodations</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Sports Interests */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Sports Interests</h3>
+                {sports?.map((sport) => (
+                  <div key={sport.id} className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedSports.some(s => s.sportId === sport.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedSports([...selectedSports, { sportId: sport.id, skillLevel: "beginner" }]);
+                          } else {
+                            setSelectedSports(selectedSports.filter(s => s.sportId !== sport.id));
+                          }
+                          form.setValue("sportsInterests", selectedSports);
+                        }}
+                        className="h-4 w-4"
+                      />
+                      <span>{sport.name}</span>
+                    </div>
+                    {selectedSports.some(s => s.sportId === sport.id) && (
+                      <select
+                        value={selectedSports.find(s => s.sportId === sport.id)?.skillLevel}
+                        onChange={(e) => {
+                          const newSports = selectedSports.map(s =>
+                            s.sportId === sport.id
+                              ? { ...s, skillLevel: e.target.value as SportLevel }
+                              : s
+                          );
+                          setSelectedSports(newSports);
+                          form.setValue("sportsInterests", newSports);
+                        }}
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                      >
+                        <option value="beginner">Beginner</option>
+                        <option value="intermediate">Intermediate</option>
+                        <option value="advanced">Advanced</option>
+                      </select>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Communication Preferences */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Communication Preferences</h3>
+                <FormField
+                  control={form.control}
+                  name="preferredContact"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Preferred Contact Method</FormLabel>
+                      <FormControl>
+                        <select
+                          {...field}
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                        >
+                          <option value="email">Email</option>
+                          <option value="sms">SMS</option>
+                          <option value="app">App Notifications</option>
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="communicationOptIn"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center space-x-2">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={(e) => field.onChange(e.target.checked)}
+                          className="h-4 w-4"
+                        />
+                      </FormControl>
+                      <FormLabel>Opt-in to camp updates and announcements</FormLabel>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
             <Button
               type="submit"
-              className="w-full"
+              className="w-full mt-6"
               disabled={addChildMutation.isPending}
             >
               {addChildMutation.isPending && (
@@ -435,10 +649,28 @@ function ChildCard({ child }: { child: Child }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{child.name}</CardTitle>
+        <CardTitle>{child.fullName}</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-gray-600">Age: {child.age}</p>
+        <div className="space-y-2">
+          <p className="text-gray-600">
+            Date of Birth: {new Date(child.dateOfBirth).toLocaleDateString()}
+          </p>
+          {child.allergies && child.allergies.length > 0 && (
+            <p className="text-gray-600">
+              <strong>Allergies:</strong> {child.allergies.join(", ")}
+            </p>
+          )}
+          {child.medicalConditions && child.medicalConditions.length > 0 && (
+            <p className="text-gray-600">
+              <strong>Medical Conditions:</strong> {child.medicalConditions.join(", ")}
+            </p>
+          )}
+          <p className="text-gray-600">
+            <strong>Emergency Contact:</strong> {child.emergencyContact}
+            {child.emergencyPhone && ` (${child.emergencyPhone})`}
+          </p>
+        </div>
       </CardContent>
     </Card>
   );

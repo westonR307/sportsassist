@@ -4,6 +4,10 @@ import { z } from "zod";
 
 export type Role = "admin" | "manager" | "coach" | "volunteer" | "parent";
 
+export type SportLevel = "beginner" | "intermediate" | "advanced";
+export type Gender = "male" | "female" | "other" | "prefer_not_to_say";
+export type ContactMethod = "email" | "sms" | "app";
+
 export const organizations = pgTable("organizations", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -33,13 +37,38 @@ export const invitations = pgTable("invitations", {
   expiresAt: timestamp("expires_at").notNull(),
 });
 
+export const sports = pgTable("sports", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+});
+
+export const childSports = pgTable("child_sports", {
+  id: serial("id").primaryKey(),
+  childId: integer("child_id").references(() => children.id).notNull(),
+  sportId: integer("sport_id").references(() => sports.id).notNull(),
+  skillLevel: text("skill_level").$type<SportLevel>().notNull(),
+  preferredPositions: text("preferred_positions").array(),
+  currentTeam: text("current_team"),
+});
+
 export const children = pgTable("children", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  age: integer("age").notNull(),
+  fullName: text("full_name").notNull(),
+  dateOfBirth: timestamp("date_of_birth").notNull(),
+  gender: text("gender").$type<Gender>().notNull(),
+  profilePhoto: text("profile_photo"),
   parentId: integer("parent_id").references(() => users.id).notNull(),
-  medicalInfo: text("medical_info"),
   emergencyContact: text("emergency_contact"),
+  emergencyPhone: text("emergency_phone"),
+  emergencyRelation: text("emergency_relation"),
+  allergies: text("allergies").array(),
+  medicalConditions: text("medical_conditions").array(),
+  medications: text("medications").array(),
+  specialNeeds: text("special_needs"),
+  preferredContact: text("preferred_contact").$type<ContactMethod>().notNull().default("email"),
+  communicationOptIn: boolean("communication_opt_in").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at"),
 });
 
 export const camps = pgTable("camps", {
@@ -49,7 +78,7 @@ export const camps = pgTable("camps", {
   location: text("location").notNull(),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
-  price: integer("price").notNull(), // In cents
+  price: integer("price").notNull(),
   capacity: integer("capacity").notNull(),
   organizationId: integer("organization_id").references(() => organizations.id).notNull(),
   waitlistEnabled: boolean("waitlist_enabled").notNull().default(true),
@@ -90,10 +119,26 @@ export const insertInvitationSchema = createInsertSchema(invitations).omit({
   createdAt: true,
 });
 
-export const insertChildSchema = createInsertSchema(children).omit({
-  id: true,
-  parentId: true,
-});
+export const insertChildSchema = createInsertSchema(children)
+  .omit({
+    id: true,
+    parentId: true,
+    createdAt: true,
+    updatedAt: true,
+  })
+  .extend({
+    sportsInterests: z.array(
+      z.object({
+        sportId: z.number(),
+        skillLevel: z.enum(["beginner", "intermediate", "advanced"]),
+        preferredPositions: z.array(z.string()).optional(),
+        currentTeam: z.string().optional(),
+      })
+    ).optional(),
+    allergies: z.array(z.string()).optional().default([]),
+    medicalConditions: z.array(z.string()).optional().default([]),
+    medications: z.array(z.string()).optional().default([]),
+  });
 
 export const insertCampSchema = createInsertSchema(camps);
 export const insertRegistrationSchema = createInsertSchema(registrations);
@@ -113,3 +158,6 @@ export type Organization = typeof organizations.$inferSelect;
 export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
 export type Invitation = typeof invitations.$inferSelect;
 export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
+export type Sport = typeof sports.$inferSelect;
+export type ChildSport = typeof childSports.$inferSelect;
+export type InsertChildSport = z.infer<typeof insertChildSchema>["sportsInterests"][number];

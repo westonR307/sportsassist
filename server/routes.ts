@@ -2,10 +2,11 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertCampSchema, insertChildSchema, insertRegistrationSchema, insertOrganizationSchema, insertInvitationSchema } from "@shared/schema";
+import { insertCampSchema, insertChildSchema, insertRegistrationSchema, insertOrganizationSchema, insertInvitationSchema, sports, children, childSports } from "@shared/schema";
 import Stripe from "stripe";
 import { hashPassword } from "./utils";
 import { randomBytes } from "crypto";
+import { db } from "./db"; 
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2023-10-16",
@@ -141,34 +142,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Children routes
-  app.post("/api/children", async (req, res) => {
-    console.log("Received request to create child:", req.body);
+  app.get("/api/sports", async (req, res) => {
+    try {
+      const sportsList = await db.select().from(sports);
+      res.json(sportsList);
+    } catch (error) {
+      console.error("Error fetching sports:", error);
+      res.status(500).json({ message: "Failed to fetch sports" });
+    }
+  });
 
+  app.post("/api/children", async (req, res) => {
     if (!req.user) {
-      console.log("Unauthorized - no user found");
       return res.status(401).json({ message: "Unauthorized" });
     }
 
     if (req.user.role !== "parent") {
-      console.log("Forbidden - user is not a parent");
       return res.status(403).json({ message: "Only parents can add children" });
     }
 
     const parsed = insertChildSchema.safeParse(req.body);
     if (!parsed.success) {
-      console.log("Validation error:", parsed.error);
-      return res.status(400).json({ message: "Invalid data", errors: parsed.error.flatten() });
+      return res.status(400).json({ 
+        message: "Invalid data", 
+        errors: parsed.error.flatten() 
+      });
     }
 
     try {
-      const child = await storage.createChild({
-        ...parsed.data,
-        parentId: req.user.id
+      // Start a transaction to insert child and their sports interests
+      const child = await db.transaction(async (trx) => {
+        // First create the child
+        const [newChild] = await trx.insert(children).values({
+          fullName: parsed.data.fullName,
+          dateOfBirth: parsed.data.dateOfBirth,
+          gender: parsed.data.gender,
+          profilePhoto: parsed.data.profilePhoto,
+          parentId: req.user!.id,
+          emergencyContact: parsed.data.emergencyContact,
+          emergencyPhone: parsed.data.emergencyPhone,
+          emergencyRelation: parsed.data.emergencyRelation,
+          allergies: parsed.data.allergies,
+          medicalConditions: parsed.data.medicalConditions,
+          medications: parsed.data.medications,
+          specialNeeds: parsed.data.specialNeeds,
+          preferredContact: parsed.data.preferredContact,
+          communicationOptIn: parsed.data.communicationOptIn,
+        }).returning();
+
+        // If sports interests are provided, create the child_sports records
+        if (parsed.data.sportsInterests?.length) {
+          await trx.insert(childSports).values(
+            parsed.data.sportsInterests.map(sport => ({
+              childId: newChild.id,
+              sportId: sport.sportId,
+              skillLevel: sport.skillLevel,
+              preferredPositions: sport.preferredPositions || [],
+              currentTeam: sport.currentTeam,
+            }))
+          );
+        }
+
+        return newChild;
       });
-      console.log("Child created successfully:", child);
+
       res.status(201).json(child);
     } catch (error) {
-      console.error("Server error creating child:", error);
+      console.error("Error creating child:", error);
       res.status(500).json({ message: "Failed to create child" });
     }
   });
@@ -179,8 +219,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(403).json({ message: "Only parents can view children" });
     }
 
-    const children = await storage.getChildrenByParent(req.user.id);
-    res.json(children);
+    const childrenList = await storage.getChildrenByParent(req.user.id);
+    res.json(childrenList);
   });
 
   // Camp routes
