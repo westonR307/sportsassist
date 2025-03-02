@@ -217,24 +217,197 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl overflow-y-auto max-h-[90vh]">
+        <DialogHeader className="sticky top-0 bg-background z-10 pb-4 mb-4">
           <DialogTitle>Create New Camp</DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Basic Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Basic Information</h3>
+        <div className="space-y-6 pb-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Basic Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Basic Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Camp Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Camp Type</FormLabel>
+                        <FormControl>
+                          <select
+                            {...field}
+                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                          >
+                            <option value="one_on_one">One on One</option>
+                            <option value="group">Group</option>
+                            <option value="team">Team</option>
+                            <option value="virtual">Virtual</option>
+                          </select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <textarea
+                          {...field}
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background min-h-[100px]"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Camp Dates */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Camp Dates</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="startDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Start Date</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="endDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>End Date</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Weekly Schedule */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Weekly Schedule</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {DAYS_OF_WEEK.map((day) => (
+                    <div key={day} className="space-y-2 border rounded-lg p-3">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedDays.includes(day)}
+                          onChange={(e) => handleDaySelection(day, e.target.checked)}
+                          className="h-4 w-4"
+                        />
+                        <span className="font-medium">{day}</span>
+                      </div>
+
+                      {selectedDays.includes(day) && (
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <FormLabel className="text-xs">Start Time</FormLabel>
+                            <Input
+                              type="time"
+                              value={daySchedules[day]?.startTime || "09:00"}
+                              onChange={(e) => updateDaySchedule(day, "startTime", e.target.value)}
+                              className="h-8"
+                            />
+                          </div>
+                          <div>
+                            <FormLabel className="text-xs">End Time</FormLabel>
+                            <Input
+                              type="time"
+                              value={daySchedules[day]?.endTime || "17:00"}
+                              onChange={(e) => updateDaySchedule(day, "endTime", e.target.value)}
+                              className="h-8"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sports */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Sports</h3>
+                <div className="grid gap-4">
+                  {sports?.map((sport: any) => (
+                    <div key={sport.id} className="space-y-2 border rounded-lg p-3">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedSports.some(s => s.sportId === sport.id)}
+                          onChange={(e) => handleSportSelection(sport.id, e.target.checked)}
+                          className="h-4 w-4"
+                        />
+                        <span className="font-medium">{sport.name}</span>
+                      </div>
+                      {selectedSports.some(s => s.sportId === sport.id) && (
+                        <div>
+                          <FormLabel className="text-xs">Skill Level</FormLabel>
+                          <select
+                            value={selectedSports.find(s => s.sportId === sport.id)?.skillLevel}
+                            onChange={(e) => handleSkillLevelChange(sport.id, e.target.value)}
+                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                          >
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate">Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Price and Capacity */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="name"
+                  name="price"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Camp Name</FormLabel>
+                      <FormLabel>Price ($)</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input
+                          type="number"
+                          {...field}
+                          onChange={(e) => field.onChange(Number(e.target.value))}
+                          min={0}
+                          step={1}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -242,250 +415,79 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                 />
                 <FormField
                   control={form.control}
-                  name="type"
+                  name="capacity"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Camp Type</FormLabel>
+                      <FormLabel>Capacity</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          {...field}
+                          onChange={(e) => field.onChange(Number(e.target.value))}
+                          min={1}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Settings */}
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="visibility"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Visibility</FormLabel>
                       <FormControl>
                         <select
                           {...field}
                           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                         >
-                          <option value="one_on_one">One on One</option>
-                          <option value="group">Group</option>
-                          <option value="team">Team</option>
-                          <option value="virtual">Virtual</option>
+                          <option value="public">Public</option>
+                          <option value="private">Private</option>
                         </select>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
 
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <textarea
-                        {...field}
-                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background min-h-[100px]"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Camp Dates */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Camp Dates</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="startDate"
+                  name="waitlistEnabled"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Start Date</FormLabel>
+                    <FormItem className="flex items-center space-x-2">
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={(e) => field.onChange(e.target.checked)}
+                          className="h-4 w-4"
+                        />
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="endDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>End Date</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
+                      <FormLabel>Enable Waitlist</FormLabel>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
-            </div>
 
-            {/* Weekly Schedule */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Weekly Schedule</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {DAYS_OF_WEEK.map((day) => (
-                  <div key={day} className="space-y-2 border rounded-lg p-3">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={selectedDays.includes(day)}
-                        onChange={(e) => handleDaySelection(day, e.target.checked)}
-                        className="h-4 w-4"
-                      />
-                      <span className="font-medium">{day}</span>
-                    </div>
-
-                    {selectedDays.includes(day) && (
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <FormLabel className="text-xs">Start Time</FormLabel>
-                          <Input
-                            type="time"
-                            value={daySchedules[day]?.startTime || "09:00"}
-                            onChange={(e) => updateDaySchedule(day, "startTime", e.target.value)}
-                            className="h-8"
-                          />
-                        </div>
-                        <div>
-                          <FormLabel className="text-xs">End Time</FormLabel>
-                          <Input
-                            type="time"
-                            value={daySchedules[day]?.endTime || "17:00"}
-                            onChange={(e) => updateDaySchedule(day, "endTime", e.target.value)}
-                            className="h-8"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Sports */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Sports</h3>
-              <div className="grid gap-4">
-                {sports?.map((sport: any) => (
-                  <div key={sport.id} className="space-y-2 border rounded-lg p-3">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={selectedSports.some(s => s.sportId === sport.id)}
-                        onChange={(e) => handleSportSelection(sport.id, e.target.checked)}
-                        className="h-4 w-4"
-                      />
-                      <span className="font-medium">{sport.name}</span>
-                    </div>
-                    {selectedSports.some(s => s.sportId === sport.id) && (
-                      <div>
-                        <FormLabel className="text-xs">Skill Level</FormLabel>
-                        <select
-                          value={selectedSports.find(s => s.sportId === sport.id)?.skillLevel}
-                          onChange={(e) => handleSkillLevelChange(sport.id, e.target.value)}
-                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                        >
-                          <option value="beginner">Beginner</option>
-                          <option value="intermediate">Intermediate</option>
-                          <option value="advanced">Advanced</option>
-                        </select>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Price and Capacity */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Price ($)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                        min={0}
-                        step={1}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+              <Button type="submit" className="w-full" disabled={createCampMutation.isPending}>
+                {createCampMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  "Create Camp"
                 )}
-              />
-              <FormField
-                control={form.control}
-                name="capacity"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Capacity</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                        min={1}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Settings */}
-            <div className="space-y-4">
-              <FormField
-                control={form.control}
-                name="visibility"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Visibility</FormLabel>
-                    <FormControl>
-                      <select
-                        {...field}
-                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                      >
-                        <option value="public">Public</option>
-                        <option value="private">Private</option>
-                      </select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="waitlistEnabled"
-                render={({ field }) => (
-                  <FormItem className="flex items-center space-x-2">
-                    <FormControl>
-                      <input
-                        type="checkbox"
-                        checked={field.value}
-                        onChange={(e) => field.onChange(e.target.checked)}
-                        className="h-4 w-4"
-                      />
-                    </FormControl>
-                    <FormLabel>Enable Waitlist</FormLabel>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <Button type="submit" className="w-full" disabled={createCampMutation.isPending}>
-              {createCampMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                "Create Camp"
-              )}
-            </Button>
-          </form>
-        </Form>
+              </Button>
+            </form>
+          </Form>
+        </div>
       </DialogContent>
     </Dialog>
   );
