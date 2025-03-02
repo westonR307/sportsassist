@@ -278,6 +278,28 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                   </div>
                 ))}
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <FormLabel>Start Time</FormLabel>
+                  <Input
+                    type="time"
+                    defaultValue="09:00"
+                    onChange={(e) => {
+                      // Update start time in schedules
+                    }}
+                  />
+                </div>
+                <div>
+                  <FormLabel>End Time</FormLabel>
+                  <Input
+                    type="time"
+                    defaultValue="17:00"
+                    onChange={(e) => {
+                      // Update end time in schedules
+                    }}
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Sports Section */}
@@ -488,9 +510,7 @@ function Dashboard() {
             <div className="container mx-auto px-4 py-8">
               <Card>
                 <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <CardTitle>Dashboard</CardTitle>
-                  </div>
+                  <CardTitle>Dashboard</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p>Welcome, {user.username}</p>
