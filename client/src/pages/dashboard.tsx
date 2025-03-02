@@ -984,7 +984,7 @@ function AddChildDialog() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Special Needs/Accommodations</FormLabel>
-                      <FormControl><FormControl>
+                      <FormControl>
                         <Input {...field} />
                       </FormControl>
                       <FormMessage />
@@ -995,7 +995,7 @@ function AddChildDialog() {
 
               {/* Sports Interests */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Sports Interests</h3>
+                <h3 className="text-lg font-semibold>Sports Interests</h3>
                 {sports?.map((sport) => (
                   <div key={sport.id} className="space-y-2">
                     <div className="flex items-center gap-2">
@@ -1318,3 +1318,5 @@ function AthleteDashboard() {
     </div>
   );
 }
+
+export default Dashboard;
