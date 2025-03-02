@@ -62,7 +62,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     queryKey: ["/api/sports"],
   });
 
-  const form = useForm({
+  const form = useForm<z.infer<typeof insertCampSchema>>({
     resolver: zodResolver(insertCampSchema),
     defaultValues: {
       name: "",
@@ -80,7 +80,6 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     },
   });
 
-  // Handle day selection with time slots
   const handleDaySelection = (day: string, checked: boolean) => {
     if (checked) {
       setSelectedDays([...selectedDays, day]);
@@ -96,7 +95,6 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     }
   };
 
-  // Update time for a specific day
   const updateDaySchedule = (day: string, field: "startTime" | "endTime", value: string) => {
     setDaySchedules({
       ...daySchedules,
@@ -107,50 +105,16 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     });
   };
 
-  const onSubmit = async (data: z.infer<typeof insertCampSchema>) => {
-    try {
-      console.log("Form data:", data);
-      console.log("Selected days:", selectedDays);
-      console.log("Day schedules:", daySchedules);
-      console.log("Selected sports:", selectedSports);
-
-      const formattedData = {
-        ...data,
-        organizationId: user?.organizationId,
-        startDate: new Date(data.startDate).toISOString(),
-        endDate: new Date(data.endDate).toISOString(),
-        price: Number(data.price) * 100, // Convert to cents
-        sports: selectedSports.map(sport => ({
-          sportId: sport.sportId,
-          skillLevel: sport.skillLevel,
-        })),
-        schedules: selectedDays.map(day => ({
-          dayOfWeek: DAYS_OF_WEEK.indexOf(day),
-          startTime: daySchedules[day].startTime,
-          endTime: daySchedules[day].endTime,
-        })),
-      };
-
-      console.log("Submitting camp data:", formattedData);
-      createCampMutation.mutate(formattedData);
-    } catch (error) {
-      console.error("Error in form submission:", error);
-      toast({
-        title: "Error",
-        description: "Failed to submit form. Please check the console for details.",
-        variant: "destructive",
-      });
-    }
-  };
-
   const createCampMutation = useMutation({
     mutationFn: async (data: any) => {
+      console.log("Creating camp with data:", data);
       const res = await apiRequest("POST", "/api/camps", data);
+      const responseData = await res.json();
+      console.log("API Response:", responseData);
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to create camp");
+        throw new Error(responseData.message || "Failed to create camp");
       }
-      return res.json();
+      return responseData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
@@ -165,7 +129,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      console.error("Mutation error:", error);
+      console.error("Camp creation error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to create camp",
@@ -173,6 +137,61 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       });
     },
   });
+
+  const onSubmit = async (formData: z.infer<typeof insertCampSchema>) => {
+    try {
+      console.log("Form submission started");
+      console.log("Form data:", formData);
+      console.log("Selected days:", selectedDays);
+      console.log("Day schedules:", daySchedules);
+      console.log("Selected sports:", selectedSports);
+
+      if (selectedDays.length === 0) {
+        toast({
+          title: "Error",
+          description: "Please select at least one day for the camp schedule",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (selectedSports.length === 0) {
+        toast({
+          title: "Error",
+          description: "Please select at least one sport",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const campData = {
+        ...formData,
+        organizationId: user?.organizationId,
+        startDate: new Date(formData.startDate).toISOString(),
+        endDate: new Date(formData.endDate).toISOString(),
+        price: Number(formData.price) * 100,
+        sports: selectedSports.map(sport => ({
+          sportId: sport.sportId,
+          skillLevel: sport.skillLevel,
+        })),
+        schedules: selectedDays.map(day => ({
+          dayOfWeek: DAYS_OF_WEEK.indexOf(day),
+          startTime: daySchedules[day].startTime,
+          endTime: daySchedules[day].endTime,
+        })),
+      };
+
+      console.log("Submitting camp data:", campData);
+      await createCampMutation.mutateAsync(campData);
+    } catch (error) {
+      console.error("Error in form submission:", error);
+      toast({
+        title: "Error",
+        description: "Failed to submit form. Please check the console for details.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -251,7 +270,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                     <FormItem>
                       <FormLabel>Minimum Age</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} onChange={(e) => field.onChange(parseInt(e.target.value))} />
+                        <Input type="number" {...field} onChange={(e) => field.onChange(parseInt(e.target.value, 10))} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -264,7 +283,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                     <FormItem>
                       <FormLabel>Maximum Age</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} onChange={(e) => field.onChange(parseInt(e.target.value))} />
+                        <Input type="number" {...field} onChange={(e) => field.onChange(parseInt(e.target.value, 10))} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -277,7 +296,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                     <FormItem>
                       <FormLabel>Capacity</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} onChange={(e) => field.onChange(parseInt(e.target.value))} />
+                        <Input type="number" {...field} onChange={(e) => field.onChange(parseInt(e.target.value, 10))} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -375,7 +394,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                       type="number"
                       min={1}
                       value={repeatDuration}
-                      onChange={(e) => setRepeatDuration(parseInt(e.target.value))}
+                      onChange={(e) => setRepeatDuration(parseInt(e.target.value, 10))}
                       className="w-20"
                     />
                     <span>{repeatType === "weekly" ? "weeks" : "months"}</span>
@@ -481,7 +500,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                       <Input
                         type="number"
                         {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value))}
+                        onChange={(e) => field.onChange(parseInt(e.target.value, 10))}
                         min={0}
                         step={1}
                       />
@@ -530,7 +549,12 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
               )}
             />
 
-            <Button type="submit" className="w-full" disabled={createCampMutation.isPending}>
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={createCampMutation.isPending}
+              onClick={() => console.log("Submit button clicked")}
+            >
               {createCampMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Create Camp
             </Button>
