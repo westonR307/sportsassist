@@ -68,18 +68,13 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       name: "",
       description: "",
       location: "",
-      ageRangeMin: 5,
-      ageRangeMax: 18,
+      type: "group" as const,
+      visibility: "public" as const,
       price: 0,
       capacity: 10,
-      registrationStartDate: new Date().toISOString().split('T')[0],
-      registrationEndDate: new Date().toISOString().split('T')[0],
       startDate: new Date().toISOString().split('T')[0],
       endDate: new Date().toISOString().split('T')[0],
       waitlistEnabled: true,
-      type: "group" as const,
-      visibility: "public" as const,
-      organizationId: user?.organizationId || 0,
       sports: [],
       schedules: [],
     },
@@ -112,42 +107,50 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     });
   };
 
+  const onSubmit = async (data: z.infer<typeof insertCampSchema>) => {
+    try {
+      console.log("Form data:", data);
+      console.log("Selected days:", selectedDays);
+      console.log("Day schedules:", daySchedules);
+      console.log("Selected sports:", selectedSports);
+
+      const formattedData = {
+        ...data,
+        organizationId: user?.organizationId,
+        startDate: new Date(data.startDate).toISOString(),
+        endDate: new Date(data.endDate).toISOString(),
+        price: Number(data.price) * 100, // Convert to cents
+        sports: selectedSports.map(sport => ({
+          sportId: sport.sportId,
+          skillLevel: sport.skillLevel,
+        })),
+        schedules: selectedDays.map(day => ({
+          dayOfWeek: DAYS_OF_WEEK.indexOf(day),
+          startTime: daySchedules[day].startTime,
+          endTime: daySchedules[day].endTime,
+        })),
+      };
+
+      console.log("Submitting camp data:", formattedData);
+      createCampMutation.mutate(formattedData);
+    } catch (error) {
+      console.error("Error in form submission:", error);
+      toast({
+        title: "Error",
+        description: "Failed to submit form. Please check the console for details.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const createCampMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof insertCampSchema>) => {
-      try {
-        // Format the data
-        const formattedData = {
-          ...data,
-          startDate: new Date(data.startDate).toISOString(),
-          endDate: new Date(data.endDate).toISOString(),
-          registrationStartDate: new Date(data.registrationStartDate).toISOString(),
-          registrationEndDate: new Date(data.registrationEndDate).toISOString(),
-          price: Number(data.price) * 100, // Convert to cents
-          sports: selectedSports.map(sport => ({
-            sportId: sport.sportId,
-            skillLevel: sport.skillLevel,
-          })),
-          schedules: selectedDays.map(day => ({
-            dayOfWeek: DAYS_OF_WEEK.indexOf(day),
-            startTime: daySchedules[day].startTime,
-            endTime: daySchedules[day].endTime,
-          })),
-        };
-
-        console.log("Submitting camp data:", formattedData);
-
-        const res = await apiRequest("POST", "/api/camps", formattedData);
-        const responseData = await res.json();
-
-        if (!res.ok) {
-          throw new Error(responseData.message || "Failed to create camp");
-        }
-
-        return responseData;
-      } catch (error) {
-        console.error("Error creating camp:", error);
-        throw error;
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", "/api/camps", data);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to create camp");
       }
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
@@ -178,7 +181,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
           <DialogTitle>Create New Camp</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit((data) => createCampMutation.mutate(data))} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Basic Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Basic Information</h3>
