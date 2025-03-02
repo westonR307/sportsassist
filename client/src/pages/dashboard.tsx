@@ -31,7 +31,7 @@ import {
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import * as z from 'zod';
+import * as z from "zod";
 
 const DAYS_OF_WEEK = [
   "Sunday",
@@ -70,11 +70,9 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       visibility: "public" as const,
       price: 0,
       capacity: 10,
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date().toISOString().split('T')[0],
+      startDate: new Date().toISOString().split("T")[0],
+      endDate: new Date().toISOString().split("T")[0],
       waitlistEnabled: true,
-      sports: [],
-      schedules: [],
     },
   });
 
@@ -105,17 +103,21 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 
   const createCampMutation = useMutation({
     mutationFn: async (data: any) => {
-      console.log("Attempting to create camp with data:", data);
-      const res = await apiRequest("POST", "/api/camps", data);
-      const responseData = await res.json();
+      try {
+        console.log("About to send API request with data:", data);
+        const res = await apiRequest("POST", "/api/camps", data);
+        const responseData = await res.json();
+        console.log("API Response:", responseData);
 
-      if (!res.ok) {
-        console.error("API error:", responseData);
-        throw new Error(responseData.message || "Failed to create camp");
+        if (!res.ok) {
+          throw new Error(responseData.message || "Failed to create camp");
+        }
+
+        return responseData;
+      } catch (error) {
+        console.error("API call error:", error);
+        throw error;
       }
-
-      console.log("Camp created successfully:", responseData);
-      return responseData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
@@ -130,7 +132,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      console.error("Camp creation error:", error);
+      console.error("Mutation error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to create camp",
@@ -139,9 +141,12 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     },
   });
 
-  const onSubmit = async (formData: z.infer<typeof insertCampSchema>) => {
+  const handleSubmit = async (formData: z.infer<typeof insertCampSchema>) => {
     try {
+      console.log("Form submission started", { formData, selectedDays, selectedSports });
+
       if (!user?.organizationId) {
+        console.error("No organization ID found");
         toast({
           title: "Error",
           description: "Organization ID is required",
@@ -151,6 +156,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       }
 
       if (selectedDays.length === 0) {
+        console.error("No days selected");
         toast({
           title: "Error",
           description: "Please select at least one day for the camp schedule",
@@ -160,6 +166,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       }
 
       if (selectedSports.length === 0) {
+        console.error("No sports selected");
         toast({
           title: "Error",
           description: "Please select at least one sport",
@@ -171,17 +178,17 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       const campData = {
         name: formData.name,
         description: formData.description,
-        location: formData.location,
+        location: formData.location || "",
         startDate: formData.startDate,
         endDate: formData.endDate,
-        price: Number(formData.price) * 100, // Convert to cents
+        price: Number(formData.price) * 100,
         capacity: formData.capacity,
         type: formData.type,
         visibility: formData.visibility,
         waitlistEnabled: formData.waitlistEnabled,
         organizationId: user.organizationId,
         sports: selectedSports,
-        schedules: selectedDays.map(day => ({
+        schedules: selectedDays.map((day) => ({
           dayOfWeek: DAYS_OF_WEEK.indexOf(day),
           startTime: daySchedules[day].startTime,
           endTime: daySchedules[day].endTime,
@@ -190,7 +197,6 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 
       console.log("Submitting camp data:", campData);
       await createCampMutation.mutateAsync(campData);
-
     } catch (error) {
       console.error("Form submission error:", error);
       toast({
@@ -203,12 +209,12 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Create New Camp</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             {/* Basic Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Basic Information</h3>
@@ -267,97 +273,16 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
               />
             </div>
 
-            {/* Age Range and Capacity */}
+            {/* Camp Dates */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Age Range and Capacity</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="ageRangeMin"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Minimum Age</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} onChange={(e) => field.onChange(parseInt(e.target.value, 10))} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="ageRangeMax"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Maximum Age</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} onChange={(e) => field.onChange(parseInt(e.target.value, 10))} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="capacity"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Capacity</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} onChange={(e) => field.onChange(parseInt(e.target.value, 10))} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Registration Dates */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Registration Period</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="registrationStartDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Registration Start Date</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="registrationEndDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Registration End Date</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Camp Dates and Schedule */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Camp Schedule</h3>
-
-              {/* Camp Start/End Dates */}
+              <h3 className="text-lg font-semibold">Camp Dates</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="startDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Camp Start Date</FormLabel>
+                      <FormLabel>Start Date</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -370,7 +295,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                   name="endDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Camp End Date</FormLabel>
+                      <FormLabel>End Date</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -379,95 +304,97 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                   )}
                 />
               </div>
+            </div>
 
-
-              {/* Weekly Schedule */}
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {DAYS_OF_WEEK.map((day) => (
-                    <div key={day} className="space-y-2 border rounded-lg p-3">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={selectedDays.includes(day)}
-                          onChange={(e) => handleDaySelection(day, e.target.checked)}
-                          className="h-4 w-4"
-                        />
-                        <span className="font-medium">{day}</span>
-                      </div>
-
-                      {selectedDays.includes(day) && (
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <FormLabel className="text-xs">Start Time</FormLabel>
-                            <Input
-                              type="time"
-                              value={daySchedules[day]?.startTime || "09:00"}
-                              onChange={(e) => updateDaySchedule(day, "startTime", e.target.value)}
-                              className="h-8"
-                            />
-                          </div>
-                          <div>
-                            <FormLabel className="text-xs">End Time</FormLabel>
-                            <Input
-                              type="time"
-                              value={daySchedules[day]?.endTime || "17:00"}
-                              onChange={(e) => updateDaySchedule(day, "endTime", e.target.value)}
-                              className="h-8"
-                            />
-                          </div>
-                        </div>
-                      )}
+            {/* Weekly Schedule */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Weekly Schedule</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {DAYS_OF_WEEK.map((day) => (
+                  <div key={day} className="space-y-2 border rounded-lg p-3">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedDays.includes(day)}
+                        onChange={(e) => handleDaySelection(day, e.target.checked)}
+                        className="h-4 w-4"
+                      />
+                      <span className="font-medium">{day}</span>
                     </div>
-                  ))}
-                </div>
+
+                    {selectedDays.includes(day) && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <FormLabel className="text-xs">Start Time</FormLabel>
+                          <Input
+                            type="time"
+                            value={daySchedules[day]?.startTime || "09:00"}
+                            onChange={(e) => updateDaySchedule(day, "startTime", e.target.value)}
+                            className="h-8"
+                          />
+                        </div>
+                        <div>
+                          <FormLabel className="text-xs">End Time</FormLabel>
+                          <Input
+                            type="time"
+                            value={daySchedules[day]?.endTime || "17:00"}
+                            onChange={(e) => updateDaySchedule(day, "endTime", e.target.value)}
+                            className="h-8"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Sports and Skill Levels */}
+            {/* Sports */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Sports</h3>
-              {sports?.map((sport: any) => (
-                <div key={sport.id} className="space-y-2 border rounded-lg p-3">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedSports.some((s) => s.sportId === sport.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedSports([...selectedSports, { sportId: sport.id, skillLevel: "beginner" }]);
-                        } else {
-                          setSelectedSports(selectedSports.filter((s) => s.sportId !== sport.id));
-                        }
-                      }}
-                      className="h-4 w-4"
-                    />
-                    <span className="font-medium">{sport.name}</span>
-                  </div>
-                  {selectedSports.some((s) => s.sportId === sport.id) && (
-                    <div>
-                      <FormLabel className="text-xs">Skill Level</FormLabel>
-                      <select
-                        value={selectedSports.find((s) => s.sportId === sport.id)?.skillLevel}
+              <div className="grid gap-4">
+                {sports?.map((sport: any) => (
+                  <div key={sport.id} className="space-y-2 border rounded-lg p-3">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedSports.some((s) => s.sportId === sport.id)}
                         onChange={(e) => {
-                          const newSports = selectedSports.map((s) =>
-                            s.sportId === sport.id ? { ...s, skillLevel: e.target.value } : s
-                          );
-                          setSelectedSports(newSports);
+                          if (e.target.checked) {
+                            setSelectedSports([...selectedSports, { sportId: sport.id, skillLevel: "beginner" }]);
+                          } else {
+                            setSelectedSports(selectedSports.filter((s) => s.sportId !== sport.id));
+                          }
                         }}
-                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                      >
-                        <option value="beginner">Beginner</option>
-                        <option value="intermediate">Intermediate</option>
-                        <option value="advanced">Advanced</option>
-                      </select>
+                        className="h-4 w-4"
+                      />
+                      <span className="font-medium">{sport.name}</span>
                     </div>
-                  )}
-                </div>
-              ))}
+                    {selectedSports.some((s) => s.sportId === sport.id) && (
+                      <div>
+                        <FormLabel className="text-xs">Skill Level</FormLabel>
+                        <select
+                          value={selectedSports.find((s) => s.sportId === sport.id)?.skillLevel}
+                          onChange={(e) => {
+                            const newSports = selectedSports.map((s) =>
+                              s.sportId === sport.id ? { ...s, skillLevel: e.target.value } : s
+                            );
+                            setSelectedSports(newSports);
+                          }}
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                        >
+                          <option value="beginner">Beginner</option>
+                          <option value="intermediate">Intermediate</option>
+                          <option value="advanced">Advanced</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* Price and Settings */}
+            {/* Price and Capacity */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -479,7 +406,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                       <Input
                         type="number"
                         {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value, 10))}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
                         min={0}
                         step={1}
                       />
@@ -488,6 +415,28 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="capacity"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Capacity</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                        min={1}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Settings */}
+            <div className="space-y-4">
               <FormField
                 control={form.control}
                 name="visibility"
@@ -507,39 +456,35 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="waitlistEnabled"
+                render={({ field }) => (
+                  <FormItem className="flex items-center space-x-2">
+                    <FormControl>
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={(e) => field.onChange(e.target.checked)}
+                        className="h-4 w-4"
+                      />
+                    </FormControl>
+                    <FormLabel>Enable Waitlist</FormLabel>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
-            <FormField
-              control={form.control}
-              name="waitlistEnabled"
-              render={({ field }) => (
-                <FormItem className="flex items-center space-x-2">
-                  <FormControl>
-                    <input
-                      type="checkbox"
-                      checked={field.value}
-                      onChange={(e) => field.onChange(e.target.checked)}
-                      className="h-4 w-4"
-                    />
-                  </FormControl>
-                  <FormLabel>Enable Waitlist</FormLabel>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={createCampMutation.isPending}
-            >
+            <Button type="submit" className="w-full" disabled={createCampMutation.isPending}>
               {createCampMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Creating...
                 </>
               ) : (
-                'Create Camp'
+                "Create Camp"
               )}
             </Button>
           </form>
