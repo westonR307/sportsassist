@@ -108,27 +108,36 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 
   const createCampMutation = useMutation({
     mutationFn: async (data: z.infer<typeof insertCampSchema>) => {
-      const formattedData = {
-        ...data,
-        startDate: new Date(data.startDate),
-        endDate: new Date(data.endDate),
-        registrationStartDate: new Date(data.registrationStartDate),
-        registrationEndDate: new Date(data.registrationEndDate),
-        sports: selectedSports,
-        schedules: Object.entries(daySchedules).map(([day, times]) => ({
-          dayOfWeek: day,
-          startTime: times.startTime,
-          endTime: times.endTime,
-          repeatType,
-          repeatDuration: repeatType !== "none" ? repeatDuration : null,
-        })),
-      };
-      const res = await apiRequest("POST", "/api/camps", formattedData);
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to create camp");
+      try {
+        // Format the data
+        const formattedData = {
+          ...data,
+          startDate: new Date(data.startDate),
+          endDate: new Date(data.endDate),
+          registrationStartDate: new Date(data.registrationStartDate),
+          registrationEndDate: new Date(data.registrationEndDate),
+          sports: selectedSports,
+          schedules: Object.entries(daySchedules).map(([day, times]) => ({
+            dayOfWeek: day,
+            startTime: times.startTime,
+            endTime: times.endTime,
+            repeatType,
+            repeatDuration: repeatType !== "none" ? repeatDuration : null,
+          })),
+        };
+
+        console.log('Submitting camp data:', formattedData); // Debug log
+
+        const res = await apiRequest("POST", "/api/camps", formattedData);
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.message || "Failed to create camp");
+        }
+        return res.json();
+      } catch (error) {
+        console.error('Error creating camp:', error);
+        throw error;
       }
-      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
@@ -143,9 +152,10 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       onOpenChange(false);
     },
     onError: (error: Error) => {
+      console.error('Mutation error:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to create camp",
         variant: "destructive",
       });
     },
@@ -457,9 +467,9 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                   <FormItem>
                     <FormLabel>Price ($)</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="number" 
-                        {...field} 
+                      <Input
+                        type="number"
+                        {...field}
                         onChange={e => field.onChange(parseInt(e.target.value))}
                         min={0}
                         step={1}
@@ -509,8 +519,8 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
               )}
             />
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full"
               disabled={createCampMutation.isPending}
             >
@@ -614,8 +624,8 @@ function InviteMemberDialog() {
                 </FormItem>
               )}
             />
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full"
               disabled={inviteMutation.isPending}
             >
