@@ -1,4 +1,3 @@
-import { DAYS_OF_WEEK } from "./constants";
 import React from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -485,7 +484,7 @@ function CampCreatorDashboard() {
 }
 
 function Dashboard() {
-  const { user, logoutMutation } = useAuth();
+  const { user } = useAuth();
 
   if (!user) return null;
 
