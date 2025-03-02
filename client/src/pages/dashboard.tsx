@@ -107,10 +107,11 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 
   const createCampMutation = useMutation({
     mutationFn: async (data: any) => {
-      console.log("Creating camp with data:", data);
+      console.log("Sending API request with data:", data);
       const res = await apiRequest("POST", "/api/camps", data);
       const responseData = await res.json();
-      console.log("API Response:", responseData);
+      console.log("API response:", responseData);
+
       if (!res.ok) {
         throw new Error(responseData.message || "Failed to create camp");
       }
@@ -129,7 +130,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      console.error("Camp creation error:", error);
+      console.error("Mutation error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to create camp",
@@ -140,11 +141,14 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 
   const onSubmit = async (formData: z.infer<typeof insertCampSchema>) => {
     try {
-      console.log("Form submission started");
-      console.log("Form data:", formData);
-      console.log("Selected days:", selectedDays);
-      console.log("Day schedules:", daySchedules);
-      console.log("Selected sports:", selectedSports);
+      if (!user?.organizationId) {
+        toast({
+          title: "Error",
+          description: "Organization ID is required",
+          variant: "destructive",
+        });
+        return;
+      }
 
       if (selectedDays.length === 0) {
         toast({
@@ -165,15 +169,18 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       }
 
       const campData = {
-        ...formData,
-        organizationId: user?.organizationId,
-        startDate: new Date(formData.startDate).toISOString(),
-        endDate: new Date(formData.endDate).toISOString(),
-        price: Number(formData.price) * 100,
-        sports: selectedSports.map(sport => ({
-          sportId: sport.sportId,
-          skillLevel: sport.skillLevel,
-        })),
+        name: formData.name,
+        description: formData.description,
+        location: formData.location || "",
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        price: Number(formData.price) * 100, // Convert to cents
+        capacity: formData.capacity,
+        type: formData.type,
+        visibility: formData.visibility,
+        waitlistEnabled: formData.waitlistEnabled,
+        organizationId: user.organizationId,
+        sports: selectedSports,
         schedules: selectedDays.map(day => ({
           dayOfWeek: DAYS_OF_WEEK.indexOf(day),
           startTime: daySchedules[day].startTime,
@@ -181,13 +188,13 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         })),
       };
 
-      console.log("Submitting camp data:", campData);
+      console.log("Attempting to create camp with data:", campData);
       await createCampMutation.mutateAsync(campData);
     } catch (error) {
-      console.error("Error in form submission:", error);
+      console.error("Form submission error:", error);
       toast({
         title: "Error",
-        description: "Failed to submit form. Please check the console for details.",
+        description: error instanceof Error ? error.message : "Failed to submit form",
         variant: "destructive",
       });
     }

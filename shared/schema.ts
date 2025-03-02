@@ -161,18 +161,21 @@ export const insertChildSchema = createInsertSchema(children)
   });
 
 export const insertCampSchema = createInsertSchema(camps).extend({
+  sports: z.array(z.object({
+    sportId: z.number(),
+    skillLevel: z.enum(["beginner", "intermediate", "advanced"]),
+  })),
   schedules: z.array(z.object({
     dayOfWeek: z.number().min(0).max(6),
     startTime: z.string(),
     endTime: z.string(),
   })),
-  sports: z.array(z.object({
-    sportId: z.number().optional(),
-    customSport: z.string().optional(),
-    skillLevel: z.enum(["beginner", "intermediate", "advanced"]),
-  })).min(1, "At least one sport must be selected"),
-  startDate: z.string().transform((date) => new Date(date + "T12:00:00")),
-  endDate: z.string().transform((date) => new Date(date + "T12:00:00")),
+  startDate: z.string(),
+  endDate: z.string(),
+  price: z.number().min(0),
+  capacity: z.number().min(1),
+  type: z.enum(["one_on_one", "group", "team", "virtual"]),
+  visibility: z.enum(["public", "private"]),
 });
 
 export const insertRegistrationSchema = createInsertSchema(registrations);
