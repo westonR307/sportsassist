@@ -21,7 +21,13 @@ import {
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertCampSchema } from "@shared/schema";
+import { 
+  insertCampSchema, 
+  insertInvitationSchema, 
+  type InsertInvitation,
+  type Camp,
+  type Invitation,
+} from "@shared/schema";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
