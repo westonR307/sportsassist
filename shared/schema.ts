@@ -3,7 +3,6 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export type Role = "admin" | "manager" | "coach" | "volunteer" | "parent";
-
 export type SportLevel = "beginner" | "intermediate" | "advanced";
 export type Gender = "male" | "female" | "other" | "prefer_not_to_say";
 export type ContactMethod = "email" | "sms" | "app";
@@ -106,7 +105,7 @@ export const registrations = pgTable("registrations", {
 export const campSchedules = pgTable("camp_schedules", {
   id: serial("id").primaryKey(),
   campId: integer("camp_id").references(() => camps.id).notNull(),
-  dayOfWeek: integer("day_of_week").notNull(), 
+  dayOfWeek: integer("day_of_week").notNull(),
   startTime: time("start_time").notNull(),
   endTime: time("end_time").notNull(),
 });
@@ -115,10 +114,9 @@ export const campSports = pgTable("camp_sports", {
   id: serial("id").primaryKey(),
   campId: integer("camp_id").references(() => camps.id).notNull(),
   sportId: integer("sport_id").references(() => sports.id),
-  customSport: text("custom_sport"), 
+  customSport: text("custom_sport"),
   skillLevel: text("skill_level").$type<SportLevel>().notNull(),
 });
-
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -170,6 +168,8 @@ export const insertCampSchema = createInsertSchema(camps).extend({
     customSport: z.string().optional(),
     skillLevel: z.enum(["beginner", "intermediate", "advanced"]),
   })).min(1, "At least one sport must be selected"),
+  startDate: z.string().transform((date) => new Date(date + "T12:00:00")),
+  endDate: z.string().transform((date) => new Date(date + "T12:00:00")),
 });
 
 export const insertRegistrationSchema = createInsertSchema(registrations);
@@ -195,7 +195,7 @@ export type CampSchedule = typeof campSchedules.$inferSelect;
 export type CampSport = typeof campSports.$inferSelect;
 
 export const predefinedSports = [
-  "Archery", "Badminton", "Baseball", "Basketball", "Biathlon", 
+  "Archery", "Badminton", "Baseball", "Basketball", "Biathlon",
   "Billiards", "Bobsleigh", "Bodybuilding", "Bowling", "Boxing",
   "Canoeing", "Cheerleading", "Chess", "Climbing", "Cricket",
   "CrossFit", "Curling", "Cycling", "Darts", "Equestrian",

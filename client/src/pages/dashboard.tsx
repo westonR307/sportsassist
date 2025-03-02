@@ -977,12 +977,10 @@ function InviteMemberDialog() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input type="email" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+                  <FormControl><Input type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>              )}
             />
             <FormField
               control={form.control}
@@ -1030,11 +1028,11 @@ function AddCampDialog() {
     customSport?: string;
     skillLevel: SportLevel;
   }>>([]);
-  const [schedules, setSchedules] = React.useState<Array<{
-    dayOfWeek: number;
-    startTime: string;
-    endTime: string;
-  }>>([]);
+  const [selectedDays, setSelectedDays] = React.useState<number[]>([]);
+  const [scheduleTime, setScheduleTime] = React.useState({
+    startTime: "09:00",
+    endTime: "17:00"
+  });
 
   const { data: sports } = useQuery<Sport[]>({
     queryKey: ["/api/sports"],
@@ -1061,17 +1059,24 @@ function AddCampDialog() {
 
   // Watch form values for validation
   const type = form.watch("type");
+  const startDate = form.watch("startDate");
+  const endDate = form.watch("endDate");
 
   const addCampMutation = useMutation({
     mutationFn: async (data: z.infer<typeof insertCampSchema>) => {
+      // Create schedules based on selected days
+      const schedules = selectedDays.map(day => ({
+        dayOfWeek: day,
+        startTime: scheduleTime.startTime,
+        endTime: scheduleTime.endTime
+      }));
+
       const res = await apiRequest("POST", "/api/camps", {
         ...data,
-        startDate: new Date(data.startDate + "T12:00:00"),
-        endDate: new Date(data.endDate + "T12:00:00"),
-        price: Math.round(data.price * 100),
         sports: selectedSports,
         schedules: schedules,
       });
+
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to create camp");
@@ -1086,7 +1091,7 @@ function AddCampDialog() {
       });
       form.reset();
       setSelectedSports([]);
-      setSchedules([]);
+      setSelectedDays([]);
       setIsOpen(false);
     },
     onError: (error: Error) => {
@@ -1140,6 +1145,24 @@ function AddCampDialog() {
                         placeholder="Describe the camp activities, goals, and what participants can expect..."
                         className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                       />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Location */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Location</h3>
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Address</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="123 Sports Complex Ave" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -1298,105 +1321,8 @@ function AddCampDialog() {
             {/* Schedule */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Schedule</h3>
-              <div className="grid gap-4">
-                {schedules.map((schedule, index) => (
-                  <div key={index} className="flex gap-2 items-start">
-                    <div className="flex-1">
-                      <select
-                        value={schedule.dayOfWeek}
-                        onChange={(e) => {
-                          const newSchedules = [...schedules];
-                          newSchedules[index] = {
-                            ...newSchedules[index],
-                            dayOfWeek: parseInt(e.target.value),
-                          };
-                          setSchedules(newSchedules);
-                          form.setValue("schedules", newSchedules);
-                        }}
-                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                      >
-                        {DAYS_OF_WEEK.map((day, i) => (
-                          <option key={day} value={i}>
-                            {day}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="flex-1">
-                      <Input
-                        type="time"
-                        value={schedule.startTime}
-                        onChange={(e) => {
-                          const newSchedules = [...schedules];
-                          newSchedules[index] = {
-                            ...newSchedules[index],
-                            startTime: e.target.value,
-                          };
-                          setSchedules(newSchedules);
-                          form.setValue("schedules", newSchedules);
-                        }}
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <Input
-                        type="time"
-                        value={schedule.endTime}
-                        onChange={(e) => {
-                          const newSchedules = [...schedules];
-                          newSchedules[index] = {
-                            ...newSchedules[index],
-                            endTime: e.target.value,
-                          };
-                          setSchedules(newSchedules);
-                          form.setValue("schedules", newSchedules);
-                        }}
-                      />
-                    </div>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => {
-                        const newSchedules = schedules.filter((_, i) => i !== index);
-                        setSchedules(newSchedules);
-                        form.setValue("schedules", newSchedules);
-                      }}
-                    >
-                      ×
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setSchedules([
-                      ...schedules,
-                      { dayOfWeek: 1, startTime: "09:00", endTime: "17:00" },
-                    ]);
-                  }}
-                >
-                  Add Schedule
-                </Button>
-              </div>
-            </div>
 
-            {/* Location and Dates */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Location and Date Range</h3>
-              <FormField
-                control={form.control}
-                name="location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Location</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="123 Sports Complex Ave" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Date Range */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -1424,12 +1350,67 @@ function AddCampDialog() {
                         <Input
                           type="date"
                           {...field}
+                          min={startDate}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+              </div>
+
+              {/* Days Selection */}
+              <div className="space-y-2">
+                <FormLabel>Camp Days</FormLabel>
+                <div className="flex flex-wrap gap-2">
+                  {DAYS_OF_WEEK.map((day, index) => (
+                    <Button
+                      key={day}
+                      type="button"
+                      variant={selectedDays.includes(index) ? "default" : "outline"}
+                      onClick={() => {
+                        setSelectedDays(
+                          selectedDays.includes(index)
+                            ? selectedDays.filter(d => d !== index)
+                            : [...selectedDays, index].sort()
+                        );
+                      }}
+                      className="flex-1 min-w-[100px]"
+                    >
+                      {day}
+                    </Button>
+                  ))}
+                </div>
+                {selectedDays.length === 0 && (
+                  <p className="text-sm text-destructive">Select at least one day</p>
+                )}
+              </div>
+
+              {/* Time Selection */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <FormLabel>Start Time</FormLabel>
+                  <Input
+                    type="time"
+                    value={scheduleTime.startTime}
+                    onChange={(e) => setScheduleTime(prev => ({
+                      ...prev,
+                      startTime: e.target.value
+                    }))}
+                  />
+                </div>
+                <div>
+                  <FormLabel>End Time</FormLabel>
+                  <Input
+                    type="time"
+                    value={scheduleTime.endTime}
+                    onChange={(e) => setScheduleTime(prev => ({
+                      ...prev,
+                      endTime: e.target.value
+                    }))}
+                    min={scheduleTime.startTime}
+                  />
+                </div>
               </div>
             </div>
 
@@ -1508,7 +1489,7 @@ function AddCampDialog() {
             <Button
               type="submit"
               className="w-full"
-              disabled={addCampMutation.isPending}
+              disabled={addCampMutation.isPending || selectedDays.length === 0 || selectedSports.length === 0}
             >
               {addCampMutation.isPending && (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
