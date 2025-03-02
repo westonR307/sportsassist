@@ -21,9 +21,9 @@ import {
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { 
-  insertCampSchema, 
-  insertInvitationSchema, 
+import {
+  insertCampSchema,
+  insertInvitationSchema,
   type InsertInvitation,
   type Camp,
   type Invitation,
@@ -118,28 +118,32 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         // Format the data
         const formattedData = {
           ...data,
-          startDate: new Date(data.startDate),
-          endDate: new Date(data.endDate),
-          registrationStartDate: new Date(data.registrationStartDate),
-          registrationEndDate: new Date(data.registrationEndDate),
-          sports: selectedSports,
-          schedules: Object.entries(daySchedules).map(([day, times]) => ({
+          startDate: new Date(data.startDate).toISOString(),
+          endDate: new Date(data.endDate).toISOString(),
+          registrationStartDate: new Date(data.registrationStartDate).toISOString(),
+          registrationEndDate: new Date(data.registrationEndDate).toISOString(),
+          price: Number(data.price) * 100, // Convert to cents
+          sports: selectedSports.map(sport => ({
+            sportId: sport.sportId,
+            skillLevel: sport.skillLevel,
+          })),
+          schedules: selectedDays.map(day => ({
             dayOfWeek: DAYS_OF_WEEK.indexOf(day),
-            startTime: times.startTime,
-            endTime: times.endTime,
-            repeatType,
-            repeatDuration: repeatType !== "none" ? repeatDuration : null,
+            startTime: daySchedules[day].startTime,
+            endTime: daySchedules[day].endTime,
           })),
         };
 
-        console.log("Submitting camp data:", formattedData); // Debug log
+        console.log("Submitting camp data:", formattedData);
 
         const res = await apiRequest("POST", "/api/camps", formattedData);
+        const responseData = await res.json();
+
         if (!res.ok) {
-          const error = await res.json();
-          throw new Error(error.message || "Failed to create camp");
+          throw new Error(responseData.message || "Failed to create camp");
         }
-        return res.json();
+
+        return responseData;
       } catch (error) {
         console.error("Error creating camp:", error);
         throw error;
