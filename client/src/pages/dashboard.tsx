@@ -2,7 +2,7 @@ import React from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,11 +21,125 @@ import {
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertInvitationSchema } from "@shared/schema";
-import { useMutation } from "@tanstack/react-query";
+import { insertInvitationSchema, insertCampSchema } from "@shared/schema";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import * as z from 'zod';
+
+function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const { toast } = useToast();
+  const { user } = useAuth();
+
+  const form = useForm({
+    resolver: zodResolver(insertCampSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      location: "",
+      startDate: new Date(),
+      endDate: new Date(),
+      price: 0,
+      capacity: 10,
+      waitlistEnabled: true,
+      type: "group",
+      visibility: "public",
+      organizationId: user?.organizationId || 0,
+      sports: [],
+      schedules: [],
+    },
+  });
+
+  const createCampMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof insertCampSchema>) => {
+      const res = await apiRequest("POST", "/api/camps", data);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to create camp");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
+      toast({
+        title: "Success",
+        description: "Camp created successfully",
+      });
+      form.reset();
+      onOpenChange(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Create New Camp</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit((data) => createCampMutation.mutate(data))} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Camp Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Location</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={createCampMutation.isPending}
+            >
+              {createCampMutation.isPending && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
+              Create Camp
+            </Button>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function InviteMemberDialog() {
   const [isOpen, setIsOpen] = React.useState(false);
@@ -120,6 +234,9 @@ function InviteMemberDialog() {
               className="w-full"
               disabled={inviteMutation.isPending}
             >
+              {inviteMutation.isPending && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
               Send Invitation
             </Button>
           </form>
@@ -131,7 +248,7 @@ function InviteMemberDialog() {
 
 function Dashboard() {
   try {
-    const { user, logoutMutation } = useAuth();
+    const { user } = useAuth();
 
     if (!user) {
       return (
@@ -156,9 +273,6 @@ function Dashboard() {
                 <CardHeader>
                   <div className="flex justify-between items-center">
                     <CardTitle>Dashboard</CardTitle>
-                    <Button variant="outline" onClick={() => logoutMutation.mutate()}>
-                      Logout
-                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -190,6 +304,11 @@ function Dashboard() {
 function CampCreatorDashboard() {
   const { user, logoutMutation } = useAuth();
   const [showAddCampDialog, setShowAddCampDialog] = React.useState(false);
+
+  const { data: invitations } = useQuery({
+    queryKey: [`/api/organizations/${user?.organizationId}/invitations`],
+    enabled: !!user?.organizationId,
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -238,13 +357,31 @@ function CampCreatorDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-500">
-                Manage your organization's team members and settings.
-              </p>
+              <div className="space-y-4">
+                <p className="text-gray-500">
+                  Manage your organization's team members and settings.
+                </p>
+                {invitations && invitations.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold mb-2">Pending Invitations</h3>
+                    <div className="space-y-2">
+                      {invitations.map((invitation: any) => (
+                        <div key={invitation.id} className="text-sm">
+                          {invitation.email} - {invitation.role}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
       </main>
+
+      {showAddCampDialog && (
+        <AddCampDialog open={showAddCampDialog} onOpenChange={setShowAddCampDialog} />
+      )}
     </div>
   );
 }
