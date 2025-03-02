@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, time } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -7,6 +7,8 @@ export type Role = "admin" | "manager" | "coach" | "volunteer" | "parent";
 export type SportLevel = "beginner" | "intermediate" | "advanced";
 export type Gender = "male" | "female" | "other" | "prefer_not_to_say";
 export type ContactMethod = "email" | "sms" | "app";
+export type CampType = "one_on_one" | "group" | "team" | "virtual";
+export type CampVisibility = "public" | "private";
 
 export const organizations = pgTable("organizations", {
   id: serial("id").primaryKey(),
@@ -80,6 +82,8 @@ export const camps = pgTable("camps", {
   capacity: integer("capacity").notNull(),
   organizationId: integer("organization_id").references(() => organizations.id).notNull(),
   waitlistEnabled: boolean("waitlist_enabled").notNull().default(true),
+  type: text("type").$type<CampType>().notNull(),
+  visibility: text("visibility").$type<CampVisibility>().notNull().default("public"),
 });
 
 export const campStaff = pgTable("camp_staff", {
@@ -99,7 +103,23 @@ export const registrations = pgTable("registrations", {
   registeredAt: timestamp("registered_at").notNull().defaultNow(),
 });
 
-// Schema for inserting new records
+export const campSchedules = pgTable("camp_schedules", {
+  id: serial("id").primaryKey(),
+  campId: integer("camp_id").references(() => camps.id).notNull(),
+  dayOfWeek: integer("day_of_week").notNull(), 
+  startTime: time("start_time").notNull(),
+  endTime: time("end_time").notNull(),
+});
+
+export const campSports = pgTable("camp_sports", {
+  id: serial("id").primaryKey(),
+  campId: integer("camp_id").references(() => camps.id).notNull(),
+  sportId: integer("sport_id").references(() => sports.id),
+  customSport: text("custom_sport"), 
+  skillLevel: text("skill_level").$type<SportLevel>().notNull(),
+});
+
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -139,7 +159,19 @@ export const insertChildSchema = createInsertSchema(children)
     medications: z.array(z.string()).optional().default([]),
   });
 
-export const insertCampSchema = createInsertSchema(camps);
+export const insertCampSchema = createInsertSchema(camps).extend({
+  schedules: z.array(z.object({
+    dayOfWeek: z.number().min(0).max(6),
+    startTime: z.string(),
+    endTime: z.string(),
+  })),
+  sports: z.array(z.object({
+    sportId: z.number().optional(),
+    customSport: z.string().optional(),
+    skillLevel: z.enum(["beginner", "intermediate", "advanced"]),
+  })).min(1, "At least one sport must be selected"),
+});
+
 export const insertRegistrationSchema = createInsertSchema(registrations);
 export const insertOrganizationSchema = createInsertSchema(organizations).omit({
   id: true,
@@ -147,7 +179,6 @@ export const insertOrganizationSchema = createInsertSchema(organizations).omit({
   createdAt: true,
 });
 
-// Types for the application
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Child = typeof children.$inferSelect;
@@ -160,3 +191,22 @@ export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
 export type Sport = typeof sports.$inferSelect;
 export type ChildSport = typeof childSports.$inferSelect;
 export type InsertChildSport = z.infer<typeof insertChildSchema>["sportsInterests"][number];
+export type CampSchedule = typeof campSchedules.$inferSelect;
+export type CampSport = typeof campSports.$inferSelect;
+
+export const predefinedSports = [
+  "Archery", "Badminton", "Baseball", "Basketball", "Biathlon", 
+  "Billiards", "Bobsleigh", "Bodybuilding", "Bowling", "Boxing",
+  "Canoeing", "Cheerleading", "Chess", "Climbing", "Cricket",
+  "CrossFit", "Curling", "Cycling", "Darts", "Equestrian",
+  "Fencing", "Field Hockey", "Figure Skating", "Fishing", "Football (American)",
+  "Frisbee (Ultimate)", "Golf", "Gymnastics", "Handball", "Hockey (Ice)",
+  "Hockey (Roller)", "Judo", "Karate", "Kayaking", "Kickboxing",
+  "Lacrosse", "Mixed Martial Arts (MMA)", "Motocross", "Netball", "Paddleboarding",
+  "Paintball", "Parkour", "Pickleball", "Powerlifting", "Racquetball",
+  "Rock Climbing", "Rowing", "Rugby", "Running", "Sailing",
+  "Skateboarding", "Skiing", "Snowboarding", "Soccer", "Softball",
+  "Speed Skating", "Squash", "Surfing", "Swimming", "Table Tennis",
+  "Taekwondo", "Tennis", "Track and Field", "Triathlon", "Volleyball",
+  "Water Polo", "Weightlifting", "Wrestling", "Yoga", "Zumba"
+] as const;

@@ -1,9 +1,19 @@
+const DAYS_OF_WEEK = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+] as const;
+
 import React from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Camp, Child, insertChildSchema, Invitation, insertInvitationSchema, InsertInvitation, Sport, SportLevel, Gender, ContactMethod, insertCampSchema } from "@shared/schema";
+import { Camp, Child, insertChildSchema, Invitation, insertInvitationSchema, InsertInvitation, Sport, SportLevel, Gender, ContactMethod, insertCampSchema, CampType, CampVisibility } from "@shared/schema";
 import { Loader2, Plus } from "lucide-react";
 import {
   Dialog,
@@ -1015,6 +1025,20 @@ function AddCampDialog() {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = React.useState(false);
   const { user } = useAuth();
+  const [selectedSports, setSelectedSports] = React.useState<Array<{
+    sportId?: number;
+    customSport?: string;
+    skillLevel: SportLevel;
+  }>>([]);
+  const [schedules, setSchedules] = React.useState<Array<{
+    dayOfWeek: number;
+    startTime: string;
+    endTime: string;
+  }>>([]);
+
+  const { data: sports } = useQuery<Sport[]>({
+    queryKey: ["/api/sports"],
+  });
 
   const form = useForm({
     resolver: zodResolver(insertCampSchema),
@@ -1027,17 +1051,26 @@ function AddCampDialog() {
       price: 0,
       capacity: 20,
       waitlistEnabled: true,
+      type: "group" as CampType,
+      visibility: "public" as CampVisibility,
       organizationId: user?.organizationId!,
+      sports: [],
+      schedules: [],
     },
   });
+
+  // Watch form values for validation
+  const type = form.watch("type");
 
   const addCampMutation = useMutation({
     mutationFn: async (data: z.infer<typeof insertCampSchema>) => {
       const res = await apiRequest("POST", "/api/camps", {
         ...data,
-        startDate: new Date(data.startDate + "T12:00:00"), // Set to noon to avoid timezone issues
+        startDate: new Date(data.startDate + "T12:00:00"),
         endDate: new Date(data.endDate + "T12:00:00"),
-        price: Math.round(data.price * 100), // Convert to cents and ensure integer
+        price: Math.round(data.price * 100),
+        sports: selectedSports,
+        schedules: schedules,
       });
       if (!res.ok) {
         const error = await res.json();
@@ -1052,6 +1085,8 @@ function AddCampDialog() {
         description: "Camp created successfully",
       });
       form.reset();
+      setSelectedSports([]);
+      setSchedules([]);
       setIsOpen(false);
     },
     onError: (error: Error) => {
@@ -1112,9 +1147,243 @@ function AddCampDialog() {
               />
             </div>
 
+            {/* Camp Type and Visibility */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Camp Type and Visibility</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Camp Type</FormLabel>
+                      <FormControl>
+                        <select
+                          {...field}
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                        >
+                          <option value="one_on_one">1:1 Training</option>
+                          <option value="group">Group</option>
+                          <option value="team">Team</option>
+                          <option value="virtual">Virtual</option>
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="visibility"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Visibility</FormLabel>
+                      <FormControl>
+                        <select
+                          {...field}
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                        >
+                          <option value="public">Public (Listed in Marketplace)</option>
+                          <option value="private">Private (Link Only)</option>
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Sports Selection */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Sports</h3>
+              <div className="grid gap-4">
+                {selectedSports.map((sport, index) => (
+                  <div key={index} className="flex gap-2 items-start">
+                    <div className="flex-1">
+                      <select
+                        value={sport.sportId?.toString() || "other"}
+                        onChange={(e) => {
+                          const newSports = [...selectedSports];
+                          if (e.target.value === "other") {
+                            newSports[index] = {
+                              customSport: "",
+                              skillLevel: sport.skillLevel,
+                            };
+                          } else {
+                            newSports[index] = {
+                              sportId: parseInt(e.target.value),
+                              skillLevel: sport.skillLevel,
+                            };
+                          }
+                          setSelectedSports(newSports);
+                          form.setValue("sports", newSports);
+                        }}
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                      >
+                        <option value="">Select a sport</option>
+                        {sports?.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name}
+                          </option>
+                        ))}
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    {sport.sportId === undefined && (
+                      <div className="flex-1">
+                        <Input
+                          placeholder="Enter sport name"
+                          value={sport.customSport || ""}
+                          onChange={(e) => {
+                            const newSports = [...selectedSports];
+                            newSports[index] = {
+                              ...newSports[index],
+                              customSport: e.target.value,
+                            };
+                            setSelectedSports(newSports);
+                            form.setValue("sports", newSports);
+                          }}
+                        />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <select
+                        value={sport.skillLevel}
+                        onChange={(e) => {
+                          const newSports = [...selectedSports];
+                          newSports[index] = {
+                            ...newSports[index],
+                            skillLevel: e.target.value as SportLevel,
+                          };
+                          setSelectedSports(newSports);
+                          form.setValue("sports", newSports);
+                        }}
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                      >
+                        <option value="beginner">Beginner</option>
+                        <option value="intermediate">Intermediate</option>
+                        <option value="advanced">Advanced</option>
+                      </select>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => {
+                        const newSports = selectedSports.filter((_, i) => i !== index);
+                        setSelectedSports(newSports);
+                        form.setValue("sports", newSports);
+                      }}
+                    >
+                      ×
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedSports([
+                      ...selectedSports,
+                      { sportId: undefined, skillLevel: "beginner" },
+                    ]);
+                  }}
+                >
+                  Add Sport
+                </Button>
+              </div>
+            </div>
+
+            {/* Schedule */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Schedule</h3>
+              <div className="grid gap-4">
+                {schedules.map((schedule, index) => (
+                  <div key={index} className="flex gap-2 items-start">
+                    <div className="flex-1">
+                      <select
+                        value={schedule.dayOfWeek}
+                        onChange={(e) => {
+                          const newSchedules = [...schedules];
+                          newSchedules[index] = {
+                            ...newSchedules[index],
+                            dayOfWeek: parseInt(e.target.value),
+                          };
+                          setSchedules(newSchedules);
+                          form.setValue("schedules", newSchedules);
+                        }}
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                      >
+                        {DAYS_OF_WEEK.map((day, i) => (
+                          <option key={day} value={i}>
+                            {day}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex-1">
+                      <Input
+                        type="time"
+                        value={schedule.startTime}
+                        onChange={(e) => {
+                          const newSchedules = [...schedules];
+                          newSchedules[index] = {
+                            ...newSchedules[index],
+                            startTime: e.target.value,
+                          };
+                          setSchedules(newSchedules);
+                          form.setValue("schedules", newSchedules);
+                        }}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <Input
+                        type="time"
+                        value={schedule.endTime}
+                        onChange={(e) => {
+                          const newSchedules = [...schedules];
+                          newSchedules[index] = {
+                            ...newSchedules[index],
+                            endTime: e.target.value,
+                          };
+                          setSchedules(newSchedules);
+                          form.setValue("schedules", newSchedules);
+                        }}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => {
+                        const newSchedules = schedules.filter((_, i) => i !== index);
+                        setSchedules(newSchedules);
+                        form.setValue("schedules", newSchedules);
+                      }}
+                    >
+                      ×
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setSchedules([
+                      ...schedules,
+                      { dayOfWeek: 1, startTime: "09:00", endTime: "17:00" },
+                    ]);
+                  }}
+                >
+                  Add Schedule
+                </Button>
+              </div>
+            </div>
+
             {/* Location and Dates */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Location and Schedule</h3>
+              <h3 className="text-lg font-semibold">Location and Date Range</h3>
               <FormField
                 control={form.control}
                 name="location"
@@ -1200,7 +1469,9 @@ function AddCampDialog() {
                           min="1"
                           {...field}
                           onChange={(e) => field.onChange(parseInt(e.target.value))}
-                          placeholder="20"
+                          placeholder={type === "one_on_one" ? "1" : "20"}
+                          disabled={type === "one_on_one"}
+                          value={type === "one_on_one" ? 1 : field.value}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1224,6 +1495,7 @@ function AddCampDialog() {
                         checked={field.value}
                         onChange={(e) => field.onChange(e.target.checked)}
                         className="h-4 w-4"
+                        disabled={type === "one_on_one"}
                       />
                     </FormControl>
                     <FormLabel>Enable waitlist when camp is full</FormLabel>
