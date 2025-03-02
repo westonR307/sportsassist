@@ -27,9 +27,25 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import * as z from 'zod';
 
+const DAYS_OF_WEEK = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+] as const;
+
 function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { toast } = useToast();
   const { user } = useAuth();
+  const [selectedDays, setSelectedDays] = React.useState<string[]>([]);
+  const [selectedSports, setSelectedSports] = React.useState<Array<{ sportId: number, skillLevel: string }>>([]);
+
+  const { data: sports } = useQuery({
+    queryKey: ["/api/sports"],
+  });
 
   const form = useForm({
     resolver: zodResolver(insertCampSchema),
@@ -56,6 +72,12 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         ...data,
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
+        sports: selectedSports,
+        schedules: selectedDays.map(day => ({
+          dayOfWeek: day,
+          startTime: "09:00",
+          endTime: "17:00",
+        })),
       };
       const res = await apiRequest("POST", "/api/camps", formattedData);
       if (!res.ok) {
@@ -71,6 +93,8 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         description: "Camp created successfully",
       });
       form.reset();
+      setSelectedDays([]);
+      setSelectedSports([]);
       onOpenChange(false);
     },
     onError: (error: Error) => {
@@ -214,6 +238,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                 )}
               />
             </div>
+
             <FormField
               control={form.control}
               name="description"
@@ -230,6 +255,73 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                 </FormItem>
               )}
             />
+
+            {/* Schedule Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Schedule</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {DAYS_OF_WEEK.map((day) => (
+                  <div key={day} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedDays.includes(day)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedDays([...selectedDays, day]);
+                        } else {
+                          setSelectedDays(selectedDays.filter(d => d !== day));
+                        }
+                      }}
+                      className="h-4 w-4"
+                    />
+                    <span>{day}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Sports Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Sports</h3>
+              {sports?.map((sport: any) => (
+                <div key={sport.id} className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedSports.some(s => s.sportId === sport.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedSports([...selectedSports, { sportId: sport.id, skillLevel: "beginner" }]);
+                        } else {
+                          setSelectedSports(selectedSports.filter(s => s.sportId !== sport.id));
+                        }
+                      }}
+                      className="h-4 w-4"
+                    />
+                    <span>{sport.name}</span>
+                  </div>
+                  {selectedSports.some(s => s.sportId === sport.id) && (
+                    <select
+                      value={selectedSports.find(s => s.sportId === sport.id)?.skillLevel}
+                      onChange={(e) => {
+                        const newSports = selectedSports.map(s =>
+                          s.sportId === sport.id
+                            ? { ...s, skillLevel: e.target.value }
+                            : s
+                        );
+                        setSelectedSports(newSports);
+                      }}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                    >
+                      <option value="beginner">Beginner</option>
+                      <option value="intermediate">Intermediate</option>
+                      <option value="advanced">Advanced</option>
+                    </select>
+                  )}
+                </div>
+              ))}
+            </div>
+
             <FormField
               control={form.control}
               name="waitlistEnabled"
@@ -248,6 +340,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                 </FormItem>
               )}
             />
+
             <Button 
               type="submit" 
               className="w-full"
