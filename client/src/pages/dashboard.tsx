@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertCampSchema, insertInvitationSchema } from "@shared/schema";
+import { insertCampSchema } from "@shared/schema";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -47,7 +47,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   const { toast } = useToast();
   const { user } = useAuth();
   const [selectedDays, setSelectedDays] = React.useState<string[]>([]);
-  const [selectedSports, setSelectedSports] = React.useState<Array<{ sportId: number, skillLevel: string }>>([]);
+  const [selectedSports, setSelectedSports] = React.useState<Array<{ sportId: number; skillLevel: string }>>([]);
   const [repeatType, setRepeatType] = React.useState("none");
   const [repeatDuration, setRepeatDuration] = React.useState(1);
   const [daySchedules, setDaySchedules] = React.useState<Record<string, { startTime: string; endTime: string }>>({});
@@ -71,8 +71,8 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       startDate: new Date().toISOString().split('T')[0],
       endDate: new Date().toISOString().split('T')[0],
       waitlistEnabled: true,
-      type: "group",
-      visibility: "public",
+      type: "group" as const,
+      visibility: "public" as const,
       organizationId: user?.organizationId || 0,
       sports: [],
       schedules: [],
@@ -85,10 +85,10 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       setSelectedDays([...selectedDays, day]);
       setDaySchedules({
         ...daySchedules,
-        [day]: { startTime: "09:00", endTime: "17:00" }
+        [day]: { startTime: "09:00", endTime: "17:00" },
       });
     } else {
-      setSelectedDays(selectedDays.filter(d => d !== day));
+      setSelectedDays(selectedDays.filter((d) => d !== day));
       const newSchedules = { ...daySchedules };
       delete newSchedules[day];
       setDaySchedules(newSchedules);
@@ -96,13 +96,13 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   };
 
   // Update time for a specific day
-  const updateDaySchedule = (day: string, field: 'startTime' | 'endTime', value: string) => {
+  const updateDaySchedule = (day: string, field: "startTime" | "endTime", value: string) => {
     setDaySchedules({
       ...daySchedules,
       [day]: {
         ...daySchedules[day],
-        [field]: value
-      }
+        [field]: value,
+      },
     });
   };
 
@@ -118,7 +118,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
           registrationEndDate: new Date(data.registrationEndDate),
           sports: selectedSports,
           schedules: Object.entries(daySchedules).map(([day, times]) => ({
-            dayOfWeek: day,
+            dayOfWeek: DAYS_OF_WEEK.indexOf(day),
             startTime: times.startTime,
             endTime: times.endTime,
             repeatType,
@@ -126,7 +126,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
           })),
         };
 
-        console.log('Submitting camp data:', formattedData); // Debug log
+        console.log("Submitting camp data:", formattedData); // Debug log
 
         const res = await apiRequest("POST", "/api/camps", formattedData);
         if (!res.ok) {
@@ -135,7 +135,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         }
         return res.json();
       } catch (error) {
-        console.error('Error creating camp:', error);
+        console.error("Error creating camp:", error);
         throw error;
       }
     },
@@ -152,7 +152,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      console.error('Mutation error:', error);
+      console.error("Mutation error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to create camp",
@@ -238,7 +238,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                     <FormItem>
                       <FormLabel>Minimum Age</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} />
+                        <Input type="number" {...field} onChange={(e) => field.onChange(parseInt(e.target.value))} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -251,7 +251,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                     <FormItem>
                       <FormLabel>Maximum Age</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} />
+                        <Input type="number" {...field} onChange={(e) => field.onChange(parseInt(e.target.value))} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -264,7 +264,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                     <FormItem>
                       <FormLabel>Capacity</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} />
+                        <Input type="number" {...field} onChange={(e) => field.onChange(parseInt(e.target.value))} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -348,7 +348,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                   onChange={(e) => setRepeatType(e.target.value)}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                 >
-                  {REPEAT_OPTIONS.map(option => (
+                  {REPEAT_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
@@ -392,7 +392,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                             <Input
                               type="time"
                               value={daySchedules[day]?.startTime || "09:00"}
-                              onChange={(e) => updateDaySchedule(day, 'startTime', e.target.value)}
+                              onChange={(e) => updateDaySchedule(day, "startTime", e.target.value)}
                               className="h-8"
                             />
                           </div>
@@ -401,7 +401,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                             <Input
                               type="time"
                               value={daySchedules[day]?.endTime || "17:00"}
-                              onChange={(e) => updateDaySchedule(day, 'endTime', e.target.value)}
+                              onChange={(e) => updateDaySchedule(day, "endTime", e.target.value)}
                               className="h-8"
                             />
                           </div>
@@ -421,28 +421,26 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
-                      checked={selectedSports.some(s => s.sportId === sport.id)}
+                      checked={selectedSports.some((s) => s.sportId === sport.id)}
                       onChange={(e) => {
                         if (e.target.checked) {
                           setSelectedSports([...selectedSports, { sportId: sport.id, skillLevel: "beginner" }]);
                         } else {
-                          setSelectedSports(selectedSports.filter(s => s.sportId !== sport.id));
+                          setSelectedSports(selectedSports.filter((s) => s.sportId !== sport.id));
                         }
                       }}
                       className="h-4 w-4"
                     />
                     <span className="font-medium">{sport.name}</span>
                   </div>
-                  {selectedSports.some(s => s.sportId === sport.id) && (
+                  {selectedSports.some((s) => s.sportId === sport.id) && (
                     <div>
                       <FormLabel className="text-xs">Skill Level</FormLabel>
                       <select
-                        value={selectedSports.find(s => s.sportId === sport.id)?.skillLevel}
+                        value={selectedSports.find((s) => s.sportId === sport.id)?.skillLevel}
                         onChange={(e) => {
-                          const newSports = selectedSports.map(s =>
-                            s.sportId === sport.id
-                              ? { ...s, skillLevel: e.target.value }
-                              : s
+                          const newSports = selectedSports.map((s) =>
+                            s.sportId === sport.id ? { ...s, skillLevel: e.target.value } : s
                           );
                           setSelectedSports(newSports);
                         }}
@@ -470,7 +468,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                       <Input
                         type="number"
                         {...field}
-                        onChange={e => field.onChange(parseInt(e.target.value))}
+                        onChange={(e) => field.onChange(parseInt(e.target.value))}
                         min={0}
                         step={1}
                       />
@@ -519,14 +517,8 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
               )}
             />
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={createCampMutation.isPending}
-            >
-              {createCampMutation.isPending && (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              )}
+            <Button type="submit" className="w-full" disabled={createCampMutation.isPending}>
+              {createCampMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Create Camp
             </Button>
           </form>
@@ -581,9 +573,7 @@ function InviteMemberDialog() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">
-          Manage Team
-        </Button>
+        <Button variant="outline">Manage Team</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -624,14 +614,8 @@ function InviteMemberDialog() {
                 </FormItem>
               )}
             />
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={inviteMutation.isPending}
-            >
-              {inviteMutation.isPending && (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              )}
+            <Button type="submit" className="w-full" disabled={inviteMutation.isPending}>
+              {inviteMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Send Invitation
             </Button>
           </form>
@@ -751,9 +735,7 @@ function CampCreatorDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <p className="text-gray-500">
-                  Manage your organization's team members and settings.
-                </p>
+                <p className="text-gray-500">Manage your organization's team members and settings.</p>
                 {invitations && invitations.length > 0 && (
                   <div>
                     <h3 className="text-sm font-semibold mb-2">Pending Invitations</h3>
@@ -772,9 +754,7 @@ function CampCreatorDashboard() {
         </div>
       </main>
 
-      {showAddCampDialog && (
-        <AddCampDialog open={showAddCampDialog} onOpenChange={setShowAddCampDialog} />
-      )}
+      {showAddCampDialog && <AddCampDialog open={showAddCampDialog} onOpenChange={setShowAddCampDialog} />}
     </div>
   );
 }
