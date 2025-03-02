@@ -33,7 +33,16 @@ export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
     console.log("Getting user by ID:", id);
     const [user] = await db.select().from(users).where(eq(users.id, id));
-    console.log("Found user:", user);
+    if (user) {
+      console.log("Found user:", {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        organizationId: user.organizationId
+      });
+    } else {
+      console.log("No user found with ID:", id);
+    }
     return user;
   }
 
@@ -43,7 +52,16 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(users)
       .where(sql`LOWER(${users.username}) = LOWER(${username})`);
-    console.log("Found user:", user);
+    if (user) {
+      console.log("Found user:", {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        organizationId: user.organizationId
+      });
+    } else {
+      console.log("No user found with username:", username);
+    }
     return user;
   }
 

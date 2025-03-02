@@ -240,7 +240,7 @@ export async function registerRoutes(app: Express): Server {
 
   // Camp routes
   app.post("/api/camps", async (req, res) => {
-    if (!["admin", "manager"].includes(req.user?.role || "")) {
+    if (!["admin", "manager", "camp_creator"].includes(req.user?.role || "")) {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
@@ -281,30 +281,15 @@ export async function registerRoutes(app: Express): Server {
   // Update the login route to handle role migration
   app.post("/api/login", passport.authenticate("local"), async (req, res, next) => {
     try {
-      console.log("Login attempt - Current user role:", req.user?.role);
+      console.log("Login attempt successful - User data:", {
+        id: req.user?.id,
+        username: req.user?.username,
+        role: req.user?.role,
+        organizationId: req.user?.organizationId
+      });
 
-      // Check if user has legacy admin role and update it
-      if (req.user && req.user.role === "admin") {
-        console.log("Migrating admin role to camp_creator");
-        try {
-          const updatedUser = await storage.updateUserRole(req.user.id, "camp_creator");
-          console.log("Role migration successful - New role:", updatedUser.role);
-
-          // Update the session with the new user data
-          req.login(updatedUser, (err) => {
-            if (err) {
-              console.error("Session update error:", err);
-              return next(err);
-            }
-            return res.status(200).json(updatedUser);
-          });
-        } catch (error) {
-          console.error("Role migration error:", error);
-          return next(error);
-        }
-      } else {
-        res.status(200).json(req.user);
-      }
+      // Even if user has admin role, we'll let them through now since we've migrated the role
+      res.json(req.user);
     } catch (error) {
       console.error("Login error:", error);
       return next(error);
@@ -312,14 +297,26 @@ export async function registerRoutes(app: Express): Server {
   });
 
   app.post("/api/logout", (req, res, next) => {
-    req.logout((err) => {
-      if (err) return next(err);
+    console.log("Logout attempt - Current user:", req.user?.username);
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Session destruction error:", err);
+        return next(err);
+      }
+      console.log("Logout successful - Session destroyed");
+      res.clearCookie('connect.sid');
       res.sendStatus(200);
     });
   });
 
   app.get("/api/user", (req, res) => {
+    console.log("Get user request - Auth status:", req.isAuthenticated());
     if (!req.isAuthenticated()) return res.sendStatus(401);
+    console.log("Current user data:", {
+      id: req.user?.id,
+      username: req.user?.username,
+      role: req.user?.role
+    });
     res.json(req.user);
   });
 
