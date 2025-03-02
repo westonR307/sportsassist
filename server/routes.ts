@@ -244,14 +244,28 @@ export async function registerRoutes(app: Express): Server {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
-    const parsed = insertCampSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json(parsed.error);
+    console.log("Received camp creation request:", req.body);
 
-    const camp = await storage.createCamp({
-      ...parsed.data,
-      organizationId: req.user.organizationId!,
-    });
-    res.status(201).json(camp);
+    const parsed = insertCampSchema.safeParse(req.body);
+    if (!parsed.success) {
+      console.error("Validation error:", parsed.error);
+      return res.status(400).json({ 
+        message: "Invalid data",
+        errors: parsed.error.flatten() 
+      });
+    }
+
+    try {
+      const camp = await storage.createCamp({
+        ...parsed.data,
+        organizationId: req.user.organizationId!,
+      });
+      console.log("Camp created successfully:", camp);
+      res.status(201).json(camp);
+    } catch (error) {
+      console.error("Error creating camp:", error);
+      res.status(500).json({ message: "Failed to create camp" });
+    }
   });
 
   app.get("/api/camps", async (req, res) => {

@@ -54,8 +54,6 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   const { user } = useAuth();
   const [selectedDays, setSelectedDays] = React.useState<string[]>([]);
   const [selectedSports, setSelectedSports] = React.useState<Array<{ sportId: number; skillLevel: string }>>([]);
-  const [repeatType, setRepeatType] = React.useState("none");
-  const [repeatDuration, setRepeatDuration] = React.useState(1);
   const [daySchedules, setDaySchedules] = React.useState<Record<string, { startTime: string; endTime: string }>>({});
 
   const { data: sports } = useQuery({
@@ -107,14 +105,16 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 
   const createCampMutation = useMutation({
     mutationFn: async (data: any) => {
-      console.log("Sending API request with data:", data);
+      console.log("Attempting to create camp with data:", data);
       const res = await apiRequest("POST", "/api/camps", data);
       const responseData = await res.json();
-      console.log("API response:", responseData);
 
       if (!res.ok) {
+        console.error("API error:", responseData);
         throw new Error(responseData.message || "Failed to create camp");
       }
+
+      console.log("Camp created successfully:", responseData);
       return responseData;
     },
     onSuccess: () => {
@@ -130,7 +130,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      console.error("Mutation error:", error);
+      console.error("Camp creation error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to create camp",
@@ -141,6 +141,9 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 
   const onSubmit = async (formData: z.infer<typeof insertCampSchema>) => {
     try {
+      console.log("Form data before submission:", formData);
+
+      // Validation checks
       if (!user?.organizationId) {
         toast({
           title: "Error",
@@ -171,7 +174,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       const campData = {
         name: formData.name,
         description: formData.description,
-        location: formData.location || "",
+        location: formData.location,
         startDate: formData.startDate,
         endDate: formData.endDate,
         price: Number(formData.price) * 100, // Convert to cents
@@ -188,7 +191,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         })),
       };
 
-      console.log("Attempting to create camp with data:", campData);
+      console.log("Submitting camp data:", campData);
       await createCampMutation.mutateAsync(campData);
     } catch (error) {
       console.error("Form submission error:", error);
@@ -379,35 +382,6 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                 />
               </div>
 
-              {/* Repeat Options */}
-              <div className="space-y-2">
-                <FormLabel>Repeat</FormLabel>
-                <select
-                  value={repeatType}
-                  onChange={(e) => setRepeatType(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                >
-                  {REPEAT_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-
-                {repeatType !== "none" && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <span>Repeat for</span>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={repeatDuration}
-                      onChange={(e) => setRepeatDuration(parseInt(e.target.value, 10))}
-                      className="w-20"
-                    />
-                    <span>{repeatType === "weekly" ? "weeks" : "months"}</span>
-                  </div>
-                )}
-              </div>
 
               {/* Weekly Schedule */}
               <div className="space-y-4">
