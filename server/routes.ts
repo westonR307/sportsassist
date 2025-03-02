@@ -279,7 +279,7 @@ export async function registerRoutes(app: Express): Server {
   });
 
   // Update the login route to handle role migration
-  app.post("/api/login", passport.authenticate("local"), async (req, res) => {
+  app.post("/api/login", passport.authenticate("local"), async (req, res, next) => {
     try {
       console.log("Login attempt - Current user role:", req.user?.role);
 
