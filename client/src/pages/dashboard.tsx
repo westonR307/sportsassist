@@ -1035,7 +1035,9 @@ function AddCampDialog() {
     mutationFn: async (data: z.infer<typeof insertCampSchema>) => {
       const res = await apiRequest("POST", "/api/camps", {
         ...data,
-        price: data.price * 100, // Convert to cents
+        startDate: new Date(data.startDate + "T12:00:00"), // Set to noon to avoid timezone issues
+        endDate: new Date(data.endDate + "T12:00:00"),
+        price: Math.round(data.price * 100), // Convert to cents and ensure integer
       });
       if (!res.ok) {
         const error = await res.json();
@@ -1069,13 +1071,15 @@ function AddCampDialog() {
           Create New Camp
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Camp</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit((data) => addCampMutation.mutate(data))} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={form.handleSubmit((data) => addCampMutation.mutate(data))} className="space-y-6">
+            {/* Basic Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Basic Information</h3>
               <FormField
                 control={form.control}
                 name="name"
@@ -1083,7 +1087,7 @@ function AddCampDialog() {
                   <FormItem>
                     <FormLabel>Camp Name</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} placeholder="Summer Sports Camp 2025" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -1091,80 +1095,15 @@ function AddCampDialog() {
               />
               <FormField
                 control={form.control}
-                name="location"
+                name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Location</FormLabel>
+                    <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="startDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Start Date</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="date"
+                      <textarea
                         {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="endDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>End Date</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="date"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Price ($)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="capacity"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Capacity</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="1"
-                        {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value))}
+                        placeholder="Describe the camp activities, goals, and what participants can expect..."
+                        className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                       />
                     </FormControl>
                     <FormMessage />
@@ -1172,40 +1111,128 @@ function AddCampDialog() {
                 )}
               />
             </div>
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <textarea
-                      {...field}
-                      className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="waitlistEnabled"
-              render={({ field }) => (
-                <FormItem className="flex items-center space-x-2">
-                  <FormControl>
-                    <input
-                      type="checkbox"
-                      checked={field.value}
-                      onChange={(e) => field.onChange(e.target.checked)}
-                      className="h-4 w-4"
-                    />
-                  </FormControl>
-                  <FormLabel>Enable waitlist when camp is full</FormLabel>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+
+            {/* Location and Dates */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Location and Schedule</h3>
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="123 Sports Complex Ave" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="startDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Start Date</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="endDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>End Date</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Capacity and Price */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Capacity and Pricing</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Price ($)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          {...field}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                          placeholder="299.99"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="capacity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Capacity</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="1"
+                          {...field}
+                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          placeholder="20"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Additional Options */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Additional Options</h3>
+              <FormField
+                control={form.control}
+                name="waitlistEnabled"
+                render={({ field }) => (
+                  <FormItem className="flex items-center space-x-2">
+                    <FormControl>
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={(e) => field.onChange(e.target.checked)}
+                        className="h-4 w-4"
+                      />
+                    </FormControl>
+                    <FormLabel>Enable waitlist when camp is full</FormLabel>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <Button
               type="submit"
               className="w-full"
