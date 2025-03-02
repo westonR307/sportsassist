@@ -32,6 +32,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import * as z from "zod";
+import { and, inArray } from "drizzle-orm"; // Added import
 
 const DAYS_OF_WEEK = [
   "Sunday",
@@ -55,6 +56,12 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     queryKey: ["/api/sports"],
   });
 
+  // Load organization staff data
+  const { data: organizationStaff } = useQuery({
+    queryKey: [`/api/organizations/${user?.organizationId}/staff`],
+    enabled: !!user?.organizationId,
+  });
+
   const form = useForm<z.infer<typeof insertCampSchema>>({
     resolver: zodResolver(insertCampSchema),
     defaultValues: {
@@ -68,6 +75,8 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       startDate: new Date().toISOString().split("T")[0],
       endDate: new Date().toISOString().split("T")[0],
       waitlistEnabled: true,
+      coachId: undefined,
+      assistantId: undefined,
     },
   });
 
@@ -201,6 +210,8 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
           startTime: daySchedules[day].startTime,
           endTime: daySchedules[day].endTime,
         })),
+        coachId: formData.coachId,
+        assistantId: formData.assistantId,
       };
 
       console.log("Submitting camp data:", campData);
@@ -392,6 +403,61 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                 </div>
               </div>
 
+              {/* Coach and Assistant Selection */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Staff Assignment</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="coachId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Coach</FormLabel>
+                        <FormControl>
+                          <select
+                            {...field}
+                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                          >
+                            <option value="">Select a coach</option>
+                            {organizationStaff?.map((staff) => (
+                              <option key={staff.id} value={staff.id}>
+                                {staff.username} ({staff.role})
+                              </option>
+                            ))}
+                          </select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="assistantId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Assistant</FormLabel>
+                        <FormControl>
+                          <select
+                            {...field}
+                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                          >
+                            <option value="">Select an assistant</option>
+                            {organizationStaff?.map((staff) => (
+                              <option key={staff.id} value={staff.id}>
+                                {staff.username} ({staff.role})
+                              </option>
+                            ))}
+                          </select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
               {/* Price and Capacity */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
@@ -404,9 +470,10 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                         <Input
                           type="number"
                           {...field}
+                          value={field.value}
                           onChange={(e) => field.onChange(Number(e.target.value))}
                           min={0}
-                          step={1}
+                          step="0.01"
                         />
                       </FormControl>
                       <FormMessage />

@@ -5,7 +5,7 @@ import {
   type Role,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and, inArray } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -18,6 +18,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser & { organizationId?: number }): Promise<User>;
   updateUserRole(userId: number, newRole: Role): Promise<User>;
+  getOrganizationStaff(orgId: number): Promise<User[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -138,6 +139,11 @@ export class DatabaseStorage implements IStorage {
       capacity: camp.capacity,
       organizationId: camp.organizationId,
       waitlistEnabled: camp.waitlistEnabled ?? true,
+      type: camp.type,
+      visibility: camp.visibility,
+      coachId: camp.coachId,
+      assistantId: camp.assistantId,
+      createdById: camp.createdById,
     }).returning();
     return newCamp;
   }
@@ -227,6 +233,18 @@ export class DatabaseStorage implements IStorage {
     return await db.select()
       .from(invitations)
       .where(eq(invitations.organizationId, organizationId));
+  }
+
+  async getOrganizationStaff(orgId: number): Promise<User[]> {
+    const staffRoles = ["coach", "manager", "volunteer"];
+    return await db.select()
+      .from(users)
+      .where(
+        and(
+          eq(users.organizationId, orgId),
+          inArray(users.role, staffRoles)
+        )
+      );
   }
 }
 

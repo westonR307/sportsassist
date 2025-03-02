@@ -87,6 +87,9 @@ export const camps = pgTable("camps", {
   waitlistEnabled: boolean("waitlist_enabled").notNull().default(true),
   type: text("type").$type<CampType>().notNull(),
   visibility: text("visibility").$type<CampVisibility>().notNull().default("public"),
+  coachId: integer("coach_id").references(() => users.id),
+  assistantId: integer("assistant_id").references(() => users.id),
+  createdById: integer("created_by_id").references(() => users.id).notNull(),
 });
 
 export const campStaff = pgTable("camp_staff", {
@@ -181,6 +184,8 @@ export const insertCampSchema = createInsertSchema(camps).extend({
   visibility: z.enum(["public", "private"]),
   waitlistEnabled: z.boolean().default(true),
   organizationId: z.number().optional(),
+  coachId: z.number().optional(),
+  assistantId: z.number().optional(),
 });
 
 export const insertRegistrationSchema = createInsertSchema(registrations);

@@ -238,7 +238,28 @@ export async function registerRoutes(app: Express): Server {
     }
   });
 
+  // Add this route to get organization staff
+  app.get("/api/organizations/:orgId/staff", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const orgId = parseInt(req.params.orgId);
+    if (req.user.organizationId !== orgId) {
+      return res.status(403).json({ message: "Not authorized for this organization" });
+    }
+
+    try {
+      const staff = await storage.getOrganizationStaff(orgId);
+      res.json(staff);
+    } catch (error) {
+      console.error("Error fetching staff:", error);
+      res.status(500).json({ message: "Failed to fetch organization staff" });
+    }
+  });
+
   // Camp routes
+  // Update the camp creation route
   app.post("/api/camps", async (req, res) => {
     if (!["admin", "manager", "camp_creator"].includes(req.user?.role || "")) {
       return res.status(403).json({ message: "Unauthorized" });
@@ -259,6 +280,7 @@ export async function registerRoutes(app: Express): Server {
       const camp = await storage.createCamp({
         ...parsed.data,
         organizationId: req.user.organizationId!,
+        createdById: req.user.id,
       });
       console.log("Camp created successfully:", camp);
       res.status(201).json(camp);
