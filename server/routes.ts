@@ -1,3 +1,4 @@
+import { publicRoles } from "@shared/schema";
 function logError(location: string, error: any) {
   console.error(`Error in ${location}:`, {
     message: error.message,
@@ -14,7 +15,7 @@ import { insertCampSchema, insertChildSchema, insertRegistrationSchema, insertOr
 import Stripe from "stripe";
 import { hashPassword } from "./utils";
 import { randomBytes } from "crypto";
-import { db } from "./db"; 
+import { db } from "./db";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2023-10-16",
@@ -32,8 +33,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       let user;
-      if (req.body.role === "admin" && req.body.organizationName) {
-        // Create organization first
+      if (req.body.role === "camp_creator" && req.body.organizationName) {
+        // Create organization first for camp creators
         const orgData = {
           name: req.body.organizationName,
           description: req.body.organizationDescription || "",
@@ -90,9 +91,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const parsed = insertInvitationSchema.safeParse(parsedData);
 
       if (!parsed.success) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: "Invalid invitation data",
-          errors: parsed.error.flatten() 
+          errors: parsed.error.flatten()
         });
       }
 
@@ -171,9 +172,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const parsed = insertChildSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ 
-        message: "Invalid data", 
-        errors: parsed.error.flatten() 
+      return res.status(400).json({
+        message: "Invalid data",
+        errors: parsed.error.flatten()
       });
     }
 

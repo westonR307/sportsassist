@@ -2,13 +2,17 @@ import { pgTable, text, serial, integer, boolean, timestamp, time } from "drizzl
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export type Role = "admin" | "manager" | "coach" | "volunteer" | "parent";
+export type Role = "camp_creator" | "manager" | "coach" | "volunteer" | "parent" | "athlete";
 export type SportLevel = "beginner" | "intermediate" | "advanced";
 export type Gender = "male" | "female" | "other" | "prefer_not_to_say";
 export type ContactMethod = "email" | "sms" | "app";
 export type CampType = "one_on_one" | "group" | "team" | "virtual";
 export type CampVisibility = "public" | "private";
 
+// Roles that can register directly (not requiring invitation)
+export const publicRoles = ["camp_creator", "parent", "athlete"] as const;
+
+// Define all tables first
 export const organizations = pgTable("organizations", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -43,15 +47,6 @@ export const sports = pgTable("sports", {
   name: text("name").notNull().unique(),
 });
 
-export const childSports = pgTable("child_sports", {
-  id: serial("id").primaryKey(),
-  childId: integer("child_id").references(() => children.id).notNull(),
-  sportId: integer("sport_id").references(() => sports.id).notNull(),
-  skillLevel: text("skill_level").$type<SportLevel>().notNull(),
-  preferredPositions: text("preferred_positions").array(),
-  currentTeam: text("current_team"),
-});
-
 export const children = pgTable("children", {
   id: serial("id").primaryKey(),
   fullName: text("full_name").notNull(),
@@ -68,6 +63,15 @@ export const children = pgTable("children", {
   specialNeeds: text("special_needs"),
   preferredContact: text("preferred_contact").$type<ContactMethod>().notNull(),
   communicationOptIn: boolean("communication_opt_in").notNull(),
+});
+
+export const childSports = pgTable("child_sports", {
+  id: serial("id").primaryKey(),
+  childId: integer("child_id").references(() => children.id).notNull(),
+  sportId: integer("sport_id").references(() => sports.id).notNull(),
+  skillLevel: text("skill_level").$type<SportLevel>().notNull(),
+  preferredPositions: text("preferred_positions").array(),
+  currentTeam: text("current_team"),
 });
 
 export const camps = pgTable("camps", {
@@ -118,12 +122,13 @@ export const campSports = pgTable("camp_sports", {
   skillLevel: text("skill_level").$type<SportLevel>().notNull(),
 });
 
+// Now define all schemas after tables are defined
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
-  role: true,
   email: true,
 }).extend({
+  role: z.enum(publicRoles),
   organizationName: z.string().optional(),
   organizationDescription: z.string().optional(),
 });
@@ -139,8 +144,6 @@ export const insertChildSchema = createInsertSchema(children)
   .omit({
     id: true,
     parentId: true,
-    createdAt: true,
-    updatedAt: true,
   })
   .extend({
     sportsInterests: z.array(
@@ -179,6 +182,7 @@ export const insertOrganizationSchema = createInsertSchema(organizations).omit({
   createdAt: true,
 });
 
+// Export types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Child = typeof children.$inferSelect;

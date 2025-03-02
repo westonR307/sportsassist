@@ -45,14 +45,16 @@ export default function Dashboard() {
   switch (user.role) {
     case "parent":
       return <ParentDashboard />;
-    case "admin":
-      return <AdminDashboard />;
+    case "camp_creator":
+      return <CampCreatorDashboard />;
     case "manager":
       return <ManagerDashboard />;
     case "coach":
       return <CoachDashboard />;
     case "volunteer":
       return <VolunteerDashboard />;
+    case "athlete":
+      return <AthleteDashboard />; // Added case for athlete role
     default:
       return <div>Invalid role</div>;
   }
@@ -231,7 +233,7 @@ function CampsList() {
   );
 }
 
-function AdminDashboard() {
+function CampCreatorDashboard() { // New component for camp creators
   const { user, logoutMutation } = useAuth();
   const { data: invitations } = useQuery<Invitation[]>({
     queryKey: [`/api/organizations/${user?.organizationId}/invitations`],
@@ -243,7 +245,7 @@ function AdminDashboard() {
       <header className="bg-white shadow">
         <div className="container mx-auto px-4 py-6 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+            <h1 className="text-2xl font-bold">Camp Creator Dashboard</h1> {/* Updated title */}
             <p className="text-gray-600">Welcome back, {user?.username}</p>
           </div>
           <Button variant="outline" onClick={() => logoutMutation.mutate()}>
@@ -286,11 +288,11 @@ function AdminDashboard() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Organizations</CardTitle>
+              <CardTitle>Camps</CardTitle> {/* Updated title */}
             </CardHeader>
             <CardContent>
-              <p>Manage organizations and their settings</p>
-              <Button className="mt-4">Manage Organizations</Button>
+              <p>Manage your created camps and their settings</p> {/* Updated description */}
+              <Button className="mt-4">Manage Camps</Button>
             </CardContent>
           </Card>
 
@@ -318,6 +320,7 @@ function AdminDashboard() {
     </div>
   );
 }
+
 
 function ManagerDashboard() {
   const { user, logoutMutation } = useAuth();
@@ -996,6 +999,7 @@ function InviteMemberDialog() {
                       <option value="manager">Manager</option>
                       <option value="coach">Coach</option>
                       <option value="volunteer">Volunteer</option>
+                      <option value="camp_creator">Camp Creator</option> {/* Added camp_creator option */}
                     </select>
                   </FormControl>
                   <FormMessage />
@@ -1521,6 +1525,31 @@ function CampManagementList() {
       {camps?.map((camp) => (
         <CampCard key={camp.id} camp={camp} isManager />
       ))}
+    </div>
+  );
+}
+function AthleteDashboard() {
+  const { user, logoutMutation } = useAuth();
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow">
+        <div className="container mx-auto px-4 py-6 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold">Athlete Dashboard</h1>
+            <p className="text-gray-600">Welcome back, {user?.username}</p>
+          </div>
+          <Button variant="outline" onClick={() => logoutMutation.mutate()}>
+            Logout
+          </Button>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-8">
+        <section>
+          <h2 className="text-xl font-semibold mb-4">My Camps</h2>
+          {/* Add camp list with participant management */}
+        </section>
+      </main>
     </div>
   );
 }

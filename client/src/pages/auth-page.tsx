@@ -12,30 +12,13 @@ import {
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertUserSchema } from "@shared/schema";
+import { insertUserSchema, publicRoles } from "@shared/schema";
 import { z } from "zod";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Redirect } from "wouter";
 import { useState } from "react";
 
-type Role = "admin" | "manager" | "coach" | "volunteer" | "parent";
-
 const loginSchema = insertUserSchema.pick({ username: true, password: true });
-
-const registerSchema = insertUserSchema.extend({
-  role: z.enum(["admin", "manager", "coach", "volunteer", "parent"]).default("parent"),
-  organizationName: z.string().optional(),
-  organizationDescription: z.string().optional(),
-}).refine((data) => {
-  // Require organization name when registering as admin
-  if (data.role === "admin" && !data.organizationName) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Organization name is required when registering as admin",
-  path: ["organizationName"],
-});
 
 export default function AuthPage() {
   const { user } = useAuth();
@@ -133,9 +116,9 @@ function LoginForm() {
 
 function RegisterForm() {
   const { registerMutation } = useAuth();
-  const [role, setRole] = useState<Role>("parent");
+  const [role, setRole] = useState<(typeof publicRoles)[number]>("parent");
   const form = useForm({
-    resolver: zodResolver(registerSchema),
+    resolver: zodResolver(insertUserSchema),
     defaultValues: {
       username: "",
       password: "",
@@ -193,28 +176,26 @@ function RegisterForm() {
           name="role"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Role</FormLabel>
+              <FormLabel>I am a...</FormLabel>
               <FormControl>
                 <select
                   {...field}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                   onChange={(e) => {
                     field.onChange(e);
-                    setRole(e.target.value as Role);
+                    setRole(e.target.value as (typeof publicRoles)[number]);
                   }}
                 >
-                  <option value="parent">Parent</option>
-                  <option value="admin">Organization Admin</option>
-                  <option value="manager">Manager</option>
-                  <option value="coach">Coach</option>
-                  <option value="volunteer">Volunteer</option>
+                  <option value="parent">Parent of Athlete</option>
+                  <option value="athlete">Athlete</option>
+                  <option value="camp_creator">Camp Creator</option>
                 </select>
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        {role === "admin" && (
+        {role === "camp_creator" && (
           <>
             <FormField
               control={form.control}
@@ -223,7 +204,7 @@ function RegisterForm() {
                 <FormItem>
                   <FormLabel>Organization Name</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} placeholder="e.g. Elite Sports Academy" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -236,7 +217,7 @@ function RegisterForm() {
                 <FormItem>
                   <FormLabel>Organization Description</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} placeholder="Tell us about your organization" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
