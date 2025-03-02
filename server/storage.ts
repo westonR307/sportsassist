@@ -61,7 +61,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserRole(userId: number, newRole: Role): Promise<User> {
-    console.log("Updating user role:", { userId, newRole });
+    console.log("Starting role update for user:", userId, "to role:", newRole);
     try {
       const [user] = await db
         .update(users)
@@ -70,13 +70,19 @@ export class DatabaseStorage implements IStorage {
         .returning();
 
       if (!user) {
-        throw new Error(`Failed to update user ${userId} to role ${newRole}`);
+        const error = new Error(`Failed to update user ${userId} to role ${newRole}`);
+        console.error("Role update failed:", error);
+        throw error;
       }
 
-      console.log("Updated user:", { ...user, password: '[REDACTED]' });
+      console.log("Successfully updated user role:", {
+        userId,
+        oldRole: user.role,
+        newRole: newRole
+      });
       return user;
     } catch (error) {
-      console.error("Error updating user role:", error);
+      console.error("Database error during role update:", error);
       throw error;
     }
   }

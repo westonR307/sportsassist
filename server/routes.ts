@@ -294,20 +294,20 @@ export async function registerRoutes(app: Express): Server {
           req.login(updatedUser, (err) => {
             if (err) {
               console.error("Session update error:", err);
-              return res.status(500).json({ message: "Failed to update session" });
+              return next(err);
             }
             return res.status(200).json(updatedUser);
           });
         } catch (error) {
           console.error("Role migration error:", error);
-          res.status(500).json({ message: "Failed to update user role" });
+          return next(error);
         }
       } else {
         res.status(200).json(req.user);
       }
     } catch (error) {
-      logError("/api/login POST", error);
-      res.status(500).json({ message: "Login error" });
+      console.error("Login error:", error);
+      return next(error);
     }
   });
 
