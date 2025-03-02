@@ -52,7 +52,12 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 
   const createCampMutation = useMutation({
     mutationFn: async (data: z.infer<typeof insertCampSchema>) => {
-      const res = await apiRequest("POST", "/api/camps", data);
+      const formattedData = {
+        ...data,
+        startDate: new Date(data.startDate),
+        endDate: new Date(data.endDate),
+      };
+      const res = await apiRequest("POST", "/api/camps", formattedData);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to create camp");
@@ -79,25 +84,136 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Camp</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit((data) => createCampMutation.mutate(data))} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Camp Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Camp Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Start Date</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} 
+                        value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : field.value}
+                        onChange={e => field.onChange(e.target.value)} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End Date</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} 
+                        value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : field.value}
+                        onChange={e => field.onChange(e.target.value)} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Price (in cents)</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="capacity"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Capacity</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Camp Type</FormLabel>
+                    <FormControl>
+                      <select
+                        {...field}
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                      >
+                        <option value="one_on_one">One on One</option>
+                        <option value="group">Group</option>
+                        <option value="team">Team</option>
+                        <option value="virtual">Virtual</option>
+                      </select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="visibility"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Visibility</FormLabel>
+                    <FormControl>
+                      <select
+                        {...field}
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                      >
+                        <option value="public">Public</option>
+                        <option value="private">Private</option>
+                      </select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
               name="description"
@@ -105,7 +221,10 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <textarea
+                      {...field}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background min-h-[100px]"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -113,13 +232,18 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
             />
             <FormField
               control={form.control}
-              name="location"
+              name="waitlistEnabled"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Location</FormLabel>
+                <FormItem className="flex items-center space-x-2">
                   <FormControl>
-                    <Input {...field} />
+                    <input
+                      type="checkbox"
+                      checked={field.value}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                      className="h-4 w-4"
+                    />
                   </FormControl>
+                  <FormLabel>Enable Waitlist</FormLabel>
                   <FormMessage />
                 </FormItem>
               )}
