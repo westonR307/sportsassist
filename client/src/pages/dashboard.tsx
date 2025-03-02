@@ -43,12 +43,6 @@ const DAYS_OF_WEEK = [
   "Saturday",
 ] as const;
 
-const REPEAT_OPTIONS = [
-  { value: "none", label: "Does not repeat" },
-  { value: "weekly", label: "Repeats weekly" },
-  { value: "monthly", label: "Repeats monthly" },
-] as const;
-
 function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -56,6 +50,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   const [selectedSports, setSelectedSports] = React.useState<Array<{ sportId: number; skillLevel: string }>>([]);
   const [daySchedules, setDaySchedules] = React.useState<Record<string, { startTime: string; endTime: string }>>({});
 
+  // Load sports data
   const { data: sports } = useQuery({
     queryKey: ["/api/sports"],
   });
@@ -78,33 +73,51 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 
   const handleDaySelection = (day: string, checked: boolean) => {
     if (checked) {
-      setSelectedDays([...selectedDays, day]);
-      setDaySchedules({
-        ...daySchedules,
+      setSelectedDays(prev => [...prev, day]);
+      setDaySchedules(prev => ({
+        ...prev,
         [day]: { startTime: "09:00", endTime: "17:00" },
-      });
+      }));
     } else {
-      setSelectedDays(selectedDays.filter((d) => d !== day));
-      const newSchedules = { ...daySchedules };
-      delete newSchedules[day];
-      setDaySchedules(newSchedules);
+      setSelectedDays(prev => prev.filter(d => d !== day));
+      setDaySchedules(prev => {
+        const newSchedules = { ...prev };
+        delete newSchedules[day];
+        return newSchedules;
+      });
     }
   };
 
   const updateDaySchedule = (day: string, field: "startTime" | "endTime", value: string) => {
-    setDaySchedules({
-      ...daySchedules,
+    setDaySchedules(prev => ({
+      ...prev,
       [day]: {
-        ...daySchedules[day],
+        ...prev[day],
         [field]: value,
       },
-    });
+    }));
+  };
+
+  const handleSportSelection = (sportId: number, checked: boolean) => {
+    if (checked) {
+      setSelectedSports(prev => [...prev, { sportId, skillLevel: "beginner" }]);
+    } else {
+      setSelectedSports(prev => prev.filter(s => s.sportId !== sportId));
+    }
+  };
+
+  const handleSkillLevelChange = (sportId: number, skillLevel: string) => {
+    setSelectedSports(prev =>
+      prev.map(sport =>
+        sport.sportId === sportId ? { ...sport, skillLevel } : sport
+      )
+    );
   };
 
   const createCampMutation = useMutation({
     mutationFn: async (data: any) => {
       try {
-        console.log("About to send API request with data:", data);
+        console.log("Sending API request with data:", data);
         const res = await apiRequest("POST", "/api/camps", data);
         const responseData = await res.json();
         console.log("API Response:", responseData);
@@ -141,12 +154,9 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     },
   });
 
-  const handleSubmit = async (formData: z.infer<typeof insertCampSchema>) => {
+  const onSubmit = async (formData: z.infer<typeof insertCampSchema>) => {
     try {
-      console.log("Form submission started", { formData, selectedDays, selectedSports });
-
       if (!user?.organizationId) {
-        console.error("No organization ID found");
         toast({
           title: "Error",
           description: "Organization ID is required",
@@ -156,7 +166,6 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       }
 
       if (selectedDays.length === 0) {
-        console.error("No days selected");
         toast({
           title: "Error",
           description: "Please select at least one day for the camp schedule",
@@ -166,7 +175,6 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       }
 
       if (selectedSports.length === 0) {
-        console.error("No sports selected");
         toast({
           title: "Error",
           description: "Please select at least one sport",
@@ -188,7 +196,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         waitlistEnabled: formData.waitlistEnabled,
         organizationId: user.organizationId,
         sports: selectedSports,
-        schedules: selectedDays.map((day) => ({
+        schedules: selectedDays.map(day => ({
           dayOfWeek: DAYS_OF_WEEK.indexOf(day),
           startTime: daySchedules[day].startTime,
           endTime: daySchedules[day].endTime,
@@ -214,7 +222,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
           <DialogTitle>Create New Camp</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Basic Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Basic Information</h3>
@@ -358,29 +366,18 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        checked={selectedSports.some((s) => s.sportId === sport.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedSports([...selectedSports, { sportId: sport.id, skillLevel: "beginner" }]);
-                          } else {
-                            setSelectedSports(selectedSports.filter((s) => s.sportId !== sport.id));
-                          }
-                        }}
+                        checked={selectedSports.some(s => s.sportId === sport.id)}
+                        onChange={(e) => handleSportSelection(sport.id, e.target.checked)}
                         className="h-4 w-4"
                       />
                       <span className="font-medium">{sport.name}</span>
                     </div>
-                    {selectedSports.some((s) => s.sportId === sport.id) && (
+                    {selectedSports.some(s => s.sportId === sport.id) && (
                       <div>
                         <FormLabel className="text-xs">Skill Level</FormLabel>
                         <select
-                          value={selectedSports.find((s) => s.sportId === sport.id)?.skillLevel}
-                          onChange={(e) => {
-                            const newSports = selectedSports.map((s) =>
-                              s.sportId === sport.id ? { ...s, skillLevel: e.target.value } : s
-                            );
-                            setSelectedSports(newSports);
-                          }}
+                          value={selectedSports.find(s => s.sportId === sport.id)?.skillLevel}
+                          onChange={(e) => handleSkillLevelChange(sport.id, e.target.value)}
                           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                         >
                           <option value="beginner">Beginner</option>
