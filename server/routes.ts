@@ -280,18 +280,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Update the login route to handle role migration
   app.post("/api/login", passport.authenticate("local"), async (req, res) => {
-    // Check if user has legacy admin role and update it
-    if (req.user && req.user.role === "admin") {
-      try {
+    try {
+      // Check if user has legacy admin role and update it
+      if (req.user && req.user.role === "admin") {
         const updatedUser = await storage.updateUserRole(req.user.id, "camp_creator");
         return res.status(200).json(updatedUser);
-      } catch (error) {
-        logError("/api/login POST", error);
-        // Even if update fails, still return the user to allow logout
-        return res.status(200).json(req.user);
       }
+      res.status(200).json(req.user);
+    } catch (error) {
+      logError("/api/login POST", error);
+      // Even if update fails, still return the user
+      res.status(200).json(req.user);
     }
-    res.status(200).json(req.user);
   });
 
 

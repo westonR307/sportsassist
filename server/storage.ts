@@ -14,6 +14,7 @@ import {
   type InsertOrganization,
   type Invitation,
   type InsertInvitation,
+  type Role,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -30,6 +31,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser & { organizationId?: number }): Promise<User>;
+  updateUserRole(userId: number, newRole: Role): Promise<User>;
 
   // Child operations
   createChild(child: Omit<Child, "id">): Promise<Child>;
@@ -86,6 +88,15 @@ export class DatabaseStorage implements IStorage {
       role: insertUser.role,
       organizationId: insertUser.organizationId,
     }).returning();
+    return user;
+  }
+
+  async updateUserRole(userId: number, newRole: Role): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ role: newRole })
+      .where(eq(users.id, userId))
+      .returning();
     return user;
   }
 
