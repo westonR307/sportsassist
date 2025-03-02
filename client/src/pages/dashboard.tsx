@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Camp, Child, insertChildSchema, Invitation, insertInvitationSchema, InsertInvitation, Sport, SportLevel, Gender, ContactMethod, insertCampSchema, CampType, CampVisibility } from "@shared/schema";
+import { Camp, insertCampSchema, Invitation, insertInvitationSchema, CampType, CampVisibility } from "@shared/schema";
 import { Loader2, Plus } from "lucide-react";
 import {
   Dialog,
@@ -491,55 +491,29 @@ function Dashboard() {
 
   switch (user.role) {
     case "parent":
-      return <ParentDashboard />;
+      return <div>Parent Dashboard</div>;
     case "camp_creator":
       return <CampCreatorDashboard />;
     case "manager":
-      return <ManagerDashboard />;
+      return <div>Manager Dashboard</div>;
     case "coach":
-      return <CoachDashboard />;
+      return <div>Coach Dashboard</div>;
     case "volunteer":
-      return <VolunteerDashboard />;
+      return <div>Volunteer Dashboard</div>;
     case "athlete":
-      return <AthleteDashboard />;
+      return <div>Athlete Dashboard</div>;
     default:
       return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="max-w-md w-full p-8 bg-white rounded-lg shadow-lg">
             <h1 className="text-2xl font-bold mb-4">Invalid Role</h1>
             <p className="text-gray-600 mb-6">
-              Your account has an invalid role. Please log out and contact support if this issue persists.
+              Your account has an invalid role. Please contact support if this issue persists.
             </p>
-            <Button
-              className="w-full"
-              onClick={() => logoutMutation.mutate()}
-            >
-              Logout
-            </Button>
           </div>
         </div>
       );
   }
-}
-
-function ParentDashboard() {
-  return <div>Parent Dashboard</div>;
-}
-
-function ManagerDashboard() {
-  return <div>Manager Dashboard</div>;
-}
-
-function CoachDashboard() {
-  return <div>Coach Dashboard</div>;
-}
-
-function VolunteerDashboard() {
-  return <div>Volunteer Dashboard</div>;
-}
-
-function AthleteDashboard() {
-  return <div>Athlete Dashboard</div>;
 }
 
 export default Dashboard;
