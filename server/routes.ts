@@ -22,7 +22,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2023-10-16",
 });
 
-export async function registerRoutes(app: Express): Promise<Server> {
+export async function registerRoutes(app: Express): Server {
   setupAuth(app);
 
   // Update the registration route to handle organization creation
@@ -281,19 +281,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update the login route to handle role migration
   app.post("/api/login", passport.authenticate("local"), async (req, res) => {
     try {
+      console.log("Login attempt - Current user role:", req.user?.role);
+
       // Check if user has legacy admin role and update it
       if (req.user && req.user.role === "admin") {
-        const updatedUser = await storage.updateUserRole(req.user.id, "camp_creator");
-        return res.status(200).json(updatedUser);
+        console.log("Migrating admin role to camp_creator");
+        try {
+          const updatedUser = await storage.updateUserRole(req.user.id, "camp_creator");
+          console.log("Role migration successful - New role:", updatedUser.role);
+
+          // Update the session with the new user data
+          req.login(updatedUser, (err) => {
+            if (err) {
+              console.error("Session update error:", err);
+              return res.status(500).json({ message: "Failed to update session" });
+            }
+            return res.status(200).json(updatedUser);
+          });
+        } catch (error) {
+          console.error("Role migration error:", error);
+          res.status(500).json({ message: "Failed to update user role" });
+        }
+      } else {
+        res.status(200).json(req.user);
       }
-      res.status(200).json(req.user);
     } catch (error) {
       logError("/api/login POST", error);
-      // Even if update fails, still return the user
-      res.status(200).json(req.user);
+      res.status(500).json({ message: "Login error" });
     }
   });
 
+  app.post("/api/logout", (req, res, next) => {
+    req.logout((err) => {
+      if (err) return next(err);
+      res.sendStatus(200);
+    });
+  });
+
+  app.get("/api/user", (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    res.json(req.user);
+  });
 
   const httpServer = createServer(app);
   return httpServer;

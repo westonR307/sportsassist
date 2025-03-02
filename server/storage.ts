@@ -17,7 +17,7 @@ import {
   type Role,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -76,13 +76,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(sql`LOWER(${users.username}) = LOWER(${username})`);
     return user;
   }
 
   async createUser(insertUser: InsertUser & { organizationId?: number }): Promise<User> {
     const [user] = await db.insert(users).values({
-      username: insertUser.username,
+      username: insertUser.username.toLowerCase(), // Store username in lowercase
       password: insertUser.password,
       email: insertUser.email,
       role: insertUser.role,
