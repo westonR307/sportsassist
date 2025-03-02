@@ -549,11 +549,10 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
               )}
             />
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full"
               disabled={createCampMutation.isPending}
-              onClick={() => console.log("Submit button clicked")}
             >
               {createCampMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Create Camp
