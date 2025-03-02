@@ -1,19 +1,7 @@
 import {
   users,
-  children,
-  camps,
-  registrations,
-  organizations,
-  invitations,
   type User,
   type InsertUser,
-  type Child,
-  type Camp,
-  type Registration,
-  type Organization,
-  type InsertOrganization,
-  type Invitation,
-  type InsertInvitation,
   type Role,
 } from "@shared/schema";
 import { db } from "./db";
@@ -26,38 +14,10 @@ const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
   sessionStore: session.Store;
-
-  // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser & { organizationId?: number }): Promise<User>;
   updateUserRole(userId: number, newRole: Role): Promise<User>;
-
-  // Child operations
-  createChild(child: Omit<Child, "id">): Promise<Child>;
-  getChild(id: number): Promise<Child | undefined>;
-  getChildrenByParent(parentId: number): Promise<Child[]>;
-
-  // Camp operations
-  createCamp(camp: Omit<Camp, "id">): Promise<Camp>;
-  getCamp(id: number): Promise<Camp | undefined>;
-  listCamps(): Promise<Camp[]>;
-
-  // Registration operations
-  createRegistration(registration: Omit<Registration, "id">): Promise<Registration>;
-  getRegistration(id: number): Promise<Registration | undefined>;
-  getRegistrationsByCamp(campId: number): Promise<Registration[]>;
-
-  // Organization operations
-  createOrganization(org: InsertOrganization): Promise<Organization>;
-  getOrganization(id: number): Promise<Organization | undefined>;
-  getOrganizationUsers(orgId: number): Promise<User[]>;
-
-  // Invitation operations
-  createInvitation(invitation: InsertInvitation & { token: string }): Promise<Invitation>;
-  getInvitation(token: string): Promise<Invitation | undefined>;
-  acceptInvitation(token: string): Promise<Invitation>;
-  listOrganizationInvitations(organizationId: number): Promise<Invitation[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -71,38 +31,55 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUser(id: number): Promise<User | undefined> {
+    console.log("Getting user by ID:", id);
     const [user] = await db.select().from(users).where(eq(users.id, id));
+    console.log("Found user:", user);
     return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
+    console.log("Getting user by username:", username);
     const [user] = await db
       .select()
       .from(users)
       .where(sql`LOWER(${users.username}) = LOWER(${username})`);
+    console.log("Found user:", user);
     return user;
   }
 
   async createUser(insertUser: InsertUser & { organizationId?: number }): Promise<User> {
+    console.log("Creating user:", { ...insertUser, password: '[REDACTED]' });
     const [user] = await db.insert(users).values({
-      username: insertUser.username.toLowerCase(), // Store username in lowercase
+      username: insertUser.username.toLowerCase(),
       password: insertUser.password,
       email: insertUser.email,
       role: insertUser.role,
       organizationId: insertUser.organizationId,
     }).returning();
+    console.log("Created user:", { ...user, password: '[REDACTED]' });
     return user;
   }
 
   async updateUserRole(userId: number, newRole: Role): Promise<User> {
-    const [user] = await db
-      .update(users)
-      .set({ role: newRole })
-      .where(eq(users.id, userId))
-      .returning();
-    return user;
-  }
+    console.log("Updating user role:", { userId, newRole });
+    try {
+      const [user] = await db
+        .update(users)
+        .set({ role: newRole })
+        .where(eq(users.id, userId))
+        .returning();
 
+      if (!user) {
+        throw new Error(`Failed to update user ${userId} to role ${newRole}`);
+      }
+
+      console.log("Updated user:", { ...user, password: '[REDACTED]' });
+      return user;
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      throw error;
+    }
+  }
   async createChild(child: Omit<Child, "id">): Promise<Child> {
     const [newChild] = await db.insert(children).values({
       name: child.name,
