@@ -3,6 +3,131 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { insertInvitationSchema } from "@shared/schema";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import * as z from 'zod';
+
+function InviteMemberDialog() {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const { toast } = useToast();
+  const { user } = useAuth();
+
+  const form = useForm({
+    resolver: zodResolver(insertInvitationSchema),
+    defaultValues: {
+      email: "",
+      role: "coach" as const,
+      organizationId: user?.organizationId || 0,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
+  });
+
+  const inviteMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof insertInvitationSchema>) => {
+      const res = await apiRequest("POST", "/api/invitations", data);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to send invitation");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/organizations/${user?.organizationId}/invitations`] });
+      toast({
+        title: "Success",
+        description: "Invitation sent successfully",
+      });
+      form.reset();
+      setIsOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline">
+          Manage Team
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Invite Team Member</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit((data) => inviteMutation.mutate(data))} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input type="email" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Role</FormLabel>
+                  <FormControl>
+                    <select
+                      {...field}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                    >
+                      <option value="manager">Manager</option>
+                      <option value="coach">Coach</option>
+                      <option value="volunteer">Volunteer</option>
+                    </select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={inviteMutation.isPending}
+            >
+              Send Invitation
+            </Button>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function Dashboard() {
   try {
@@ -20,7 +145,6 @@ function Dashboard() {
       );
     }
 
-    // Return appropriate dashboard based on role
     switch (user.role) {
       case "camp_creator":
         return <CampCreatorDashboard />;
@@ -65,6 +189,7 @@ function Dashboard() {
 
 function CampCreatorDashboard() {
   const { user, logoutMutation } = useAuth();
+  const [showAddCampDialog, setShowAddCampDialog] = React.useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -91,7 +216,7 @@ function CampCreatorDashboard() {
             <CardHeader>
               <div className="flex justify-between items-center">
                 <CardTitle>Your Camps</CardTitle>
-                <Button>
+                <Button onClick={() => setShowAddCampDialog(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Camp
                 </Button>
@@ -109,9 +234,7 @@ function CampCreatorDashboard() {
             <CardHeader>
               <div className="flex justify-between items-center">
                 <CardTitle>Organization</CardTitle>
-                <Button variant="outline">
-                  Manage Team
-                </Button>
+                <InviteMemberDialog />
               </div>
             </CardHeader>
             <CardContent>
