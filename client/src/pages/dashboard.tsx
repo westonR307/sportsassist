@@ -37,8 +37,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import * as z from 'zod'
 
-export default function Dashboard() {
-  const { user } = useAuth();
+function Dashboard() {
+  const { user, logoutMutation } = useAuth();
 
   if (!user) return null;
 
@@ -54,9 +54,42 @@ export default function Dashboard() {
     case "volunteer":
       return <VolunteerDashboard />;
     case "athlete":
-      return <AthleteDashboard />; // Added case for athlete role
+      return <AthleteDashboard />;
+    case "admin": // Handle legacy admin role
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="max-w-md w-full p-8 bg-white rounded-lg shadow-lg">
+            <h1 className="text-2xl font-bold mb-4">Role Update Required</h1>
+            <p className="text-gray-600 mb-6">
+              We've updated our role system. Your admin role needs to be migrated to "Camp Creator".
+              Please log out and log back in to complete the migration.
+            </p>
+            <Button 
+              className="w-full"
+              onClick={() => logoutMutation.mutate()}
+            >
+              Logout to Update Role
+            </Button>
+          </div>
+        </div>
+      );
     default:
-      return <div>Invalid role</div>;
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="max-w-md w-full p-8 bg-white rounded-lg shadow-lg">
+            <h1 className="text-2xl font-bold mb-4">Invalid Role</h1>
+            <p className="text-gray-600 mb-6">
+              Your account has an invalid role. Please log out and contact support if this issue persists.
+            </p>
+            <Button 
+              className="w-full"
+              onClick={() => logoutMutation.mutate()}
+            >
+              Logout
+            </Button>
+          </div>
+        </div>
+      );
   }
 }
 
@@ -233,7 +266,7 @@ function CampsList() {
   );
 }
 
-function CampCreatorDashboard() { // New component for camp creators
+function CampCreatorDashboard() { 
   const { user, logoutMutation } = useAuth();
   const { data: invitations } = useQuery<Invitation[]>({
     queryKey: [`/api/organizations/${user?.organizationId}/invitations`],
@@ -245,7 +278,7 @@ function CampCreatorDashboard() { // New component for camp creators
       <header className="bg-white shadow">
         <div className="container mx-auto px-4 py-6 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold">Camp Creator Dashboard</h1> {/* Updated title */}
+            <h1 className="text-2xl font-bold">Camp Creator Dashboard</h1> 
             <p className="text-gray-600">Welcome back, {user?.username}</p>
           </div>
           <Button variant="outline" onClick={() => logoutMutation.mutate()}>
@@ -288,10 +321,10 @@ function CampCreatorDashboard() { // New component for camp creators
 
           <Card>
             <CardHeader>
-              <CardTitle>Camps</CardTitle> {/* Updated title */}
+              <CardTitle>Camps</CardTitle> 
             </CardHeader>
             <CardContent>
-              <p>Manage your created camps and their settings</p> {/* Updated description */}
+              <p>Manage your created camps and their settings</p> 
               <Button className="mt-4">Manage Camps</Button>
             </CardContent>
           </Card>
@@ -909,7 +942,7 @@ function InviteMemberDialog() {
       email: "",
       role: "coach" as const,
       organizationId: user?.organizationId,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 
     },
   });
 
@@ -999,7 +1032,7 @@ function InviteMemberDialog() {
                       <option value="manager">Manager</option>
                       <option value="coach">Coach</option>
                       <option value="volunteer">Volunteer</option>
-                      <option value="camp_creator">Camp Creator</option> {/* Added camp_creator option */}
+                      <option value="camp_creator">Camp Creator</option> 
                     </select>
                   </FormControl>
                   <FormMessage />
@@ -1553,3 +1586,4 @@ function AthleteDashboard() {
     </div>
   );
 }
+export default Dashboard;
