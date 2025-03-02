@@ -141,9 +141,6 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 
   const onSubmit = async (formData: z.infer<typeof insertCampSchema>) => {
     try {
-      console.log("Form data before submission:", formData);
-
-      // Validation checks
       if (!user?.organizationId) {
         toast({
           title: "Error",
@@ -193,11 +190,12 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 
       console.log("Submitting camp data:", campData);
       await createCampMutation.mutateAsync(campData);
+
     } catch (error) {
       console.error("Form submission error:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to submit form",
+        description: error instanceof Error ? error.message : "Failed to create camp",
         variant: "destructive",
       });
     }
@@ -535,8 +533,14 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
               className="w-full"
               disabled={createCampMutation.isPending}
             >
-              {createCampMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Create Camp
+              {createCampMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Camp'
+              )}
             </Button>
           </form>
         </Form>
