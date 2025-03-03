@@ -146,7 +146,7 @@ export const insertInvitationSchema = createInsertSchema(invitations).omit({
   accepted: true,
   createdAt: true,
 }).extend({
-  role: z.enum(["manager", "coach", "volunteer"]),
+  role: z.enum(["manager", "coach", "volunteer"] as const),
   email: z.string().email("Invalid email address"),
   organizationId: z.number(),
   expiresAt: z.date()

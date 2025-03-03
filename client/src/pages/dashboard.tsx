@@ -685,7 +685,7 @@ function InviteMemberDialog() {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const form = useForm({
+  const form = useForm<z.infer<typeof insertInvitationSchema>>({
     resolver: zodResolver(insertInvitationSchema),
     defaultValues: {
       email: "",
@@ -697,7 +697,7 @@ function InviteMemberDialog() {
 
   const inviteMutation = useMutation({
     mutationFn: async (data: z.infer<typeof insertInvitationSchema>) => {
-      const res = await apiRequest("POST", "/api/invitations", data);
+      const res = await apiRequest("POST", `/api/organizations/${user?.organizationId}/invitations`, data);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to send invitation");
@@ -756,7 +756,7 @@ function InviteMemberDialog() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" {...field} />
+                    <Input type="email" {...field} placeholder="Enter email address" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
