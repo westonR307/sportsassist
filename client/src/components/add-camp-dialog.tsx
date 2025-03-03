@@ -49,7 +49,15 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
   const { user } = useAuth();
   const [selectedDays, setSelectedDays] = React.useState<DayOfWeek[]>([]);
   const [selectedSports, setSelectedSports] = React.useState<SportSelection[]>([]);
-  const [daySchedules, setDaySchedules] = React.useState<Record<DayOfWeek, { startTime: string; endTime: string }>>({});
+  const [daySchedules, setDaySchedules] = React.useState<Record<DayOfWeek, { startTime: string; endTime: string }>>({
+    Sunday: { startTime: "09:00", endTime: "17:00" },
+    Monday: { startTime: "09:00", endTime: "17:00" },
+    Tuesday: { startTime: "09:00", endTime: "17:00" },
+    Wednesday: { startTime: "09:00", endTime: "17:00" },
+    Thursday: { startTime: "09:00", endTime: "17:00" },
+    Friday: { startTime: "09:00", endTime: "17:00" },
+    Saturday: { startTime: "09:00", endTime: "17:00" },
+  });
 
   const { data: sports } = useQuery<{ id: number; name: string }[]>({
     queryKey: ["/api/sports"],
@@ -84,17 +92,8 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
   const handleDaySelection = (day: DayOfWeek, checked: boolean) => {
     if (checked) {
       setSelectedDays(prev => [...prev, day]);
-      setDaySchedules(prev => ({
-        ...prev,
-        [day]: { startTime: "09:00", endTime: "17:00" },
-      }));
     } else {
       setSelectedDays(prev => prev.filter(d => d !== day));
-      setDaySchedules(prev => {
-        const newSchedules = { ...prev };
-        delete newSchedules[day];
-        return newSchedules;
-      });
     }
   };
 
