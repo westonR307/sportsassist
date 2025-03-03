@@ -13,12 +13,12 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/api";
-import { insertCampSchema, insertInvitationSchema, type Camp } from "@shared/schema";
+import { insertCampSchema, type Camp } from "@shared/schema";
 import { z } from "zod";
 import { queryClient } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
@@ -30,6 +30,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { AddCampDialog } from "@/components/add-camp-dialog";
 
 const DAYS_OF_WEEK = [
   "Sunday",
@@ -41,76 +42,69 @@ const DAYS_OF_WEEK = [
   "Saturday",
 ] as const;
 
-const REPEAT_OPTIONS = [
-  { value: "none", label: "Does not repeat" },
-  { value: "weekly", label: "Repeats weekly" },
-  { value: "monthly", label: "Repeats monthly" },
-] as const;
-
 type DayOfWeek = typeof DAYS_OF_WEEK[number];
-type RepeatType = typeof REPEAT_OPTIONS[number]['value'];
+type SkillLevel = "beginner" | "intermediate" | "advanced";
 
-export function SideNavigation() {
+interface SportSelection {
+  sportId: number;
+  skillLevel: SkillLevel;
+}
+
+function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
 
   if (!user?.organizationId) return null;
 
   return (
-    <div className="w-64 bg-white h-screen fixed left-0 top-0 border-r">
-      <div className="p-4 border-b">
-        <h2 className="font-semibold text-lg">Sports Camp Manager</h2>
-      </div>
-      <nav className="p-4 space-y-2">
-        <Link href="/dashboard">
-          <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 ${
-            location === '/dashboard' ? 'bg-gray-100' : ''
-          }`}>
-            <Calendar className="h-5 w-5" />
-            <span>Camps</span>
-          </a>
-        </Link>
-        <Link href="/dashboard/reports">
-          <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 ${
-            location === '/dashboard/reports' ? 'bg-gray-100' : ''
-          }`}>
-            <BarChart3 className="h-5 w-5" />
-            <span>Reports</span>
-          </a>
-        </Link>
-        <Link href="/dashboard/team">
-          <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 ${
-            location === '/dashboard/team' ? 'bg-gray-100' : ''
-          }`}>
-            <Users className="h-5 w-5" />
-            <span>Team</span>
-          </a>
-        </Link>
-        <Link href="/dashboard/settings">
-          <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 ${
-            location === '/dashboard/settings' ? 'bg-gray-100' : ''
-          }`}>
-            <Settings className="h-5 w-5" />
-            <span>Settings</span>
-          </a>
-        </Link>
-        <Button
-          variant="ghost"
-          className="w-full justify-start"
-          onClick={() => logoutMutation.mutate()}
-        >
-          <LogOut className="h-5 w-5 mr-2" />
-          Logout
-        </Button>
-      </nav>
-    </div>
-  );
-}
-
-export function DashboardLayout({ children }: { children: React.ReactNode }) {
-  return (
     <div className="min-h-screen bg-gray-50">
-      <SideNavigation />
+      <div className="w-64 bg-white h-screen fixed left-0 top-0 border-r">
+        <div className="p-4 border-b">
+          <h2 className="font-semibold text-lg">Sports Camp Manager</h2>
+        </div>
+        <nav className="p-4 space-y-2">
+          <Link href="/dashboard">
+            <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 ${
+              location === '/dashboard' ? 'bg-gray-100' : ''
+            }`}>
+              <Calendar className="h-5 w-5" />
+              <span>Camps</span>
+            </a>
+          </Link>
+          <Link href="/dashboard/reports">
+            <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 ${
+              location === '/dashboard/reports' ? 'bg-gray-100' : ''
+            }`}>
+              <BarChart3 className="h-5 w-5" />
+              <span>Reports</span>
+            </a>
+          </Link>
+          <Link href="/dashboard/team">
+            <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 ${
+              location === '/dashboard/team' ? 'bg-gray-100' : ''
+            }`}>
+              <Users className="h-5 w-5" />
+              <span>Team</span>
+            </a>
+          </Link>
+          <Link href="/dashboard/settings">
+            <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 ${
+              location === '/dashboard/settings' ? 'bg-gray-100' : ''
+            }`}>
+              <Settings className="h-5 w-5" />
+              <span>Settings</span>
+            </a>
+          </Link>
+          <Button
+            variant="ghost"
+            className="w-full justify-start"
+            onClick={() => logoutMutation.mutate()}
+          >
+            <LogOut className="h-5 w-5 mr-2" />
+            Logout
+          </Button>
+        </nav>
+      </div>
       <div className="pl-64">
         <main className="container mx-auto px-6 py-8">
           {children}
@@ -186,6 +180,7 @@ function CampsDashboard() {
   );
 }
 
+// Main Dashboard component
 function Dashboard() {
   const { user } = useAuth();
 
@@ -208,13 +203,15 @@ function Dashboard() {
   );
 }
 
+// Export components needed by other pages
+export { DashboardLayout };
 export default Dashboard;
 
 function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { toast } = useToast();
   const { user } = useAuth();
   const [selectedDays, setSelectedDays] = React.useState<DayOfWeek[]>([]);
-  const [selectedSports, setSelectedSports] = React.useState<Array<{ sportId: number; skillLevel: string }>>([]);
+  const [selectedSports, setSelectedSports] = React.useState<SportSelection[]>([]);
   const [daySchedules, setDaySchedules] = React.useState<Record<DayOfWeek, { startTime: string; endTime: string }>>({});
 
   const { data: sports } = useQuery<{ id: number; name: string }[]>({
@@ -235,18 +232,15 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       city: "",
       state: "",
       zipCode: "",
-      type: "group" as const,
-      visibility: "public" as const,
-      price: null,
+      type: "group",
+      visibility: "public",
+      price: 0,
       capacity: 10,
       startDate: new Date().toISOString().split("T")[0],
       endDate: new Date().toISOString().split("T")[0],
       registrationStartDate: new Date().toISOString().split("T")[0],
       registrationEndDate: new Date().toISOString().split("T")[0],
       waitlistEnabled: true,
-      repeatType: "none" as const,
-      coachId: undefined,
-      assistantId: undefined,
     },
   });
 
@@ -285,7 +279,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     }
   };
 
-  const handleSkillLevelChange = (sportId: number, skillLevel: string) => {
+  const handleSkillLevelChange = (sportId: number, skillLevel: SkillLevel) => {
     setSelectedSports(prev =>
       prev.map(sport =>
         sport.sportId === sportId ? { ...sport, skillLevel } : sport
@@ -294,16 +288,24 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   };
 
   const createCampMutation = useMutation({
-    mutationFn: async (campData: z.infer<typeof insertCampSchema>) => {
-      console.log("Starting mutation with data:", campData);
-      const response = await apiRequest("POST", "/api/camps", campData);
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.error("API error:", error);
-        throw new Error(error.message || "Failed to create camp");
+    mutationFn: async (data: z.infer<typeof insertCampSchema>) => {
+      if (!user?.organizationId) {
+        throw new Error("Organization ID required");
       }
 
+      const campData = {
+        ...data,
+        organizationId: user.organizationId,
+        createdById: user.id,
+        sports: selectedSports,
+        schedules: selectedDays.map(day => ({
+          dayOfWeek: DAYS_OF_WEEK.indexOf(day),
+          startTime: daySchedules[day].startTime,
+          endTime: daySchedules[day].endTime,
+        })),
+      };
+
+      const response = await apiRequest("POST", "/api/camps", campData);
       return await response.json();
     },
     onSuccess: () => {
@@ -319,87 +321,16 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      console.error("Mutation error:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create camp",
+        description: error.message,
         variant: "destructive",
       });
     },
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    console.log("Form submission started");
-
-    const formData = form.getValues();
-    console.log("Form data:", formData);
-
-    if (!user?.organizationId || !user?.id) {
-      toast({
-        title: "Error",
-        description: "Organization ID and user ID are required",
-        variant: "destructive",
-      });
-      return;
-    }
-
-
-    if (selectedDays.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please select at least one day for the camp schedule",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (selectedSports.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please select at least one sport",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const campData = {
-      name: formData.name,
-      description: formData.description,
-      streetAddress: formData.streetAddress,
-      city: formData.city,
-      state: formData.state,
-      zipCode: formData.zipCode,
-      startDate: formData.startDate,
-      endDate: formData.endDate,
-      registrationStartDate: formData.registrationStartDate,
-      registrationEndDate: formData.registrationEndDate,
-      price: formData.price ? Number(formData.price) * 100 : 0,
-      capacity: formData.capacity,
-      type: formData.type || "group",
-      visibility: formData.visibility || "public",
-      waitlistEnabled: formData.waitlistEnabled,
-      organizationId: user.organizationId,
-      createdById: user.id,
-      sports: selectedSports,
-      schedules: selectedDays.map(day => ({
-        dayOfWeek: DAYS_OF_WEEK.indexOf(day),
-        startTime: daySchedules[day].startTime,
-        endTime: daySchedules[day].endTime,
-      })),
-      repeatType: formData.repeatType || "none",
-      coachId: formData.coachId,
-      assistantId: formData.assistantId,
-    };
-
-    console.log("Submitting camp data:", campData);
-
-    try {
-      await createCampMutation.mutateAsync(campData);
-    } catch (error) {
-      console.error("Form submission error:", error);
-    }
+  const onSubmit = (data: z.infer<typeof insertCampSchema>) => {
+    createCampMutation.mutate(data);
   };
 
   return (
@@ -410,7 +341,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         </DialogHeader>
         <div className="flex-1 overflow-y-auto py-4">
           <Form {...form}>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Basic Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -667,7 +598,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                           <FormLabel className="text-xs">Skill Level</FormLabel>
                           <select
                             value={selectedSports.find(s => s.sportId === sport.id)?.skillLevel}
-                            onChange={(e) => handleSkillLevelChange(sport.id, e.target.value)}
+                            onChange={(e) => handleSkillLevelChange(sport.id, e.target.value as SkillLevel)}
                             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                           >
                             <option value="beginner">Beginner</option>
@@ -840,246 +771,14 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   );
 }
 
-function InviteMemberDialog() {
-  const [isOpen, setIsOpen] = React.useState(false);
-  const { toast } = useToast();
-  const { user } = useAuth();
-
-  const form = useForm<z.infer<typeof insertInvitationSchema>>({
-    resolver: zodResolver(insertInvitationSchema),
-    defaultValues: {
-      email: "",
-      role: "coach" as const,
-      organizationId: user?.organizationId || 0,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-    },
-  });
-
-  const inviteMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof insertInvitationSchema>) => {
-      if (!user?.organizationId) {
-        throw new Error("No organization ID found");
-      }
-
-      const formattedData = {
-        ...data,
-        organizationId: user.organizationId,
-        expiresAt: new Date(data.expiresAt),
-      };
-
-      const res = await apiRequest(
-        "POST",
-        `/api/organizations/${user.organizationId}/invitations`,
-        formattedData
-      );
-
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to send invitation");
-      }
-
-      return await res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/organizations/${user?.organizationId}/invitations`] });
-      toast({
-        title: "Success",
-        description: "Invitation sent successfully",
-      });
-      form.reset();
-      setIsOpen(false);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const onSubmit = (data: z.infer<typeof insertInvitationSchema>) => {
-    inviteMutation.mutate(data);
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline">Invite Team Member</Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Invite Team Member</DialogTitle>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input type="email" {...field} placeholder="Enter email address" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Role</FormLabel>
-                  <FormControl>
-                    <select
-                      {...field}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                    >
-                      <option value="coach">Coach</option>
-                      <option value="manager">Manager</option>
-                      <option value="volunteer">Volunteer</option>
-                    </select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" className="w-full" disabled={inviteMutation.isPending}>
-              {inviteMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                "Send Invitation"
-              )}
-            </Button>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-const DAYS_OF_WEEK = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-] as const;
-
 const REPEAT_OPTIONS = [
   { value: "none", label: "Does not repeat" },
   { value: "weekly", label: "Repeats weekly" },
   { value: "monthly", label: "Repeats monthly" },
 ] as const;
 
-function ResendButton({ invitation, organizationId }: { invitation: any; organizationId: number }){
-  const { toast } = useToast();
+type RepeatType = typeof REPEAT_OPTIONS[number]['value'];
 
-  const resendMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest(
-        "POST",
-        `/api/organizations/${organizationId}/invitations`,
-        {
-          email: invitation.email,
-          role: invitation.role,
-          organizationId: organizationId,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        }
-      );
 
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to resend invitation");
-      }
-
-      return await res.json();
-    },
-    onSuccess: () => {
-      toast({title: "Success",
-        description: "Invitation resentsuccessfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => resendMutation.mutate()}
-      disabled={resendMutation.isPending}
-    >
-      {resendMutation.isPending ? (
-        <>
-          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-          Resending...
-        </>
-      ) : (
-        'Resend'
-      )}
-    </Button>
-  );
-}
-
-function CampCreatorDashboard() {
-  const { user, logoutMutation } = useAuth();
-  const [showAddCampDialog, setShowAddCampDialog] = React.useState(false);
-
-  const { data: invitations } = useQuery<{ id: number; email: string; role: string; expiresAt: Date }[]>({
-    queryKey: [`/api/organizations/${user?.organizationId}/invitations`],
-    enabled: !!user?.organizationId,
-  });
-
-  return (
-    <DashboardLayout>
-      <div className="grid gap-6">
-        <CampsDashboard/>
-        <Card>
-          <CardHeader>
-            <CardTitle>Team Management</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <p className="text-gray-500">Manage your organization's team members and settings.</p>
-              {invitations && invitations.length > 0 && (
-                <div className="mt-4">
-                  <h3 className="text-sm font-semibold mb-2">Pending Invitations</h3>
-                  <div className="space-y-2">
-                    {invitations.map((invitation) => (
-                      <div key={invitation.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
-                        <div className="text-sm">
-                          {invitation.email} - {invitation.role}
-                        </div>
-                        <ResendButton
-                          invitation={invitation}
-                          organizationId={user?.organizationId || 0}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </DashboardLayout>
-  );
-}
-
-export { DashboardLayout, InviteMemberDialog, ResendButton };
+export { DashboardLayout };
 export default Dashboard;
