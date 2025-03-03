@@ -132,12 +132,16 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 
   const createCampMutation = useMutation({
     mutationFn: async (data: any) => {
+      console.log("Starting mutation with data:", data);
       const res = await apiRequest("POST", "/api/camps", data);
       if (!res.ok) {
         const errorData = await res.json();
+        console.error("API error response:", errorData);
         throw new Error(errorData.message || "Failed to create camp");
       }
-      return res.json();
+      const result = await res.json();
+      console.log("API success response:", result);
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
@@ -152,6 +156,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       onOpenChange(false);
     },
     onError: (error: Error) => {
+      console.error("Mutation error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to create camp",
@@ -161,6 +166,8 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   });
 
   const onSubmit = form.handleSubmit(async (data) => {
+    console.log("Submitting camp with data:", data); // Debug log
+
     if (!user?.organizationId) {
       toast({
         title: "Error",
@@ -200,10 +207,13 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       price: data.price ? Number(data.price) * 100 : 0,
     };
 
+    console.log("Prepared camp data for submission:", campData);
+
     try {
       await createCampMutation.mutateAsync(campData);
     } catch (error) {
-      // Error will be handled by mutation's onError callback
+      // onError in mutation will handle this
+      console.error("Form submission error:", error);
     }
   });
 
