@@ -165,7 +165,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     },
   });
 
-  const onSubmit = (data: z.infer<typeof insertCampSchema>) => {
+  const onSubmit = async (data: z.infer<typeof insertCampSchema>) => {
     console.log("Form submission started with data:", data);
 
     if (!user?.organizationId) {
@@ -219,7 +219,13 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         </DialogHeader>
         <div className="flex-1 overflow-y-auto py-4">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                form.handleSubmit(onSubmit)(e);
+              }} 
+              className="space-y-6"
+            >
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Basic Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
