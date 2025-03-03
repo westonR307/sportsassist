@@ -1,8 +1,10 @@
 import {
   users,
+  camps,
   type User,
   type InsertUser,
   type Role,
+  type Camp,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, and, inArray } from "drizzle-orm";
@@ -19,6 +21,7 @@ export interface IStorage {
   createUser(user: InsertUser & { organizationId?: number }): Promise<User>;
   updateUserRole(userId: number, newRole: Role): Promise<User>;
   getOrganizationStaff(orgId: number): Promise<User[]>;
+  createCamp(camp: Omit<Camp, "id">): Promise<Camp>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -105,6 +108,30 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  async getOrganizationStaff(orgId: number): Promise<User[]> {
+    const staffRoles = ["coach", "manager", "volunteer"];
+    return await db.select()
+      .from(users)
+      .where(
+        and(
+          eq(users.organizationId, orgId),
+          inArray(users.role, staffRoles)
+        )
+      );
+  }
+
+  async createCamp(camp: Omit<Camp, "id">): Promise<Camp> {
+    console.log("Creating camp:", camp);
+    try {
+      const [newCamp] = await db.insert(camps).values(camp).returning();
+      console.log("Created camp:", newCamp);
+      return newCamp;
+    } catch (error) {
+      console.error("Error creating camp:", error);
+      throw error;
+    }
+  }
   async createChild(child: Omit<Child, "id">): Promise<Child> {
     const [newChild] = await db.insert(children).values({
       name: child.name,
@@ -126,26 +153,6 @@ export class DatabaseStorage implements IStorage {
       .from(children)
       .where(eq(children.parentId, parentId))
       .orderBy(children.fullName);
-  }
-
-  async createCamp(camp: Omit<Camp, "id">): Promise<Camp> {
-    const [newCamp] = await db.insert(camps).values({
-      name: camp.name,
-      description: camp.description,
-      location: camp.location,
-      startDate: camp.startDate,
-      endDate: camp.endDate,
-      price: camp.price,
-      capacity: camp.capacity,
-      organizationId: camp.organizationId,
-      waitlistEnabled: camp.waitlistEnabled ?? true,
-      type: camp.type,
-      visibility: camp.visibility,
-      coachId: camp.coachId,
-      assistantId: camp.assistantId,
-      createdById: camp.createdById,
-    }).returning();
-    return newCamp;
   }
 
   async getCamp(id: number): Promise<Camp | undefined> {
@@ -235,17 +242,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(invitations.organizationId, organizationId));
   }
 
-  async getOrganizationStaff(orgId: number): Promise<User[]> {
-    const staffRoles = ["coach", "manager", "volunteer"];
-    return await db.select()
-      .from(users)
-      .where(
-        and(
-          eq(users.organizationId, orgId),
-          inArray(users.role, staffRoles)
-        )
-      );
-  }
+
 }
 
 export const storage = new DatabaseStorage();
