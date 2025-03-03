@@ -10,6 +10,7 @@ import {
   Calendar,
   LogOut,
   Loader2,
+  Menu,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -19,14 +20,35 @@ import { AddCampDialog } from "@/components/add-camp-dialog";
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = React.useState(true);
 
   if (!user?.organizationId) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="w-64 bg-white h-screen fixed left-0 top-0 border-r">
+      {/* Mobile Menu Button */}
+      <div className="lg:hidden fixed top-0 left-0 m-4 z-50">
+        <Button 
+          variant="outline" 
+          size="icon"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+        >
+          <Menu className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Sidebar */}
+      <div className={`
+        fixed left-0 top-0 h-screen bg-white border-r 
+        transition-all duration-300 ease-in-out z-40
+        ${sidebarOpen ? 'w-64' : 'w-0 lg:w-16'} 
+        lg:translate-x-0
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
         <div className="p-4 border-b">
-          <h2 className="font-semibold text-lg">Sports Camp Manager</h2>
+          <h2 className={`font-semibold text-lg ${!sidebarOpen && 'lg:hidden'}`}>
+            Sports Camp Manager
+          </h2>
         </div>
         <nav className="p-4 space-y-2">
           <Link href="/dashboard">
@@ -34,7 +56,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
               location === '/dashboard' ? 'bg-gray-100' : ''
             }`}>
               <Calendar className="h-5 w-5" />
-              <span>Camps</span>
+              <span className={!sidebarOpen ? 'lg:hidden' : ''}>Camps</span>
             </a>
           </Link>
           <Link href="/dashboard/reports">
@@ -42,7 +64,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
               location === '/dashboard/reports' ? 'bg-gray-100' : ''
             }`}>
               <BarChart3 className="h-5 w-5" />
-              <span>Reports</span>
+              <span className={!sidebarOpen ? 'lg:hidden' : ''}>Reports</span>
             </a>
           </Link>
           <Link href="/dashboard/team">
@@ -50,7 +72,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
               location === '/dashboard/team' ? 'bg-gray-100' : ''
             }`}>
               <Users className="h-5 w-5" />
-              <span>Team</span>
+              <span className={!sidebarOpen ? 'lg:hidden' : ''}>Team</span>
             </a>
           </Link>
           <Link href="/dashboard/settings">
@@ -58,7 +80,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
               location === '/dashboard/settings' ? 'bg-gray-100' : ''
             }`}>
               <Settings className="h-5 w-5" />
-              <span>Settings</span>
+              <span className={!sidebarOpen ? 'lg:hidden' : ''}>Settings</span>
             </a>
           </Link>
           <Button
@@ -67,15 +89,29 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
             onClick={() => logoutMutation.mutate()}
           >
             <LogOut className="h-5 w-5 mr-2" />
-            Logout
+            <span className={!sidebarOpen ? 'lg:hidden' : ''}>Logout</span>
           </Button>
         </nav>
       </div>
-      <div className="pl-64">
+
+      {/* Main Content */}
+      <div className={`
+        transition-all duration-300 ease-in-out
+        ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-16'}
+        pt-16 lg:pt-0
+      `}>
         <main className="container mx-auto px-6 py-8">
           {children}
         </main>
       </div>
+
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
     </div>
   );
 }
