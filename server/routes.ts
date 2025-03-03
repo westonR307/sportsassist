@@ -279,11 +279,18 @@ export async function registerRoutes(app: Express): Server {
 
       console.log("Validated camp data:", parsed.data);
 
-      const camp = await storage.createCamp({
+      // Convert string dates to Date objects
+      const campData = {
         ...parsed.data,
+        startDate: new Date(parsed.data.startDate),
+        endDate: new Date(parsed.data.endDate),
+        registrationStartDate: new Date(parsed.data.registrationStartDate),
+        registrationEndDate: new Date(parsed.data.registrationEndDate),
         organizationId: req.user!.organizationId!,
         createdById: req.user!.id,
-      });
+      };
+
+      const camp = await storage.createCamp(campData);
 
       console.log("Camp created successfully:", camp);
       res.status(201).json(camp);

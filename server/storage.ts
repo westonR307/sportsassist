@@ -122,13 +122,33 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createCamp(camp: Omit<Camp, "id">): Promise<Camp> {
-    console.log("Creating camp:", camp);
     try {
-      const [newCamp] = await db.insert(camps).values(camp).returning();
-      console.log("Created camp:", newCamp);
+      console.log("Creating camp in storage:", camp);
+
+      const [newCamp] = await db.insert(camps).values({
+        name: camp.name,
+        description: camp.description,
+        location: camp.location,
+        startDate: camp.startDate,
+        endDate: camp.endDate,
+        registrationStartDate: camp.registrationStartDate,
+        registrationEndDate: camp.registrationEndDate,
+        price: camp.price,
+        capacity: camp.capacity,
+        organizationId: camp.organizationId,
+        waitlistEnabled: camp.waitlistEnabled,
+        type: camp.type,
+        visibility: camp.visibility,
+        coachId: camp.coachId,
+        assistantId: camp.assistantId,
+        createdById: camp.createdById,
+        repeatType: camp.repeatType || "none",
+      }).returning();
+
+      console.log("Created camp successfully:", newCamp);
       return newCamp;
     } catch (error) {
-      console.error("Error creating camp:", error);
+      console.error("Error in storage.createCamp:", error);
       throw error;
     }
   }
