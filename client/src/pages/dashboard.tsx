@@ -71,18 +71,22 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     defaultValues: {
       name: "",
       description: "",
-      location: "",
+      streetAddress: "",
+      city: "",
+      state: "",
+      zipCode: "",
       type: "group" as const,
       visibility: "public" as const,
       price: null,
       capacity: 10,
       startDate: new Date().toISOString().split("T")[0],
       endDate: new Date().toISOString().split("T")[0],
+      registrationStartDate: new Date().toISOString().split("T")[0],
+      registrationEndDate: new Date().toISOString().split("T")[0],
       waitlistEnabled: true,
       repeatType: "none" as const,
       coachId: undefined,
       assistantId: undefined,
-      location: "", //Added to fix the required but empty location field
     },
   });
 
@@ -181,14 +185,6 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       return;
     }
 
-    if (!formData.location?.trim()) {
-      toast({
-        title: "Error",
-        description: "Location is required",
-        variant: "destructive",
-      });
-      return;
-    }
 
     if (selectedDays.length === 0) {
       toast({
@@ -211,9 +207,14 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     const campData = {
       name: formData.name,
       description: formData.description,
-      location: formData.location,
+      streetAddress: formData.streetAddress,
+      city: formData.city,
+      state: formData.state,
+      zipCode: formData.zipCode,
       startDate: formData.startDate,
       endDate: formData.endDate,
+      registrationStartDate: formData.registrationStartDate,
+      registrationEndDate: formData.registrationEndDate,
       price: formData.price ? Number(formData.price) * 100 : 0,
       capacity: formData.capacity,
       type: formData.type || "group",
@@ -266,19 +267,65 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="location"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Location</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Enter camp location" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Location Details</h3>
+                    <div className="grid grid-cols-1 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="streetAddress"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Street Address</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="Enter street address" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="city"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>City</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="Enter city" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="state"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>State</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="CA" maxLength={2} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="zipCode"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>ZIP Code</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="12345" pattern="\d{5}(-\d{4})?" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <FormField
@@ -349,6 +396,47 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                         <FormLabel>End Date</FormLabel>
                         <FormControl>
                           <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Registration Period</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="registrationStartDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Registration Start Date</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            {...field}
+                            min={new Date().toISOString().split("T")[0]}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="registrationEndDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Registration End Date</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            {...field}
+                            min={form.watch("registrationStartDate")}
+                            max={form.watch("startDate")}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -813,7 +901,10 @@ function CampCreatorDashboard() {
                         <Card key={camp.id} className="flex flex-col">
                           <CardHeader>
                             <CardTitle className="text-lg">{camp.name}</CardTitle>
-                            <p className="text-sm text-gray-500">{camp.location}</p>
+                            <p className="text-sm text-gray-500">
+                              {camp.streetAddress}<br />
+                              {camp.city}, {camp.state} {camp.zipCode}
+                            </p>
                           </CardHeader>
                           <CardContent>
                             <div className="space-y-2">
@@ -825,12 +916,16 @@ function CampCreatorDashboard() {
                               <div className="flex justify-between items-center text-sm">
                                 <span>Type: {camp.type}</span>
                                 <span className={`px-2 py-1 rounded-full text-xs ${
-                                  camp.visibility === 'public' 
-                                    ? 'bg-green-100 text-green-800' 
+                                  camp.visibility === 'public'
+                                    ? 'bg-green-100 text-green-800'
                                     : 'bg-amber-100 text-amber-800'
                                 }`}>
                                   {camp.visibility}
                                 </span>
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                <p>Registration: {new Date(camp.registrationStartDate).toLocaleDateString()} - {new Date(camp.registrationEndDate).toLocaleDateString()}</p>
+                                <p>Camp: {new Date(camp.startDate).toLocaleDateString()} - {new Date(camp.endDate).toLocaleDateString()}</p>
                               </div>
                             </div>
                           </CardContent>

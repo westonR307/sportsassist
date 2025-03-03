@@ -79,9 +79,14 @@ export const camps = pgTable("camps", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description").notNull(),
-  location: text("location").notNull(),
+  streetAddress: text("street_address").notNull(),
+  city: text("city").notNull(),
+  state: text("state").notNull(),
+  zipCode: text("zip_code").notNull(),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
+  registrationStartDate: timestamp("registration_start_date").notNull(),
+  registrationEndDate: timestamp("registration_end_date").notNull(),
   price: integer("price").notNull(),
   capacity: integer("capacity").notNull(),
   organizationId: integer("organization_id").references(() => organizations.id).notNull(),
@@ -164,14 +169,37 @@ export const insertChildSchema = createInsertSchema(children)
 export const insertCampSchema = createInsertSchema(camps).extend({
   name: z.string().min(1, "Name is required"),
   description: z.string().min(1, "Description is required"),
-  location: z.string().min(1, "Location is required"),
-  startDate: z.string(),
-  endDate: z.string(),
+  streetAddress: z.string().min(1, "Street address is required"),
+  city: z.string().min(1, "City is required"),
+  state: z.string().length(2, "Please use 2-letter state code"),
+  zipCode: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format"),
+  startDate: z.string().refine((date) => new Date(date) >= new Date(), {
+    message: "Start date must be in the future",
+  }),
+  endDate: z.string().refine((date) => new Date(date) >= new Date(), {
+    message: "End date must be in the future",
+  }),
+  registrationStartDate: z.string().refine((date) => new Date(date) >= new Date(), {
+    message: "Registration start date must be in the future",
+  }),
+  registrationEndDate: z.string(),
   price: z.number().min(0, "Price must be 0 or greater").nullable(),
   capacity: z.number().min(1, "Capacity must be at least 1"),
   type: z.enum(["one_on_one", "group", "team", "virtual"]),
   visibility: z.enum(["public", "private"]),
   waitlistEnabled: z.boolean().default(true),
+}).refine((data) => {
+  const startDate = new Date(data.startDate);
+  const endDate = new Date(data.endDate);
+  const regStartDate = new Date(data.registrationStartDate);
+  const regEndDate = new Date(data.registrationEndDate);
+
+  return regStartDate <= regEndDate && // Registration start must be before or on registration end
+         regEndDate <= startDate && // Registration must end before or on camp start
+         startDate <= endDate; // Camp start must be before or on camp end
+}, {
+  message: "Invalid date sequence. Registration period must end before camp starts, and camp end date must be after start date.",
+  path: ["dates"]
 });
 
 export const insertRegistrationSchema = createInsertSchema(registrations);
