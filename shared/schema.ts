@@ -82,8 +82,6 @@ export const camps = pgTable("camps", {
   location: text("location").notNull(),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
-  registrationStartDate: timestamp("registration_start_date"),
-  registrationEndDate: timestamp("registration_end_date"),
   price: integer("price").notNull(),
   capacity: integer("capacity").notNull(),
   organizationId: integer("organization_id").references(() => organizations.id).notNull(),
@@ -173,8 +171,6 @@ export const insertCampSchema = createInsertSchema(camps).extend({
   location: z.string().min(1, "Location is required"),
   startDate: z.string(),
   endDate: z.string(),
-  registrationStartDate: z.string().optional(),
-  registrationEndDate: z.string().optional(),
   price: z.number().min(0, "Price must be 0 or greater").nullable(),
   capacity: z.number().min(1, "Capacity must be at least 1"),
   sports: z.array(z.object({
