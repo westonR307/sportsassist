@@ -26,7 +26,7 @@ import {
   type InsertInvitation,
   type Camp,
   type Invitation,
-  insertInvitationSchema,  // Added this import
+  insertInvitationSchema,
 } from "@shared/schema";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -51,12 +51,10 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   const [selectedSports, setSelectedSports] = React.useState<Array<{ sportId: number; skillLevel: string }>>([]);
   const [daySchedules, setDaySchedules] = React.useState<Record<string, { startTime: string; endTime: string }>>({});
 
-  // Load sports data
   const { data: sports } = useQuery({
     queryKey: ["/api/sports"],
   });
 
-  // Load organization staff data
   const { data: organizationStaff } = useQuery({
     queryKey: [`/api/organizations/${user?.organizationId}/staff`],
     enabled: !!user?.organizationId,
@@ -128,111 +126,88 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   const createCampMutation = useMutation({
     mutationFn: async (data: any) => {
       try {
-        console.log("Mutation started with data:", data);
         const res = await apiRequest("POST", "/api/camps", data);
-        console.log("API Response:", res);
-
         if (!res.ok) {
           const errorData = await res.json();
-          console.error("API error response:", errorData);
           throw new Error(errorData.message || "Failed to create camp");
         }
-
-        const responseData = await res.json();
-        console.log("API success response:", responseData);
-        return responseData;
+        return await res.json();
       } catch (error) {
-        console.error("API call error:", error);
         throw error;
       }
-    }
-  });
-
-  const onSubmit = React.useCallback(async (formData: z.infer<typeof insertCampSchema>) => {
-    try {
-      console.log("Form submission started", { formData });
-
-      if (!user?.organizationId) {
-        toast({
-          title: "Error",
-          description: "Organization ID is required",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (selectedDays.length === 0) {
-        toast({
-          title: "Error",
-          description: "Please select at least one day for the camp schedule",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (selectedSports.length === 0) {
-        toast({
-          title: "Error",
-          description: "Please select at least one sport",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const campData = {
-        name: formData.name,
-        description: formData.description,
-        location: formData.location || "",
-        startDate: formData.startDate,
-        endDate: formData.endDate,
-        registrationStartDate: formData.registrationStartDate,
-        registrationEndDate: formData.registrationEndDate,
-        price: formData.price ? Number(formData.price) * 100 : 0,
-        capacity: formData.capacity,
-        type: formData.type,
-        visibility: formData.visibility,
-        waitlistEnabled: formData.waitlistEnabled,
-        organizationId: user.organizationId,
-        sports: selectedSports,
-        schedules: selectedDays.map(day => ({
-          dayOfWeek: DAYS_OF_WEEK.indexOf(day),
-          startTime: daySchedules[day].startTime,
-          endTime: daySchedules[day].endTime,
-        })),
-        coachId: formData.coachId,
-        assistantId: formData.assistantId,
-      };
-
-      console.log("Submitting camp data:", campData);
-
-      const result = await createCampMutation.mutateAsync(campData);
-      console.log("Mutation result:", result);
-
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
       toast({
         title: "Success",
         description: "Camp created successfully",
       });
-
       form.reset();
       setSelectedDays([]);
       setSelectedSports([]);
       setDaySchedules({});
       onOpenChange(false);
-
-    } catch (error) {
-      console.error("Form submission error:", error);
+    },
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create camp",
+        description: error.message || "Failed to create camp",
         variant: "destructive",
       });
+    },
+  });
+
+  const handleSubmit = async (formData: z.infer<typeof insertCampSchema>) => {
+    if (!user?.organizationId) {
+      toast({
+        title: "Error",
+        description: "Organization ID is required",
+        variant: "destructive",
+      });
+      return;
     }
-  }, [user, selectedDays, selectedSports, daySchedules, createCampMutation, form, onOpenChange, toast]);
+
+    if (selectedDays.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please select at least one day for the camp schedule",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (selectedSports.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please select at least one sport",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const campData = {
+      ...formData,
+      organizationId: user.organizationId,
+      sports: selectedSports,
+      schedules: selectedDays.map(day => ({
+        dayOfWeek: DAYS_OF_WEEK.indexOf(day),
+        startTime: daySchedules[day].startTime,
+        endTime: daySchedules[day].endTime,
+      })),
+      price: formData.price ? Number(formData.price) * 100 : 0,
+    };
+
+    try {
+      await createCampMutation.mutateAsync(campData);
+    } catch (error) {
+      // Error will be handled by mutation's onError callback
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
-        <DialogHeader className="flex-none sticky top-0 bg-background z-10 pb-4 border-b">
+        <DialogHeader className="flex-none bg-background z-10 pb-4 border-b">
           <DialogTitle>Create New Camp</DialogTitle>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto py-4">
@@ -240,8 +215,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
             <form 
               onSubmit={(e) => {
                 e.preventDefault();
-                console.log("Form submit triggered");
-                form.handleSubmit(onSubmit)(e);
+                form.handleSubmit(handleSubmit)(e);
               }} 
               className="space-y-6"
             >
