@@ -722,6 +722,22 @@ function InviteMemberDialog() {
     },
   });
 
+  const handleSubmit = async (data: z.infer<typeof insertInvitationSchema>) => {
+    if (!user?.organizationId) {
+      toast({
+        title: "Error",
+        description: "You must be part of an organization to invite team members",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    inviteMutation.mutate({
+      ...data,
+      organizationId: user.organizationId,
+    });
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -732,7 +748,7 @@ function InviteMemberDialog() {
           <DialogTitle>Invite Team Member</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit((data) => inviteMutation.mutate(data))} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="email"
@@ -963,8 +979,7 @@ function CampCreatorDashboard() {
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
+                  </div>                )}
               </div>
             </CardContent>
           </Card>

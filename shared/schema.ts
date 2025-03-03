@@ -9,6 +9,7 @@ export type ContactMethod = "email" | "sms" | "app";
 export type CampType = "one_on_one" | "group" | "team" | "virtual";
 export type CampVisibility = "public" | "private";
 export type RepeatType = "none" | "weekly" | "monthly";
+export type StaffRole = "manager" | "coach" | "volunteer";
 
 // Roles that can register directly (not requiring invitation)
 export const publicRoles = ["camp_creator", "parent", "athlete"] as const;
@@ -144,6 +145,11 @@ export const insertInvitationSchema = createInsertSchema(invitations).omit({
   token: true,
   accepted: true,
   createdAt: true,
+}).extend({
+  role: z.enum(["manager", "coach", "volunteer"]),
+  email: z.string().email("Invalid email address"),
+  organizationId: z.number(),
+  expiresAt: z.date()
 });
 
 export const insertChildSchema = createInsertSchema(children)
