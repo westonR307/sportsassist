@@ -32,7 +32,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import * as z from "zod";
-import { and, inArray } from "drizzle-orm"; // Added import
+import { and, inArray } from "drizzle-orm";
 
 const DAYS_OF_WEEK = [
   "Sunday",
@@ -70,10 +70,12 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       location: "",
       type: "group" as const,
       visibility: "public" as const,
-      price: 0,
+      price: null,
       capacity: 10,
       startDate: new Date().toISOString().split("T")[0],
       endDate: new Date().toISOString().split("T")[0],
+      registrationStartDate: new Date().toISOString().split("T")[0],
+      registrationEndDate: new Date().toISOString().split("T")[0],
       waitlistEnabled: true,
       coachId: undefined,
       assistantId: undefined,
@@ -198,7 +200,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         location: formData.location || "",
         startDate: formData.startDate,
         endDate: formData.endDate,
-        price: Number(formData.price) * 100,
+        price: formData.price ? Number(formData.price) * 100 : 0,
         capacity: formData.capacity,
         type: formData.type,
         visibility: formData.visibility,
@@ -212,6 +214,8 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         })),
         coachId: formData.coachId,
         assistantId: formData.assistantId,
+        registrationStartDate: formData.registrationStartDate,
+        registrationEndDate: formData.registrationEndDate,
       };
 
       console.log("Submitting camp data:", campData);
@@ -316,6 +320,39 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>End Date</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Registration Dates */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Registration Period</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="registrationStartDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Registration Start Date</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="registrationEndDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Registration End Date</FormLabel>
                         <FormControl>
                           <Input type="date" {...field} />
                         </FormControl>
@@ -470,10 +507,11 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                         <Input
                           type="number"
                           {...field}
-                          value={field.value}
-                          onChange={(e) => field.onChange(Number(e.target.value))}
+                          value={field.value || ''}
+                          onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
                           min={0}
                           step="0.01"
+                          placeholder="Enter price"
                         />
                       </FormControl>
                       <FormMessage />
