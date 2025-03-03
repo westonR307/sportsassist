@@ -44,6 +44,12 @@ const DAYS_OF_WEEK = [
   "Saturday",
 ] as const;
 
+const REPEAT_OPTIONS = [
+  { value: "none", label: "Does not repeat" },
+  { value: "weekly", label: "Repeats weekly" },
+  { value: "monthly", label: "Repeats monthly" },
+] as const;
+
 function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -75,6 +81,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       registrationStartDate: new Date().toISOString().split("T")[0],
       registrationEndDate: new Date().toISOString().split("T")[0],
       waitlistEnabled: true,
+      repeatType: "none" as const,
       coachId: undefined,
       assistantId: undefined,
     },
@@ -125,16 +132,12 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 
   const createCampMutation = useMutation({
     mutationFn: async (data: any) => {
-      try {
-        const res = await apiRequest("POST", "/api/camps", data);
-        if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.message || "Failed to create camp");
-        }
-        return await res.json();
-      } catch (error) {
-        throw error;
+      const res = await apiRequest("POST", "/api/camps", data);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to create camp");
       }
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
@@ -157,7 +160,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     },
   });
 
-  const handleSubmit = async (formData: z.infer<typeof insertCampSchema>) => {
+  const onSubmit = form.handleSubmit(async (data) => {
     if (!user?.organizationId) {
       toast({
         title: "Error",
@@ -186,7 +189,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     }
 
     const campData = {
-      ...formData,
+      ...data,
       organizationId: user.organizationId,
       sports: selectedSports,
       schedules: selectedDays.map(day => ({
@@ -194,7 +197,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         startTime: daySchedules[day].startTime,
         endTime: daySchedules[day].endTime,
       })),
-      price: formData.price ? Number(formData.price) * 100 : 0,
+      price: data.price ? Number(data.price) * 100 : 0,
     };
 
     try {
@@ -202,7 +205,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     } catch (error) {
       // Error will be handled by mutation's onError callback
     }
-  };
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -212,13 +215,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         </DialogHeader>
         <div className="flex-1 overflow-y-auto py-4">
           <Form {...form}>
-            <form 
-              onSubmit={(e) => {
-                e.preventDefault();
-                form.handleSubmit(handleSubmit)(e);
-              }} 
-              className="space-y-6"
-            >
+            <form onSubmit={onSubmit} className="space-y-6">
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Basic Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -269,6 +266,32 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                           {...field}
                           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background min-h-[100px]"
                         />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Repeat Schedule</h3>
+                <FormField
+                  control={form.control}
+                  name="repeatType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Repeat</FormLabel>
+                      <FormControl>
+                        <select
+                          {...field}
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                        >
+                          {REPEAT_OPTIONS.map(option => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
                       </FormControl>
                       <FormMessage />
                     </FormItem>

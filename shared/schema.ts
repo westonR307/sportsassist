@@ -8,6 +8,7 @@ export type Gender = "male" | "female" | "other" | "prefer_not_to_say";
 export type ContactMethod = "email" | "sms" | "app";
 export type CampType = "one_on_one" | "group" | "team" | "virtual";
 export type CampVisibility = "public" | "private";
+export type RepeatType = "none" | "weekly" | "monthly";
 
 // Roles that can register directly (not requiring invitation)
 export const publicRoles = ["camp_creator", "parent", "athlete"] as const;
@@ -92,6 +93,7 @@ export const camps = pgTable("camps", {
   coachId: integer("coach_id").references(() => users.id),
   assistantId: integer("assistant_id").references(() => users.id),
   createdById: integer("created_by_id").references(() => users.id).notNull(),
+  repeatType: text("repeat_type").$type<RepeatType>().notNull().default("none"),
 });
 
 export const campStaff = pgTable("camp_staff", {
@@ -184,8 +186,9 @@ export const insertCampSchema = createInsertSchema(camps).extend({
     startTime: z.string(),
     endTime: z.string(),
   })).min(1, "At least one schedule is required"),
-  type: z.enum(["one_on_one", "group", "team", "virtual"]),
+  type: z.enum(["one_on-one", "group", "team", "virtual"]),
   visibility: z.enum(["public", "private"]),
+  repeatType: z.enum(["none", "weekly", "monthly"]).default("none"),
   waitlistEnabled: z.boolean().default(true),
   organizationId: z.number().optional(),
   coachId: z.number().optional(),
