@@ -167,6 +167,8 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 
   const onSubmit = async (formData: z.infer<typeof insertCampSchema>) => {
     try {
+      console.log("Form submission started with data:", formData);
+
       if (!user?.organizationId) {
         toast({
           title: "Error",
@@ -200,6 +202,8 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         location: formData.location || "",
         startDate: formData.startDate,
         endDate: formData.endDate,
+        registrationStartDate: formData.registrationStartDate,
+        registrationEndDate: formData.registrationEndDate,
         price: formData.price ? Number(formData.price) * 100 : 0,
         capacity: formData.capacity,
         type: formData.type,
@@ -214,8 +218,6 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         })),
         coachId: formData.coachId,
         assistantId: formData.assistantId,
-        registrationStartDate: formData.registrationStartDate,
-        registrationEndDate: formData.registrationEndDate,
       };
 
       console.log("Submitting camp data:", campData);
@@ -238,7 +240,11 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         </DialogHeader>
         <div className="space-y-6 pb-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              console.log("Form submitted");
+              form.handleSubmit(onSubmit)(e);
+            }} className="space-y-6">
               {/* Basic Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Basic Information</h3>
@@ -580,7 +586,12 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={createCampMutation.isPending}>
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={createCampMutation.isPending}
+                onClick={() => console.log("Create camp button clicked")}
+              >
                 {createCampMutation.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
