@@ -128,7 +128,10 @@ export class DatabaseStorage implements IStorage {
       const [newCamp] = await db.insert(camps).values({
         name: camp.name,
         description: camp.description,
-        location: camp.location,
+        streetAddress: camp.streetAddress,
+        city: camp.city,
+        state: camp.state,
+        zipCode: camp.zipCode,
         startDate: camp.startDate,
         endDate: camp.endDate,
         price: camp.price,
