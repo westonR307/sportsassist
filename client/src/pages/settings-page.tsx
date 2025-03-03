@@ -47,21 +47,20 @@ function SettingsPage() {
 
   const form = useForm<OrganizationSettings>({
     resolver: zodResolver(organizationSettingsSchema),
-    values: {
-      name: organization?.name ?? "",
-      description: organization?.description ?? "",
-      contactEmail: organization?.contactEmail ?? "",
-    },
+    values: organization ? {
+      name: organization.name,
+      description: organization.description,
+      contactEmail: organization.contactEmail,
+    } : undefined,
   });
 
-  // Update form when organization data changes
+  // Update form values when organization data is loaded
   React.useEffect(() => {
     if (organization) {
-      form.reset({
-        name: organization.name,
-        description: organization.description,
-        contactEmail: organization.contactEmail,
-      });
+      console.log("Setting organization data:", organization);
+      form.setValue("name", organization.name);
+      form.setValue("description", organization.description);
+      form.setValue("contactEmail", organization.contactEmail);
     }
   }, [organization, form]);
 
