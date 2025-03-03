@@ -47,20 +47,16 @@ function SettingsPage() {
 
   const form = useForm<OrganizationSettings>({
     resolver: zodResolver(organizationSettingsSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      contactEmail: "",
-    },
   });
 
   // Update form when organization data is loaded
   React.useEffect(() => {
     if (organization) {
+      console.log("Setting form data:", organization);
       form.reset({
-        name: organization.name,
-        description: organization.description,
-        contactEmail: organization.contactEmail,
+        name: organization.name || "",
+        description: organization.description || "",
+        contactEmail: organization.contactEmail || "",
       });
     }
   }, [organization, form]);
@@ -75,6 +71,11 @@ function SettingsPage() {
         data
       );
 
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to update organization");
+      }
+
       return await res.json();
     },
     onSuccess: () => {
@@ -85,15 +86,17 @@ function SettingsPage() {
       });
     },
     onError: (error: Error) => {
+      console.error("Update error:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to update organization settings",
         variant: "destructive",
       });
     },
   });
 
   const onSubmit = (data: OrganizationSettings) => {
+    console.log("Submitting data:", data);
     updateOrganizationMutation.mutate(data);
   };
 
