@@ -45,23 +45,21 @@ function SettingsPage() {
     enabled: !!user?.organizationId,
   });
 
+  // Initialize form without default values
   const form = useForm<OrganizationSettings>({
     resolver: zodResolver(organizationSettingsSchema),
-    defaultValues: {
-      name: organization?.name || "",
-      description: organization?.description || "",
-      contactEmail: organization?.contactEmail || "",
-    }
   });
 
   // Update form when organization data is loaded
   React.useEffect(() => {
     if (organization) {
-      console.log("Setting form data:", organization);
+      console.log("Organization data loaded:", organization);
       form.reset({
-        name: organization.name || "",
-        description: organization.description || "",
-        contactEmail: organization.contactEmail || "",
+        name: organization.name,
+        description: organization.description,
+        contactEmail: organization.contactEmail,
+      }, {
+        keepDefaultValues: true, // This ensures the form knows these are the default values
       });
     }
   }, [organization, form]);
