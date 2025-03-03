@@ -2,15 +2,26 @@ import React from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Plus } from "lucide-react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  Loader2,
+  Plus,
+  Settings,
+  Users,
+  BarChart3,
+  Calendar,
+  LogOut,
+} from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useToast } from "@/components/ui/use-toast";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { apiRequest } from "@/lib/api";
+import { insertCampSchema, insertInvitationSchema, type Camp } from "@shared/schema";
+import { z } from "zod";
+import { queryClient } from "@/lib/queryClient";
+import { useForm } from "react-hook-form";
 import {
   Form,
   FormControl,
@@ -19,14 +30,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { insertCampSchema, type InsertInvitation, type Camp, type Invitation, insertInvitationSchema } from "@shared/schema";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import * as z from "zod";
-import { and, inArray } from "drizzle-orm";
 
 const DAYS_OF_WEEK = [
   "Sunday",
@@ -44,18 +47,181 @@ const REPEAT_OPTIONS = [
   { value: "monthly", label: "Repeats monthly" },
 ] as const;
 
+type DayOfWeek = typeof DAYS_OF_WEEK[number];
+type RepeatType = typeof REPEAT_OPTIONS[number]['value'];
+
+export function SideNavigation() {
+  const [location] = useLocation();
+  const { user, logoutMutation } = useAuth();
+
+  if (!user?.organizationId) return null;
+
+  return (
+    <div className="w-64 bg-white h-screen fixed left-0 top-0 border-r">
+      <div className="p-4 border-b">
+        <h2 className="font-semibold text-lg">Sports Camp Manager</h2>
+      </div>
+      <nav className="p-4 space-y-2">
+        <Link href="/dashboard">
+          <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 ${
+            location === '/dashboard' ? 'bg-gray-100' : ''
+          }`}>
+            <Calendar className="h-5 w-5" />
+            <span>Camps</span>
+          </a>
+        </Link>
+        <Link href="/dashboard/reports">
+          <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 ${
+            location === '/dashboard/reports' ? 'bg-gray-100' : ''
+          }`}>
+            <BarChart3 className="h-5 w-5" />
+            <span>Reports</span>
+          </a>
+        </Link>
+        <Link href="/dashboard/team">
+          <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 ${
+            location === '/dashboard/team' ? 'bg-gray-100' : ''
+          }`}>
+            <Users className="h-5 w-5" />
+            <span>Team</span>
+          </a>
+        </Link>
+        <Link href="/dashboard/settings">
+          <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 ${
+            location === '/dashboard/settings' ? 'bg-gray-100' : ''
+          }`}>
+            <Settings className="h-5 w-5" />
+            <span>Settings</span>
+          </a>
+        </Link>
+        <Button
+          variant="ghost"
+          className="w-full justify-start"
+          onClick={() => logoutMutation.mutate()}
+        >
+          <LogOut className="h-5 w-5 mr-2" />
+          Logout
+        </Button>
+      </nav>
+    </div>
+  );
+}
+
+export function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <SideNavigation />
+      <div className="pl-64">
+        <main className="container mx-auto px-6 py-8">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function CampsDashboard() {
+  const [showAddCampDialog, setShowAddCampDialog] = React.useState(false);
+  const { data: camps, isLoading } = useQuery<Camp[]>({
+    queryKey: ["/api/camps"],
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Camps</h1>
+        <Button onClick={() => setShowAddCampDialog(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Create Camp
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center p-8">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      ) : !camps || camps.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-8">
+            <p className="text-gray-500 mb-4">No camps created yet</p>
+            <Button onClick={() => setShowAddCampDialog(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create your first camp
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {camps.map((camp) => (
+            <Card key={camp.id}>
+              <CardHeader>
+                <CardTitle>{camp.name}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Status</span>
+                    <span className="text-sm font-medium px-2 py-1 rounded-full bg-green-100 text-green-800">
+                      {camp.visibility}
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    <p>Registration: {new Date(camp.registrationStartDate).toLocaleDateString()} - {new Date(camp.registrationEndDate).toLocaleDateString()}</p>
+                    <p>Camp: {new Date(camp.startDate).toLocaleDateString()} - {new Date(camp.endDate).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {showAddCampDialog && (
+        <AddCampDialog
+          open={showAddCampDialog}
+          onOpenChange={setShowAddCampDialog}
+        />
+      )}
+    </div>
+  );
+}
+
+function Dashboard() {
+  const { user } = useAuth();
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <Card className="w-[300px]">
+          <CardHeader>
+            <CardTitle>Loading...</CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      {user.role === "camp_creator" && <CampsDashboard />}
+    </DashboardLayout>
+  );
+}
+
+export default Dashboard;
+
 function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [selectedDays, setSelectedDays] = React.useState<string[]>([]);
+  const [selectedDays, setSelectedDays] = React.useState<DayOfWeek[]>([]);
   const [selectedSports, setSelectedSports] = React.useState<Array<{ sportId: number; skillLevel: string }>>([]);
-  const [daySchedules, setDaySchedules] = React.useState<Record<string, { startTime: string; endTime: string }>>({});
+  const [daySchedules, setDaySchedules] = React.useState<Record<DayOfWeek, { startTime: string; endTime: string }>>({});
 
-  const { data: sports } = useQuery({
+  const { data: sports } = useQuery<{ id: number; name: string }[]>({
     queryKey: ["/api/sports"],
   });
 
-  const { data: organizationStaff } = useQuery({
+  const { data: organizationStaff } = useQuery<{ id: number; username: string; role: string }[]>({
     queryKey: [`/api/organizations/${user?.organizationId}/staff`],
     enabled: !!user?.organizationId,
   });
@@ -84,7 +250,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     },
   });
 
-  const handleDaySelection = (day: string, checked: boolean) => {
+  const handleDaySelection = (day: DayOfWeek, checked: boolean) => {
     if (checked) {
       setSelectedDays(prev => [...prev, day]);
       setDaySchedules(prev => ({
@@ -101,7 +267,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     }
   };
 
-  const updateDaySchedule = (day: string, field: "startTime" | "endTime", value: string) => {
+  const updateDaySchedule = (day: DayOfWeek, field: "startTime" | "endTime", value: string) => {
     setDaySchedules(prev => ({
       ...prev,
       [day]: {
@@ -485,7 +651,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Sports</h3>
                 <div className="grid gap-4">
-                  {sports?.map((sport: any) => (
+                  {sports?.map((sport) => (
                     <div key={sport.id} className="space-y-2 border rounded-lg p-3">
                       <div className="flex items-center gap-2">
                         <input
@@ -739,7 +905,7 @@ function InviteMemberDialog() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">Manage Team</Button>
+        <Button variant="outline">Invite Team Member</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -771,8 +937,8 @@ function InviteMemberDialog() {
                       {...field}
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                     >
-                      <option value="manager">Manager</option>
                       <option value="coach">Coach</option>
+                      <option value="manager">Manager</option>
                       <option value="volunteer">Volunteer</option>
                     </select>
                   </FormControl>
@@ -797,60 +963,23 @@ function InviteMemberDialog() {
   );
 }
 
-function Dashboard() {
-  try {
-    const { user } = useAuth();
+const DAYS_OF_WEEK = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+] as const;
 
-    if (!user) {
-      return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-50">
-          <Card className="w-[300px]">
-            <CardHeader>
-              <CardTitle>Loading...</CardTitle>
-            </CardHeader>
-          </Card>
-        </div>
-      );
-    }
+const REPEAT_OPTIONS = [
+  { value: "none", label: "Does not repeat" },
+  { value: "weekly", label: "Repeats weekly" },
+  { value: "monthly", label: "Repeats monthly" },
+] as const;
 
-    switch (user.role) {
-      case "camp_creator":
-        return <CampCreatorDashboard />;
-      default:
-        return (
-          <div className="min-h-screen bg-gray-50">
-            <div className="container mx-auto px-4 py-8">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Dashboard</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p>Welcome, {user.username}</p>
-                  <p className="text-sm text-gray-500 mt-2">Role: {user.role}</p>
-                  <p className="mt-4">Dashboard features for {user.role} coming soon...</p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        );
-    }
-  } catch (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <Card className="w-[300px]">
-          <CardHeader>
-            <CardTitle>Error</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-red-500">Something went wrong. Please try again.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-}
-
-function ResendButton({ invitation, organizationId }: { invitation: any; organizationId: number }) {
+function ResendButton({ invitation, organizationId }: { invitation: any; organizationId: number }){
   const { toast } = useToast();
 
   const resendMutation = useMutation({
@@ -874,9 +1003,8 @@ function ResendButton({ invitation, organizationId }: { invitation: any; organiz
       return await res.json();
     },
     onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Invitation resent successfully",
+      toast({title: "Success",
+        description: "Invitation resentsuccessfully",
       });
     },
     onError: (error: Error) => {
@@ -911,156 +1039,47 @@ function CampCreatorDashboard() {
   const { user, logoutMutation } = useAuth();
   const [showAddCampDialog, setShowAddCampDialog] = React.useState(false);
 
-  const { data: invitations } = useQuery({
+  const { data: invitations } = useQuery<{ id: number; email: string; role: string; expiresAt: Date }[]>({
     queryKey: [`/api/organizations/${user?.organizationId}/invitations`],
     enabled: !!user?.organizationId,
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold">Camp Creator Dashboard</h1>
-              <p className="text-gray-600">Welcome back, {user?.username}</p>
-            </div>
-            <Button variant="outline" onClick={() => logoutMutation.mutate()}>
-              Logout
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="grid gap-6">
-          {/* Camps Management Card */}
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle>Your Camps</CardTitle>
-                <Button onClick={() => setShowAddCampDialog(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Camp
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {(() => {
-                  const { data: camps, isLoading } = useQuery({
-                    queryKey: ["/api/camps"],
-                  });
-
-                  if (isLoading) {
-                    return (
-                      <div className="text-center py-4">
-                        <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-                        <p className="text-sm text-gray-500 mt-2">Loading camps...</p>
-                      </div>
-                    );
-                  }
-
-                  if (!camps || camps.length === 0) {
-                    return (
-                      <div className="text-center text-gray-500">
-                        No camps created yet. Click "Add Camp" to create your first camp.
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {camps.map((camp: any) => (
-                        <Card key={camp.id} className="flex flex-col">
-                          <CardHeader>
-                            <CardTitle className="text-lg">{camp.name}</CardTitle>
-                            <p className="text-sm text-gray-500">
-                              {camp.streetAddress}<br />
-                              {camp.city}, {camp.state} {camp.zipCode}
-                            </p>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="space-y-2">
-                              <p className="text-sm">{camp.description}</p>
-                              <div className="flex justify-between items-center text-sm">
-                                <span>Capacity: {camp.capacity}</span>
-                                <span>Price: ${camp.price / 100}</span>
-                              </div>
-                              <div className="flex justify-between items-center text-sm">
-                                <span>Type: {camp.type}</span>
-                                <span className={`px-2 py-1 rounded-full text-xs ${
-                                  camp.visibility === 'public'
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-amber-100 text-amber-800'
-                                }`}>
-                                  {camp.visibility}
-                                </span>
-                              </div>
-                              <div className="text-sm text-gray500">
-                                <p>Registration: {new Date(camp.registrationStartDate).toLocaleDateString()} - {new Date(camp.registrationEndDate).toLocaleDateString()}</p>
-                                <p>Camp: {new Date(camp.startDate).toLocaleDateString()} - {new Date(camp.endDate).toLocaleDateString()}</p>
-                              </div>
-                            </div>
-                          </CardContent>
-                          <div className="mt-auto p-4 pt-0 flex justify-end gap-2">
-                            <Button variant="outline" size="sm">Edit</Button>
-                            <Button variant="outline" size="sm">Manage</Button>
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Organization Management Card */}
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle>Team Management</CardTitle>
-                <InviteMemberDialog />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <p className="text-gray-500">Manage your organization's team members and settings.</p>
-                {invitations && invitations.length > 0 && (
-                  <div className="mt-4">
-                    <h3 className="text-sm font-semibold mb-2">Pending Invitations</h3>
-                    <div className="space-y-2">
-                      {invitations.map((invitation: any) => (
-                        <div key={invitation.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
-                          <div className="text-sm">
-                            {invitation.email} - {invitation.role}
-                          </div>
-                          <ResendButton 
-                            invitation={invitation} 
-                            organizationId={user?.organizationId || 0} 
-                          />
+    <DashboardLayout>
+      <div className="grid gap-6">
+        <CampsDashboard/>
+        <Card>
+          <CardHeader>
+            <CardTitle>Team Management</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-gray-500">Manage your organization's team members and settings.</p>
+              {invitations && invitations.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="text-sm font-semibold mb-2">Pending Invitations</h3>
+                  <div className="space-y-2">
+                    {invitations.map((invitation) => (
+                      <div key={invitation.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
+                        <div className="text-sm">
+                          {invitation.email} - {invitation.role}
                         </div>
-                      ))}
-                    </div>
+                        <ResendButton
+                          invitation={invitation}
+                          organizationId={user?.organizationId || 0}
+                        />
+                      </div>
+                    ))}
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-
-      {showAddCampDialog && (
-        <AddCampDialog 
-          open={showAddCampDialog} 
-          onOpenChange={setShowAddCampDialog} 
-        />
-      )}
-    </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </DashboardLayout>
   );
 }
 
+export { DashboardLayout, InviteMemberDialog, ResendButton };
 export default Dashboard;
