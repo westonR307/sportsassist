@@ -99,14 +99,14 @@ export async function registerRoutes(app: Express): Server {
         });
       }
 
-      // Generate invitation token
-      const token = randomBytes(32).toString("hex");
-
       // Get organization name for the email
       const organization = await storage.getOrganization(orgId);
       if (!organization) {
         return res.status(404).json({ message: "Organization not found" });
       }
+
+      // Generate invitation token
+      const token = randomBytes(32).toString("hex");
 
       // Create invitation in database
       const invitation = await storage.createInvitation({
@@ -115,14 +115,24 @@ export async function registerRoutes(app: Express): Server {
       });
 
       // Send invitation email
-      await sendInvitationEmail({
-        email: parsed.data.email,
-        role: parsed.data.role,
-        organizationName: organization.name,
-        token: token,
-      });
+      try {
+        await sendInvitationEmail({
+          email: parsed.data.email,
+          role: parsed.data.role,
+          organizationName: organization.name,
+          token: token,
+        });
 
-      res.status(201).json(invitation);
+        console.log(`Invitation email sent successfully to ${parsed.data.email}`);
+        res.status(201).json(invitation);
+      } catch (emailError) {
+        console.error("Email sending failed:", emailError);
+        // Still return success since the invitation was created
+        res.status(201).json({ 
+          ...invitation,
+          warning: "Invitation created but email sending failed. Please try resending the invitation."
+        });
+      }
     } catch (error) {
       console.error("Invitation creation error:", error);
       res.status(500).json({ message: "Failed to create invitation" });

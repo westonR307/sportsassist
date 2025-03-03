@@ -14,10 +14,11 @@ export async function sendInvitationEmail({
   token: string;
 }) {
   const acceptUrl = `${process.env.VITE_APP_URL || 'http://localhost:5000'}/invitations/${token}/accept`;
-  
+
   try {
-    await resend.emails.send({
-      from: 'Sports Camp <noreply@resend.dev>',
+    console.log('Attempting to send invitation email to:', email);
+    const result = await resend.emails.send({
+      from: 'Sports Camp <onboarding@resend.dev>',
       to: email,
       subject: `You're invited to join ${organizationName} as ${role}`,
       html: `
@@ -29,8 +30,10 @@ export async function sendInvitationEmail({
         <p>If you did not expect this invitation, please ignore this email.</p>
       `,
     });
+    console.log('Email sent successfully:', result);
+    return result;
   } catch (error) {
     console.error('Failed to send invitation email:', error);
-    throw new Error('Failed to send invitation email');
+    throw new Error(`Failed to send invitation email: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
