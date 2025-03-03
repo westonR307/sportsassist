@@ -48,9 +48,9 @@ function SettingsPage() {
   const form = useForm<OrganizationSettings>({
     resolver: zodResolver(organizationSettingsSchema),
     defaultValues: {
-      name: "",
-      description: "",
-      contactEmail: "",
+      name: organization?.name || "",
+      description: organization?.description || "",
+      contactEmail: organization?.contactEmail || "",
     }
   });
 
