@@ -783,8 +783,66 @@ function CampCreatorDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-center text-gray-500">
-                No camps created yet. Click "Add Camp" to create your first camp.
+              <div className="space-y-4">
+                {/* Add query for camps */}
+                {(() => {
+                  const { data: camps, isLoading } = useQuery({
+                    queryKey: ["/api/camps"],
+                  });
+
+                  if (isLoading) {
+                    return (
+                      <div className="text-center py-4">
+                        <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+                        <p className="text-sm text-gray-500 mt-2">Loading camps...</p>
+                      </div>
+                    );
+                  }
+
+                  if (!camps || camps.length === 0) {
+                    return (
+                      <div className="text-center text-gray-500">
+                        No camps created yet. Click "Add Camp" to create your first camp.
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {camps.map((camp: any) => (
+                        <Card key={camp.id} className="flex flex-col">
+                          <CardHeader>
+                            <CardTitle className="text-lg">{camp.name}</CardTitle>
+                            <p className="text-sm text-gray-500">{camp.location}</p>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-2">
+                              <p className="text-sm">{camp.description}</p>
+                              <div className="flex justify-between items-center text-sm">
+                                <span>Capacity: {camp.capacity}</span>
+                                <span>Price: ${camp.price / 100}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span>Type: {camp.type}</span>
+                                <span className={`px-2 py-1 rounded-full text-xs ${
+                                  camp.visibility === 'public' 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-amber-100 text-amber-800'
+                                }`}>
+                                  {camp.visibility}
+                                </span>
+                              </div>
+                            </div>
+                          </CardContent>
+                          <div className="mt-auto p-4 pt-0 flex justify-end gap-2">
+                            <Button variant="outline" size="sm">Edit</Button>
+                            <Button variant="outline" size="sm">Manage</Button>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             </CardContent>
           </Card>
