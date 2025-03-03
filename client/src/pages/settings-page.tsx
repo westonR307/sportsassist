@@ -45,21 +45,22 @@ function SettingsPage() {
     enabled: !!user?.organizationId,
   });
 
-  // Initialize form without default values
   const form = useForm<OrganizationSettings>({
     resolver: zodResolver(organizationSettingsSchema),
+    values: {
+      name: organization?.name ?? "",
+      description: organization?.description ?? "",
+      contactEmail: organization?.contactEmail ?? "",
+    },
   });
 
-  // Update form when organization data is loaded
+  // Update form when organization data changes
   React.useEffect(() => {
     if (organization) {
-      console.log("Organization data loaded:", organization);
       form.reset({
         name: organization.name,
         description: organization.description,
         contactEmail: organization.contactEmail,
-      }, {
-        keepDefaultValues: true, // This ensures the form knows these are the default values
       });
     }
   }, [organization, form]);
@@ -69,8 +70,6 @@ function SettingsPage() {
       if (!user?.organizationId) {
         throw new Error("No organization ID found");
       }
-
-      console.log("Submitting update with data:", data);
 
       const result = await apiRequest(
         "PATCH",
