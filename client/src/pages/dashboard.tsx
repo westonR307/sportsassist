@@ -23,7 +23,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   insertCampSchema,
-  insertInvitationSchema,
   type InsertInvitation,
   type Camp,
   type Invitation,
@@ -128,46 +127,31 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   const createCampMutation = useMutation({
     mutationFn: async (data: any) => {
       try {
+        console.log("Mutation started with data:", data);
         const res = await apiRequest("POST", "/api/camps", data);
+        console.log("API Response:", res);
 
         if (!res.ok) {
           const errorData = await res.json();
+          console.error("API error response:", errorData);
           throw new Error(errorData.message || "Failed to create camp");
         }
 
         const responseData = await res.json();
+        console.log("API success response:", responseData);
         return responseData;
       } catch (error) {
+        console.error("API call error:", error);
         throw error;
       }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
-      toast({
-        title: "Success",
-        description: "Camp created successfully",
-      });
-      form.reset();
-      setSelectedDays([]);
-      setSelectedSports([]);
-      setDaySchedules({});
-      onOpenChange(false);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create camp",
-        variant: "destructive",
-      });
-    },
+    }
   });
 
-  const onSubmit = async (formData: z.infer<typeof insertCampSchema>) => {
+  const onSubmit = React.useCallback(async (formData: z.infer<typeof insertCampSchema>) => {
     try {
       console.log("Form submission started", { formData });
 
       if (!user?.organizationId) {
-        console.error("No organization ID found");
         toast({
           title: "Error",
           description: "Organization ID is required",
@@ -177,7 +161,6 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       }
 
       if (selectedDays.length === 0) {
-        console.error("No days selected");
         toast({
           title: "Error",
           description: "Please select at least one day for the camp schedule",
@@ -187,7 +170,6 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       }
 
       if (selectedSports.length === 0) {
-        console.error("No sports selected");
         toast({
           title: "Error",
           description: "Please select at least one sport",
@@ -221,7 +203,21 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       };
 
       console.log("Submitting camp data:", campData);
-      await createCampMutation.mutateAsync(campData);
+
+      const result = await createCampMutation.mutateAsync(campData);
+      console.log("Mutation result:", result);
+
+      toast({
+        title: "Success",
+        description: "Camp created successfully",
+      });
+
+      form.reset();
+      setSelectedDays([]);
+      setSelectedSports([]);
+      setDaySchedules({});
+      onOpenChange(false);
+
     } catch (error) {
       console.error("Form submission error:", error);
       toast({
@@ -230,7 +226,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         variant: "destructive",
       });
     }
-  };
+  }, [user, selectedDays, selectedSports, daySchedules, createCampMutation, form, onOpenChange, toast]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -240,8 +236,14 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         </DialogHeader>
         <div className="flex-1 overflow-y-auto py-4">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Basic Information */}
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                console.log("Form submit triggered");
+                form.handleSubmit(onSubmit)(e);
+              }} 
+              className="space-y-6"
+            >
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Basic Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -299,7 +301,6 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                 />
               </div>
 
-              {/* Camp Dates */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Camp Dates</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -332,7 +333,6 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                 </div>
               </div>
 
-              {/* Registration Dates */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Registration Period</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -365,7 +365,6 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                 </div>
               </div>
 
-              {/* Weekly Schedule */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Weekly Schedule</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -408,7 +407,6 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                 </div>
               </div>
 
-              {/* Sports */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Sports</h3>
                 <div className="grid gap-4">
@@ -442,7 +440,6 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                 </div>
               </div>
 
-              {/* Coach and Assistant Selection */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Staff Assignment</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -497,7 +494,6 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                 </div>
               </div>
 
-              {/* Price and Capacity */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -540,7 +536,6 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                 />
               </div>
 
-              {/* Settings */}
               <div className="space-y-4">
                 <FormField
                   control={form.control}
@@ -584,7 +579,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full mb-4"
                 disabled={createCampMutation.isPending}
               >
                 {createCampMutation.isPending ? (
