@@ -128,25 +128,20 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   const createCampMutation = useMutation({
     mutationFn: async (data: any) => {
       try {
-        console.log("Mutation started with data:", data);
         const res = await apiRequest("POST", "/api/camps", data);
 
         if (!res.ok) {
           const errorData = await res.json();
-          console.error("API error response:", errorData);
           throw new Error(errorData.message || "Failed to create camp");
         }
 
         const responseData = await res.json();
-        console.log("API success response:", responseData);
         return responseData;
       } catch (error) {
-        console.error("Mutation error:", error);
         throw error;
       }
     },
     onSuccess: () => {
-      console.log("Camp created successfully");
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
       toast({
         title: "Success",
@@ -159,7 +154,6 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      console.error("Mutation error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to create camp",
@@ -170,7 +164,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 
   const onSubmit = async (formData: z.infer<typeof insertCampSchema>) => {
     try {
-      console.log("Form submission started", { formData, selectedDays, selectedSports });
+      console.log("Form submission started", { formData });
 
       if (!user?.organizationId) {
         console.error("No organization ID found");
@@ -226,7 +220,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         assistantId: formData.assistantId,
       };
 
-      console.log("Calling mutation with data:", campData);
+      console.log("Submitting camp data:", campData);
       await createCampMutation.mutateAsync(campData);
     } catch (error) {
       console.error("Form submission error:", error);
@@ -240,21 +234,13 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl overflow-y-auto max-h-[90vh]">
-        <DialogHeader className="sticky top-0 bg-background z-10 pb-4 mb-4">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-none sticky top-0 bg-background z-10 pb-4 border-b">
           <DialogTitle>Create New Camp</DialogTitle>
         </DialogHeader>
-        <div className="space-y-6 pb-6">
+        <div className="flex-1 overflow-y-auto py-4">
           <Form {...form}>
-            <form 
-              onSubmit={(e) => {
-                e.preventDefault();
-                console.log("Form submit event triggered");
-                const result = form.handleSubmit(onSubmit)(e);
-                console.log("Form submission result:", result);
-              }} 
-              className="space-y-6"
-            >
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               {/* Basic Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Basic Information</h3>
@@ -596,9 +582,9 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                 />
               </div>
 
-              <Button 
-                type="submit" 
-                className="w-full" 
+              <Button
+                type="submit"
+                className="w-full"
                 disabled={createCampMutation.isPending}
               >
                 {createCampMutation.isPending ? (
