@@ -84,6 +84,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       repeatType: "none" as const,
       coachId: undefined,
       assistantId: undefined,
+      location: "", //Added to fix the required but empty location field
     },
   });
 
@@ -173,10 +174,19 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     const formData = form.getValues();
     console.log("Form data:", formData);
 
-    if (!user?.organizationId) {
+    if (!user?.organizationId || !user?.id) {
       toast({
         title: "Error",
-        description: "Organization ID is required",
+        description: "Organization ID and user ID are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.location?.trim()) {
+      toast({
+        title: "Error",
+        description: "Location is required",
         variant: "destructive",
       });
       return;
@@ -203,6 +213,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     const campData = {
       ...formData,
       organizationId: user.organizationId,
+      createdById: user.id,
       sports: selectedSports,
       schedules: selectedDays.map(day => ({
         dayOfWeek: DAYS_OF_WEEK.indexOf(day),
@@ -210,6 +221,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         endTime: daySchedules[day].endTime,
       })),
       price: formData.price ? Number(formData.price) * 100 : 0,
+      type: formData.type || "group",
     };
 
     console.log("Submitting camp data:", campData);
@@ -248,20 +260,12 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                   />
                   <FormField
                     control={form.control}
-                    name="type"
+                    name="location"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Camp Type</FormLabel>
+                        <FormLabel>Location</FormLabel>
                         <FormControl>
-                          <select
-                            {...field}
-                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                          >
-                            <option value="one_on_one">One on One</option>
-                            <option value="group">Group</option>
-                            <option value="team">Team</option>
-                            <option value="virtual">Virtual</option>
-                          </select>
+                          <Input {...field} placeholder="Enter camp location" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
