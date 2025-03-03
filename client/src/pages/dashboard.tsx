@@ -26,6 +26,7 @@ import {
   type InsertInvitation,
   type Camp,
   type Invitation,
+  insertInvitationSchema,  // Added this import
 } from "@shared/schema";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
