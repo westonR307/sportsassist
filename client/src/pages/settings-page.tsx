@@ -47,6 +47,11 @@ function SettingsPage() {
 
   const form = useForm<OrganizationSettings>({
     resolver: zodResolver(organizationSettingsSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      contactEmail: "",
+    }
   });
 
   // Update form when organization data is loaded
@@ -63,20 +68,19 @@ function SettingsPage() {
 
   const updateOrganizationMutation = useMutation({
     mutationFn: async (data: OrganizationSettings) => {
-      if (!user?.organizationId) throw new Error("No organization ID found");
+      if (!user?.organizationId) {
+        throw new Error("No organization ID found");
+      }
 
-      const res = await apiRequest(
+      console.log("Submitting update with data:", data);
+
+      const result = await apiRequest(
         "PATCH",
         `/api/organizations/${user.organizationId}`,
         data
       );
 
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to update organization");
-      }
-
-      return await res.json();
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/organizations/${user?.organizationId}`] });
@@ -96,9 +100,25 @@ function SettingsPage() {
   });
 
   const onSubmit = (data: OrganizationSettings) => {
-    console.log("Submitting data:", data);
+    console.log("Submitting form data:", data);
     updateOrganizationMutation.mutate(data);
   };
+
+  if (!user?.organizationId) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-full">
+          <Card className="w-[400px]">
+            <CardContent className="pt-6">
+              <p className="text-center text-muted-foreground">
+                No organization found
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   if (isLoadingOrg) {
     return (
