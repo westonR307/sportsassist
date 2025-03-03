@@ -284,8 +284,8 @@ export async function registerRoutes(app: Express): Server {
         ...parsed.data,
         startDate: new Date(parsed.data.startDate),
         endDate: new Date(parsed.data.endDate),
-        registrationStartDate: new Date(parsed.data.registrationStartDate),
-        registrationEndDate: new Date(parsed.data.registrationEndDate),
+        registrationStartDate: parsed.data.registrationStartDate ? new Date(parsed.data.registrationStartDate) : null,
+        registrationEndDate: parsed.data.registrationEndDate ? new Date(parsed.data.registrationEndDate) : null,
         organizationId: req.user!.organizationId!,
         createdById: req.user!.id,
       };
