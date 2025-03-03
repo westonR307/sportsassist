@@ -695,7 +695,6 @@ function InviteMemberDialog() {
         throw new Error("No organization ID found");
       }
 
-      // Format the date before sending
       const formattedData = {
         ...data,
         organizationId: user.organizationId,
@@ -851,6 +850,63 @@ function Dashboard() {
   }
 }
 
+function ResendButton({ invitation, organizationId }: { invitation: any; organizationId: number }) {
+  const { toast } = useToast();
+
+  const resendMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest(
+        "POST",
+        `/api/organizations/${organizationId}/invitations`,
+        {
+          email: invitation.email,
+          role: invitation.role,
+          organizationId: organizationId,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        }
+      );
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to resend invitation");
+      }
+
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Invitation resent successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => resendMutation.mutate()}
+      disabled={resendMutation.isPending}
+    >
+      {resendMutation.isPending ? (
+        <>
+          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+          Resending...
+        </>
+      ) : (
+        'Resend'
+      )}
+    </Button>
+  );
+}
+
 function CampCreatorDashboard() {
   const { user, logoutMutation } = useAuth();
   const [showAddCampDialog, setShowAddCampDialog] = React.useState(false);
@@ -893,7 +949,6 @@ function CampCreatorDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {/* Add query for camps */}
                 {(() => {
                   const { data: camps, isLoading } = useQuery({
                     queryKey: ["/api/camps"],
@@ -944,7 +999,7 @@ function CampCreatorDashboard() {
                                   {camp.visibility}
                                 </span>
                               </div>
-                              <div className="text-sm text-gray-500">
+                              <div className="text-sm text-gray500">
                                 <p>Registration: {new Date(camp.registrationStartDate).toLocaleDateString()} - {new Date(camp.registrationEndDate).toLocaleDateString()}</p>
                                 <p>Camp: {new Date(camp.startDate).toLocaleDateString()} - {new Date(camp.endDate).toLocaleDateString()}</p>
                               </div>
@@ -967,55 +1022,43 @@ function CampCreatorDashboard() {
           <Card>
             <CardHeader>
               <div className="flex justify-between items-center">
-                <CardTitle>Organization</CardTitle>
+                <CardTitle>Team Management</CardTitle>
                 <InviteMemberDialog />
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <p className="text-gray-500">Manage your organization's team members and settings.</p>
-                {invitations && invitations.length > 0 && (<div className="mt-4">
-    <h3 className="text-sm font-semibold mb-2">Pending Invitations</h3>
-    <div className="space-y-2">
-      {invitations.map((invitation: any) => (
-        <div key={invitation.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
-          <div className="text-sm">
-            {invitation.email} - {invitation.role}
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              inviteMutation.mutate({
-                email: invitation.email,
-                role: invitation.role,
-                organizationId: user?.organizationId || 0,
-                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-              });
-            }}
-            disabled={inviteMutation.isPending}
-          >
-            {inviteMutation.isPending ? (
-              <>
-                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                Resending...
-              </>
-            ) : (
-              'Resend'
-            )}
-          </Button>
-        </div>
-      ))}
-    </div>
-  </div>
-)}
+                {invitations && invitations.length > 0 && (
+                  <div className="mt-4">
+                    <h3 className="text-sm font-semibold mb-2">Pending Invitations</h3>
+                    <div className="space-y-2">
+                      {invitations.map((invitation: any) => (
+                        <div key={invitation.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
+                          <div className="text-sm">
+                            {invitation.email} - {invitation.role}
+                          </div>
+                          <ResendButton 
+                            invitation={invitation} 
+                            organizationId={user?.organizationId || 0} 
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
         </div>
       </main>
 
-      {showAddCampDialog && <AddCampDialog open={showAddCampDialog} onOpenChange={setShowAddCampDialog} />}
+      {showAddCampDialog && (
+        <AddCampDialog 
+          open={showAddCampDialog} 
+          onOpenChange={setShowAddCampDialog} 
+        />
+      )}
     </div>
   );
 }
