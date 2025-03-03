@@ -131,17 +131,17 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   };
 
   const createCampMutation = useMutation({
-    mutationFn: async (data: any) => {
-      console.log("Starting mutation with data:", data);
-      const res = await apiRequest("POST", "/api/camps", data);
-      if (!res.ok) {
-        const errorData = await res.json();
-        console.error("API error response:", errorData);
-        throw new Error(errorData.message || "Failed to create camp");
+    mutationFn: async (campData: z.infer<typeof insertCampSchema>) => {
+      console.log("Starting mutation with data:", campData);
+      const response = await apiRequest("POST", "/api/camps", campData);
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error("API error:", error);
+        throw new Error(error.message || "Failed to create camp");
       }
-      const result = await res.json();
-      console.log("API success response:", result);
-      return result;
+
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
@@ -165,8 +165,13 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     },
   });
 
-  const onSubmit = async (data: z.infer<typeof insertCampSchema>) => {
-    console.log("Form submission started with data:", data);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    console.log("Form submission started");
+
+    const formData = form.getValues();
+    console.log("Form data:", formData);
 
     if (!user?.organizationId) {
       toast({
@@ -196,7 +201,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     }
 
     const campData = {
-      ...data,
+      ...formData,
       organizationId: user.organizationId,
       sports: selectedSports,
       schedules: selectedDays.map(day => ({
@@ -204,11 +209,16 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         startTime: daySchedules[day].startTime,
         endTime: daySchedules[day].endTime,
       })),
-      price: data.price ? Number(data.price) * 100 : 0,
+      price: formData.price ? Number(formData.price) * 100 : 0,
     };
 
     console.log("Submitting camp data:", campData);
-    createCampMutation.mutate(campData);
+
+    try {
+      await createCampMutation.mutateAsync(campData);
+    } catch (error) {
+      console.error("Form submission error:", error);
+    }
   };
 
   return (
@@ -219,13 +229,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         </DialogHeader>
         <div className="flex-1 overflow-y-auto py-4">
           <Form {...form}>
-            <form 
-              onSubmit={(e) => {
-                e.preventDefault();
-                form.handleSubmit(onSubmit)(e);
-              }} 
-              className="space-y-6"
-            >
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Basic Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
