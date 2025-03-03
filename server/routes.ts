@@ -17,6 +17,7 @@ import { hashPassword } from "./utils";
 import { randomBytes } from "crypto";
 import { db } from "./db";
 import passport from "passport";
+import { sendInvitationEmail } from "./utils/email"; // Added import
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2023-10-16",
@@ -98,14 +99,28 @@ export async function registerRoutes(app: Express): Server {
         });
       }
 
+      // Generate invitation token
       const token = randomBytes(32).toString("hex");
 
+      // Get organization name for the email
+      const organization = await storage.getOrganization(orgId);
+      if (!organization) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+
+      // Create invitation in database
       const invitation = await storage.createInvitation({
         ...parsed.data,
         token,
       });
 
-      // TODO: Send invitation email
+      // Send invitation email
+      await sendInvitationEmail({
+        email: parsed.data.email,
+        role: parsed.data.role,
+        organizationName: organization.name,
+        token: token,
+      });
 
       res.status(201).json(invitation);
     } catch (error) {
