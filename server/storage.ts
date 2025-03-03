@@ -131,8 +131,6 @@ export class DatabaseStorage implements IStorage {
         location: camp.location,
         startDate: camp.startDate,
         endDate: camp.endDate,
-        registrationStartDate: camp.registrationStartDate,
-        registrationEndDate: camp.registrationEndDate,
         price: camp.price,
         capacity: camp.capacity,
         organizationId: camp.organizationId,

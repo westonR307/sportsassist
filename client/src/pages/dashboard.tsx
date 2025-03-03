@@ -78,8 +78,6 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       capacity: 10,
       startDate: new Date().toISOString().split("T")[0],
       endDate: new Date().toISOString().split("T")[0],
-      registrationStartDate: new Date().toISOString().split("T")[0],
-      registrationEndDate: new Date().toISOString().split("T")[0],
       waitlistEnabled: true,
       repeatType: "none" as const,
       coachId: undefined,
@@ -211,7 +209,16 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     }
 
     const campData = {
-      ...formData,
+      name: formData.name,
+      description: formData.description,
+      location: formData.location,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      price: formData.price ? Number(formData.price) * 100 : 0,
+      capacity: formData.capacity,
+      type: formData.type || "group",
+      visibility: formData.visibility || "public",
+      waitlistEnabled: formData.waitlistEnabled,
       organizationId: user.organizationId,
       createdById: user.id,
       sports: selectedSports,
@@ -220,8 +227,9 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         startTime: daySchedules[day].startTime,
         endTime: daySchedules[day].endTime,
       })),
-      price: formData.price ? Number(formData.price) * 100 : 0,
-      type: formData.type || "group",
+      repeatType: formData.repeatType || "none",
+      coachId: formData.coachId,
+      assistantId: formData.assistantId,
     };
 
     console.log("Submitting camp data:", campData);
@@ -349,37 +357,6 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Registration Period</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="registrationStartDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Registration Start Date</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="registrationEndDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Registration End Date</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
 
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Weekly Schedule</h3>
