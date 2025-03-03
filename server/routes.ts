@@ -73,8 +73,8 @@ export async function registerRoutes(app: Express): Server {
 
   // Invitation routes
   app.post("/api/organizations/:orgId/invitations", async (req, res) => {
-    if (!req.user || req.user.role !== "admin") {
-      return res.status(403).json({ message: "Only admins can send invitations" });
+    if (!req.user || req.user.role !== "camp_creator") {
+      return res.status(403).json({ message: "Only organization owners can send invitations" });
     }
 
     const orgId = parseInt(req.params.orgId);
@@ -115,8 +115,8 @@ export async function registerRoutes(app: Express): Server {
   });
 
   app.get("/api/organizations/:orgId/invitations", async (req, res) => {
-    if (!req.user || req.user.role !== "admin") {
-      return res.status(403).json({ message: "Only admins can view invitations" });
+    if (!req.user || req.user.role !== "camp_creator") {
+      return res.status(403).json({ message: "Only organization owners can view invitations" });
     }
 
     const orgId = parseInt(req.params.orgId);
