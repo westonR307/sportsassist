@@ -130,7 +130,7 @@ export async function registerRoutes(app: Express): Server {
         // Still return success since the invitation was created
         res.status(201).json({ 
           ...invitation,
-          warning: "Invitation created but email sending failed. Please try resending the invitation."
+          warning: "Invitation created but email sending failed. During development, you can only send test emails to wrosenau@outlook.com. To send to other addresses, please verify a domain at resend.com/domains."
         });
       }
     } catch (error) {

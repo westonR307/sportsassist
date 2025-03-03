@@ -18,7 +18,7 @@ export async function sendInvitationEmail({
   try {
     console.log('Attempting to send invitation email to:', email);
     const result = await resend.emails.send({
-      from: 'Sports Camp <onboarding@resend.dev>',
+      from: 'Sports Camp <wrosenau@outlook.com>',
       to: email,
       subject: `You're invited to join ${organizationName} as ${role}`,
       html: `
