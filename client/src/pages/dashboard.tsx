@@ -21,13 +21,7 @@ import {
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  insertCampSchema,
-  type InsertInvitation,
-  type Camp,
-  type Invitation,
-  insertInvitationSchema,
-} from "@shared/schema";
+import { insertCampSchema, type InsertInvitation, type Camp, type Invitation, insertInvitationSchema } from "@shared/schema";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -697,7 +691,14 @@ function InviteMemberDialog() {
 
   const inviteMutation = useMutation({
     mutationFn: async (data: z.infer<typeof insertInvitationSchema>) => {
-      const res = await apiRequest("POST", `/api/organizations/${user?.organizationId}/invitations`, data);
+      if (!user?.organizationId) {
+        throw new Error("No organization ID found");
+      }
+      const res = await apiRequest(
+        "POST", 
+        `/api/organizations/${user.organizationId}/invitations`,
+        { ...data, organizationId: user.organizationId }
+      );
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to send invitation");
@@ -722,20 +723,12 @@ function InviteMemberDialog() {
     },
   });
 
-  const handleSubmit = async (data: z.infer<typeof insertInvitationSchema>) => {
-    if (!user?.organizationId) {
-      toast({
-        title: "Error",
-        description: "You must be part of an organization to invite team members",
-        variant: "destructive",
-      });
-      return;
+  const onSubmit = async (data: z.infer<typeof insertInvitationSchema>) => {
+    try {
+      await inviteMutation.mutateAsync(data);
+    } catch (error) {
+      console.error("Failed to send invitation:", error);
     }
-
-    inviteMutation.mutate({
-      ...data,
-      organizationId: user.organizationId,
-    });
   };
 
   return (
@@ -748,7 +741,7 @@ function InviteMemberDialog() {
           <DialogTitle>Invite Team Member</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="email"
@@ -971,8 +964,7 @@ function CampCreatorDashboard() {
                 <p className="text-gray-500">Manage your organization's team members and settings.</p>
                 {invitations && invitations.length > 0 && (
                   <div>
-                    <h3 className="text-sm font-semibold mb-2">Pending Invitations</h3>
-                    <div className="space-y-2">
+                    <h3 className="text-sm font-semibold mb-2">Pending Invitations</h3>                    <div className="space-y-2">
                       {invitations.map((invitation: any) => (
                         <div key={invitation.id} className="text-sm">
                           {invitation.email} - {invitation.role}
