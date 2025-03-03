@@ -44,52 +44,53 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
         ${sidebarOpen ? 'w-64' : 'w-0 lg:w-16'} 
         lg:translate-x-0
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        overflow-hidden
       `}>
-        <div className="p-4 border-b">
-          <h2 className={`font-semibold text-lg ${!sidebarOpen && 'lg:hidden'}`}>
+        <div className="p-4 border-b whitespace-nowrap">
+          <h2 className={`font-semibold text-lg ${!sidebarOpen && 'lg:opacity-0'}`}>
             Sports Camp Manager
           </h2>
         </div>
         <nav className="p-4 space-y-2">
           <Link href="/dashboard">
-            <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 ${
+            <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap ${
               location === '/dashboard' ? 'bg-gray-100' : ''
             }`}>
-              <Calendar className="h-5 w-5" />
-              <span className={!sidebarOpen ? 'lg:hidden' : ''}>Camps</span>
+              <Calendar className="h-5 w-5 flex-shrink-0" />
+              <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Camps</span>
             </a>
           </Link>
           <Link href="/dashboard/reports">
-            <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 ${
+            <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap ${
               location === '/dashboard/reports' ? 'bg-gray-100' : ''
             }`}>
-              <BarChart3 className="h-5 w-5" />
-              <span className={!sidebarOpen ? 'lg:hidden' : ''}>Reports</span>
+              <BarChart3 className="h-5 w-5 flex-shrink-0" />
+              <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Reports</span>
             </a>
           </Link>
           <Link href="/dashboard/team">
-            <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 ${
+            <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap ${
               location === '/dashboard/team' ? 'bg-gray-100' : ''
             }`}>
-              <Users className="h-5 w-5" />
-              <span className={!sidebarOpen ? 'lg:hidden' : ''}>Team</span>
+              <Users className="h-5 w-5 flex-shrink-0" />
+              <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Team</span>
             </a>
           </Link>
           <Link href="/dashboard/settings">
-            <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 ${
+            <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap ${
               location === '/dashboard/settings' ? 'bg-gray-100' : ''
             }`}>
-              <Settings className="h-5 w-5" />
-              <span className={!sidebarOpen ? 'lg:hidden' : ''}>Settings</span>
+              <Settings className="h-5 w-5 flex-shrink-0" />
+              <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Settings</span>
             </a>
           </Link>
           <Button
             variant="ghost"
-            className="w-full justify-start"
+            className="w-full justify-start whitespace-nowrap"
             onClick={() => logoutMutation.mutate()}
           >
-            <LogOut className="h-5 w-5 mr-2" />
-            <span className={!sidebarOpen ? 'lg:hidden' : ''}>Logout</span>
+            <LogOut className="h-5 w-5 mr-2 flex-shrink-0" />
+            <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Logout</span>
           </Button>
         </nav>
       </div>
