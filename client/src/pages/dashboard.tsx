@@ -974,16 +974,41 @@ function CampCreatorDashboard() {
             <CardContent>
               <div className="space-y-4">
                 <p className="text-gray-500">Manage your organization's team members and settings.</p>
-                {invitations && invitations.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-semibold mb-2">Pending Invitations</h3>                    <div className="space-y-2">
-                      {invitations.map((invitation: any) => (
-                        <div key={invitation.id} className="text-sm">
-                          {invitation.email} - {invitation.role}
-                        </div>
-                      ))}
-                    </div>
-                  </div>                )}
+                {invitations && invitations.length > 0 && (<div className="mt-4">
+    <h3 className="text-sm font-semibold mb-2">Pending Invitations</h3>
+    <div className="space-y-2">
+      {invitations.map((invitation: any) => (
+        <div key={invitation.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
+          <div className="text-sm">
+            {invitation.email} - {invitation.role}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              inviteMutation.mutate({
+                email: invitation.email,
+                role: invitation.role,
+                organizationId: user?.organizationId || 0,
+                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+              });
+            }}
+            disabled={inviteMutation.isPending}
+          >
+            {inviteMutation.isPending ? (
+              <>
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                Resending...
+              </>
+            ) : (
+              'Resend'
+            )}
+          </Button>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
               </div>
             </CardContent>
           </Card>
