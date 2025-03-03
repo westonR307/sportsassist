@@ -128,22 +128,25 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   const createCampMutation = useMutation({
     mutationFn: async (data: any) => {
       try {
-        console.log("Sending API request with data:", data);
+        console.log("Mutation started with data:", data);
         const res = await apiRequest("POST", "/api/camps", data);
-        const responseData = await res.json();
-        console.log("API Response:", responseData);
 
         if (!res.ok) {
-          throw new Error(responseData.message || "Failed to create camp");
+          const errorData = await res.json();
+          console.error("API error response:", errorData);
+          throw new Error(errorData.message || "Failed to create camp");
         }
 
+        const responseData = await res.json();
+        console.log("API success response:", responseData);
         return responseData;
       } catch (error) {
-        console.error("API call error:", error);
+        console.error("Mutation error:", error);
         throw error;
       }
     },
     onSuccess: () => {
+      console.log("Camp created successfully");
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
       toast({
         title: "Success",
@@ -167,9 +170,10 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 
   const onSubmit = async (formData: z.infer<typeof insertCampSchema>) => {
     try {
-      console.log("Form submission started with data:", formData);
+      console.log("Form submission started", { formData, selectedDays, selectedSports });
 
       if (!user?.organizationId) {
+        console.error("No organization ID found");
         toast({
           title: "Error",
           description: "Organization ID is required",
@@ -179,6 +183,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       }
 
       if (selectedDays.length === 0) {
+        console.error("No days selected");
         toast({
           title: "Error",
           description: "Please select at least one day for the camp schedule",
@@ -188,6 +193,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       }
 
       if (selectedSports.length === 0) {
+        console.error("No sports selected");
         toast({
           title: "Error",
           description: "Please select at least one sport",
@@ -220,7 +226,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         assistantId: formData.assistantId,
       };
 
-      console.log("Submitting camp data:", campData);
+      console.log("Calling mutation with data:", campData);
       await createCampMutation.mutateAsync(campData);
     } catch (error) {
       console.error("Form submission error:", error);
@@ -240,11 +246,15 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         </DialogHeader>
         <div className="space-y-6 pb-6">
           <Form {...form}>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              console.log("Form submitted");
-              form.handleSubmit(onSubmit)(e);
-            }} className="space-y-6">
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                console.log("Form submit event triggered");
+                const result = form.handleSubmit(onSubmit)(e);
+                console.log("Form submission result:", result);
+              }} 
+              className="space-y-6"
+            >
               {/* Basic Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Basic Information</h3>
@@ -590,7 +600,6 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                 type="submit" 
                 className="w-full" 
                 disabled={createCampMutation.isPending}
-                onClick={() => console.log("Create camp button clicked")}
               >
                 {createCampMutation.isPending ? (
                   <>

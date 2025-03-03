@@ -259,29 +259,32 @@ export async function registerRoutes(app: Express): Server {
   });
 
   // Camp routes
-  // Update the camp creation route
   app.post("/api/camps", async (req, res) => {
-    if (!["admin", "manager", "camp_creator"].includes(req.user?.role || "")) {
-      return res.status(403).json({ message: "Unauthorized" });
-    }
-
-    console.log("Received camp creation request:", req.body);
-
-    const parsed = insertCampSchema.safeParse(req.body);
-    if (!parsed.success) {
-      console.error("Validation error:", parsed.error);
-      return res.status(400).json({ 
-        message: "Invalid data",
-        errors: parsed.error.flatten() 
-      });
-    }
-
     try {
+      console.log("Received camp creation request:", req.body);
+
+      if (!["admin", "manager", "camp_creator"].includes(req.user?.role || "")) {
+        console.error("Unauthorized role:", req.user?.role);
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      const parsed = insertCampSchema.safeParse(req.body);
+      if (!parsed.success) {
+        console.error("Validation error:", parsed.error.flatten());
+        return res.status(400).json({
+          message: "Invalid data",
+          errors: parsed.error.flatten()
+        });
+      }
+
+      console.log("Validated camp data:", parsed.data);
+
       const camp = await storage.createCamp({
         ...parsed.data,
-        organizationId: req.user.organizationId!,
-        createdById: req.user.id,
+        organizationId: req.user!.organizationId!,
+        createdById: req.user!.id,
       });
+
       console.log("Camp created successfully:", camp);
       res.status(201).json(camp);
     } catch (error) {
