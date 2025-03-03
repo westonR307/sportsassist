@@ -279,15 +279,19 @@ export async function registerRoutes(app: Express): Server {
 
       console.log("Validated camp data:", parsed.data);
 
-      // Convert string dates to Date objects
+      // Convert string dates to Date objects and only include fields that exist in the database
       const campData = {
-        ...parsed.data,
+        name: parsed.data.name,
+        description: parsed.data.description,
+        location: parsed.data.location,
         startDate: new Date(parsed.data.startDate),
         endDate: new Date(parsed.data.endDate),
-        registrationStartDate: parsed.data.registrationStartDate ? new Date(parsed.data.registrationStartDate) : null,
-        registrationEndDate: parsed.data.registrationEndDate ? new Date(parsed.data.registrationEndDate) : null,
+        price: parsed.data.price || 0,
+        capacity: parsed.data.capacity,
         organizationId: req.user!.organizationId!,
-        createdById: req.user!.id,
+        waitlistEnabled: parsed.data.waitlistEnabled,
+        type: parsed.data.type,
+        visibility: parsed.data.visibility,
       };
 
       const camp = await storage.createCamp(campData);

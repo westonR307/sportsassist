@@ -88,10 +88,6 @@ export const camps = pgTable("camps", {
   waitlistEnabled: boolean("waitlist_enabled").notNull().default(true),
   type: text("type").$type<CampType>().notNull(),
   visibility: text("visibility").$type<CampVisibility>().notNull().default("public"),
-  coachId: integer("coach_id").references(() => users.id),
-  assistantId: integer("assistant_id").references(() => users.id),
-  createdById: integer("created_by_id").references(() => users.id).notNull(),
-  repeatType: text("repeat_type").$type<RepeatType>().notNull().default("none"),
 });
 
 export const campStaff = pgTable("camp_staff", {
@@ -173,22 +169,9 @@ export const insertCampSchema = createInsertSchema(camps).extend({
   endDate: z.string(),
   price: z.number().min(0, "Price must be 0 or greater").nullable(),
   capacity: z.number().min(1, "Capacity must be at least 1"),
-  sports: z.array(z.object({
-    sportId: z.number(),
-    skillLevel: z.enum(["beginner", "intermediate", "advanced"]),
-  })).min(1, "At least one sport is required"),
-  schedules: z.array(z.object({
-    dayOfWeek: z.number().min(0).max(6),
-    startTime: z.string(),
-    endTime: z.string(),
-  })).min(1, "At least one schedule is required"),
-  type: z.enum(["one_on-one", "group", "team", "virtual"]),
+  type: z.enum(["one_on_one", "group", "team", "virtual"]),
   visibility: z.enum(["public", "private"]),
-  repeatType: z.enum(["none", "weekly", "monthly"]).default("none"),
   waitlistEnabled: z.boolean().default(true),
-  organizationId: z.number().optional(),
-  coachId: z.number().optional(),
-  assistantId: z.number().optional(),
 });
 
 export const insertRegistrationSchema = createInsertSchema(registrations);

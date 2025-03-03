@@ -137,10 +137,6 @@ export class DatabaseStorage implements IStorage {
         waitlistEnabled: camp.waitlistEnabled,
         type: camp.type,
         visibility: camp.visibility,
-        coachId: camp.coachId,
-        assistantId: camp.assistantId,
-        createdById: camp.createdById,
-        repeatType: camp.repeatType || "none",
       }).returning();
 
       console.log("Created camp successfully:", newCamp);
