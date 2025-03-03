@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
+import { Loader2 } from "lucide-react";
 
 interface Organization {
   id: number;
@@ -39,7 +40,7 @@ function SettingsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const { data: organization, isLoading } = useQuery<Organization>({
+  const { data: organization, isLoading: isLoadingOrg } = useQuery<Organization>({
     queryKey: [`/api/organizations/${user?.organizationId}`],
     enabled: !!user?.organizationId,
   });
@@ -47,11 +48,22 @@ function SettingsPage() {
   const form = useForm<OrganizationSettings>({
     resolver: zodResolver(organizationSettingsSchema),
     defaultValues: {
-      name: organization?.name || "",
-      description: organization?.description || "",
-      contactEmail: organization?.contactEmail || "",
+      name: "",
+      description: "",
+      contactEmail: "",
     },
   });
+
+  // Update form when organization data is loaded
+  React.useEffect(() => {
+    if (organization) {
+      form.reset({
+        name: organization.name,
+        description: organization.description,
+        contactEmail: organization.contactEmail,
+      });
+    }
+  }, [organization, form]);
 
   const updateOrganizationMutation = useMutation({
     mutationFn: async (data: OrganizationSettings) => {
@@ -85,11 +97,11 @@ function SettingsPage() {
     updateOrganizationMutation.mutate(data);
   };
 
-  if (isLoading) {
+  if (isLoadingOrg) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-full">
-          <p>Loading organization settings...</p>
+          <Loader2 className="h-8 w-8 animate-spin" />
         </div>
       </DashboardLayout>
     );
@@ -159,8 +171,16 @@ function SettingsPage() {
                   <Button 
                     type="submit" 
                     disabled={updateOrganizationMutation.isPending}
+                    className="w-full"
                   >
-                    {updateOrganizationMutation.isPending ? "Saving..." : "Save Changes"}
+                    {updateOrganizationMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Save Changes"
+                    )}
                   </Button>
                 </form>
               </Form>
