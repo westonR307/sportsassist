@@ -685,7 +685,7 @@ function InviteMemberDialog() {
       email: "",
       role: "coach" as const,
       organizationId: user?.organizationId || 0,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
     },
   });
 
@@ -694,16 +694,26 @@ function InviteMemberDialog() {
       if (!user?.organizationId) {
         throw new Error("No organization ID found");
       }
+
+      // Format the date before sending
+      const formattedData = {
+        ...data,
+        organizationId: user.organizationId,
+        expiresAt: new Date(data.expiresAt),
+      };
+
       const res = await apiRequest(
-        "POST", 
+        "POST",
         `/api/organizations/${user.organizationId}/invitations`,
-        { ...data, organizationId: user.organizationId }
+        formattedData
       );
+
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to send invitation");
       }
-      return res.json();
+
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/organizations/${user?.organizationId}/invitations`] });
@@ -723,12 +733,8 @@ function InviteMemberDialog() {
     },
   });
 
-  const onSubmit = async (data: z.infer<typeof insertInvitationSchema>) => {
-    try {
-      await inviteMutation.mutateAsync(data);
-    } catch (error) {
-      console.error("Failed to send invitation:", error);
-    }
+  const onSubmit = (data: z.infer<typeof insertInvitationSchema>) => {
+    inviteMutation.mutate(data);
   };
 
   return (
@@ -776,8 +782,14 @@ function InviteMemberDialog() {
               )}
             />
             <Button type="submit" className="w-full" disabled={inviteMutation.isPending}>
-              {inviteMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Send Invitation
+              {inviteMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                "Send Invitation"
+              )}
             </Button>
           </form>
         </Form>

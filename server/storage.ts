@@ -1,10 +1,16 @@
 import {
   users,
   camps,
+  organizations,
+  invitations,
   type User,
   type InsertUser,
   type Role,
   type Camp,
+  type Organization,
+  type InsertOrganization,
+  type Invitation,
+  type InsertInvitation,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, and, inArray } from "drizzle-orm";
