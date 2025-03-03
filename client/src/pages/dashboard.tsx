@@ -165,8 +165,8 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     },
   });
 
-  const onSubmit = form.handleSubmit(async (data) => {
-    console.log("Submitting camp with data:", data); // Debug log
+  const onSubmit = (data: z.infer<typeof insertCampSchema>) => {
+    console.log("Form submission started with data:", data);
 
     if (!user?.organizationId) {
       toast({
@@ -207,15 +207,9 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       price: data.price ? Number(data.price) * 100 : 0,
     };
 
-    console.log("Prepared camp data for submission:", campData);
-
-    try {
-      await createCampMutation.mutateAsync(campData);
-    } catch (error) {
-      // onError in mutation will handle this
-      console.error("Form submission error:", error);
-    }
-  });
+    console.log("Submitting camp data:", campData);
+    createCampMutation.mutate(campData);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -225,7 +219,7 @@ function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         </DialogHeader>
         <div className="flex-1 overflow-y-auto py-4">
           <Form {...form}>
-            <form onSubmit={onSubmit} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Basic Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
