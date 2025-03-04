@@ -129,25 +129,28 @@ export class DatabaseStorage implements IStorage {
 
   async createCamp(camp: Omit<Camp, "id">): Promise<Camp> {
     try {
-      console.log("Creating camp in storage:", camp);
+      console.log("Creating camp in database with data:", camp);
 
-      const [newCamp] = await db.insert(camps).values({
-        name: camp.name,
-        description: camp.description,
-        streetAddress: camp.streetAddress,
-        city: camp.city,
-        state: camp.state,
-        zipCode: camp.zipCode,
-        startDate: camp.startDate,
-        endDate: camp.endDate,
-        price: camp.price,
-        capacity: camp.capacity,
-        organizationId: camp.organizationId,
-        waitlistEnabled: camp.waitlistEnabled,
-        type: camp.type,
-        visibility: camp.visibility,
-      }).returning();
+      // Ensure all required fields are present
+      const requiredFields = [
+        "name", "description", "streetAddress", "city", "state", "zipCode",
+        "startDate", "endDate", "registrationStartDate", "registrationEndDate",
+        "price", "capacity", "organizationId", "type", "visibility", 
+        "waitlistEnabled", "minAge", "maxAge", "repeatType", "repeatCount"
+      ];
 
+      const missingFields = requiredFields.filter(
+        field => camp[field as keyof typeof camp] === undefined
+      );
+
+      if (missingFields.length > 0) {
+        console.error("Missing required fields for camp creation:", missingFields);
+        throw new Error(`Missing required fields: ${missingFields.join(", ")}`);
+      }
+
+      // Insert the camp with all fields
+      console.log("Inserting camp into database...");
+      const [newCamp] = await db.insert(camps).values(camp).returning();
       console.log("Created camp successfully:", newCamp);
       return newCamp;
     } catch (error) {

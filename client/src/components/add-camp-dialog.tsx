@@ -108,14 +108,53 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
         throw new Error("Organization ID required");
       }
 
-      console.log("Submitting form data:", data);
+      // Add missing required fields
+      const completeData = {
+        ...data,
+        // Add these required fields that were missing from the schema
+        waitlistEnabled: data.waitlistEnabled ?? true,
+        type: data.type ?? "group",
+        visibility: data.visibility ?? "public",
+        minAge: data.minAge ?? 5,
+        maxAge: data.maxAge ?? 18,
+        repeatType: data.repeatType ?? "none",
+        repeatCount: data.repeatCount ?? 0,
+      };
 
-      const response = await apiRequest("POST", "/api/camps", data);
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to create camp");
+      console.log("Submitting form data:", completeData);
+
+      try {
+        console.log("Sending request to create camp...");
+        const response = await apiRequest("POST", "/api/camps", completeData);
+        
+        console.log("Response status:", response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Error response:", errorText);
+          
+          let errorMessage = "Failed to create camp";
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.message || errorJson.error || "Failed to create camp";
+            if (errorJson.errors) {
+              console.error("Validation errors:", errorJson.errors);
+            }
+          } catch (e) {
+            // If the error isn't valid JSON, use the text directly
+            errorMessage = errorText || "Failed to create camp";
+          }
+          
+          throw new Error(errorMessage);
+        }
+        
+        const responseData = await response.json();
+        console.log("Camp created successfully:", responseData);
+        return responseData;
+      } catch (error) {
+        console.error("Exception during camp creation:", error);
+        throw error;
       }
-      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });

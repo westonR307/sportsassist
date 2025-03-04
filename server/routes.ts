@@ -288,23 +288,40 @@ export async function registerRoutes(app: Express): Server {
     try {
       console.log("Received camp creation request:", req.body);
 
-      if (!["admin", "manager", "camp_creator"].includes(req.user?.role || "")) {
-        console.error("Unauthorized role:", req.user?.role);
-        return res.status(403).json({ message: "Unauthorized" });
+      // Check authentication
+      if (!req.user) {
+        console.error("No authenticated user found");
+        return res.status(401).json({ message: "Authentication required" });
       }
 
+      // Check authorization
+      if (!["admin", "manager", "camp_creator"].includes(req.user.role)) {
+        console.error("Unauthorized role:", req.user.role);
+        return res.status(403).json({ message: "Unauthorized role for camp creation" });
+      }
+
+      // Check if user has organization
+      if (!req.user.organizationId) {
+        console.error("User has no organization ID:", req.user);
+        return res.status(400).json({ message: "User has no organization" });
+      }
+
+      // Validate input data
+      console.log("Validating camp data with schema...");
       const parsed = insertCampSchema.safeParse(req.body);
+      
       if (!parsed.success) {
-        console.error("Validation error:", parsed.error.flatten());
+        const validationErrors = parsed.error.flatten();
+        console.error("Validation error details:", validationErrors);
         return res.status(400).json({
-          message: "Invalid data",
-          errors: parsed.error.flatten()
+          message: "Invalid camp data",
+          errors: validationErrors
         });
       }
 
       console.log("Validated camp data:", parsed.data);
 
-      // Convert string dates to Date objects and only include fields that exist in the database
+      // Ensure all required fields are present
       const campData = {
         name: parsed.data.name,
         description: parsed.data.description,
@@ -316,21 +333,37 @@ export async function registerRoutes(app: Express): Server {
         endDate: new Date(parsed.data.endDate),
         registrationStartDate: new Date(parsed.data.registrationStartDate),
         registrationEndDate: new Date(parsed.data.registrationEndDate),
-        price: parsed.data.price || 0,
+        price: parsed.data.price ?? 0,
         capacity: parsed.data.capacity,
-        organizationId: req.user!.organizationId!,
-        waitlistEnabled: parsed.data.waitlistEnabled,
-        type: parsed.data.type,
-        visibility: parsed.data.visibility,
+        minAge: parsed.data.minAge ?? 5,
+        maxAge: parsed.data.maxAge ?? 18,
+        organizationId: req.user.organizationId,
+        waitlistEnabled: parsed.data.waitlistEnabled ?? true,
+        type: parsed.data.type ?? "group",
+        visibility: parsed.data.visibility ?? "public",
+        repeatType: parsed.data.repeatType ?? "none",
+        repeatCount: parsed.data.repeatCount ?? 0,
       };
 
-      const camp = await storage.createCamp(campData);
-
-      console.log("Camp created successfully:", camp);
-      res.status(201).json(camp);
+      console.log("Processed camp data for database:", campData);
+      
+      try {
+        const camp = await storage.createCamp(campData);
+        console.log("Camp created successfully:", camp);
+        res.status(201).json(camp);
+      } catch (storageError) {
+        console.error("Database error creating camp:", storageError);
+        res.status(500).json({ 
+          message: "Database error creating camp", 
+          error: storageError.message 
+        });
+      }
     } catch (error) {
-      console.error("Error creating camp:", error);
-      res.status(500).json({ message: "Failed to create camp" });
+      console.error("Unexpected error creating camp:", error);
+      res.status(500).json({ 
+        message: "An unexpected error occurred", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
     }
   });
 
