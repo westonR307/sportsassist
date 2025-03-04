@@ -9,6 +9,7 @@ import Dashboard from "@/pages/dashboard";
 import TeamPage from "@/pages/team-page";
 import ReportsPage from "@/pages/reports-page";
 import SettingsPage from "@/pages/settings-page";
+import CampViewPage from "@/pages/camp-view-page";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
 
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/" component={HomePage} />
       <ProtectedRoute path="/dashboard" component={Dashboard} />
+      <ProtectedRoute path="/dashboard/camps/:id" component={CampViewPage} />
       <ProtectedRoute path="/dashboard/team" component={TeamPage} />
       <ProtectedRoute path="/dashboard/reports" component={ReportsPage} />
       <ProtectedRoute path="/dashboard/settings" component={SettingsPage} />

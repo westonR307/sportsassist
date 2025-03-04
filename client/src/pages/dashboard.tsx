@@ -28,8 +28,8 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-gray-50">
       {/* Mobile Menu Button */}
       <div className="lg:hidden fixed top-0 left-0 m-4 z-50">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           size="icon"
           onClick={() => setSidebarOpen(!sidebarOpen)}
         >
@@ -108,7 +108,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Overlay */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
@@ -151,23 +151,27 @@ function CampsDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {camps.map((camp) => (
             <Card key={camp.id}>
-              <CardHeader>
-                <CardTitle>{camp.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Status</span>
-                    <span className="text-sm font-medium px-2 py-1 rounded-full bg-green-100 text-green-800">
-                      {camp.visibility}
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    <p>Registration: {new Date(camp.registrationStartDate).toLocaleDateString()} - {new Date(camp.registrationEndDate).toLocaleDateString()}</p>
-                    <p>Camp: {new Date(camp.startDate).toLocaleDateString()} - {new Date(camp.endDate).toLocaleDateString()}</p>
-                  </div>
-                </div>
-              </CardContent>
+              <Link href={`/dashboard/camps/${camp.id}`}>
+                <a className="block hover:opacity-80">
+                  <CardHeader>
+                    <CardTitle>{camp.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Status</span>
+                        <span className="text-sm font-medium px-2 py-1 rounded-full bg-green-100 text-green-800">
+                          {camp.visibility}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        <p>Registration: {new Date(camp.registrationStartDate).toLocaleDateString()} - {new Date(camp.registrationEndDate).toLocaleDateString()}</p>
+                        <p>Camp: {new Date(camp.startDate).toLocaleDateString()} - {new Date(camp.endDate).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </a>
+              </Link>
             </Card>
           ))}
         </div>

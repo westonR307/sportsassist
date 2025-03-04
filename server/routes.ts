@@ -400,6 +400,56 @@ export async function registerRoutes(app: Express): Server {
     res.json(req.user);
   });
 
+  // Add these routes inside the registerRoutes function, before the httpServer creation
+  app.get("/api/camps/:id", async (req, res) => {
+    try {
+      const camp = await storage.getCamp(parseInt(req.params.id));
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      res.json(camp);
+    } catch (error) {
+      console.error("Error fetching camp:", error);
+      res.status(500).json({ message: "Failed to fetch camp" });
+    }
+  });
+
+  app.get("/api/camps/:id/registrations", async (req, res) => {
+    try {
+      const registrations = await storage.getRegistrationsByCamp(parseInt(req.params.id));
+      res.json(registrations);
+    } catch (error) {
+      console.error("Error fetching camp registrations:", error);
+      res.status(500).json({ message: "Failed to fetch registrations" });
+    }
+  });
+
+  app.post("/api/camps/:id/messages", async (req, res) => {
+    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+
+    const campId = parseInt(req.params.id);
+    const camp = await storage.getCamp(campId);
+
+    if (!camp) {
+      return res.status(404).json({ message: "Camp not found" });
+    }
+
+    // Check if user has permission to send messages for this camp
+    if (camp.organizationId !== req.user.organizationId) {
+      return res.status(403).json({ message: "Not authorized for this camp" });
+    }
+
+    try {
+      // Here we'll add actual message sending logic later
+      // For now just return success
+      res.json({ message: "Message sent successfully" });
+    } catch (error) {
+      console.error("Error sending message:", error);
+      res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
+
   const httpServer = createServer(app);
   return httpServer;
 }
