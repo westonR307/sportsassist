@@ -94,7 +94,8 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
         throw new Error("Organization ID required");
       }
 
-      const campData = {
+      // Convert dates to strings in the correct format
+      const formattedData = {
         ...data,
         organizationId: user.organizationId,
         schedules: selectedDays.map(day => ({
@@ -105,7 +106,7 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
         sports: selectedSports,
       };
 
-      return await apiRequest("POST", "/api/camps", campData);
+      return await apiRequest("POST", "/api/camps", formattedData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
@@ -114,20 +115,10 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
         description: "Camp created successfully",
       });
       form.reset();
-      setSelectedDays([]);
-      setSelectedSports([]);
-      setDaySchedules({
-        Sunday: { startTime: "09:00", endTime: "17:00" },
-        Monday: { startTime: "09:00", endTime: "17:00" },
-        Tuesday: { startTime: "09:00", endTime: "17:00" },
-        Wednesday: { startTime: "09:00", endTime: "17:00" },
-        Thursday: { startTime: "09:00", endTime: "17:00" },
-        Friday: { startTime: "09:00", endTime: "17:00" },
-        Saturday: { startTime: "09:00", endTime: "17:00" },
-      });
       onOpenChange(false);
     },
     onError: (error: Error) => {
+      console.error("Camp creation error:", error);
       toast({
         title: "Error",
         description: error.message,
@@ -411,7 +402,11 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
                           <Input
                             type="number"
                             {...field}
-                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            value={field.value === 0 ? "" : field.value}
+                            onChange={(e) => {
+                              const value = e.target.value === "" ? 0 : parseInt(e.target.value);
+                              field.onChange(value);
+                            }}
                             min={0}
                           />
                         </FormControl>
