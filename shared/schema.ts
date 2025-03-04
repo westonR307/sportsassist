@@ -96,6 +96,7 @@ export const camps = pgTable("camps", {
   visibility: text("visibility").$type<CampVisibility>().notNull().default("public"),
   minAge: integer("min_age").notNull(),
   maxAge: integer("max_age").notNull(),
+  repeatType: text("repeat_type").$type<RepeatType>().notNull().default("none"),
 });
 
 export const campStaff = pgTable("camp_staff", {
@@ -191,13 +192,14 @@ export const insertCampSchema = createInsertSchema(camps).extend({
     message: "Registration start date must be in the future",
   }),
   registrationEndDate: z.string(),
-  price: z.number().min(0, "Price must be 0 or greater").nullable(),
+  price: z.number().min(0, "Price must be 0 or greater"),
   capacity: z.number().min(1, "Capacity must be at least 1"),
   type: z.enum(["one_on_one", "group", "team", "virtual"]),
   visibility: z.enum(["public", "private"]),
   waitlistEnabled: z.boolean().default(true),
   minAge: z.number().min(1, "Minimum age must be at least 1"),
   maxAge: z.number().min(1, "Maximum age must be at least 1"),
+  repeatType: z.enum(["none", "weekly", "monthly"]).default("none"),
 }).refine((data) => {
   const startDate = new Date(data.startDate);
   const endDate = new Date(data.endDate);

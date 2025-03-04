@@ -88,6 +88,7 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
       waitlistEnabled: true,
       minAge: 5,
       maxAge: 18,
+      repeatType: "none",
     },
   });
 
@@ -100,13 +101,12 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
       const campData = {
         ...data,
         organizationId: user.organizationId,
-        createdById: user.id,
-        sports: selectedSports,
         schedules: selectedDays.map(day => ({
           dayOfWeek: DAYS_OF_WEEK.indexOf(day),
           startTime: daySchedules[day].startTime,
           endTime: daySchedules[day].endTime,
         })),
+        sports: selectedSports,
       };
 
       return await apiRequest("POST", "/api/camps", campData);
@@ -141,6 +141,25 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
   });
 
   const onSubmit = (data: z.infer<typeof insertCampSchema>) => {
+    // Make sure all required data is present
+    if (selectedDays.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please select at least one day for the schedule",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (selectedSports.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please select at least one sport",
+        variant: "destructive",
+      });
+      return;
+    }
+
     createCampMutation.mutate(data);
   };
 
@@ -357,6 +376,31 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
                     )}
                   />
                 </div>
+              </div>
+
+              {/* Repeat Options */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Scheduling</h3>
+                <FormField
+                  control={form.control}
+                  name="repeatType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Repeat Schedule</FormLabel>
+                      <FormControl>
+                        <select
+                          {...field}
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                        >
+                          <option value="none">No Repeat</option>
+                          <option value="weekly">Weekly</option>
+                          <option value="monthly">Monthly</option>
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
               {/* Add waitlist option */}
