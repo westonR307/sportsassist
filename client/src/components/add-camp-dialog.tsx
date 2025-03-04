@@ -72,19 +72,20 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
       city: "",
       state: "",
       zipCode: "",
-      type: "group",
-      visibility: "public",
       price: 0,
       capacity: 10,
-      startDate: new Date().toISOString().split("T")[0],
-      endDate: new Date().toISOString().split("T")[0],
-      registrationStartDate: new Date().toISOString().split("T")[0],
-      registrationEndDate: new Date().toISOString().split("T")[0],
-      waitlistEnabled: true,
       minAge: 5,
       maxAge: 18,
+      type: "group",
+      visibility: "public",
+      waitlistEnabled: true,
       repeatType: "none",
       repeatCount: 0,
+      // Initialize date fields to avoid undefined values
+      startDate: "",
+      endDate: "",
+      registrationStartDate: "",
+      registrationEndDate: "",
     },
   });
 
@@ -122,9 +123,38 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
     },
   });
 
-  const onSubmit = async (data: z.infer<typeof insertCampSchema>) => {
-    console.log("Form data before submission:", data);
-    createCampMutation.mutate(data);
+  const onSubmit = (values: z.infer<typeof insertCampSchema>) => {
+    // Ensure dates are in proper format
+    try {
+      // Make sure all required dates are present
+      if (!values.startDate || !values.endDate || !values.registrationStartDate || !values.registrationEndDate) {
+        toast({
+          title: "Missing dates",
+          description: "Please fill in all date fields",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log("Submitting form with values:", values);
+      createCampMutation.mutate(values, {
+        onError: (error) => {
+          console.error("Error creating camp:", error);
+          toast({
+            title: "Error creating camp",
+            description: error instanceof Error ? error.message : "Unknown error occurred",
+            variant: "destructive",
+          });
+        }
+      });
+    } catch (error) {
+      console.error("Form submission error:", error);
+      toast({
+        title: "Form Error",
+        description: "There was a problem with your form data. Please check all fields.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDaySelection = (day: DayOfWeek, checked: boolean) => {
