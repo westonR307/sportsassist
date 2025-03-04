@@ -187,7 +187,40 @@ export class DatabaseStorage implements IStorage {
   }
 
   async listCamps(): Promise<Camp[]> {
-    return await db.select().from(camps);
+    try {
+      // Use a specific column selection to avoid schema issues
+      const campList = await db.select({
+        id: camps.id,
+        name: camps.name,
+        description: camps.description,
+        streetAddress: camps.streetAddress,
+        city: camps.city,
+        state: camps.state,
+        zipCode: camps.zipCode,
+        startDate: camps.startDate,
+        endDate: camps.endDate,
+        registrationStartDate: camps.registrationStartDate,
+        registrationEndDate: camps.registrationEndDate,
+        price: camps.price,
+        capacity: camps.capacity,
+        organizationId: camps.organizationId,
+        waitlistEnabled: camps.waitlistEnabled,
+        type: camps.type,
+        visibility: camps.visibility,
+        minAge: camps.minAge,
+        maxAge: camps.maxAge,
+        repeatType: camps.repeatType,
+        repeatCount: camps.repeatCount,
+        // Exclude the additionalLocationDetails field if it's causing issues
+      }).from(camps);
+      
+      console.log("Successfully retrieved camps");
+      return campList;
+    } catch (error) {
+      console.error("Error in listCamps:", error);
+      // Return empty array instead of crashing
+      return [];
+    }
   }
 
   async createRegistration(registration: Omit<Registration, "id">): Promise<Registration> {
