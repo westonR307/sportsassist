@@ -94,6 +94,8 @@ export const camps = pgTable("camps", {
   waitlistEnabled: boolean("waitlist_enabled").notNull().default(true),
   type: text("type").$type<CampType>().notNull(),
   visibility: text("visibility").$type<CampVisibility>().notNull().default("public"),
+  minAge: integer("min_age").notNull(),
+  maxAge: integer("max_age").notNull(),
 });
 
 export const campStaff = pgTable("camp_staff", {
@@ -194,6 +196,8 @@ export const insertCampSchema = createInsertSchema(camps).extend({
   type: z.enum(["one_on_one", "group", "team", "virtual"]),
   visibility: z.enum(["public", "private"]),
   waitlistEnabled: z.boolean().default(true),
+  minAge: z.number().min(1, "Minimum age must be at least 1"),
+  maxAge: z.number().min(1, "Maximum age must be at least 1"),
 }).refine((data) => {
   const startDate = new Date(data.startDate);
   const endDate = new Date(data.endDate);
@@ -202,9 +206,10 @@ export const insertCampSchema = createInsertSchema(camps).extend({
 
   return regStartDate <= regEndDate && // Registration start must be before or on registration end
          regEndDate <= startDate && // Registration must end before or on camp start
-         startDate <= endDate; // Camp start must be before or on camp end
+         startDate <= endDate && // Camp start must be before or on camp end
+         data.minAge <= data.maxAge; // Min age must be less than or equal to max age
 }, {
-  message: "Invalid date sequence. Registration period must end before camp starts, and camp end date must be after start date.",
+  message: "Invalid date sequence or age range. Registration period must end before camp starts, camp end date must be after start date, and minimum age must not exceed maximum age.",
   path: ["dates"]
 });
 

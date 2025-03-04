@@ -86,6 +86,8 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
       registrationStartDate: new Date().toISOString().split("T")[0],
       registrationEndDate: new Date().toISOString().split("T")[0],
       waitlistEnabled: true,
+      minAge: 5,
+      maxAge: 18,
     },
   });
 
@@ -412,6 +414,51 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
                   />
                 </div>
               </div>
+
+              {/* Age Range */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Age Range</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="minAge"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Minimum Age</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                            min={1}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="maxAge"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Maximum Age</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                            min={1}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
 
               {/* Sports Selection */}
               <div className="space-y-4">
