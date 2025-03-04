@@ -12,20 +12,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { insertCampSchema } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import {Combobox} from "@/components/ui/combobox";
-
+import { useAuth } from "@/hooks/use-auth";
 
 export function AddCampDialog({
   open,
@@ -36,24 +27,9 @@ export function AddCampDialog({
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
-  // Fetch sports data (replace with your actual API call)
-  const { data: sportsData = [] } = useQuery({
-    queryKey: ["/api/sports"],
-    // Add error handling here to gracefully handle API failures.
-    onError: (error) => {
-      console.error("Error fetching sports data:", error);
-      toast({ title: "Error", description: "Could not load sports data", variant: "destructive" });
-    },
-  });
-  const sports = sportsData.map(sport => ({value: sport.id, label: sport.name}))
-
-  // Get today's date for default date fields
-  const today = new Date();
-  const formatDateForInput = (date: Date) => {
-    return date.toISOString().split('T')[0];
-  };
-
+  // Initialize form with default values
   const form = useForm<z.infer<typeof insertCampSchema>>({
     resolver: zodResolver(insertCampSchema),
     defaultValues: {
@@ -63,81 +39,45 @@ export function AddCampDialog({
       city: "",
       state: "",
       zipCode: "",
-      price: "", // Allow empty price
+      price: 0,
       capacity: 20,
-      minAge: 5,
-      maxAge: 18,
       type: "group",
       visibility: "public",
       waitlistEnabled: true,
+      minAge: 5,
+      maxAge: 18,
       repeatType: "none",
       repeatCount: 0,
-      registrationStartDate: formatDateForInput(today), // Start date can be today
-      registrationEndDate: formatDateForInput(today), // End date can be today
-      startDate: formatDateForInput(today), // Start date can be today
-      endDate: formatDateForInput(today), // End date can be today
-      additionalLocationDetails: "",
-      sport: null
+      registrationStartDate: new Date().toISOString().split('T')[0],
+      registrationEndDate: new Date().toISOString().split('T')[0],
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: new Date().toISOString().split('T')[0],
     },
   });
 
   const createCampMutation = useMutation({
     mutationFn: async (values: z.infer<typeof insertCampSchema>) => {
-      console.log("Form values before submission:", values);
-
-      try {
-        // Validate required fields explicitly
-        const requiredFields = [
-          "name", "description", "streetAddress", "city", "state", "zipCode",
-          "startDate", "endDate", "registrationStartDate", "registrationEndDate", "sport"
-        ];
-
-        const missingFields = requiredFields.filter(field => !values[field as keyof typeof values]);
-
-        if (missingFields.length > 0) {
-          console.error("Missing required fields:", missingFields);
-          throw new Error(`Missing required fields: ${missingFields.join(", ")}`);
-        }
-
-        // Ensure dates are valid (add more robust date validation as needed)
-        const startDate = new Date(values.startDate);
-        const endDate = new Date(values.endDate);
-        const regStartDate = new Date(values.registrationStartDate);
-        const regEndDate = new Date(values.registrationEndDate);
-
-        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) ||
-            isNaN(regStartDate.getTime()) || isNaN(regEndDate.getTime())) {
-          throw new Error("One or more dates are invalid");
-        }
-
-        const response = await fetch("/api/camps", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(values),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          let errorMessage = "Failed to create camp";
-          try {
-            const errorJson = JSON.parse(errorText);
-            errorMessage = errorJson.message || errorJson.error || "Failed to create camp";
-            if (errorJson.errors) {
-              console.error("Validation errors:", errorJson.errors);
-            }
-          } catch (e) {
-            errorMessage = errorText || "Failed to create camp";
-          }
-          throw new Error(errorMessage);
-        }
-
-        const responseData = await response.json();
-        return responseData;
-      } catch (error) {
-        throw error;
+      if (!user?.organizationId) {
+        throw new Error("Organization ID required");
       }
+
+      const response = await fetch("/api/camps", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...values,
+          organizationId: user.organizationId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create camp");
+      }
+
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
@@ -149,6 +89,7 @@ export function AddCampDialog({
       onOpenChange(false);
     },
     onError: (error: Error) => {
+      console.error("Camp creation error:", error);
       toast({
         title: "Error",
         description: error.message,
@@ -157,399 +98,347 @@ export function AddCampDialog({
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof insertCampSchema>) => {
-    createCampMutation.mutate(values);
+  const onSubmit = (data: z.infer<typeof insertCampSchema>) => {
+    console.log("Submitting form data:", data);
+    createCampMutation.mutate(data);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Create New Camp</DialogTitle>
         </DialogHeader>
-        <div className="py-4">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <Tabs defaultValue="basic">
-                <TabsList className="grid grid-cols-3 mb-4">
-                  <TabsTrigger value="basic">Basic Info</TabsTrigger>
-                  <TabsTrigger value="dates">Dates & Capacity</TabsTrigger>
-                  <TabsTrigger value="location">Location</TabsTrigger>
-                </TabsList>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Camp Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Enter camp name" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-                <TabsContent value="basic" className="space-y-4">
-                  {/* Camp Name */}
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Camp Name*</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Enter camp name"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Textarea {...field} placeholder="Describe the camp" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-                  {/* Description */}
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Description*</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Describe the camp"
-                            rows={3}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+            <FormField
+              control={form.control}
+              name="visibility"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Visibility</FormLabel>
+                  <FormControl>
+                    <select
+                      {...field}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                    >
+                      <option value="public">Public</option>
+                      <option value="private">Private</option>
+                    </select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-                  {/* Sport */}
-                  <FormField
-                    control={form.control}
-                    name="sport"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Sport*</FormLabel>
-                        <FormControl>
-                          <Combobox value={field.value} onValueChange={field.onChange}>
-                            <Combobox.Input placeholder="Select a sport" />
-                            <Combobox.Options>
-                              {sports.map((sport) => (
-                                <Combobox.Option key={sport.value} value={sport.value}>
-                                  {sport.label}
-                                </Combobox.Option>
-                              ))}
-                            </Combobox.Options>
-                          </Combobox>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-
-                  {/* Type */}
-                  <FormField
-                    control={form.control}
-                    name="type"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Camp Type</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="group">Group</SelectItem>
-                            <SelectItem value="one_on_one">One-on-One</SelectItem>
-                            <SelectItem value="team">Team</SelectItem>
-                            <SelectItem value="virtual">Virtual</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Visibility */}
-                  <FormField
-                    control={form.control}
-                    name="visibility"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Visibility</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select visibility" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="public">Public</SelectItem>
-                            <SelectItem value="private">Private</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Price */}
-                  <FormField
-                    control={form.control}
-                    name="price"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Price ($)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min="0"
-                            {...field}
-                            onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </TabsContent>
-
-                <TabsContent value="dates" className="space-y-4">
-                  {/* Registration Start Date */}
-                  <FormField
-                    control={form.control}
-                    name="registrationStartDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Registration Start Date*</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Registration End Date */}
-                  <FormField
-                    control={form.control}
-                    name="registrationEndDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Registration End Date*</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Camp Start Date */}
-                  <FormField
-                    control={form.control}
-                    name="startDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Camp Start Date*</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Camp End Date */}
-                  <FormField
-                    control={form.control}
-                    name="endDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Camp End Date*</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Capacity */}
-                  <FormField
-                    control={form.control}
-                    name="capacity"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Capacity</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min="1"
-                            {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Age Range */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="minAge"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Min Age</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              min="1"
-                              {...field}
-                              onChange={(e) => field.onChange(Number(e.target.value))}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="maxAge"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Max Age</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              min="1"
-                              {...field}
-                              onChange={(e) => field.onChange(Number(e.target.value))}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="location" className="space-y-4">
-                  {/* Street Address */}
-                  <FormField
-                    control={form.control}
-                    name="streetAddress"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Street Address*</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="123 Main St"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* City */}
-                  <FormField
-                    control={form.control}
-                    name="city"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>City*</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Anytown"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* State and Zip */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="state"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>State*</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="CA"
-                              maxLength={2}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="zipCode"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>ZIP Code*</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="12345"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  {/* Additional Location Details */}
-                  <FormField
-                    control={form.control}
-                    name="additionalLocationDetails"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Additional Location Details</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Enter additional details about the location (e.g., parking instructions, entrance information)"
-                            rows={3}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </TabsContent>
-              </Tabs>
-
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={createCampMutation.isPending}
-              >
-                {createCampMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  "Create Camp"
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Start Date</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </Button>
-            </form>
-          </Form>
-        </div>
+              />
+
+              <FormField
+                control={form.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End Date</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="registrationStartDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Registration Start</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="registrationEndDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Registration End</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="minAge"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Minimum Age</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        onChange={(e) => field.onChange(parseInt(e.target.value))}
+                        min={1}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="maxAge"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Maximum Age</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        onChange={(e) => field.onChange(parseInt(e.target.value))}
+                        min={1}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Price ($)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        onChange={(e) => field.onChange(parseInt(e.target.value))}
+                        min={0}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="capacity"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Capacity</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        onChange={(e) => field.onChange(parseInt(e.target.value))}
+                        min={1}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="waitlistEnabled"
+              render={({ field }) => (
+                <FormItem className="flex items-center space-x-2">
+                  <FormControl>
+                    <input
+                      type="checkbox"
+                      checked={field.value}
+                      onChange={field.onChange}
+                      className="h-4 w-4"
+                    />
+                  </FormControl>
+                  <FormLabel className="font-normal">Enable waitlist when camp is full</FormLabel>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="repeatType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Repeat Schedule</FormLabel>
+                  <FormControl>
+                    <select
+                      {...field}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                    >
+                      <option value="none">No Repeat</option>
+                      <option value="weekly">Weekly</option>
+                      <option value="monthly">Monthly</option>
+                    </select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {form.watch("repeatType") !== "none" && (
+              <FormField
+                control={form.control}
+                name="repeatCount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Number of {form.watch("repeatType") === "weekly" ? "Weeks" : "Months"} to Repeat
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        value={field.value || ""}
+                        onChange={(e) => field.onChange(e.target.value === "" ? 0 : parseInt(e.target.value))}
+                        min={0}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="streetAddress"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Street Address</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="123 Main St" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="City" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="state"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>State</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="CA" maxLength={2} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="zipCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>ZIP Code</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="12345" pattern="\d{5}(-\d{4})?" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={createCampMutation.isPending}
+            >
+              {createCampMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Camp"
+              )}
+            </Button>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
