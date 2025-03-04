@@ -94,19 +94,38 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
         throw new Error("Organization ID required");
       }
 
-      // Convert dates to strings in the correct format
-      const formattedData = {
-        ...data,
+      console.log("Submitting form data:", data);
+
+      // Convert string dates to Date objects and only include fields that exist in the database
+      const campData = {
+        name: data.name,
+        description: data.description,
+        streetAddress: data.streetAddress,
+        city: data.city,
+        state: data.state,
+        zipCode: data.zipCode,
+        startDate: new Date(data.startDate),
+        endDate: new Date(data.endDate),
+        registrationStartDate: new Date(data.registrationStartDate),
+        registrationEndDate: new Date(data.registrationEndDate),
+        price: data.price || 0,
+        capacity: data.capacity,
         organizationId: user.organizationId,
-        schedules: selectedDays.map(day => ({
-          dayOfWeek: DAYS_OF_WEEK.indexOf(day),
-          startTime: daySchedules[day].startTime,
-          endTime: daySchedules[day].endTime,
-        })),
-        sports: selectedSports,
+        waitlistEnabled: data.waitlistEnabled,
+        type: data.type,
+        visibility: data.visibility,
+        minAge: data.minAge,
+        maxAge: data.maxAge,
+        repeatType: data.repeatType,
+        repeatCount: data.repeatCount || 0,
       };
 
-      return await apiRequest("POST", "/api/camps", formattedData);
+      const response = await apiRequest("POST", "/api/camps", campData);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to create camp");
+      }
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
@@ -127,27 +146,13 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
     },
   });
 
-  const onSubmit = (data: z.infer<typeof insertCampSchema>) => {
-    // Make sure all required data is present
-    if (selectedDays.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please select at least one day for the schedule",
-        variant: "destructive",
-      });
-      return;
+  const onSubmit = async (data: z.infer<typeof insertCampSchema>) => {
+    try {
+      console.log("Form data:", data);
+      await createCampMutation.mutateAsync(data);
+    } catch (error) {
+      console.error("Submit error:", error);
     }
-
-    if (selectedSports.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please select at least one sport",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    createCampMutation.mutate(data);
   };
 
   const handleDaySelection = (day: DayOfWeek, checked: boolean) => {
