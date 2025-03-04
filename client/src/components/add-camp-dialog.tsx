@@ -91,6 +91,59 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
     },
   });
 
+  const createCampMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof insertCampSchema>) => {
+      if (!user?.organizationId) {
+        throw new Error("Organization ID required");
+      }
+
+      const campData = {
+        ...data,
+        organizationId: user.organizationId,
+        createdById: user.id,
+        sports: selectedSports,
+        schedules: selectedDays.map(day => ({
+          dayOfWeek: DAYS_OF_WEEK.indexOf(day),
+          startTime: daySchedules[day].startTime,
+          endTime: daySchedules[day].endTime,
+        })),
+      };
+
+      return await apiRequest("POST", "/api/camps", campData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
+      toast({
+        title: "Success",
+        description: "Camp created successfully",
+      });
+      form.reset();
+      setSelectedDays([]);
+      setSelectedSports([]);
+      setDaySchedules({
+        Sunday: { startTime: "09:00", endTime: "17:00" },
+        Monday: { startTime: "09:00", endTime: "17:00" },
+        Tuesday: { startTime: "09:00", endTime: "17:00" },
+        Wednesday: { startTime: "09:00", endTime: "17:00" },
+        Thursday: { startTime: "09:00", endTime: "17:00" },
+        Friday: { startTime: "09:00", endTime: "17:00" },
+        Saturday: { startTime: "09:00", endTime: "17:00" },
+      });
+      onOpenChange(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: z.infer<typeof insertCampSchema>) => {
+    createCampMutation.mutate(data);
+  };
+
   const handleDaySelection = (day: DayOfWeek, checked: boolean) => {
     if (checked) {
       setSelectedDays(prev => [...prev, day]);
@@ -123,52 +176,6 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
         sport.sportId === sportId ? { ...sport, skillLevel } : sport
       )
     );
-  };
-
-  const createCampMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof insertCampSchema>) => {
-      if (!user?.organizationId) {
-        throw new Error("Organization ID required");
-      }
-
-      const campData = {
-        ...data,
-        organizationId: user.organizationId,
-        createdById: user.id,
-        sports: selectedSports,
-        schedules: selectedDays.map(day => ({
-          dayOfWeek: DAYS_OF_WEEK.indexOf(day),
-          startTime: daySchedules[day].startTime,
-          endTime: daySchedules[day].endTime,
-        })),
-      };
-
-      const response = await apiRequest("POST", "/api/camps", campData);
-      return await response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
-      toast({
-        title: "Success",
-        description: "Camp created successfully",
-      });
-      form.reset();
-      setSelectedDays([]);
-      setSelectedSports([]);
-      setDaySchedules({});
-      onOpenChange(false);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const onSubmit = (data: z.infer<typeof insertCampSchema>) => {
-    createCampMutation.mutate(data);
   };
 
   return (
@@ -403,8 +410,8 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
                         <FormControl>
                           <Input
                             type="number"
-                            {...field}
-                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                            value={field.value?.toString() ?? "0"}
+                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 0)}
                             min={0}
                           />
                         </FormControl>
