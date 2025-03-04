@@ -24,6 +24,8 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { insertCampSchema } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import {Combobox} from "@/components/ui/combobox";
+
 
 export function AddCampDialog({
   open,
@@ -35,20 +37,19 @@ export function AddCampDialog({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch sports data
-  const { data: sports } = useQuery({
+  // Fetch sports data (replace with your actual API call)
+  const { data: sportsData = [] } = useQuery({
     queryKey: ["/api/sports"],
+    // Add error handling here to gracefully handle API failures.
+    onError: (error) => {
+      console.error("Error fetching sports data:", error);
+      toast({ title: "Error", description: "Could not load sports data", variant: "destructive" });
+    },
   });
+  const sports = sportsData.map(sport => ({value: sport.id, label: sport.name}))
 
-  // Get tomorrow's date for default date fields
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const nextWeek = new Date();
-  nextWeek.setDate(nextWeek.getDate() + 7);
-  const nextMonth = new Date();
-  nextMonth.setDate(nextMonth.getDate() + 30);
-
-  // Format dates as YYYY-MM-DD for input fields
+  // Get today's date for default date fields
+  const today = new Date();
   const formatDateForInput = (date: Date) => {
     return date.toISOString().split('T')[0];
   };
@@ -62,7 +63,7 @@ export function AddCampDialog({
       city: "",
       state: "",
       zipCode: "",
-      price: 0,
+      price: "", // Allow empty price
       capacity: 20,
       minAge: 5,
       maxAge: 18,
@@ -71,24 +72,24 @@ export function AddCampDialog({
       waitlistEnabled: true,
       repeatType: "none",
       repeatCount: 0,
-      // Initialize date fields with actual date values
-      registrationStartDate: formatDateForInput(tomorrow),
-      registrationEndDate: formatDateForInput(nextWeek),
-      startDate: formatDateForInput(nextWeek),
-      endDate: formatDateForInput(nextMonth),
+      registrationStartDate: formatDateForInput(today), // Start date can be today
+      registrationEndDate: formatDateForInput(today), // End date can be today
+      startDate: formatDateForInput(today), // Start date can be today
+      endDate: formatDateForInput(today), // End date can be today
+      additionalLocationDetails: "",
+      sport: null
     },
   });
 
   const createCampMutation = useMutation({
     mutationFn: async (values: z.infer<typeof insertCampSchema>) => {
-      // Log the full form values for debugging
       console.log("Form values before submission:", values);
 
       try {
         // Validate required fields explicitly
         const requiredFields = [
-          "name", "description", "streetAddress", "city", "state", "zipCode", 
-          "startDate", "endDate", "registrationStartDate", "registrationEndDate"
+          "name", "description", "streetAddress", "city", "state", "zipCode",
+          "startDate", "endDate", "registrationStartDate", "registrationEndDate", "sport"
         ];
 
         const missingFields = requiredFields.filter(field => !values[field as keyof typeof values]);
@@ -98,32 +99,17 @@ export function AddCampDialog({
           throw new Error(`Missing required fields: ${missingFields.join(", ")}`);
         }
 
-        // Ensure dates are valid
-        try {
-          const startDate = new Date(values.startDate);
-          const endDate = new Date(values.endDate);
-          const regStartDate = new Date(values.registrationStartDate);
-          const regEndDate = new Date(values.registrationEndDate);
+        // Ensure dates are valid (add more robust date validation as needed)
+        const startDate = new Date(values.startDate);
+        const endDate = new Date(values.endDate);
+        const regStartDate = new Date(values.registrationStartDate);
+        const regEndDate = new Date(values.registrationEndDate);
 
-          console.log("Parsed dates:", {
-            startDate,
-            endDate,
-            regStartDate,
-            regEndDate
-          });
-
-          // Additional date validation
-          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || 
-              isNaN(regStartDate.getTime()) || isNaN(regEndDate.getTime())) {
-            throw new Error("One or more dates are invalid");
-          }
-        } catch (dateError) {
-          console.error("Date validation error:", dateError);
-          throw new Error("Please ensure all dates are valid");
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) ||
+            isNaN(regStartDate.getTime()) || isNaN(regEndDate.getTime())) {
+          throw new Error("One or more dates are invalid");
         }
 
-        // Make the API request
-        console.log("Sending request to create camp...");
         const response = await fetch("/api/camps", {
           method: "POST",
           headers: {
@@ -132,12 +118,8 @@ export function AddCampDialog({
           body: JSON.stringify(values),
         });
 
-        console.log("Response status:", response.status);
-
         if (!response.ok) {
           const errorText = await response.text();
-          console.error("Error response:", errorText);
-
           let errorMessage = "Failed to create camp";
           try {
             const errorJson = JSON.parse(errorText);
@@ -146,18 +128,14 @@ export function AddCampDialog({
               console.error("Validation errors:", errorJson.errors);
             }
           } catch (e) {
-            // If the error isn't valid JSON, use the text directly
             errorMessage = errorText || "Failed to create camp";
           }
-
           throw new Error(errorMessage);
         }
 
         const responseData = await response.json();
-        console.log("Camp created successfully:", responseData);
         return responseData;
       } catch (error) {
-        console.error("Exception during camp creation:", error);
         throw error;
       }
     },
@@ -171,7 +149,6 @@ export function AddCampDialog({
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      console.error("Camp creation error:", error);
       toast({
         title: "Error",
         description: error.message,
@@ -181,7 +158,6 @@ export function AddCampDialog({
   });
 
   const onSubmit = async (values: z.infer<typeof insertCampSchema>) => {
-    console.log("Form submitted with values:", values);
     createCampMutation.mutate(values);
   };
 
@@ -238,6 +214,31 @@ export function AddCampDialog({
                       </FormItem>
                     )}
                   />
+
+                  {/* Sport */}
+                  <FormField
+                    control={form.control}
+                    name="sport"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Sport*</FormLabel>
+                        <FormControl>
+                          <Combobox value={field.value} onValueChange={field.onChange}>
+                            <Combobox.Input placeholder="Select a sport" />
+                            <Combobox.Options>
+                              {sports.map((sport) => (
+                                <Combobox.Option key={sport.value} value={sport.value}>
+                                  {sport.label}
+                                </Combobox.Option>
+                              ))}
+                            </Combobox.Options>
+                          </Combobox>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
 
                   {/* Type */}
                   <FormField
@@ -305,7 +306,7 @@ export function AddCampDialog({
                             type="number"
                             min="0"
                             {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
+                            onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
                           />
                         </FormControl>
                         <FormMessage />
@@ -509,6 +510,25 @@ export function AddCampDialog({
                       )}
                     />
                   </div>
+
+                  {/* Additional Location Details */}
+                  <FormField
+                    control={form.control}
+                    name="additionalLocationDetails"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Additional Location Details</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Enter additional details about the location (e.g., parking instructions, entrance information)"
+                            rows={3}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </TabsContent>
               </Tabs>
 

@@ -84,6 +84,7 @@ export const camps = pgTable("camps", {
   city: text("city").notNull(),
   state: text("state").notNull(),
   zipCode: text("zip_code").notNull(),
+  additionalLocationDetails: text("additional_location_details"),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
   registrationStartDate: timestamp("registration_start_date").notNull(),
@@ -183,15 +184,16 @@ export const insertCampSchema = createInsertSchema(camps).extend({
   city: z.string().min(1, "City is required"),
   state: z.string().length(2, "Please use 2-letter state code"),
   zipCode: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format"),
+  additionalLocationDetails: z.string().optional(),
+  sportId: z.number().optional(),
+  skillLevel: z.enum(["beginner", "intermediate", "advanced"]).optional(),
   startDate: z.string().refine((date) => new Date(date) >= new Date(), {
     message: "Start date must be in the future",
   }),
   endDate: z.string().refine((date) => new Date(date) >= new Date(), {
     message: "End date must be in the future",
   }),
-  registrationStartDate: z.string().refine((date) => new Date(date) >= new Date(), {
-    message: "Registration start date must be in the future",
-  }),
+  registrationStartDate: z.string(),
   registrationEndDate: z.string(),
   price: z.number().min(0, "Price must be 0 or greater"),
   capacity: z.number().min(1, "Capacity must be at least 1"),
