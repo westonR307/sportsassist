@@ -350,6 +350,69 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
                 </div>
               </div>
 
+              {/* Add waitlist option */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Registration Options</h3>
+                <div className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="waitlistEnabled"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <input
+                            type="checkbox"
+                            checked={field.value}
+                            onChange={field.onChange}
+                            className="h-4 w-4"
+                          />
+                        </FormControl>
+                        <FormLabel className="font-normal">Enable waitlist when camp is full</FormLabel>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="capacity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Capacity (number of athletes)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                            min={1}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="price"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Price (in dollars)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                            min={0}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
               {/* Sports Selection */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Sports</h3>
