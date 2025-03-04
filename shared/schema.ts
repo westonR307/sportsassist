@@ -97,6 +97,7 @@ export const camps = pgTable("camps", {
   minAge: integer("min_age").notNull(),
   maxAge: integer("max_age").notNull(),
   repeatType: text("repeat_type").$type<RepeatType>().notNull().default("none"),
+  repeatCount: integer("repeat_count").notNull().default(0),
 });
 
 export const campStaff = pgTable("camp_staff", {
@@ -200,6 +201,7 @@ export const insertCampSchema = createInsertSchema(camps).extend({
   minAge: z.number().min(1, "Minimum age must be at least 1"),
   maxAge: z.number().min(1, "Maximum age must be at least 1"),
   repeatType: z.enum(["none", "weekly", "monthly"]).default("none"),
+  repeatCount: z.number().min(0, "Repeat count must be 0 or greater").default(0),
 }).refine((data) => {
   const startDate = new Date(data.startDate);
   const endDate = new Date(data.endDate);

@@ -63,11 +63,6 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
     queryKey: ["/api/sports"],
   });
 
-  const { data: organizationStaff } = useQuery<{ id: number; username: string; role: string }[]>({
-    queryKey: [`/api/organizations/${user?.organizationId}/staff`],
-    enabled: !!user?.organizationId,
-  });
-
   const form = useForm<z.infer<typeof insertCampSchema>>({
     resolver: zodResolver(insertCampSchema),
     defaultValues: {
@@ -89,6 +84,7 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
       minAge: 5,
       maxAge: 18,
       repeatType: "none",
+      repeatCount: 0,
     },
   });
 
@@ -401,6 +397,29 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
                     </FormItem>
                   )}
                 />
+
+                {form.watch("repeatType") !== "none" && (
+                  <FormField
+                    control={form.control}
+                    name="repeatCount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Number of {form.watch("repeatType") === "weekly" ? "Weeks" : "Months"} to Repeat
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            min={0}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
 
               {/* Add waitlist option */}
