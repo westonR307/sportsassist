@@ -63,6 +63,19 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
     queryKey: ["/api/sports"],
   });
 
+  // Get tomorrow's date for default date fields
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const nextWeek = new Date();
+  nextWeek.setDate(nextWeek.getDate() + 7);
+  const nextMonth = new Date();
+  nextMonth.setDate(nextMonth.getDate() + 30);
+  
+  // Format dates as YYYY-MM-DD for input fields
+  const formatDateForInput = (date: Date) => {
+    return date.toISOString().split('T')[0];
+  };
+
   const form = useForm<z.infer<typeof insertCampSchema>>({
     resolver: zodResolver(insertCampSchema),
     defaultValues: {
@@ -81,11 +94,11 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
       waitlistEnabled: true,
       repeatType: "none",
       repeatCount: 0,
-      // Initialize date fields to avoid undefined values
-      startDate: "",
-      endDate: "",
-      registrationStartDate: "",
-      registrationEndDate: "",
+      // Initialize date fields with actual date values
+      registrationStartDate: formatDateForInput(tomorrow),
+      registrationEndDate: formatDateForInput(nextWeek),
+      startDate: formatDateForInput(nextWeek),
+      endDate: formatDateForInput(nextMonth),
     },
   });
 
@@ -123,21 +136,69 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof insertCampSchema>) => {
-    // Ensure dates are in proper format
+  const onSubmit = async (values: z.infer<typeof insertCampSchema>) => {
+    // Log the full form values for debugging
+    console.log("Form values before submission:", values);
+    
     try {
-      // Make sure all required dates are present
-      if (!values.startDate || !values.endDate || !values.registrationStartDate || !values.registrationEndDate) {
+      // Validate required fields explicitly
+      const requiredFields = [
+        "name", "description", "streetAddress", "city", "state", "zipCode", 
+        "startDate", "endDate", "registrationStartDate", "registrationEndDate"
+      ];
+      
+      const missingFields = requiredFields.filter(field => !values[field as keyof typeof values]);
+      
+      if (missingFields.length > 0) {
+        console.error("Missing required fields:", missingFields);
         toast({
-          title: "Missing dates",
-          description: "Please fill in all date fields",
+          title: "Missing Required Fields",
+          description: `Please fill in: ${missingFields.join(", ")}`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Ensure dates are valid
+      try {
+        const startDate = new Date(values.startDate);
+        const endDate = new Date(values.endDate);
+        const regStartDate = new Date(values.registrationStartDate);
+        const regEndDate = new Date(values.registrationEndDate);
+        
+        console.log("Parsed dates:", {
+          startDate,
+          endDate,
+          regStartDate,
+          regEndDate
+        });
+        
+        // Additional date validation
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || 
+            isNaN(regStartDate.getTime()) || isNaN(regEndDate.getTime())) {
+          throw new Error("One or more dates are invalid");
+        }
+      } catch (dateError) {
+        console.error("Date validation error:", dateError);
+        toast({
+          title: "Invalid Dates",
+          description: "Please ensure all dates are valid",
           variant: "destructive",
         });
         return;
       }
 
-      console.log("Submitting form with values:", values);
+      // Proceed with camp creation
+      console.log("Proceeding with camp creation. Data:", values);
+      
       createCampMutation.mutate(values, {
+        onSuccess: () => {
+          toast({
+            title: "Success!",
+            description: "Camp created successfully",
+          });
+          onOpenChange(false); // Close dialog on success
+        },
         onError: (error) => {
           console.error("Error creating camp:", error);
           toast({
