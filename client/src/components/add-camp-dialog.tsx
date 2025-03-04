@@ -96,31 +96,7 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
 
       console.log("Submitting form data:", data);
 
-      // Convert string dates to Date objects and only include fields that exist in the database
-      const campData = {
-        name: data.name,
-        description: data.description,
-        streetAddress: data.streetAddress,
-        city: data.city,
-        state: data.state,
-        zipCode: data.zipCode,
-        startDate: new Date(data.startDate),
-        endDate: new Date(data.endDate),
-        registrationStartDate: new Date(data.registrationStartDate),
-        registrationEndDate: new Date(data.registrationEndDate),
-        price: data.price || 0,
-        capacity: data.capacity,
-        organizationId: user.organizationId,
-        waitlistEnabled: data.waitlistEnabled,
-        type: data.type,
-        visibility: data.visibility,
-        minAge: data.minAge,
-        maxAge: data.maxAge,
-        repeatType: data.repeatType,
-        repeatCount: data.repeatCount || 0,
-      };
-
-      const response = await apiRequest("POST", "/api/camps", campData);
+      const response = await apiRequest("POST", "/api/camps", data);
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "Failed to create camp");
@@ -147,12 +123,8 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
   });
 
   const onSubmit = async (data: z.infer<typeof insertCampSchema>) => {
-    try {
-      console.log("Form data:", data);
-      await createCampMutation.mutateAsync(data);
-    } catch (error) {
-      console.error("Submit error:", error);
-    }
+    console.log("Form data before submission:", data);
+    createCampMutation.mutate(data);
   };
 
   const handleDaySelection = (day: DayOfWeek, checked: boolean) => {
@@ -227,6 +199,25 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
                           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background min-h-[100px]"
                           placeholder="Enter camp description"
                         />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="visibility"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Visibility</FormLabel>
+                      <FormControl>
+                        <select
+                          {...field}
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                        >
+                          <option value="public">Public</option>
+                          <option value="private">Private</option>
+                        </select>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
