@@ -1,0 +1,167 @@
+Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+
+chunk-RPCDYKBN.js?v=efca472a:521 Warning: validateDOMNesting(...): <a> cannot appear as a descendant of <a>.
+
+    at a
+
+    at a
+
+    at https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=efca472a:205:18
+
+    at nav
+
+    at div
+
+    at div
+
+    at DashboardLayout (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.replit.dev/src/pages/dashboard.tsx:35:28)
+
+    at CampViewPage (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.replit.dev/src/pages/camp-view-page.tsx:28:18)
+
+    at Route (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=efca472a:191:16)
+
+    at ProtectedRoute (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.replit.dev/src/lib/protected-route.tsx:22:3)
+
+    at Switch (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=efca472a:247:17)
+
+    at Router
+
+    at AuthProvider (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.replit.dev/src/hooks/use-auth.tsx:98:32)
+
+    at QueryClientProvider (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=efca472a:2805:3)
+
+    at App
+
+
+
+https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.replit.dev/api/camps/3 500 (Internal Server Error)
+
+(anonymous) @ queryClient.ts:32
+
+fetchFn @ @tanstack_react-query.js?v=efca472a:840
+
+run @ @tanstack_react-query.js?v=efca472a:494
+
+start @ @tanstack_react-query.js?v=efca472a:536
+
+fetch @ @tanstack_react-query.js?v=efca472a:926
+
+executeFetch_fn @ @tanstack_react-query.js?v=efca472a:2211
+
+onSubscribe @ @tanstack_react-query.js?v=efca472a:1898
+
+subscribe @ @tanstack_react-query.js?v=efca472a:24
+
+(anonymous) @ @tanstack_react-query.js?v=efca472a:3022
+
+subscribeToStore @ chunk-RPCDYKBN.js?v=efca472a:11984
+
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=efca472a:16915
+
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=efca472a:18156
+
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=efca472a:18129
+
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=efca472a:18119
+
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=efca472a:18109
+
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=efca472a:19490
+
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=efca472a:19447
+
+commitRootImpl @ chunk-RPCDYKBN.js?v=efca472a:19416
+
+commitRoot @ chunk-RPCDYKBN.js?v=efca472a:19277
+
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=efca472a:18895
+
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=efca472a:9119
+
+(anonymous) @ chunk-RPCDYKBN.js?v=efca472a:18627
+
+setTimeout
+
+scheduleFn @ @tanstack_react-query.js?v=efca472a:555
+
+flush @ @tanstack_react-query.js?v=efca472a:569
+
+batch @ @tanstack_react-query.js?v=efca472a:587
+
+dispatch_fn @ @tanstack_react-query.js?v=efca472a:996
+
+setData @ @tanstack_react-query.js?v=efca472a:696
+
+onSuccess @ @tanstack_react-query.js?v=efca472a:897
+
+resolve @ @tanstack_react-query.js?v=efca472a:456Understand this errorAI
+
+queryClient.ts:32 
+
+            
+
+            
+
+           GET https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.replit.dev/api/camps/3/registrations 500 (Internal Server Error)
+
+(anonymous) @ queryClient.ts:32
+
+fetchFn @ @tanstack_react-query.js?v=efca472a:840
+
+run @ @tanstack_react-query.js?v=efca472a:494
+
+start @ @tanstack_react-query.js?v=efca472a:536
+
+fetch @ @tanstack_react-query.js?v=efca472a:926
+
+executeFetch_fn @ @tanstack_react-query.js?v=efca472a:2211
+
+onSubscribe @ @tanstack_react-query.js?v=efca472a:1898
+
+subscribe @ @tanstack_react-query.js?v=efca472a:24
+
+(anonymous) @ @tanstack_react-query.js?v=efca472a:3022
+
+subscribeToStore @ chunk-RPCDYKBN.js?v=efca472a:11984
+
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=efca472a:16915
+
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=efca472a:18156
+
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=efca472a:18129
+
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=efca472a:18119
+
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=efca472a:18109
+
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=efca472a:19490
+
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=efca472a:19447
+
+commitRootImpl @ chunk-RPCDYKBN.js?v=efca472a:19416
+
+commitRoot @ chunk-RPCDYKBN.js?v=efca472a:19277
+
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=efca472a:18895
+
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=efca472a:9119
+
+(anonymous) @ chunk-RPCDYKBN.js?v=efca472a:18627
+
+setTimeout
+
+scheduleFn @ @tanstack_react-query.js?v=efca472a:555
+
+flush @ @tanstack_react-query.js?v=efca472a:569
+
+batch @ @tanstack_react-query.js?v=efca472a:587
+
+dispatch_fn @ @tanstack_react-query.js?v=efca472a:996
+
+setData @ @tanstack_react-query.js?v=efca472a:696
+
+onSuccess @ @tanstack_react-query.js?v=efca472a:897
+
+resolve @ @tanstack_react-query.js?v=efca472a:456Understand this errorAI
+
+chunk-PIWDNJLA.js?v=efca472a:332 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
