@@ -15,6 +15,7 @@ import {
 import { useLocation, useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { type Camp } from "@shared/schema";
+import { cn } from "@/lib/utils";
 import { AddCampDialog } from "@/components/add-camp-dialog";
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {
