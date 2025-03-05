@@ -63,6 +63,7 @@ export function Combobox({
                   onChange(currentValue)
                   setOpen(false)
                 }}
+                disabled={false}
               >
                 <Check
                   className={cn(
