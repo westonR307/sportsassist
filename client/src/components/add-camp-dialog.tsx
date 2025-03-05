@@ -199,7 +199,7 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                             <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-full p-0">
+                        <PopoverContent className="w-full p-0 max-h-[300px] overflow-auto">
                           <Command>
                             <CommandInput placeholder="Search sports..." />
                             <CommandEmpty>No sport found.</CommandEmpty>
@@ -212,6 +212,7 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                                     setSelectedSport(currentValue);
                                     setOpenSportCombobox(false);
                                   }}
+                                  className="cursor-pointer hover:bg-accent hover:text-accent-foreground"
                                 >
                                   <CheckIcon
                                     className={cn(
