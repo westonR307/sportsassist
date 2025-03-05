@@ -61,13 +61,36 @@ app.use((req, res, next) => {
       serveStatic(app);
     }
 
-    const port = 5000;
+    // Try the original port first, then fall back to an alternative if needed
+    const preferredPort = process.env.PORT ? parseInt(process.env.PORT) : 5000;
+    const altPort = process.env.PORT ? parseInt(process.env.PORT) + 1 : 3000;
+    
+    // Try to start server with preferred port first
     server.listen({
-      port,
+      port: preferredPort,
       host: "0.0.0.0",
       reusePort: true,
     }, () => {
-      log(`Server started successfully, serving on port ${port}`);
+      log(`Server started successfully, serving on port ${preferredPort}`);
+    }).on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        log(`Port ${preferredPort} is in use, trying port ${altPort} instead`);
+        
+        // If preferred port fails, try the alternative port
+        server.listen({
+          port: altPort,
+          host: "0.0.0.0",
+          reusePort: true,
+        }, () => {
+          log(`Server started successfully, serving on port ${altPort}`);
+        }).on('error', (e) => {
+          console.error('Failed to start server on alternative port:', e);
+          process.exit(1);
+        });
+      } else {
+        console.error('Failed to start server:', err);
+        process.exit(1);
+      }
     });
   } catch (error) {
     console.error('Failed to start server:', error);
