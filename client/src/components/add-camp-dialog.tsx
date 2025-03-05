@@ -193,6 +193,7 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                             role="combobox"
                             aria-expanded={openSportCombobox}
                             className="w-full justify-between"
+                            type="button"
                           >
                             {selectedSport ?? "Select a sport..."}
                             <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -202,7 +203,7 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                           <Command>
                             <CommandInput placeholder="Search sports..." />
                             <CommandEmpty>No sport found.</CommandEmpty>
-                            <CommandGroup>
+                            <CommandGroup className="max-h-[200px] overflow-y-auto">
                               {sportsList.map((sport) => (
                                 <CommandItem
                                   key={sport}
@@ -211,7 +212,6 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                                     setSelectedSport(currentValue);
                                     setOpenSportCombobox(false);
                                   }}
-                                  disabled={false}
                                 >
                                   <CheckIcon
                                     className={cn(
