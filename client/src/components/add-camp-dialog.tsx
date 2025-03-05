@@ -14,7 +14,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Loader2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
-
 export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -40,7 +39,7 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
       city: "",
       state: "",
       zipCode: "",
-      price: 0,
+      price: "",
       capacity: 20,
       type: "group",
       visibility: "public",
@@ -101,56 +100,28 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Create New Camp</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-hidden flex flex-col">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
               <TabsList className="grid grid-cols-2 w-full">
                 <TabsTrigger value="basic">Basic Info</TabsTrigger>
                 <TabsTrigger value="location">Location</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="basic" className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Camp Name</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Enter camp name" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea {...field} placeholder="Describe the camp" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-2 gap-4">
+              <div className="flex-1 overflow-y-auto px-1 py-4">
+                <TabsContent value="basic" className="space-y-4 mt-0">
                   <FormField
                     control={form.control}
-                    name="registrationStartDate"
+                    name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Registration Start</FormLabel>
+                        <FormLabel>Camp Name</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input {...field} placeholder="Enter camp name" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -159,65 +130,216 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
 
                   <FormField
                     control={form.control}
-                    name="registrationEndDate"
+                    name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Registration End</FormLabel>
+                        <FormLabel>Description</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="startDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Camp Start Date</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
+                          <Textarea {...field} placeholder="Describe the camp" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="endDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Camp End Date</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="registrationStartDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Registration Start</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="registrationEndDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Registration End</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="startDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Camp Start Date</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="endDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Camp End Date</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="minAge"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Minimum Age</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              {...field}
+                              value={field.value === 0 ? "" : field.value}
+                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : "")}
+                              min={1}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="maxAge"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Maximum Age</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              {...field}
+                              value={field.value === 0 ? "" : field.value}
+                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : "")}
+                              min={1}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="price"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Price ($)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              {...field}
+                              value={field.value === 0 ? "" : field.value}
+                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : "")}
+                              min={0}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="capacity"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Capacity</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              {...field}
+                              min={1}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
                   <FormField
                     control={form.control}
-                    name="minAge"
+                    name="visibility"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Minimum Age</FormLabel>
+                        <FormLabel>Visibility</FormLabel>
                         <FormControl>
-                          <Input
-                            type="number"
+                          <select
                             {...field}
-                            value={field.value === 0 ? "" : field.value}
-                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : "")}
-                            min={1}
+                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                          >
+                            <option value="public">Public</option>
+                            <option value="private">Private</option>
+                          </select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Camp Type</FormLabel>
+                        <FormControl>
+                          <select
+                            {...field}
+                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                          >
+                            <option value="group">Group</option>
+                            <option value="one_on_one">One-on-One</option>
+                            <option value="team">Team</option>
+                            <option value="virtual">Virtual</option>
+                          </select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="waitlistEnabled"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-2">
+                        <FormControl>
+                          <input
+                            type="checkbox"
+                            checked={field.value}
+                            onChange={field.onChange}
+                            className="h-4 w-4"
                           />
                         </FormControl>
+                        <FormLabel className="font-normal">Enable waitlist when camp is full</FormLabel>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -225,167 +347,132 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
 
                   <FormField
                     control={form.control}
-                    name="maxAge"
+                    name="repeatType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Maximum Age</FormLabel>
+                        <FormLabel>Repeat Schedule</FormLabel>
                         <FormControl>
-                          <Input
-                            type="number"
+                          <select
                             {...field}
-                            value={field.value === 0 ? "" : field.value}
-                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : "")}
-                            min={1}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="price"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Price ($)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            {...field}
-                            value={field.value === 0 ? "" : field.value}
-                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : "")}
-                            min={0}
-                          />
+                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                          >
+                            <option value="none">No Repeat</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                          </select>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="capacity"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Capacity</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            {...field}
-                            min={1}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="visibility"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Visibility</FormLabel>
-                      <FormControl>
-                        <select
-                          {...field}
-                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                        >
-                          <option value="public">Public</option>
-                          <option value="private">Private</option>
-                        </select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+                  {form.watch("repeatType") !== "none" && (
+                    <FormField
+                      control={form.control}
+                      name="repeatCount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            Number of {form.watch("repeatType") === "weekly" ? "Weeks" : "Months"} to Repeat
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              {...field}
+                              value={field.value || ""}
+                              onChange={(e) => field.onChange(e.target.value === "" ? 0 : parseInt(e.target.value))}
+                              min={0}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   )}
-                />
 
-                <div className="flex justify-end space-x-2 pt-4">
-                  <Button type="button" onClick={() => setActiveTab("location")}>
-                    Next
-                  </Button>
-                </div>
-              </TabsContent>
+                  <div className="flex justify-end space-x-2">
+                    <Button type="button" onClick={() => setActiveTab("location")}>
+                      Next
+                    </Button>
+                  </div>
+                </TabsContent>
 
-              <TabsContent value="location" className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="streetAddress"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Street Address</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="123 Main St" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-3 gap-4">
+                <TabsContent value="location" className="space-y-4 mt-0">
                   <FormField
                     control={form.control}
-                    name="city"
+                    name="streetAddress"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>City</FormLabel>
+                        <FormLabel>Street Address</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="City" />
+                          <Input {...field} placeholder="123 Main St" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="state"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>State</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="CA" maxLength={2} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="grid grid-cols-3 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>City</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="City" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="zipCode"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>ZIP Code</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="12345" pattern="\d{5}(-\d{4})?" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                    <FormField
+                      control={form.control}
+                      name="state"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>State</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="CA" maxLength={2} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <div className="flex justify-between pt-4">
-                  <Button type="button" variant="outline" onClick={() => setActiveTab("basic")}>
-                    Previous
-                  </Button>
-                  <Button type="submit" disabled={createCampMutation.isPending}>
-                    {createCampMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creating...
-                      </>
-                    ) : (
-                      "Create Camp"
-                    )}
-                  </Button>
-                </div>
-              </TabsContent>
+                    <FormField
+                      control={form.control}
+                      name="zipCode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>ZIP Code</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="12345" pattern="\d{5}(-\d{4})?" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex justify-between">
+                    <Button type="button" variant="outline" onClick={() => setActiveTab("basic")}>
+                      Previous
+                    </Button>
+                    <Button type="submit" disabled={createCampMutation.isPending}>
+                      {createCampMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Creating...
+                        </>
+                      ) : (
+                        "Create Camp"
+                      )}
+                    </Button>
+                  </div>
+                </TabsContent>
+              </div>
             </Tabs>
           </form>
         </Form>
