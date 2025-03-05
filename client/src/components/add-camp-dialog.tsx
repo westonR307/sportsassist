@@ -217,9 +217,11 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
                         <FormControl>
                           <Input 
                             type="number" 
-                            {...field} 
-                            placeholder="0"
-                            onChange={(e) => field.onChange(Number(e.target.value))}
+                            value={field.value}
+                            onChange={(e) => {
+                              const value = e.target.value === "" ? 0 : Number(e.target.value);
+                              field.onChange(value);
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
@@ -236,9 +238,11 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
                         <FormControl>
                           <Input 
                             type="number" 
-                            {...field} 
-                            placeholder="30"
-                            onChange={(e) => field.onChange(Number(e.target.value))}
+                            value={field.value}
+                            onChange={(e) => {
+                              const value = e.target.value === "" ? 1 : Number(e.target.value);
+                              field.onChange(value);
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
@@ -257,9 +261,11 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
                         <FormControl>
                           <Input 
                             type="number" 
-                            {...field} 
-                            placeholder="5"
-                            onChange={(e) => field.onChange(Number(e.target.value))}
+                            value={field.value}
+                            onChange={(e) => {
+                              const value = e.target.value === "" ? 1 : Number(e.target.value);
+                              field.onChange(value);
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
@@ -276,9 +282,11 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
                         <FormControl>
                           <Input 
                             type="number" 
-                            {...field} 
-                            placeholder="18"
-                            onChange={(e) => field.onChange(Number(e.target.value))}
+                            value={field.value}
+                            onChange={(e) => {
+                              const value = e.target.value === "" ? 1 : Number(e.target.value);
+                              field.onChange(value);
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
@@ -760,23 +768,291 @@ export function AddCampDialog({ open, onOpenChange }: AddCampDialogProps) {
                     )}
                   />
                 )}
+              <div className="flex justify-end mt-6">
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      const tabsElement = document.querySelector('[data-state="active"][role="tabpanel"]');
+                      if (tabsElement?.getAttribute('data-value') === 'basic') {
+                        document.querySelector('[data-value="location"]')?.click();
+                      }
+                    }}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="location" className="space-y-4">
+                {/* Location content remains the same */}
+                <FormField
+                  control={form.control}
+                  name="streetAddress"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Street Address</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="123 Main St" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="city"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>City</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="City" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="state"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>State</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="State" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="zipCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Zip Code</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="12345" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="additionalLocationDetails"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Additional Location Details</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          {...field} 
+                          placeholder="Enter additional details about the location, e.g., parking instructions, building entrance, etc."
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex justify-between mt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      document.querySelector('[data-value="basic"]')?.click();
+                    }}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      document.querySelector('[data-value="settings"]')?.click();
+                    }}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="settings" className="space-y-4">
+                {/* Settings content remains the same */}
+                <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Camp Type</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a camp type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Group">Group</SelectItem>
+                          <SelectItem value="Team">Team</SelectItem>
+                          <SelectItem value="1 on 1">1 on 1</SelectItem>
+                          <SelectItem value="Virtual">Virtual</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="visibility"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormLabel>Visibility</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="flex flex-col space-y-1"
+                        >
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="public" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              Public - Anyone can find and register
+                            </FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="private" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              Private - Only people with the link can register
+                            </FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="draft" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              Draft - Not visible for registration
+                            </FormLabel>
+                          </FormItem>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="waitlistEnabled"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          Enable Waitlist
+                        </FormLabel>
+                        <p className="text-sm text-muted-foreground">
+                          Allow registrations to continue after capacity is reached
+                        </p>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="repeatType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Repeat</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select repeat type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="none">No repeat</SelectItem>
+                          <SelectItem value="daily">Daily</SelectItem>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="yearly">Yearly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {form.watch("repeatType") !== "none" && (
+                  <FormField
+                    control={form.control}
+                    name="repeatCount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Repeat Count</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            value={field.value}
+                            onChange={(e) => {
+                              const value = e.target.value === "" ? 0 : Number(e.target.value);
+                              field.onChange(value);
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              
+                <div className="flex justify-between mt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      document.querySelector('[data-value="location"]')?.click();
+                    }}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={createCampMutation.isPending}
+                  >
+                    {createCampMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      "Create Camp"
+                    )}
+                  </Button>
+                </div>
               </TabsContent>
             </Tabs>
-
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={createCampMutation.isPending}
-            >
-              {createCampMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                "Create Camp"
-              )}
-            </Button>
           </form>
         </Form>
       </DialogContent>
