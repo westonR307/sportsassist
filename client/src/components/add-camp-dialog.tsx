@@ -100,19 +100,20 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>Create New Camp</DialogTitle>
+          <DialogTitle>Add New Camp</DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-hidden flex flex-col">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-              <TabsList className="grid grid-cols-2 w-full">
-                <TabsTrigger value="basic">Basic Info</TabsTrigger>
-                <TabsTrigger value="location">Location</TabsTrigger>
-              </TabsList>
+        <div className="flex-1 overflow-y-auto">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <Tabs defaultValue="basic" className="w-full">
+                <TabsList className="grid grid-cols-3 mb-4 sticky top-0 bg-background z-10">
+                  <TabsTrigger value="basic">Basic Information</TabsTrigger>
+                  <TabsTrigger value="location">Location</TabsTrigger>
+                  <TabsTrigger value="settings">Settings</TabsTrigger>
+                </TabsList>
 
-              <div className="flex-1 overflow-y-auto px-1 py-4">
                 <TabsContent value="basic" className="space-y-4 mt-0">
                   <FormField
                     control={form.control}
@@ -472,10 +473,12 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                     </Button>
                   </div>
                 </TabsContent>
-              </div>
-            </Tabs>
-          </form>
-        </Form>
+                <TabsContent value="settings">
+                </TabsContent>
+              </Tabs>
+            </form>
+          </Form>
+        </div>
       </DialogContent>
     </Dialog>
   );
