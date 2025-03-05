@@ -211,6 +211,7 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                                     setSelectedSport(currentValue);
                                     setOpenSportCombobox(false);
                                   }}
+                                  disabled={false}
                                 >
                                   <CheckIcon
                                     className={cn(
