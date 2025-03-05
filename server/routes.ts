@@ -24,6 +24,11 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
 });
 
 export async function registerRoutes(app: Express): Server {
+  // Add health check endpoint
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok" });
+  });
+
   setupAuth(app);
 
   // Update the registration route to handle organization creation
@@ -128,7 +133,7 @@ export async function registerRoutes(app: Express): Server {
       } catch (emailError) {
         console.error("Email sending failed:", emailError);
         // Still return success since the invitation was created
-        res.status(201).json({ 
+        res.status(201).json({
           ...invitation,
           warning: "Invitation created but email sending failed. During development, you can only send test emails to wrosenau@outlook.com. To send to other addresses, please verify a domain at resend.com/domains."
         });
@@ -309,7 +314,7 @@ export async function registerRoutes(app: Express): Server {
       // Validate input data
       console.log("Validating camp data with schema...");
       const parsed = insertCampSchema.safeParse(req.body);
-      
+
       if (!parsed.success) {
         const validationErrors = parsed.error.flatten();
         console.error("Validation error details:", validationErrors);
@@ -346,23 +351,23 @@ export async function registerRoutes(app: Express): Server {
       };
 
       console.log("Processed camp data for database:", campData);
-      
+
       try {
         const camp = await storage.createCamp(campData);
         console.log("Camp created successfully:", camp);
         res.status(201).json(camp);
       } catch (storageError) {
         console.error("Database error creating camp:", storageError);
-        res.status(500).json({ 
-          message: "Database error creating camp", 
-          error: storageError.message 
+        res.status(500).json({
+          message: "Database error creating camp",
+          error: storageError.message
         });
       }
     } catch (error) {
       console.error("Unexpected error creating camp:", error);
-      res.status(500).json({ 
-        message: "An unexpected error occurred", 
-        error: error instanceof Error ? error.message : String(error) 
+      res.status(500).json({
+        message: "An unexpected error occurred",
+        error: error instanceof Error ? error.message : String(error)
       });
     }
   });

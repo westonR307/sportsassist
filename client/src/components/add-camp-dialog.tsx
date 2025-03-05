@@ -13,14 +13,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CaretSortIcon, CheckIcon } from "@radix-ui/react-icons";
+import { cn } from "@/lib/utils";
 
 const sportsList = [
   "Basketball", "Soccer", "Baseball", "Tennis", "Swimming",
@@ -35,8 +31,9 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const [selectedSports, setSelectedSports] = React.useState<string[]>([]);
+  const [selectedSport, setSelectedSport] = React.useState<string | null>(null);
   const [skillLevel, setSkillLevel] = React.useState("Beginner");
+  const [openSportCombobox, setOpenSportCombobox] = React.useState(false);
 
   // Get default dates
   const today = new Date();
@@ -79,16 +76,18 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
         throw new Error("Organization ID required");
       }
 
+      if (!selectedSport) {
+        throw new Error("Sport selection is required");
+      }
+
       const response = await fetch("/api/camps", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,
           organizationId: user.organizationId,
-          sports: selectedSports.map(sport => ({
-            name: sport,
-            skillLevel: skillLevel
-          }))
+          sport: selectedSport,
+          skillLevel: skillLevel
         }),
       });
 
@@ -110,17 +109,17 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
       console.error("Camp creation error:", error);
       toast({
         title: "Error",
-        description: "Failed to create camp",
+        description: error.message || "Failed to create camp",
         variant: "destructive",
       });
     },
   });
 
   const onSubmit = (data: z.infer<typeof insertCampSchema>) => {
-    if (selectedSports.length === 0) {
+    if (!selectedSport) {
       toast({
         title: "Error",
-        description: "Please select at least one sport",
+        description: "Please select a sport",
         variant: "destructive",
       });
       return;
@@ -172,6 +171,66 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                       </FormItem>
                     )}
                   />
+
+                  <div className="space-y-4">
+                    <FormItem>
+                      <FormLabel>Sport</FormLabel>
+                      <Popover open={openSportCombobox} onOpenChange={setOpenSportCombobox}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={openSportCombobox}
+                            className="w-full justify-between"
+                          >
+                            {selectedSport ?? "Select a sport..."}
+                            <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-0">
+                          <Command>
+                            <CommandInput placeholder="Search sports..." />
+                            <CommandEmpty>No sport found.</CommandEmpty>
+                            <CommandGroup>
+                              {sportsList.map((sport) => (
+                                <CommandItem
+                                  key={sport}
+                                  value={sport}
+                                  onSelect={(currentValue) => {
+                                    setSelectedSport(currentValue);
+                                    setOpenSportCombobox(false);
+                                  }}
+                                >
+                                  <CheckIcon
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      selectedSport === sport ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {sport}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </FormItem>
+
+                    <FormItem>
+                      <FormLabel>Skill Level</FormLabel>
+                      <select
+                        value={skillLevel}
+                        onChange={(e) => setSkillLevel(e.target.value)}
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                      >
+                        {skillLevels.map((level) => (
+                          <option key={level} value={level}>
+                            {level}
+                          </option>
+                        ))}
+                      </select>
+                    </FormItem>
+                  </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
@@ -314,7 +373,6 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                       )}
                     />
                   </div>
-
                   <div className="flex justify-end space-x-2">
                     <Button type="button" onClick={() => form.trigger("basic")}>
                       Next
@@ -443,45 +501,6 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                       </FormItem>
                     )}
                   />
-
-                  <div className="space-y-4">
-                    <FormLabel>Sports</FormLabel>
-                    <div className="grid grid-cols-2 gap-2">
-                      {sportsList.map((sport) => (
-                        <div key={sport} className="flex items-center space-x-2">
-                          <Checkbox
-                            checked={selectedSports.includes(sport)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedSports([...selectedSports, sport]);
-                              } else {
-                                setSelectedSports(selectedSports.filter(s => s !== sport));
-                              }
-                            }}
-                          />
-                          <label className="text-sm">{sport}</label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <FormItem>
-                    <FormLabel>Skill Level</FormLabel>
-                    <Select value={skillLevel} onValueChange={setSkillLevel}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select skill level" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {skillLevels.map((level) => (
-                          <SelectItem key={level} value={level}>
-                            {level}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
 
                   <FormField
                     control={form.control}
