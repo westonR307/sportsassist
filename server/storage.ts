@@ -148,9 +148,36 @@ export class DatabaseStorage implements IStorage {
         throw new Error(`Missing required fields: ${missingFields.join(", ")}`);
       }
 
+      // Create a cleaned object with all accepted fields
+      const campData = {
+        name: camp.name,
+        description: camp.description,
+        streetAddress: camp.streetAddress,
+        city: camp.city,
+        state: camp.state,
+        zipCode: camp.zipCode,
+        startDate: camp.startDate,
+        endDate: camp.endDate,
+        registrationStartDate: camp.registrationStartDate,
+        registrationEndDate: camp.registrationEndDate,
+        price: camp.price,
+        capacity: camp.capacity,
+        organizationId: camp.organizationId,
+        waitlistEnabled: camp.waitlistEnabled,
+        type: camp.type,
+        visibility: camp.visibility,
+        minAge: camp.minAge,
+        maxAge: camp.maxAge,
+        repeatType: camp.repeatType,
+        repeatCount: camp.repeatCount,
+        additionalLocationDetails: camp.additionalLocationDetails || "",
+        sport: camp.sport || "",
+        skillLevel: camp.skillLevel || ""
+      };
+
       // Insert the camp with all fields
       console.log("Inserting camp into database...");
-      const [newCamp] = await db.insert(camps).values(camp).returning();
+      const [newCamp] = await db.insert(camps).values(campData).returning();
       console.log("Created camp successfully:", newCamp);
       return newCamp;
     } catch (error) {

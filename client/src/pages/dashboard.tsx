@@ -12,7 +12,7 @@ import {
   Loader2,
   Menu,
 } from "lucide-react";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { type Camp } from "@shared/schema";
 import { AddCampDialog } from "@/components/add-camp-dialog";
@@ -52,38 +52,10 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
           </h2>
         </div>
         <nav className="p-4 space-y-2">
-          <Link href="/dashboard">
-            <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap ${
-              location === '/dashboard' ? 'bg-gray-100' : ''
-            }`}>
-              <Calendar className="h-5 w-5 flex-shrink-0" />
-              <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Camps</span>
-            </a>
-          </Link>
-          <Link href="/dashboard/reports">
-            <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap ${
-              location === '/dashboard/reports' ? 'bg-gray-100' : ''
-            }`}>
-              <BarChart3 className="h-5 w-5 flex-shrink-0" />
-              <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Reports</span>
-            </a>
-          </Link>
-          <Link href="/dashboard/team">
-            <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap ${
-              location === '/dashboard/team' ? 'bg-gray-100' : ''
-            }`}>
-              <Users className="h-5 w-5 flex-shrink-0" />
-              <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Team</span>
-            </a>
-          </Link>
-          <Link href="/dashboard/settings">
-            <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap ${
-              location === '/dashboard/settings' ? 'bg-gray-100' : ''
-            }`}>
-              <Settings className="h-5 w-5 flex-shrink-0" />
-              <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Settings</span>
-            </a>
-          </Link>
+          <NavLink href="/dashboard" icon={Calendar}>Camps</NavLink>
+          <NavLink href="/dashboard/reports" icon={BarChart3}>Reports</NavLink>
+          <NavLink href="/dashboard/team" icon={Users}>Team</NavLink>
+          <NavLink href="/dashboard/settings" icon={Settings}>Settings</NavLink>
           <Button
             variant="ghost"
             className="w-full justify-start whitespace-nowrap"
@@ -116,6 +88,25 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
+function NavLink({ href, children, icon: Icon, end = false }: { href: string; children: React.ReactNode; icon: any; end?: boolean }) {
+  const [isActive] = useRoute(end ? href : href + "*");
+  const [, navigate] = useLocation();
+
+  return (
+    <button
+      onClick={() => navigate(href)}
+      className={cn(
+        "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:text-primary text-left",
+        isActive ? "bg-muted text-primary" : "text-muted-foreground"
+      )}
+    >
+      <Icon className="h-5 w-5" />
+      <span>{children}</span>
+    </button>
+  );
+}
+
 
 function CampsDashboard() {
   const [showAddCampDialog, setShowAddCampDialog] = React.useState(false);
