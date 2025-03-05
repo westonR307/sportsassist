@@ -11,14 +11,32 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Loader2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const sportsList = [
+  "Basketball", "Soccer", "Baseball", "Tennis", "Swimming",
+  "Volleyball", "Football", "Track & Field", "Gymnastics",
+  "Hockey", "Rugby", "Cricket", "Martial Arts", "Dance",
+  "Golf", "Wrestling", "Lacrosse", "Ultimate Frisbee"
+];
+
+const skillLevels = ["Beginner", "Intermediate", "Advanced", "All Levels"];
 
 export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = React.useState("basic");
+  const [selectedSports, setSelectedSports] = React.useState<string[]>([]);
+  const [skillLevel, setSkillLevel] = React.useState("Beginner");
 
   // Get default dates
   const today = new Date();
@@ -67,6 +85,10 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
         body: JSON.stringify({
           ...data,
           organizationId: user.organizationId,
+          sports: selectedSports.map(sport => ({
+            name: sport,
+            skillLevel: skillLevel
+          }))
         }),
       });
 
@@ -95,6 +117,14 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
   });
 
   const onSubmit = (data: z.infer<typeof insertCampSchema>) => {
+    if (selectedSports.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please select at least one sport",
+        variant: "destructive",
+      });
+      return;
+    }
     createCampMutation.mutate(data);
   };
 
@@ -285,114 +315,8 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                     />
                   </div>
 
-                  <FormField
-                    control={form.control}
-                    name="visibility"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Visibility</FormLabel>
-                        <FormControl>
-                          <select
-                            {...field}
-                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                          >
-                            <option value="public">Public</option>
-                            <option value="private">Private</option>
-                          </select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="type"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Camp Type</FormLabel>
-                        <FormControl>
-                          <select
-                            {...field}
-                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                          >
-                            <option value="group">Group</option>
-                            <option value="one_on_one">One-on-One</option>
-                            <option value="team">Team</option>
-                            <option value="virtual">Virtual</option>
-                          </select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="waitlistEnabled"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center space-x-2">
-                        <FormControl>
-                          <input
-                            type="checkbox"
-                            checked={field.value}
-                            onChange={field.onChange}
-                            className="h-4 w-4"
-                          />
-                        </FormControl>
-                        <FormLabel className="font-normal">Enable waitlist when camp is full</FormLabel>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="repeatType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Repeat Schedule</FormLabel>
-                        <FormControl>
-                          <select
-                            {...field}
-                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                          >
-                            <option value="none">No Repeat</option>
-                            <option value="weekly">Weekly</option>
-                            <option value="monthly">Monthly</option>
-                          </select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {form.watch("repeatType") !== "none" && (
-                    <FormField
-                      control={form.control}
-                      name="repeatCount"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            Number of {form.watch("repeatType") === "weekly" ? "Weeks" : "Months"} to Repeat
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              {...field}
-                              value={field.value || ""}
-                              onChange={(e) => field.onChange(e.target.value === "" ? 0 : parseInt(e.target.value))}
-                              min={0}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
-
                   <div className="flex justify-end space-x-2">
-                    <Button type="button" onClick={() => setActiveTab("location")}>
+                    <Button type="button" onClick={() => form.trigger("basic")}>
                       Next
                     </Button>
                   </div>
@@ -456,11 +380,155 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                       )}
                     />
                   </div>
+                </TabsContent>
 
-                  <div className="flex justify-between">
-                    <Button type="button" variant="outline" onClick={() => setActiveTab("basic")}>
-                      Previous
-                    </Button>
+                <TabsContent value="settings" className="space-y-4 mt-0">
+                  <FormField
+                    control={form.control}
+                    name="type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Camp Type</FormLabel>
+                        <FormControl>
+                          <select
+                            {...field}
+                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                          >
+                            <option value="group">Group</option>
+                            <option value="one_on_one">One-on-One</option>
+                            <option value="team">Team</option>
+                            <option value="virtual">Virtual</option>
+                          </select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="visibility"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Visibility</FormLabel>
+                        <FormControl>
+                          <select
+                            {...field}
+                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                          >
+                            <option value="public">Public</option>
+                            <option value="private">Private</option>
+                          </select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="waitlistEnabled"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-2">
+                        <FormControl>
+                          <input
+                            type="checkbox"
+                            checked={field.value}
+                            onChange={field.onChange}
+                            className="h-4 w-4"
+                          />
+                        </FormControl>
+                        <FormLabel className="font-normal">Enable waitlist when camp is full</FormLabel>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="space-y-4">
+                    <FormLabel>Sports</FormLabel>
+                    <div className="grid grid-cols-2 gap-2">
+                      {sportsList.map((sport) => (
+                        <div key={sport} className="flex items-center space-x-2">
+                          <Checkbox
+                            checked={selectedSports.includes(sport)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedSports([...selectedSports, sport]);
+                              } else {
+                                setSelectedSports(selectedSports.filter(s => s !== sport));
+                              }
+                            }}
+                          />
+                          <label className="text-sm">{sport}</label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <FormItem>
+                    <FormLabel>Skill Level</FormLabel>
+                    <Select value={skillLevel} onValueChange={setSkillLevel}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select skill level" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {skillLevels.map((level) => (
+                          <SelectItem key={level} value={level}>
+                            {level}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+
+                  <FormField
+                    control={form.control}
+                    name="repeatType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Repeat Schedule</FormLabel>
+                        <FormControl>
+                          <select
+                            {...field}
+                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                          >
+                            <option value="none">No Repeat</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                          </select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {form.watch("repeatType") !== "none" && (
+                    <FormField
+                      control={form.control}
+                      name="repeatCount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            Number of {form.watch("repeatType") === "weekly" ? "Weeks" : "Months"} to Repeat
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              {...field}
+                              value={field.value || ""}
+                              onChange={(e) => field.onChange(e.target.value === "" ? 0 : parseInt(e.target.value))}
+                              min={0}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
+                  <div className="flex justify-end pt-4">
                     <Button type="submit" disabled={createCampMutation.isPending}>
                       {createCampMutation.isPending ? (
                         <>
@@ -472,8 +540,6 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                       )}
                     </Button>
                   </div>
-                </TabsContent>
-                <TabsContent value="settings">
                 </TabsContent>
               </Tabs>
             </form>
