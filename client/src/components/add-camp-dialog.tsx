@@ -19,11 +19,21 @@ import { CaretSortIcon, CheckIcon } from "@radix-ui/react-icons";
 import { cn } from "@/lib/utils";
 
 const sportsList = [
-  "Basketball", "Soccer", "Baseball", "Tennis", "Swimming",
-  "Volleyball", "Football", "Track & Field", "Gymnastics",
-  "Hockey", "Rugby", "Cricket", "Martial Arts", "Dance",
-  "Golf", "Wrestling", "Lacrosse", "Ultimate Frisbee"
-];
+  "Archery", "Badminton", "Baseball", "Basketball", "Biathlon",
+  "Billiards", "Bobsleigh", "Bodybuilding", "Bowling", "Boxing",
+  "Canoeing", "Cheerleading", "Chess", "Climbing", "Cricket",
+  "CrossFit", "Curling", "Cycling", "Darts", "Equestrian",
+  "Fencing", "Field Hockey", "Figure Skating", "Fishing", "Football (American)",
+  "Frisbee (Ultimate)", "Golf", "Gymnastics", "Handball", "Hockey (Ice)",
+  "Hockey (Roller)", "Judo", "Karate", "Kayaking", "Kickboxing",
+  "Lacrosse", "Mixed Martial Arts (MMA)", "Motocross", "Netball", "Paddleboarding",
+  "Paintball", "Parkour", "Pickleball", "Powerlifting", "Racquetball",
+  "Rock Climbing", "Rowing", "Rugby", "Running", "Sailing",
+  "Skateboarding", "Skiing", "Snowboarding", "Soccer", "Softball",
+  "Speed Skating", "Squash", "Surfing", "Swimming", "Table Tennis",
+  "Taekwondo", "Tennis", "Track and Field", "Triathlon", "Volleyball",
+  "Water Polo", "Weightlifting", "Wrestling", "Yoga", "Zumba"
+].sort();
 
 const skillLevels = ["Beginner", "Intermediate", "Advanced", "All Levels"];
 
@@ -87,7 +97,8 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
           ...data,
           organizationId: user.organizationId,
           sport: selectedSport,
-          skillLevel: skillLevel
+          skillLevel: skillLevel,
+          additionalLocationDetails: data.additionalLocationDetails
         }),
       });
 
@@ -438,6 +449,20 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                       )}
                     />
                   </div>
+
+                  <FormField
+                    control={form.control}
+                    name="additionalLocationDetails"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Additional Location Information</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} placeholder="Any additional details about the location" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </TabsContent>
 
                 <TabsContent value="settings" className="space-y-4 mt-0">
