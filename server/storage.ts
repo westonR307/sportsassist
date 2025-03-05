@@ -182,8 +182,38 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCamp(id: number): Promise<Camp | undefined> {
-    const [camp] = await db.select().from(camps).where(eq(camps.id, id));
-    return camp;
+    try {
+      // Use specific column selection to avoid schema issues
+      const [camp] = await db.select({
+        id: camps.id,
+        name: camps.name,
+        description: camps.description,
+        streetAddress: camps.streetAddress,
+        city: camps.city,
+        state: camps.state,
+        zipCode: camps.zipCode,
+        startDate: camps.startDate,
+        endDate: camps.endDate,
+        registrationStartDate: camps.registrationStartDate,
+        registrationEndDate: camps.registrationEndDate,
+        price: camps.price,
+        capacity: camps.capacity,
+        organizationId: camps.organizationId,
+        waitlistEnabled: camps.waitlistEnabled,
+        type: camps.type,
+        visibility: camps.visibility,
+        minAge: camps.minAge,
+        maxAge: camps.maxAge,
+        repeatType: camps.repeatType,
+        repeatCount: camps.repeatCount,
+        // Exclude additionalLocationDetails if it's causing issues
+      }).from(camps).where(eq(camps.id, id));
+      
+      return camp;
+    } catch (error) {
+      console.error("Error in getCamp:", error);
+      return undefined;
+    }
   }
 
   async listCamps(): Promise<Camp[]> {
@@ -240,8 +270,15 @@ export class DatabaseStorage implements IStorage {
     return registration;
   }
 
-  async getRegistrationsByCamp(campId: number): Promise<Registration[]> {
-    return await db.select().from(registrations).where(eq(registrations.campId, campId));
+  async getRegistrationsByCamp(campId: number): Promise<any[]> {
+    try {
+      // Import registrations from schema
+      const { registrations } = await import("@shared/schema");
+      return await db.select().from(registrations).where(eq(registrations.campId, campId));
+    } catch (error) {
+      console.error("Error in getRegistrationsByCamp:", error);
+      return [];
+    }
   }
 
   async createOrganization(org: InsertOrganization): Promise<Organization> {

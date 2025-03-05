@@ -44,6 +44,7 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
   const [selectedSport, setSelectedSport] = React.useState<string | null>(null);
   const [skillLevel, setSkillLevel] = React.useState("Beginner");
   const [openSportCombobox, setOpenSportCombobox] = React.useState(false);
+  const [currentTab, setCurrentTab] = React.useState("basic");
 
   // Get default dates
   const today = new Date();
@@ -148,7 +149,12 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
         <div className="flex-1 overflow-y-auto">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <Tabs defaultValue="basic" className="w-full">
+              <Tabs 
+                defaultValue="basic" 
+                className="w-full"
+                value={currentTab}
+                onValueChange={setCurrentTab}
+              >
                 <TabsList className="grid grid-cols-3 mb-4 sticky top-0 bg-background z-10">
                   <TabsTrigger value="basic">Basic Information</TabsTrigger>
                   <TabsTrigger value="location">Location</TabsTrigger>
@@ -363,8 +369,16 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                       )}
                     />
                   </div>
-                  <div className="flex justify-end space-x-2">
-                    <Button type="button" onClick={() => form.trigger("basic")}>
+                  <div className="flex justify-end space-x-2 pt-4">
+                    <Button 
+                      type="button" 
+                      onClick={async () => {
+                        const isValid = await form.trigger(["name", "description"]);
+                        if (isValid) {
+                          setCurrentTab("location");
+                        }
+                      }}
+                    >
                       Next
                     </Button>
                   </div>
@@ -442,6 +456,29 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                       </FormItem>
                     )}
                   />
+                  
+                  <div className="flex justify-between space-x-2 pt-4">
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={() => {
+                        setCurrentTab("basic");
+                      }}
+                    >
+                      Previous
+                    </Button>
+                    <Button 
+                      type="button" 
+                      onClick={async () => {
+                        const isValid = await form.trigger(["streetAddress", "city", "state", "zipCode"]);
+                        if (isValid) {
+                          setCurrentTab("settings");
+                        }
+                      }}
+                    >
+                      Next
+                    </Button>
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="settings" className="space-y-4 mt-0">
@@ -551,8 +588,33 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                     />
                   )}
 
-                  <div className="flex justify-end pt-4">
-                    <Button type="submit" disabled={createCampMutation.isPending}>
+                  <div className="flex justify-between pt-4">
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={() => {
+                        setCurrentTab("location");
+                      }}
+                    >
+                      Previous
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      disabled={createCampMutation.isPending}
+                      onClick={(e) => {
+                        if (!selectedSport) {
+                          e.preventDefault();
+                          toast({
+                            title: "Error",
+                            description: "Please select a sport",
+                            variant: "destructive",
+                          });
+                          setCurrentTab("basic");
+                          return;
+                        }
+                        // Let the form handle validation and submission
+                      }}
+                    >
                       {createCampMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
