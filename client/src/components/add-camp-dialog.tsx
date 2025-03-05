@@ -135,6 +135,7 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
       });
       return;
     }
+    console.log("Submitting with sport:", selectedSport);
     createCampMutation.mutate(data);
   };
 
@@ -186,47 +187,56 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                   <div className="space-y-4">
                     <FormItem>
                       <FormLabel>Sport</FormLabel>
-                      <Popover open={openSportCombobox} onOpenChange={setOpenSportCombobox}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            aria-expanded={openSportCombobox}
-                            className="w-full justify-between"
-                            type="button"
-                          >
-                            {selectedSport ?? "Select a sport..."}
-                            <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-full p-0 max-h-[300px] overflow-auto">
-                          <Command>
-                            <CommandInput placeholder="Search sports..." />
-                            <CommandEmpty>No sport found.</CommandEmpty>
-                            <CommandGroup className="max-h-[200px] overflow-y-auto">
-                              {sportsList.map((sport) => (
-                                <CommandItem
-                                  key={sport}
-                                  value={sport}
-                                  onSelect={(currentValue) => {
-                                    setSelectedSport(currentValue);
-                                    setOpenSportCombobox(false);
-                                  }}
-                                  className="cursor-pointer hover:bg-accent hover:text-accent-foreground"
-                                >
-                                  <CheckIcon
-                                    className={cn(
-                                      "mr-2 h-4 w-4",
-                                      selectedSport === sport ? "opacity-100" : "opacity-0"
-                                    )}
-                                  />
-                                  {sport}
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
+                      <div className="flex flex-col space-y-1">
+                        <Popover open={openSportCombobox} onOpenChange={setOpenSportCombobox}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={openSportCombobox}
+                              className="w-full justify-between"
+                              type="button"
+                            >
+                              {selectedSport ? selectedSport : "Select a sport..."}
+                              <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-full p-0 max-h-[300px] overflow-y-auto" align="start">
+                            <Command>
+                              <CommandInput placeholder="Search sports..." className="h-9" />
+                              <CommandEmpty>No sport found.</CommandEmpty>
+                              <CommandGroup className="max-h-[200px] overflow-y-auto">
+                                {sportsList.map((sport) => (
+                                  <CommandItem
+                                    key={sport}
+                                    value={sport}
+                                    onSelect={() => {
+                                      setSelectedSport(sport);
+                                      setOpenSportCombobox(false);
+                                    }}
+                                    className="flex items-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 py-2"
+                                  >
+                                    <div className="flex items-center">
+                                      <CheckIcon
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          selectedSport === sport ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      <span>{sport}</span>
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+                        {selectedSport && (
+                          <div className="mt-1 text-sm text-green-600">
+                            Selected: {selectedSport}
+                          </div>
+                        )}
+                      </div>
                     </FormItem>
 
                     <FormItem>
