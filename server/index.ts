@@ -4,7 +4,13 @@ import { setupVite, serveStatic, log } from "./vite";
 import cors from "cors";
 
 const app = express();
-app.use(cors());
+
+// Configure CORS for development
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -61,37 +67,16 @@ app.use((req, res, next) => {
       serveStatic(app);
     }
 
-    // Try the original port first, then fall back to an alternative if needed
-    const preferredPort = process.env.PORT ? parseInt(process.env.PORT) : 5000;
-    const altPort = process.env.PORT ? parseInt(process.env.PORT) + 1 : 3000;
-    
-    // Try to start server with preferred port first
     server.listen({
-      port: preferredPort,
+      port: 5000,
       host: "0.0.0.0",
-      reusePort: true,
     }, () => {
-      log(`Server started successfully, serving on port ${preferredPort}`);
+      log("Server started successfully on port 5000");
     }).on('error', (err) => {
-      if (err.code === 'EADDRINUSE') {
-        log(`Port ${preferredPort} is in use, trying port ${altPort} instead`);
-        
-        // If preferred port fails, try the alternative port
-        server.listen({
-          port: altPort,
-          host: "0.0.0.0",
-          reusePort: true,
-        }, () => {
-          log(`Server started successfully, serving on port ${altPort}`);
-        }).on('error', (e) => {
-          console.error('Failed to start server on alternative port:', e);
-          process.exit(1);
-        });
-      } else {
-        console.error('Failed to start server:', err);
-        process.exit(1);
-      }
+      console.error('Failed to start server:', err);
+      process.exit(1);
     });
+
   } catch (error) {
     console.error('Failed to start server:', error);
     if (error instanceof Error) {
