@@ -40,7 +40,7 @@ type OrganizationSettings = z.infer<typeof organizationSettingsSchema>;
 function SettingsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [location, setLocation] = useLocation();
+  const [location, navigate] = useLocation();
 
   const { data: organization, isLoading: isLoadingOrg } = useQuery<Organization>({
     queryKey: [`/api/organizations/${user?.organizationId}`],
