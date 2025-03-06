@@ -3,6 +3,9 @@ import {
   camps,
   organizations,
   invitations,
+  children,
+  campSports,
+  registrations,
   type User,
   type InsertUser,
   type Role,
@@ -11,9 +14,13 @@ import {
   type InsertOrganization,
   type Invitation,
   type InsertInvitation,
+  type Child,
+  type CampSport,
+  type SportLevel,
+  type Registration
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, sql, and, inArray } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -30,6 +37,23 @@ export interface IStorage {
   createCamp(camp: Omit<Camp, "id">): Promise<Camp>;
   listCamps(): Promise<Camp[]>;
   getCamp(id: number): Promise<Camp | undefined>;
+  getRegistrationsByCamp(campId: number): Promise<Registration[]>;
+  createRegistration(registration: Omit<Registration, "id">): Promise<Registration>;
+  getRegistration(id: number): Promise<Registration | undefined>;
+  createOrganization(org: InsertOrganization): Promise<Organization>;
+  getOrganization(id: number): Promise<Organization | undefined>;
+  getOrganizationUsers(orgId: number): Promise<User[]>;
+  createInvitation(invitation: InsertInvitation & { token: string }): Promise<Invitation>;
+  getInvitation(token: string): Promise<Invitation | undefined>;
+  acceptInvitation(token: string): Promise<Invitation>;
+  listOrganizationInvitations(organizationId: number): Promise<Invitation[]>;
+  getChildrenByParent(parentId: number): Promise<Child[]>;
+  getChild(childId: number): Promise<Child | undefined>;
+  createCampSport(campSport: {
+    campId: number;
+    sportId: number;
+    skillLevel: SportLevel;
+  }): Promise<CampSport>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -118,13 +142,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getOrganizationStaff(orgId: number): Promise<User[]> {
-    const staffRoles = ["coach", "manager", "volunteer"] as const;
+    const staffRoles = ["coach", "manager", "volunteer"] as Role[];
     return await db.select()
       .from(users)
       .where(
         and(
           eq(users.organizationId, orgId),
-          inArray(users.role, staffRoles)
+          sql`${users.role} = ANY(${staffRoles})`
         )
       );
   }
@@ -136,52 +160,29 @@ export class DatabaseStorage implements IStorage {
       const [newCamp] = await db.insert(camps).values({
         name: camp.name,
         description: camp.description,
-        street_address: camp.streetAddress,
+        streetAddress: camp.streetAddress,
         city: camp.city,
         state: camp.state,
-        zip_code: camp.zipCode,
-        start_date: new Date(camp.startDate),
-        end_date: new Date(camp.endDate),
-        registration_start_date: new Date(camp.registrationStartDate),
-        registration_end_date: new Date(camp.registrationEndDate),
+        zipCode: camp.zipCode,
+        startDate: camp.startDate,
+        endDate: camp.endDate,
+        registrationStartDate: camp.registrationStartDate,
+        registrationEndDate: camp.registrationEndDate,
         price: camp.price,
         capacity: camp.capacity,
-        organization_id: camp.organizationId,
+        organizationId: camp.organizationId,
         type: camp.type,
         visibility: camp.visibility,
-        waitlist_enabled: camp.waitlistEnabled,
-        min_age: camp.minAge,
-        max_age: camp.maxAge,
-        repeat_type: camp.repeatType,
-        repeat_count: camp.repeatCount
+        waitlistEnabled: camp.waitlistEnabled,
+        minAge: camp.minAge,
+        maxAge: camp.maxAge,
+        repeatType: camp.repeatType,
+        repeatCount: camp.repeatCount,
+        additionalLocationDetails: camp.additionalLocationDetails ?? null
       }).returning();
 
       console.log("Successfully created camp:", newCamp);
-
-      // Map snake_case back to camelCase
-      return {
-        id: newCamp.id,
-        name: newCamp.name,
-        description: newCamp.description,
-        streetAddress: newCamp.street_address,
-        city: newCamp.city,
-        state: newCamp.state,
-        zipCode: newCamp.zip_code,
-        startDate: newCamp.start_date,
-        endDate: newCamp.end_date,
-        registrationStartDate: newCamp.registration_start_date,
-        registrationEndDate: newCamp.registration_end_date,
-        price: newCamp.price,
-        capacity: newCamp.capacity,
-        organizationId: newCamp.organization_id,
-        type: newCamp.type,
-        visibility: newCamp.visibility,
-        waitlistEnabled: newCamp.waitlist_enabled,
-        minAge: newCamp.min_age,
-        maxAge: newCamp.max_age,
-        repeatType: newCamp.repeat_type,
-        repeatCount: newCamp.repeat_count
-      } as Camp;
+      return newCamp;
     } catch (error) {
       console.error("Error creating camp:", error);
       throw error;
@@ -192,30 +193,7 @@ export class DatabaseStorage implements IStorage {
     try {
       const campList = await db.select().from(camps);
       console.log("Retrieved camps from database:", campList);
-
-      return campList.map(camp => ({
-        id: camp.id,
-        name: camp.name,
-        description: camp.description,
-        streetAddress: camp.street_address,
-        city: camp.city,
-        state: camp.state,
-        zipCode: camp.zip_code,
-        startDate: camp.start_date,
-        endDate: camp.end_date,
-        registrationStartDate: camp.registration_start_date,
-        registrationEndDate: camp.registration_end_date,
-        price: camp.price,
-        capacity: camp.capacity,
-        organizationId: camp.organization_id,
-        type: camp.type,
-        visibility: camp.visibility,
-        waitlistEnabled: camp.waitlist_enabled,
-        minAge: camp.min_age,
-        maxAge: camp.max_age,
-        repeatType: camp.repeat_type,
-        repeatCount: camp.repeat_count
-      } as Camp));
+      return campList;
     } catch (error) {
       console.error("Error listing camps:", error);
       throw error;
@@ -225,53 +203,29 @@ export class DatabaseStorage implements IStorage {
   async getCamp(id: number): Promise<Camp | undefined> {
     try {
       const [camp] = await db.select().from(camps).where(eq(camps.id, id));
-      if (!camp) return undefined;
-
-      return {
-        id: camp.id,
-        name: camp.name,
-        description: camp.description,
-        streetAddress: camp.street_address,
-        city: camp.city,
-        state: camp.state,
-        zipCode: camp.zip_code,
-        startDate: camp.start_date,
-        endDate: camp.end_date,
-        registrationStartDate: camp.registration_start_date,
-        registrationEndDate: camp.registration_end_date,
-        price: camp.price,
-        capacity: camp.capacity,
-        organizationId: camp.organization_id,
-        type: camp.type,
-        visibility: camp.visibility,
-        waitlistEnabled: camp.waitlist_enabled,
-        minAge: camp.min_age,
-        maxAge: camp.max_age,
-        repeatType: camp.repeat_type,
-        repeatCount: camp.repeat_count
-      } as Camp;
+      return camp || undefined;
     } catch (error) {
       console.error("Error getting camp:", error);
       throw error;
     }
   }
-  async getRegistrationsByCamp(campId: number): Promise<any[]> {
+
+  async getRegistrationsByCamp(campId: number): Promise<Registration[]> {
     try {
-      // Import registrations from schema
-      const { registrations } = await import("@shared/schema");
       return await db.select().from(registrations).where(eq(registrations.campId, campId));
     } catch (error) {
       console.error("Error in getRegistrationsByCamp:", error);
       return [];
     }
   }
+
   async createRegistration(registration: Omit<Registration, "id">): Promise<Registration> {
     const [newRegistration] = await db.insert(registrations).values({
       campId: registration.campId,
       childId: registration.childId,
-      paid: registration.paid ?? false,
+      paid: registration.paid,
       stripePaymentId: registration.stripePaymentId,
-      waitlisted: registration.waitlisted ?? false,
+      waitlisted: registration.waitlisted,
       registeredAt: new Date(),
     }).returning();
     return newRegistration;
@@ -336,6 +290,27 @@ export class DatabaseStorage implements IStorage {
     return await db.select()
       .from(invitations)
       .where(eq(invitations.organizationId, organizationId));
+  }
+  async getChildrenByParent(parentId: number): Promise<Child[]> {
+    return await db.select()
+      .from(children)
+      .where(eq(children.parentId, parentId));
+  }
+
+  async getChild(childId: number): Promise<Child | undefined> {
+    const [child] = await db.select()
+      .from(children)
+      .where(eq(children.id, childId));
+    return child;
+  }
+
+  async createCampSport(campSport: {
+    campId: number;
+    sportId: number;
+    skillLevel: SportLevel;
+  }): Promise<CampSport> {
+    const [newCampSport] = await db.insert(campSports).values(campSport).returning();
+    return newCampSport;
   }
 }
 

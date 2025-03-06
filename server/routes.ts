@@ -8,7 +8,7 @@ function logError(location: string, error: any) {
 }
 
 import type { Express } from "express";
-import { createServer, type Server } from "http";
+import { createServer } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertCampSchema, insertChildSchema, insertRegistrationSchema, insertOrganizationSchema, insertInvitationSchema, sports, children, childSports } from "@shared/schema";
@@ -17,13 +17,13 @@ import { hashPassword } from "./utils";
 import { randomBytes } from "crypto";
 import { db } from "./db";
 import passport from "passport";
-import { sendInvitationEmail } from "./utils/email"; // Added import
+import { sendInvitationEmail } from "./utils/email";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2023-10-16",
+  apiVersion: "2025-02-24.acacia",
 });
 
-export async function registerRoutes(app: Express): Server {
+export async function registerRoutes(app: Express) {
   // Add health check endpoint
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
@@ -238,7 +238,7 @@ export async function registerRoutes(app: Express): Server {
               sportId: sport.sportId,
               skillLevel: sport.skillLevel,
               preferredPositions: sport.preferredPositions || [],
-              currentTeam: sport.currentTeam,
+              currentTeam: sport.currentTeam
             }))
           );
         }
@@ -250,41 +250,6 @@ export async function registerRoutes(app: Express): Server {
     } catch (error) {
       logError("/api/children POST", error);
       res.status(500).json({ message: "Failed to create child" });
-    }
-  });
-
-  app.get("/api/children", async (req, res) => {
-    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
-    if (req.user.role !== "parent") {
-      return res.status(403).json({ message: "Only parents can view children" });
-    }
-
-    try {
-      const childrenList = await storage.getChildrenByParent(req.user.id);
-      res.json(childrenList);
-    } catch (error) {
-      logError("/api/children GET", error);
-      res.status(500).json({ message: "Failed to fetch children" });
-    }
-  });
-
-  // Add this route to get organization staff
-  app.get("/api/organizations/:orgId/staff", async (req, res) => {
-    if (!req.user) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    const orgId = parseInt(req.params.orgId);
-    if (req.user.organizationId !== orgId) {
-      return res.status(403).json({ message: "Not authorized for this organization" });
-    }
-
-    try {
-      const staff = await storage.getOrganizationStaff(orgId);
-      res.json(staff);
-    } catch (error) {
-      console.error("Error fetching staff:", error);
-      res.status(500).json({ message: "Failed to fetch organization staff" });
     }
   });
 
@@ -338,7 +303,7 @@ export async function registerRoutes(app: Express): Server {
         city: parsed.data.city.trim(),
         state: parsed.data.state.trim().toUpperCase(),
         zipCode: parsed.data.zipCode.trim(),
-        additionalLocationDetails: parsed.data.additionalLocationDetails?.trim(),
+        additionalLocationDetails: parsed.data.additionalLocationDetails?.trim() ?? null,
         startDate: new Date(parsed.data.startDate),
         endDate: new Date(parsed.data.endDate),
         registrationStartDate: new Date(parsed.data.registrationStartDate),
@@ -407,11 +372,80 @@ export async function registerRoutes(app: Express): Server {
       }
     }
 
-    const registration = await storage.createRegistration(parsed.data);
+    const registration = await storage.createRegistration({
+      ...parsed.data,
+      paid: false,
+      waitlisted: false
+    });
     res.status(201).json(registration);
   });
 
-  // Update the login route to handle role migration
+  app.get("/api/camps/:id", async (req, res) => {
+    try {
+      const camp = await storage.getCamp(parseInt(req.params.id));
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      res.json(camp);
+    } catch (error) {
+      console.error("Error fetching camp:", error);
+      res.status(500).json({ message: "Failed to fetch camp" });
+    }
+  });
+
+  app.get("/api/camps/:id/registrations", async (req, res) => {
+    try {
+      const registrations = await storage.getRegistrationsByCamp(parseInt(req.params.id));
+      res.json(registrations);
+    } catch (error) {
+      console.error("Error fetching camp registrations:", error);
+      res.status(500).json({ message: "Failed to fetch registrations" });
+    }
+  });
+
+  app.post("/api/camps/:id/messages", async (req, res) => {
+    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+
+    const campId = parseInt(req.params.id);
+    const camp = await storage.getCamp(campId);
+
+    if (!camp) {
+      return res.status(404).json({ message: "Camp not found" });
+    }
+
+    // Check if user has permission to send messages for this camp
+    if (camp.organizationId !== req.user.organizationId) {
+      return res.status(403).json({ message: "Not authorized for this camp" });
+    }
+
+    try {
+      // Here we'll add actual message sending logic later
+      // For now just return success
+      res.json({ message: "Message sent successfully" });
+    } catch (error) {
+      console.error("Error sending message:", error);
+      res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
+  app.get("/api/organizations/:orgId/staff", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const orgId = parseInt(req.params.orgId);
+    if (req.user.organizationId !== orgId) {
+      return res.status(403).json({ message: "Not authorized for this organization" });
+    }
+
+    try {
+      const staff = await storage.getOrganizationStaff(orgId);
+      res.json(staff);
+    } catch (error) {
+      console.error("Error fetching staff:", error);
+      res.status(500).json({ message: "Failed to fetch organization staff" });
+    }
+  });
   app.post("/api/login", passport.authenticate("local"), async (req, res, next) => {
     try {
       console.log("Login attempt successful - User data:", {
@@ -465,56 +499,5 @@ export async function registerRoutes(app: Express): Server {
     res.json(req.user);
   });
 
-  // Add these routes inside the registerRoutes function, before the httpServer creation
-  app.get("/api/camps/:id", async (req, res) => {
-    try {
-      const camp = await storage.getCamp(parseInt(req.params.id));
-      if (!camp) {
-        return res.status(404).json({ message: "Camp not found" });
-      }
-      res.json(camp);
-    } catch (error) {
-      console.error("Error fetching camp:", error);
-      res.status(500).json({ message: "Failed to fetch camp" });
-    }
-  });
-
-  app.get("/api/camps/:id/registrations", async (req, res) => {
-    try {
-      const registrations = await storage.getRegistrationsByCamp(parseInt(req.params.id));
-      res.json(registrations);
-    } catch (error) {
-      console.error("Error fetching camp registrations:", error);
-      res.status(500).json({ message: "Failed to fetch registrations" });
-    }
-  });
-
-  app.post("/api/camps/:id/messages", async (req, res) => {
-    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
-
-    const campId = parseInt(req.params.id);
-    const camp = await storage.getCamp(campId);
-
-    if (!camp) {
-      return res.status(404).json({ message: "Camp not found" });
-    }
-
-    // Check if user has permission to send messages for this camp
-    if (camp.organizationId !== req.user.organizationId) {
-      return res.status(403).json({ message: "Not authorized for this camp" });
-    }
-
-    try {
-      // Here we'll add actual message sending logic later
-      // For now just return success
-      res.json({ message: "Message sent successfully" });
-    } catch (error) {
-      console.error("Error sending message:", error);
-      res.status(500).json({ message: "Failed to send message" });
-    }
-  });
-
-
-  const httpServer = createServer(app);
-  return httpServer;
+  return createServer(app);
 }
