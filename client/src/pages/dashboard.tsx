@@ -103,7 +103,7 @@ function NavLink({ href, children, icon: Icon, end = false }: { href: string; ch
       )}
     >
       <Icon className="h-5 w-5 flex-shrink-0" />
-      <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>{children}</span>
+      <span className={matched && to === "/dashboard" ? '' : 'lg:opacity-0'}>{children}</span>
     </button>
   );
 }
