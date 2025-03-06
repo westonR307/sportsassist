@@ -21,7 +21,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 function useLoginMutation() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  
+
   return useMutation({
     mutationFn: async (credentials: LoginData) => {
       const res = await apiRequest("POST", "/api/login", credentials);

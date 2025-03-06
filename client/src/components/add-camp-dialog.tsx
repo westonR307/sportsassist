@@ -12,11 +12,30 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2 } from "lucide-react";
+import { Loader2 } from 'lucide-react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CaretSortIcon, CheckIcon } from "@radix-ui/react-icons";
 import { cn } from "@/lib/utils";
+import { apiRequest } from "@/lib/api";
+
+// Map sport names to IDs for the API
+const sportsMap: Record<string, number> = {
+  "Archery": 1, "Badminton": 2, "Baseball": 3, "Basketball": 4, "Biathlon": 5,
+  "Billiards": 6, "Bobsleigh": 7, "Bodybuilding": 8, "Bowling": 9, "Boxing": 10,
+  "Canoeing": 11, "Cheerleading": 12, "Chess": 13, "Climbing": 14, "Cricket": 15,
+  "CrossFit": 16, "Curling": 17, "Cycling": 18, "Darts": 19, "Equestrian": 20,
+  "Fencing": 21, "Field Hockey": 22, "Figure Skating": 23, "Fishing": 24, "Football (American)": 25,
+  "Frisbee (Ultimate)": 26, "Golf": 27, "Gymnastics": 28, "Handball": 29, "Hockey (Ice)": 30,
+  "Hockey (Roller)": 31, "Judo": 32, "Karate": 33, "Kayaking": 34, "Kickboxing": 35,
+  "Lacrosse": 36, "Mixed Martial Arts (MMA)": 37, "Motocross": 38, "Netball": 39, "Paddleboarding": 40,
+  "Paintball": 41, "Parkour": 42, "Pickleball": 43, "Powerlifting": 44, "Racquetball": 45,
+  "Rock Climbing": 46, "Rowing": 47, "Rugby": 48, "Running": 49, "Sailing": 50,
+  "Skateboarding": 51, "Skiing": 52, "Snowboarding": 53, "Soccer": 54, "Softball": 55,
+  "Speed Skating": 56, "Squash": 57, "Surfing": 58, "Swimming": 59, "Table Tennis": 60,
+  "Taekwondo": 61, "Tennis": 62, "Track and Field": 63, "Triathlon": 64, "Volleyball": 65,
+  "Water Polo": 66, "Weightlifting": 67, "Wrestling": 68, "Yoga": 69, "Zumba": 70
+};
 
 const sportsList = [
   "Archery", "Badminton", "Baseball", "Basketball", "Biathlon",
@@ -34,6 +53,14 @@ const sportsList = [
   "Taekwondo", "Tennis", "Track and Field", "Triathlon", "Volleyball",
   "Water Polo", "Weightlifting", "Wrestling", "Yoga", "Zumba"
 ].sort();
+
+// Map UI skill levels to schema skill levels
+const skillLevelMap: Record<string, string> = {
+  "Beginner": "beginner",
+  "Intermediate": "intermediate",
+  "Advanced": "advanced",
+  "All Levels": "beginner" // Default to beginner for "All Levels"
+};
 
 const skillLevels = ["Beginner", "Intermediate", "Advanced", "All Levels"];
 
@@ -65,15 +92,15 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
       city: "",
       state: "",
       zipCode: "",
-      price: "",
+      price: 0,
       capacity: 20,
       type: "group",
       visibility: "public",
       waitlistEnabled: true,
-      minAge: "",
-      maxAge: "",
+      minAge: 5,
+      maxAge: 18,
       repeatType: "none",
-      repeatCount: "",
+      repeatCount: 0,
       registrationStartDate: regStart.toISOString().split('T')[0],
       registrationEndDate: regEnd.toISOString().split('T')[0],
       startDate: campStart.toISOString().split('T')[0],
@@ -87,41 +114,37 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
         throw new Error("Organization ID required");
       }
 
-      // Log the request data
-      console.log("Creating camp with data:", {
-        ...data,
-        organizationId: user.organizationId,
-        sportId: selectedSport,
-        skillLevel: skillLevel
-      });
-
-      const response = await fetch("/api/camps", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...data,
-          price: Number(data.price),
-          capacity: Number(data.capacity),
-          minAge: Number(data.minAge),
-          maxAge: Number(data.maxAge),
-          repeatCount: Number(data.repeatCount || 0),
-          sportId: Number(selectedSport),
-          skillLevel: skillLevel,
-          waitlistEnabled: data.waitlistEnabled ?? true,
-          visibility: data.visibility ?? "public",
-          repeatType: data.repeatType ?? "none"
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Camp creation failed:", errorData);
-        throw new Error(errorData.message || "Failed to create camp");
+      if (!selectedSport) {
+        throw new Error("Sport selection is required");
       }
 
-      const responseData = await response.json();
-      console.log("Camp created successfully:", responseData);
-      return responseData;
+      const sportId = sportsMap[selectedSport] || 1; // Fallback to ID 1 if not found
+      const mappedSkillLevel = skillLevelMap[skillLevel] || "beginner";
+
+      // Prepare the request data
+      const requestData = {
+        ...data,
+        organizationId: user.organizationId,
+        sportId: sportId,
+        skillLevel: mappedSkillLevel,
+        price: Number(data.price) || 0,
+        capacity: Number(data.capacity) || 20,
+        minAge: Number(data.minAge) || 5,
+        maxAge: Number(data.maxAge) || 18,
+        repeatCount: Number(data.repeatCount) || 0,
+      };
+
+      // Log the request data
+      console.log("Creating camp with data:", requestData);
+
+      try {
+        const response = await apiRequest("POST", "/api/camps", requestData);
+        console.log("Camp created successfully:", response);
+        return response;
+      } catch (error) {
+        console.error("Camp creation error:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
@@ -131,7 +154,7 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
         description: "Camp created successfully",
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error("Camp creation error:", error);
       toast({
         title: "Error",
@@ -142,26 +165,20 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
   });
 
   const onSubmit = async (data: z.infer<typeof insertCampSchema>) => {
-    const isValid = await form.trigger();
-    if (!isValid) {
-      toast({
-        title: "Error",
-        description: "Please fill out all mandatory fields",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!selectedSport) {
       toast({
         title: "Error",
         description: "Please select a sport",
         variant: "destructive",
       });
+      setCurrentTab("basic");
       return;
     }
 
-    console.log("Submitting with sport:", selectedSport);
+    console.log("Submitting form with data:", data);
+    console.log("Selected sport:", selectedSport);
+    console.log("Skill level:", skillLevel);
+
     createCampMutation.mutate(data);
   };
 
@@ -325,7 +342,7 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                               type="number"
                               {...field}
                               value={field.value === 0 ? "" : field.value}
-                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : "")}
+                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 5)}
                               min={1}
                             />
                           </FormControl>
@@ -345,7 +362,7 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                               type="number"
                               {...field}
                               value={field.value === 0 ? "" : field.value}
-                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : "")}
+                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 18)}
                               min={1}
                             />
                           </FormControl>
@@ -367,7 +384,7 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                               type="number"
                               {...field}
                               value={field.value === 0 ? "" : field.value}
-                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : "")}
+                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 0)}
                               min={0}
                             />
                           </FormControl>
@@ -383,10 +400,11 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                         <FormItem>
                           <FormLabel>Capacity</FormLabel>
                           <FormControl>
-                            <Input
-                              type="number"
-                              {...field}
+                            <Input 
+                              type="number" 
+                              {...field} 
                               min={1}
+                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 20)}
                             />
                           </FormControl>
                           <FormMessage />
@@ -481,7 +499,7 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                       </FormItem>
                     )}
                   />
-                  
+
 
                   <div className="flex justify-between space-x-2 pt-4">
                     <Button 
@@ -625,23 +643,8 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                       Previous
                     </Button>
                     <Button 
-                      type="submit" 
+                      type="submit"
                       disabled={createCampMutation.isPending}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (!selectedSport) {
-                          toast({
-                            title: "Error",
-                            description: "Please select a sport",
-                            variant: "destructive",
-                          });
-                          setCurrentTab("basic");
-                          return;
-                        }
-                        
-                        // Form has to be manually submitted to ensure validations run
-                        form.handleSubmit(onSubmit)();
-                      }}
                     >
                       {createCampMutation.isPending ? (
                         <>

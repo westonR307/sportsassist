@@ -1,12 +1,12 @@
-import { queryClient } from "./queryClient";
-
-export async function apiRequest(
+export const apiRequest = async (
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
   path: string,
   body?: unknown
-) {
+) => {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || ""; // Use empty string as base if not defined
+
   try {
-    const response = await fetch(path, {
+    const response = await fetch(`${apiUrl}${path}`, {
       method,
       headers: {
         "Content-Type": "application/json",
