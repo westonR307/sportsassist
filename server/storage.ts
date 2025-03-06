@@ -160,29 +160,53 @@ export class DatabaseStorage implements IStorage {
       const [newCamp] = await db.insert(camps).values({
         name: camp.name,
         description: camp.description,
-        streetAddress: camp.streetAddress,
+        street_address: camp.streetAddress,
         city: camp.city,
         state: camp.state,
-        zipCode: camp.zipCode,
-        startDate: camp.startDate,
-        endDate: camp.endDate,
-        registrationStartDate: camp.registrationStartDate,
-        registrationEndDate: camp.registrationEndDate,
+        zip_code: camp.zipCode,
+        additional_location_details: camp.additionalLocationDetails,
+        start_date: new Date(camp.startDate),
+        end_date: new Date(camp.endDate),
+        registration_start_date: new Date(camp.registrationStartDate),
+        registration_end_date: new Date(camp.registrationEndDate),
         price: camp.price,
         capacity: camp.capacity,
-        organizationId: camp.organizationId,
+        organization_id: camp.organizationId,
         type: camp.type,
         visibility: camp.visibility,
-        waitlistEnabled: camp.waitlistEnabled,
-        minAge: camp.minAge,
-        maxAge: camp.maxAge,
-        repeatType: camp.repeatType,
-        repeatCount: camp.repeatCount,
-        additionalLocationDetails: camp.additionalLocationDetails ?? null
+        waitlist_enabled: camp.waitlistEnabled,
+        min_age: camp.minAge,
+        max_age: camp.maxAge,
+        repeat_type: camp.repeatType,
+        repeat_count: camp.repeatCount
       }).returning();
 
-      console.log("Successfully created camp:", newCamp);
-      return newCamp;
+      // Map snake_case back to camelCase
+      return {
+        id: newCamp.id,
+        name: newCamp.name,
+        description: newCamp.description,
+        streetAddress: newCamp.street_address,
+        city: newCamp.city,
+        state: newCamp.state,
+        zipCode: newCamp.zip_code,
+        additionalLocationDetails: newCamp.additional_location_details,
+        startDate: newCamp.start_date,
+        endDate: newCamp.end_date,
+        registrationStartDate: newCamp.registration_start_date,
+        registrationEndDate: newCamp.registration_end_date,
+        price: newCamp.price,
+        capacity: newCamp.capacity,
+        organizationId: newCamp.organization_id,
+        type: newCamp.type,
+        visibility: newCamp.visibility,
+        waitlistEnabled: newCamp.waitlist_enabled,
+        minAge: newCamp.min_age,
+        maxAge: newCamp.max_age,
+        repeatType: newCamp.repeat_type,
+        repeatCount: newCamp.repeat_count
+      } as Camp;
+
     } catch (error) {
       console.error("Error creating camp:", error);
       throw error;
@@ -193,7 +217,31 @@ export class DatabaseStorage implements IStorage {
     try {
       const campList = await db.select().from(camps);
       console.log("Retrieved camps from database:", campList);
-      return campList;
+
+      return campList.map(camp => ({
+        id: camp.id,
+        name: camp.name,
+        description: camp.description,
+        streetAddress: camp.street_address,
+        city: camp.city,
+        state: camp.state,
+        zipCode: camp.zip_code,
+        additionalLocationDetails: camp.additional_location_details,
+        startDate: camp.start_date,
+        endDate: camp.end_date,
+        registrationStartDate: camp.registration_start_date,
+        registrationEndDate: camp.registration_end_date,
+        price: camp.price,
+        capacity: camp.capacity,
+        organizationId: camp.organization_id,
+        type: camp.type,
+        visibility: camp.visibility,
+        waitlistEnabled: camp.waitlist_enabled,
+        minAge: camp.min_age,
+        maxAge: camp.max_age,
+        repeatType: camp.repeat_type,
+        repeatCount: camp.repeat_count
+      } as Camp));
     } catch (error) {
       console.error("Error listing camps:", error);
       throw error;
@@ -203,7 +251,32 @@ export class DatabaseStorage implements IStorage {
   async getCamp(id: number): Promise<Camp | undefined> {
     try {
       const [camp] = await db.select().from(camps).where(eq(camps.id, id));
-      return camp || undefined;
+      if (!camp) return undefined;
+
+      return {
+        id: camp.id,
+        name: camp.name,
+        description: camp.description,
+        streetAddress: camp.street_address,
+        city: camp.city,
+        state: camp.state,
+        zipCode: camp.zip_code,
+        additionalLocationDetails: camp.additional_location_details,
+        startDate: camp.start_date,
+        endDate: camp.end_date,
+        registrationStartDate: camp.registration_start_date,
+        registrationEndDate: camp.registration_end_date,
+        price: camp.price,
+        capacity: camp.capacity,
+        organizationId: camp.organization_id,
+        type: camp.type,
+        visibility: camp.visibility,
+        waitlistEnabled: camp.waitlist_enabled,
+        minAge: camp.min_age,
+        maxAge: camp.max_age,
+        repeatType: camp.repeat_type,
+        repeatCount: camp.repeat_count
+      } as Camp;
     } catch (error) {
       console.error("Error getting camp:", error);
       throw error;
@@ -212,7 +285,8 @@ export class DatabaseStorage implements IStorage {
 
   async getRegistrationsByCamp(campId: number): Promise<Registration[]> {
     try {
-      return await db.select().from(registrations).where(eq(registrations.campId, campId));
+      const registrationsList = await db.select().from(registrations).where(eq(registrations.campId, campId));
+      return registrationsList;
     } catch (error) {
       console.error("Error in getRegistrationsByCamp:", error);
       return [];
