@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DashboardLayout } from "./dashboard";
 import { Input } from "@/components/ui/input";
+import { useLocation } from "wouter";
 import {
   Form,
   FormControl,
@@ -39,6 +40,7 @@ type OrganizationSettings = z.infer<typeof organizationSettingsSchema>;
 function SettingsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [location, setLocation] = useLocation();
 
   const { data: organization, isLoading: isLoadingOrg } = useQuery<Organization>({
     queryKey: [`/api/organizations/${user?.organizationId}`],
