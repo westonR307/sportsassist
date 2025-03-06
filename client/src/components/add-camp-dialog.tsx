@@ -134,6 +134,7 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
         description: "Please select a sport",
         variant: "destructive",
       });
+      setCurrentTab("basic");
       return;
     }
     console.log("Submitting with sport:", selectedSport);
@@ -611,21 +612,6 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                     <Button 
                       type="submit" 
                       disabled={createCampMutation.isPending}
-                      onClick={(e) => {
-                        if (!selectedSport) {
-                          e.preventDefault();
-                          toast({
-                            title: "Error",
-                            description: "Please select a sport",
-                            variant: "destructive",
-                          });
-                          setCurrentTab("basic");
-                          return;
-                        }
-                        
-                        // Make sure form submission isn't canceled
-                        console.log("Create Camp button clicked, proceeding with form submission");
-                      }}
                     >
                       {createCampMutation.isPending ? (
                         <>

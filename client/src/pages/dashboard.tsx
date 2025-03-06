@@ -12,7 +12,7 @@ import {
   Loader2,
   Menu,
 } from "lucide-react";
-import { useLocation, useRoute } from "wouter";
+import { useLocation, useRoute, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { type Camp } from "@shared/schema";
 import { cn } from "@/lib/utils";
@@ -102,8 +102,8 @@ function NavLink({ href, children, icon: Icon, end = false }: { href: string; ch
         isActive ? "bg-muted text-primary" : "text-muted-foreground"
       )}
     >
-      <Icon className="h-5 w-5" />
-      <span>{children}</span>
+      <Icon className="h-5 w-5 flex-shrink-0" />
+      <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>{children}</span>
     </button>
   );
 }
@@ -114,6 +114,7 @@ function CampsDashboard() {
   const { data: camps, isLoading } = useQuery<Camp[]>({
     queryKey: ["/api/camps"],
   });
+  const [, navigate] = useLocation();
 
   return (
     <div className="space-y-6">
@@ -142,30 +143,26 @@ function CampsDashboard() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {camps.map((camp) => (
-            <Card key={camp.id}>
-              <Link href={`/dashboard/camps/${camp.id}`}>
-                <a className="block hover:opacity-80">
-                  <CardHeader>
-                    <CardTitle>{camp.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Status</span>
-                        <span className="text-sm font-medium px-2 py-1 rounded-full bg-green-100 text-green-800">
-                          {camp.visibility}
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        <p>Registration: {new Date(camp.registrationStartDate).toLocaleDateString()} - {new Date(camp.registrationEndDate).toLocaleDateString()}</p>
-                        <p>Camp: {new Date(camp.startDate).toLocaleDateString()} - {new Date(camp.endDate).toLocaleDateString()}</p>
-                      </div>
+              <Card key={camp.id} className="cursor-pointer hover:opacity-80" onClick={() => navigate(`/dashboard/camps/${camp.id}`)}>
+                <CardHeader>
+                  <CardTitle>{camp.name}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Status</span>
+                      <span className="text-sm font-medium px-2 py-1 rounded-full bg-green-100 text-green-800">
+                        {camp.visibility}
+                      </span>
                     </div>
-                  </CardContent>
-                </a>
-              </Link>
-            </Card>
-          ))}
+                    <div className="text-sm text-gray-500">
+                      <p>Registration: {new Date(camp.registrationStartDate).toLocaleDateString()} - {new Date(camp.registrationEndDate).toLocaleDateString()}</p>
+                      <p>Camp: {new Date(camp.startDate).toLocaleDateString()} - {new Date(camp.endDate).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
         </div>
       )}
 
