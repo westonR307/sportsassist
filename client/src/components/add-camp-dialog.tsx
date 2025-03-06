@@ -134,21 +134,10 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
         description: "Please select a sport",
         variant: "destructive",
       });
-      setCurrentTab("basic");
       return;
     }
     console.log("Submitting with sport:", selectedSport);
-    console.log("Form data being submitted:", data);
-    
-    try {
-      createCampMutation.mutate({
-        ...data,
-        sport: selectedSport,
-        skillLevel: skillLevel
-      });
-    } catch (error) {
-      console.error("Error during mutation:", error);
-    }
+    createCampMutation.mutate(data);
   };
 
   return (
@@ -612,6 +601,19 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                     <Button 
                       type="submit" 
                       disabled={createCampMutation.isPending}
+                      onClick={(e) => {
+                        if (!selectedSport) {
+                          e.preventDefault();
+                          toast({
+                            title: "Error",
+                            description: "Please select a sport",
+                            variant: "destructive",
+                          });
+                          setCurrentTab("basic");
+                          return;
+                        }
+                        // Let the form handle validation and submission
+                      }}
                     >
                       {createCampMutation.isPending ? (
                         <>

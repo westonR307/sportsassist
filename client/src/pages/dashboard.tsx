@@ -12,10 +12,9 @@ import {
   Loader2,
   Menu,
 } from "lucide-react";
-import { useLocation, useRoute } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { type Camp } from "@shared/schema";
-import { cn } from "@/lib/utils";
 import { AddCampDialog } from "@/components/add-camp-dialog";
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -53,10 +52,38 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
           </h2>
         </div>
         <nav className="p-4 space-y-2">
-          <NavLink href="/dashboard" icon={Calendar}>Camps</NavLink>
-          <NavLink href="/dashboard/reports" icon={BarChart3}>Reports</NavLink>
-          <NavLink href="/dashboard/team" icon={Users}>Team</NavLink>
-          <NavLink href="/dashboard/settings" icon={Settings}>Settings</NavLink>
+          <Link href="/dashboard">
+            <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap ${
+              location === '/dashboard' ? 'bg-gray-100' : ''
+            }`}>
+              <Calendar className="h-5 w-5 flex-shrink-0" />
+              <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Camps</span>
+            </a>
+          </Link>
+          <Link href="/dashboard/reports">
+            <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap ${
+              location === '/dashboard/reports' ? 'bg-gray-100' : ''
+            }`}>
+              <BarChart3 className="h-5 w-5 flex-shrink-0" />
+              <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Reports</span>
+            </a>
+          </Link>
+          <Link href="/dashboard/team">
+            <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap ${
+              location === '/dashboard/team' ? 'bg-gray-100' : ''
+            }`}>
+              <Users className="h-5 w-5 flex-shrink-0" />
+              <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Team</span>
+            </a>
+          </Link>
+          <Link href="/dashboard/settings">
+            <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap ${
+              location === '/dashboard/settings' ? 'bg-gray-100' : ''
+            }`}>
+              <Settings className="h-5 w-5 flex-shrink-0" />
+              <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Settings</span>
+            </a>
+          </Link>
           <Button
             variant="ghost"
             className="w-full justify-start whitespace-nowrap"
@@ -90,30 +117,11 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-function NavLink({ href, children, icon: Icon, end = false }: { href: string; children: React.ReactNode; icon: any; end?: boolean }) {
-  const [isActive] = useRoute(end ? href : href + "*");
-  const [, navigate] = useLocation();
-
-  return (
-    <button
-      onClick={() => navigate(href)}
-      className={cn(
-        "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:text-primary text-left whitespace-nowrap",
-        isActive ? "bg-muted text-primary" : "text-muted-foreground"
-      )}
-    >
-      <Icon className="h-5 w-5 flex-shrink-0" />
-      <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>{children}</span>
-    </button>
-  );
-}
-
 function CampsDashboard() {
   const [showAddCampDialog, setShowAddCampDialog] = React.useState(false);
   const { data: camps, isLoading } = useQuery<Camp[]>({
     queryKey: ["/api/camps"],
   });
-  const [, navigate] = useLocation();
 
   return (
     <div className="space-y-6">
@@ -142,24 +150,28 @@ function CampsDashboard() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {camps.map((camp) => (
-            <Card key={camp.id} className="cursor-pointer hover:opacity-80" onClick={() => navigate(`/dashboard/camps/${camp.id}`)}>
-              <CardHeader>
-                <CardTitle>{camp.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Status</span>
-                    <span className="text-sm font-medium px-2 py-1 rounded-full bg-green-100 text-green-800">
-                      {camp.visibility}
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    <p>Registration: {new Date(camp.registrationStartDate).toLocaleDateString()} - {new Date(camp.registrationEndDate).toLocaleDateString()}</p>
-                    <p>Camp: {new Date(camp.startDate).toLocaleDateString()} - {new Date(camp.endDate).toLocaleDateString()}</p>
-                  </div>
-                </div>
-              </CardContent>
+            <Card key={camp.id}>
+              <Link href={`/dashboard/camps/${camp.id}`}>
+                <a className="block hover:opacity-80">
+                  <CardHeader>
+                    <CardTitle>{camp.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Status</span>
+                        <span className="text-sm font-medium px-2 py-1 rounded-full bg-green-100 text-green-800">
+                          {camp.visibility}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        <p>Registration: {new Date(camp.registrationStartDate).toLocaleDateString()} - {new Date(camp.registrationEndDate).toLocaleDateString()}</p>
+                        <p>Camp: {new Date(camp.startDate).toLocaleDateString()} - {new Date(camp.endDate).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </a>
+              </Link>
             </Card>
           ))}
         </div>
