@@ -1,0 +1,101 @@
+stallwart: failed ping 1
+stallwart.build.js:1 stallwart: failed ping 2
+8884-5a5352f25a05d9ca.js:1 Replit version 7b578914, pid2 version 0.0.1052
+_app-fae19016086a98a6.js:16 
+      /////////////////////
+   ///////////////////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////        Curious and driven?
+  ///////////////@@@@@@@///////        Work with us!
+  ///////////////@@@@@@@///////
+  ///////////////@@@@@@@///////        https://join.replit.com/hack.with.us
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@#//////////////
+   ///////////////////////////
+      /////////////////////
+      
+_app-fae19016086a98a6.js:16 [LaunchDarkly] LaunchDarkly client initialized
+Sportsassistio:1 Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.
+stallwart.build.js:1 stallwart: failed ping 1
+stallwart.build.js:1 stallwart: failed ping 2
+stallwart.build.js:1 stallwart: failed ping 3
+15Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.Understand this errorAI
+framework-cd5e567ce222d391.js:1 Unrecognized feature: 'ambient-light-sensor'.
+_ @ framework-cd5e567ce222d391.js:1Understand this warningAI
+framework-cd5e567ce222d391.js:1 Unrecognized feature: 'battery'.
+_ @ framework-cd5e567ce222d391.js:1Understand this warningAI
+framework-cd5e567ce222d391.js:1 Unrecognized feature: 'execution-while-not-rendered'.
+_ @ framework-cd5e567ce222d391.js:1Understand this warningAI
+framework-cd5e567ce222d391.js:1 Unrecognized feature: 'execution-while-out-of-viewport'.
+_ @ framework-cd5e567ce222d391.js:1Understand this warningAI
+framework-cd5e567ce222d391.js:1 Unrecognized feature: 'layout-animations'.
+_ @ framework-cd5e567ce222d391.js:1Understand this warningAI
+framework-cd5e567ce222d391.js:1 Unrecognized feature: 'legacy-image-formats'.
+_ @ framework-cd5e567ce222d391.js:1Understand this warningAI
+framework-cd5e567ce222d391.js:1 Unrecognized feature: 'navigation-override'.
+_ @ framework-cd5e567ce222d391.js:1Understand this warningAI
+framework-cd5e567ce222d391.js:1 Unrecognized feature: 'oversized-images'.
+_ @ framework-cd5e567ce222d391.js:1Understand this warningAI
+framework-cd5e567ce222d391.js:1 Unrecognized feature: 'publickey-credentials'.
+_ @ framework-cd5e567ce222d391.js:1Understand this warningAI
+framework-cd5e567ce222d391.js:1 Unrecognized feature: 'speaker-selection'.
+_ @ framework-cd5e567ce222d391.js:1Understand this warningAI
+framework-cd5e567ce222d391.js:1 Unrecognized feature: 'unoptimized-images'.
+_ @ framework-cd5e567ce222d391.js:1Understand this warningAI
+framework-cd5e567ce222d391.js:1 Unrecognized feature: 'unsized-media'.
+_ @ framework-cd5e567ce222d391.js:1Understand this warningAI
+framework-cd5e567ce222d391.js:1 Allow attribute will take precedence over 'allowfullscreen'.
+_ @ framework-cd5e567ce222d391.js:1Understand this warningAI
+framework-cd5e567ce222d391.js:1 Allow attribute will take precedence over 'allowpaymentrequest'.
+_ @ framework-cd5e567ce222d391.js:1Understand this warningAI
+hook.js:608 Invalid href 'https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.replit.dev//' passed to next/router in page: '/replEnvironmentDesktop'. Repeated forward-slashes (//) or backslashes \ are not valid in the href.
+overrideMethod @ hook.js:608Understand this errorAI
+hook.js:608 Invalid href 'https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.replit.dev//dashboard' passed to next/router in page: '/replEnvironmentDesktop'. Repeated forward-slashes (//) or backslashes \ are not valid in the href.
+overrideMethod @ hook.js:608Understand this errorAI
+stallwart.build.js:1 stallwart: failed ping 1
+stallwart.build.js:1 stallwart: failed ping 2
+stallwart.build.js:1 stallwart: failed ping 1
+stallwart.build.js:1 stallwart: failed ping 2
+stallwart.build.js:1 stallwart: failed ping 3
+stallwart.build.js:1 stallwart: failed ping 4
+stallwart.build.js:1 stallwart: failed ping 5
+stallwart.build.js:1 stallwart: session stalled
+8hook.js:608 Invalid href 'https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.replit.dev//' passed to next/router in page: '/replEnvironmentDesktop'. Repeated forward-slashes (//) or backslashes \ are not valid in the href.
+overrideMethod @ hook.js:608Understand this errorAI
+workspace_iframe.html:32 Unrecognized feature: 'ambient-light-sensor'.Understand this warningAI
+workspace_iframe.html:32 Unrecognized feature: 'ambient-light-sensor'.Understand this warningAI
+workspace_iframe.html:32 Unrecognized feature: 'battery'.Understand this warningAI
+workspace_iframe.html:32 Unrecognized feature: 'battery'.Understand this warningAI
+workspace_iframe.html:32 Unrecognized feature: 'execution-while-not-rendered'.Understand this warningAI
+workspace_iframe.html:32 Unrecognized feature: 'execution-while-not-rendered'.Understand this warningAI
+workspace_iframe.html:32 Unrecognized feature: 'execution-while-out-of-viewport'.Understand this warningAI
+workspace_iframe.html:32 Unrecognized feature: 'execution-while-out-of-viewport'.Understand this warningAI
+workspace_iframe.html:32 Unrecognized feature: 'layout-animations'.Understand this warningAI
+workspace_iframe.html:32 Unrecognized feature: 'layout-animations'.Understand this warningAI
+workspace_iframe.html:32 Unrecognized feature: 'legacy-image-formats'.Understand this warningAI
+workspace_iframe.html:32 Unrecognized feature: 'legacy-image-formats'.Understand this warningAI
+workspace_iframe.html:32 Unrecognized feature: 'navigation-override'.Understand this warningAI
+workspace_iframe.html:32 Unrecognized feature: 'navigation-override'.Understand this warningAI
+workspace_iframe.html:32 Unrecognized feature: 'oversized-images'.Understand this warningAI
+workspace_iframe.html:32 Unrecognized feature: 'oversized-images'.Understand this warningAI
+workspace_iframe.html:32 Unrecognized feature: 'publickey-credentials'.Understand this warningAI
+workspace_iframe.html:32 Unrecognized feature: 'publickey-credentials'.Understand this warningAI
+workspace_iframe.html:32 Unrecognized feature: 'speaker-selection'.Understand this warningAI
+workspace_iframe.html:32 Unrecognized feature: 'speaker-selection'.Understand this warningAI
+workspace_iframe.html:32 Unrecognized feature: 'unoptimized-images'.Understand this warningAI
+workspace_iframe.html:32 Unrecognized feature: 'unoptimized-images'.Understand this warningAI
+workspace_iframe.html:32 Unrecognized feature: 'unsized-media'.Understand this warningAI
+workspace_iframe.html:32 Unrecognized feature: 'unsized-media'.Understand this warningAI
+workspace_iframe.html:32 Allow attribute will take precedence over 'allowfullscreen'.Understand this warningAI
+workspace_iframe.html:32 Allow attribute will take precedence over 'allowfullscreen'.Understand this warningAI
+workspace_iframe.html:32 Allow attribute will take precedence over 'allowpaymentrequest'.Understand this warningAI
+workspace_iframe.html:32 Allow attribute will take precedence over 'allowpaymentrequest'.Understand this warningAI
+2hook.js:608 Invalid href 'https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.replit.dev//' passed to next/router in page: '/replEnvironmentDesktop'. Repeated forward-slashes (//) or backslashes \ are not valid in the href.
+overrideMethod @ hook.js:608Understand this errorAI
+hook.js:608 Invalid href 'https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.replit.dev//dashboard' passed to next/router in page: '/replEnvironmentDesktop'. Repeated forward-slashes (//) or backslashes \ are not valid in the href.
+overrideMethod @ hook.js:608Understand this errorAI
+Console.js:61 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+Mt.forEach.n.<computed> @ Console.js:61Understand this warningAI
+808Chrome is moving towards a new experience that allows users to choose to browse without third-party cookies.Understand this warningAI
