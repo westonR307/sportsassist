@@ -3,7 +3,8 @@ export const apiRequest = async (
   path: string,
   body?: unknown
 ) => {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || ""; // Use empty string as base if not defined
+  // In browser environments, use import.meta.env instead of process.env
+  const apiUrl = import.meta.env?.VITE_API_URL || ""; // Use empty string as base if not defined
 
   try {
     const response = await fetch(`${apiUrl}${path}`, {
