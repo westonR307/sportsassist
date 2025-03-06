@@ -31,10 +31,17 @@ export async function registerRoutes(app: Express) {
 
   setupAuth(app);
 
-  // Update the registration route to handle organization creation
   app.post("/api/register", async (req, res, next) => {
+    console.log("Registration attempt with data:", {
+      username: req.body.username,
+      role: req.body.role,
+      email: req.body.email,
+      organizationName: req.body.organizationName
+    });
+
     const existingUser = await storage.getUserByUsername(req.body.username);
     if (existingUser) {
+      console.log("Registration failed - username already exists:", req.body.username);
       return res.status(400).send("Username already exists");
     }
 
@@ -48,10 +55,12 @@ export async function registerRoutes(app: Express) {
         };
         const parsedOrg = insertOrganizationSchema.safeParse(orgData);
         if (!parsedOrg.success) {
+          console.log("Registration failed - invalid organization data:", parsedOrg.error);
           return res.status(400).json({ message: "Invalid organization data" });
         }
 
         const organization = await storage.createOrganization(parsedOrg.data);
+        console.log("Created organization:", organization.id);
 
         // Create user with organization
         user = await storage.createUser({
@@ -67,8 +76,19 @@ export async function registerRoutes(app: Express) {
         });
       }
 
+      console.log("User created successfully:", {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        organizationId: user.organizationId
+      });
+
       req.login(user, (err) => {
-        if (err) return next(err);
+        if (err) {
+          console.error("Login after registration failed:", err);
+          return next(err);
+        }
+        console.log("User logged in after registration:", user.id);
         res.status(201).json(user);
       });
     } catch (error) {
@@ -333,16 +353,16 @@ export async function registerRoutes(app: Express) {
         res.status(201).json(camp);
       } catch (storageError) {
         console.error("Database error creating camp:", storageError);
-        res.status(500).json({ 
-          message: "Database error creating camp", 
+        res.status(500).json({
+          message: "Database error creating camp",
           error: storageError instanceof Error ? storageError.message : String(storageError)
         });
       }
     } catch (error) {
       console.error("Unexpected error creating camp:", error);
-      res.status(500).json({ 
-        message: "An unexpected error occurred", 
-        error: error instanceof Error ? error.message : String(error) 
+      res.status(500).json({
+        message: "An unexpected error occurred",
+        error: error instanceof Error ? error.message : String(error)
       });
     }
   });
@@ -454,14 +474,13 @@ export async function registerRoutes(app: Express) {
   });
   app.post("/api/login", passport.authenticate("local"), async (req, res, next) => {
     try {
-      console.log("Login attempt successful - User data:", {
+      console.log("Login successful - User:", {
         id: req.user?.id,
         username: req.user?.username,
         role: req.user?.role,
         organizationId: req.user?.organizationId
       });
 
-      // Even if user has admin role, we'll let them through now since we've migrated the role
       res.json(req.user);
     } catch (error) {
       console.error("Login error:", error);
@@ -476,7 +495,7 @@ export async function registerRoutes(app: Express) {
         console.error("Logout error:", err);
         return next(err);
       }
-      
+
       if (req.session) {
         req.session.destroy((err) => {
           if (err) {
@@ -495,12 +514,20 @@ export async function registerRoutes(app: Express) {
   });
 
   app.get("/api/user", (req, res) => {
-    console.log("Get user request - Auth status:", req.isAuthenticated());
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    console.log("Current user data:", {
+    console.log("Current user request received");
+    console.log("Session ID:", req.sessionID);
+    console.log("Is Authenticated:", req.isAuthenticated());
+
+    if (!req.isAuthenticated()) {
+      console.log("User not authenticated");
+      return res.sendStatus(401);
+    }
+
+    console.log("Returning user data:", {
       id: req.user?.id,
       username: req.user?.username,
-      role: req.user?.role
+      role: req.user?.role,
+      organizationId: req.user?.organizationId
     });
     res.json(req.user);
   });

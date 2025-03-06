@@ -1,7 +1,8 @@
 import { pgTable, text, serial, integer, boolean, timestamp, time } from "drizzle-orm/pg-core";
 import { type Role, type SportLevel, type Gender, type ContactMethod, type CampType, type CampVisibility, type RepeatType, type StaffRole } from "./types";
 
-const camps = pgTable("camps", {
+// Define camps table first since other tables reference it
+export const camps = pgTable("camps", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description").notNull(),
@@ -34,7 +35,7 @@ export const campSchedules = pgTable("camp_schedules", {
   endTime: time("end_time").notNull(),
 });
 
-const organizations = pgTable("organizations", {
+export const organizations = pgTable("organizations", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
@@ -42,7 +43,7 @@ const organizations = pgTable("organizations", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-const users = pgTable("users", {
+export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
@@ -52,7 +53,7 @@ const users = pgTable("users", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-const invitations = pgTable("invitations", {
+export const invitations = pgTable("invitations", {
   id: serial("id").primaryKey(),
   email: text("email").notNull(),
   role: text("role").$type<Role>().notNull(),
@@ -63,12 +64,12 @@ const invitations = pgTable("invitations", {
   expiresAt: timestamp("expires_at").notNull(),
 });
 
-const sports = pgTable("sports", {
+export const sports = pgTable("sports", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
 });
 
-const children = pgTable("children", {
+export const children = pgTable("children", {
   id: serial("id").primaryKey(),
   fullName: text("full_name").notNull(),
   dateOfBirth: timestamp("date_of_birth").notNull(),
@@ -86,7 +87,7 @@ const children = pgTable("children", {
   communicationOptIn: boolean("communication_opt_in").notNull(),
 });
 
-const childSports = pgTable("child_sports", {
+export const childSports = pgTable("child_sports", {
   id: serial("id").primaryKey(),
   childId: integer("child_id").references(() => children.id).notNull(),
   sportId: integer("sport_id").references(() => sports.id).notNull(),
@@ -95,14 +96,14 @@ const childSports = pgTable("child_sports", {
   currentTeam: text("current_team"),
 });
 
-const campStaff = pgTable("camp_staff", {
+export const campStaff = pgTable("camp_staff", {
   id: serial("id").primaryKey(),
   campId: integer("camp_id").references(() => camps.id).notNull(),
   userId: integer("user_id").references(() => users.id).notNull(),
   role: text("role").$type<StaffRole>().notNull(),
 });
 
-const registrations = pgTable("registrations", {
+export const registrations = pgTable("registrations", {
   id: serial("id").primaryKey(),
   campId: integer("camp_id").references(() => camps.id).notNull(),
   childId: integer("child_id").references(() => children.id).notNull(),
@@ -112,24 +113,10 @@ const registrations = pgTable("registrations", {
   registeredAt: timestamp("registered_at").notNull().defaultNow(),
 });
 
-const campSports = pgTable("camp_sports", {
+export const campSports = pgTable("camp_sports", {
   id: serial("id").primaryKey(),
   campId: integer("camp_id").references(() => camps.id).notNull(),
   sportId: integer("sport_id").references(() => sports.id),
   customSport: text("custom_sport"),
   skillLevel: text("skill_level").$type<SportLevel>().notNull(),
 });
-
-export {
-  organizations,
-  users,
-  invitations,
-  sports,
-  children,
-  childSports,
-  camps,
-  campStaff,
-  registrations,
-  campSports,
-  campSchedules
-};

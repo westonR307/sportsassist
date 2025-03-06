@@ -29,24 +29,26 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
-  // Enhanced session settings
+  // Enhanced session settings for development
+  const isProduction = process.env.NODE_ENV === "production";
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "local-dev-secret",
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
-    name: 'sports-camp-sid', // Custom session ID name
+    name: 'sports-camp-sid',
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      secure: isProduction, // Only require HTTPS in production
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: 'lax',
+      sameSite: isProduction ? 'strict' : 'lax',
       path: '/'
     },
+    rolling: true // Extend session lifetime on activity
   };
 
   // Trust proxy in production
-  if (process.env.NODE_ENV === "production") {
+  if (isProduction) {
     app.set("trust proxy", 1);
   }
 
@@ -54,13 +56,18 @@ export function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Enhanced logging for authentication
+  // Enhanced logging for authentication and session
   app.use((req, res, next) => {
-    console.log(`Auth Debug - Session ID: ${req.sessionID}`);
-    console.log(`Auth Debug - Is Authenticated: ${req.isAuthenticated()}`);
-    if (req.user) {
-      console.log(`Auth Debug - User: ${req.user.username}`);
-    }
+    console.log('Auth Debug:', {
+      sessionID: req.sessionID,
+      isAuthenticated: req.isAuthenticated(),
+      user: req.user ? {
+        id: req.user.id,
+        username: req.user.username,
+        role: req.user.role
+      } : null,
+      session: req.session
+    });
     next();
   });
 
@@ -72,14 +79,14 @@ export function setupAuth(app: Express) {
 
         if (!user) {
           console.log(`No user found with username: ${username}`);
-          return done(null, false);
+          return done(null, false, { message: "Invalid username or password" });
         }
 
         const isValid = await comparePasswords(password, user.password);
         console.log(`Password validation result for ${username}: ${isValid}`);
 
         if (!isValid) {
-          return done(null, false);
+          return done(null, false, { message: "Invalid username or password" });
         }
 
         console.log(`Successful login for user: ${username}`);
@@ -92,7 +99,11 @@ export function setupAuth(app: Express) {
   );
 
   passport.serializeUser((user, done) => {
-    console.log(`Serializing user: ${user.username}`);
+    console.log(`Serializing user:`, {
+      id: user.id,
+      username: user.username,
+      role: user.role
+    });
     done(null, user.id);
   });
 
@@ -104,7 +115,11 @@ export function setupAuth(app: Express) {
         console.log(`No user found for ID: ${id}`);
         return done(null, false);
       }
-      console.log(`Successfully deserialized user: ${user.username}`);
+      console.log(`Successfully deserialized user:`, {
+        id: user.id,
+        username: user.username,
+        role: user.role
+      });
       done(null, user);
     } catch (err) {
       console.error("Deserialization error:", err);
@@ -113,15 +128,15 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    console.log("Login request received");
+    console.log("Login request received for:", req.body.username);
     passport.authenticate("local", (err, user, info) => {
       if (err) {
         console.error("Login error:", err);
         return next(err);
       }
       if (!user) {
-        console.log("Authentication failed");
-        return res.status(401).json({ message: "Authentication failed" });
+        console.log("Authentication failed:", info?.message);
+        return res.status(401).json({ message: info?.message || "Authentication failed" });
       }
       req.logIn(user, (err) => {
         if (err) {
@@ -137,13 +152,27 @@ export function setupAuth(app: Express) {
   app.post("/api/logout", (req, res, next) => {
     const username = req.user?.username;
     console.log(`Logout request received for user: ${username}`);
+
+    if (!req.isAuthenticated()) {
+      console.log("Logout requested but no user was authenticated");
+      return res.sendStatus(200);
+    }
+
     req.logout((err) => {
       if (err) {
         console.error("Logout error:", err);
         return next(err);
       }
-      console.log(`User ${username} logged out successfully`);
-      res.sendStatus(200);
+
+      req.session.destroy((err) => {
+        if (err) {
+          console.error("Session destruction error:", err);
+          return next(err);
+        }
+        res.clearCookie('sports-camp-sid');
+        console.log(`User ${username} logged out successfully`);
+        res.sendStatus(200);
+      });
     });
   });
 
@@ -151,13 +180,19 @@ export function setupAuth(app: Express) {
     console.log("Current user request received");
     console.log("Session ID:", req.sessionID);
     console.log("Is Authenticated:", req.isAuthenticated());
+    console.log("Session:", req.session);
 
     if (!req.isAuthenticated()) {
       console.log("User not authenticated");
       return res.sendStatus(401);
     }
 
-    console.log("Returning user data:", req.user);
+    console.log("Returning user data:", {
+      id: req.user?.id,
+      username: req.user?.username,
+      role: req.user?.role,
+      organizationId: req.user?.organizationId
+    });
     res.json(req.user);
   });
 }

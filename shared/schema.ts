@@ -14,23 +14,22 @@ import {
   campSports
 } from "./tables";
 
-export type Role = "camp_creator" | "manager" | "coach" | "volunteer" | "parent" | "athlete";
-export type SportLevel = "beginner" | "intermediate" | "advanced";
-export type Gender = "male" | "female" | "other" | "prefer_not_to_say";
-export type ContactMethod = "email" | "sms" | "app";
-export type CampType = "one_on_one" | "group" | "team" | "virtual";
-export type CampVisibility = "public" | "private";
-export type RepeatType = "none" | "weekly" | "monthly";
-export type StaffRole = "manager" | "coach" | "volunteer";
+// Import types
+import {
+  Role,
+  SportLevel,
+  Gender,
+  ContactMethod,
+  CampType,
+  CampVisibility,
+  RepeatType,
+  StaffRole
+} from "./types";
 
 export const publicRoles = ["camp_creator", "parent", "athlete"] as const;
 
-// Define all schemas after tables are defined
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-  email: true,
-}).extend({
+// Define schemas
+export const insertUserSchema = createInsertSchema(users).extend({
   role: z.enum(publicRoles),
   organizationName: z.string().optional(),
   organizationDescription: z.string().optional(),
@@ -152,6 +151,21 @@ export type CampSchedule = typeof campSchedules.$inferSelect;
 export type InsertCampSchedule = z.infer<typeof insertCampSchema>["schedules"][number];
 export type CampSport = typeof campSports.$inferSelect;
 
+// Re-export tables
+export {
+  organizations,
+  users,
+  invitations,
+  sports,
+  children,
+  childSports,
+  camps,
+  campStaff,
+  registrations,
+  campSports,
+  campSchedules
+};
+
 export const predefinedSports = [
   "Archery", "Badminton", "Baseball", "Basketball", "Biathlon",
   "Billiards", "Bobsleigh", "Bodybuilding", "Bowling", "Boxing",
@@ -168,18 +182,3 @@ export const predefinedSports = [
   "Taekwondo", "Tennis", "Track and Field", "Triathlon", "Volleyball",
   "Water Polo", "Weightlifting", "Wrestling", "Yoga", "Zumba"
 ] as const;
-
-// Re-export tables
-export {
-  organizations,
-  users,
-  invitations,
-  sports,
-  children,
-  childSports,
-  camps,
-  campStaff,
-  registrations,
-  campSchedules,
-  campSports
-};
