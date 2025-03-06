@@ -358,16 +358,16 @@ export async function registerRoutes(app: Express): Server {
         res.status(201).json(camp);
       } catch (storageError) {
         console.error("Database error creating camp:", storageError);
-        res.status(500).json({
-          message: "Database error creating camp",
-          error: storageError.message
+        res.status(500).json({ 
+          message: "Database error creating camp", 
+          error: storageError.message 
         });
       }
     } catch (error) {
       console.error("Unexpected error creating camp:", error);
-      res.status(500).json({
-        message: "An unexpected error occurred",
-        error: error instanceof Error ? error.message : String(error)
+      res.status(500).json({ 
+        message: "An unexpected error occurred", 
+        error: error instanceof Error ? error.message : String(error) 
       });
     }
   });

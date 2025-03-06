@@ -91,6 +91,14 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
         throw new Error("Sport selection is required");
       }
 
+      // Log the request data
+      console.log("Creating camp with data:", {
+        ...data,
+        organizationId: user.organizationId,
+        sport: selectedSport,
+        skillLevel: skillLevel
+      });
+
       const response = await fetch("/api/camps", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -98,17 +106,19 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
           ...data,
           organizationId: user.organizationId,
           sport: selectedSport,
-          skillLevel: skillLevel,
-          additionalLocationDetails: data.additionalLocationDetails
+          skillLevel: skillLevel
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("Camp creation failed:", errorData);
         throw new Error(errorData.message || "Failed to create camp");
       }
 
-      return response.json();
+      const responseData = await response.json();
+      console.log("Camp created successfully:", responseData);
+      return responseData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
