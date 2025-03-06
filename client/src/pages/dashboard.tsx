@@ -12,7 +12,7 @@ import {
   Loader2,
   Menu,
 } from "lucide-react";
-import { Link, useLocation } from "wouter";
+import { useLocation, useNavigate } from "react-router-dom"; //Import useNavigate
 import { useQuery } from "@tanstack/react-query";
 import { type Camp } from "@shared/schema";
 import { AddCampDialog } from "@/components/add-camp-dialog";
@@ -21,6 +21,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
+  const navigate = useNavigate(); //Initialize useNavigate
 
   if (!user?.organizationId) return null;
 
@@ -52,38 +53,42 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
           </h2>
         </div>
         <nav className="p-4 space-y-2">
-          <Link href="/dashboard">
-            <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap ${
+          <button
+            onClick={() => navigate("/dashboard")}
+            className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
               location === '/dashboard' ? 'bg-gray-100' : ''
-            }`}>
-              <Calendar className="h-5 w-5 flex-shrink-0" />
-              <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Camps</span>
-            </a>
-          </Link>
-          <Link href="/dashboard/reports">
-            <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap ${
+            }`}
+          >
+            <Calendar className="h-5 w-5 flex-shrink-0" />
+            <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Camps</span>
+          </button>
+          <button
+            onClick={() => navigate("/dashboard/reports")}
+            className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
               location === '/dashboard/reports' ? 'bg-gray-100' : ''
-            }`}>
-              <BarChart3 className="h-5 w-5 flex-shrink-0" />
-              <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Reports</span>
-            </a>
-          </Link>
-          <Link href="/dashboard/team">
-            <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap ${
+            }`}
+          >
+            <BarChart3 className="h-5 w-5 flex-shrink-0" />
+            <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Reports</span>
+          </button>
+          <button
+            onClick={() => navigate("/dashboard/team")}
+            className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
               location === '/dashboard/team' ? 'bg-gray-100' : ''
-            }`}>
-              <Users className="h-5 w-5 flex-shrink-0" />
-              <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Team</span>
-            </a>
-          </Link>
-          <Link href="/dashboard/settings">
-            <a className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap ${
+            }`}
+          >
+            <Users className="h-5 w-5 flex-shrink-0" />
+            <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Team</span>
+          </button>
+          <button
+            onClick={() => navigate("/dashboard/settings")}
+            className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
               location === '/dashboard/settings' ? 'bg-gray-100' : ''
-            }`}>
-              <Settings className="h-5 w-5 flex-shrink-0" />
-              <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Settings</span>
-            </a>
-          </Link>
+            }`}
+          >
+            <Settings className="h-5 w-5 flex-shrink-0" />
+            <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Settings</span>
+          </button>
           <Button
             variant="ghost"
             className="w-full justify-start whitespace-nowrap"
@@ -122,6 +127,7 @@ function CampsDashboard() {
   const { data: camps, isLoading } = useQuery<Camp[]>({
     queryKey: ["/api/camps"],
   });
+  const navigate = useNavigate(); //Initialize useNavigate
 
   return (
     <div className="space-y-6">
@@ -151,27 +157,25 @@ function CampsDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {camps.map((camp) => (
             <Card key={camp.id}>
-              <Link href={`/dashboard/camps/${camp.id}`}>
-                <a className="block hover:opacity-80">
-                  <CardHeader>
-                    <CardTitle>{camp.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Status</span>
-                        <span className="text-sm font-medium px-2 py-1 rounded-full bg-green-100 text-green-800">
-                          {camp.visibility}
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        <p>Registration: {new Date(camp.registrationStartDate).toLocaleDateString()} - {new Date(camp.registrationEndDate).toLocaleDateString()}</p>
-                        <p>Camp: {new Date(camp.startDate).toLocaleDateString()} - {new Date(camp.endDate).toLocaleDateString()}</p>
-                      </div>
+              <button onClick={() => navigate(`/dashboard/camps/${camp.id}`)} className="block hover:opacity-80"> {/*Replaced Link with button */}
+                <CardHeader>
+                  <CardTitle>{camp.name}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Status</span>
+                      <span className="text-sm font-medium px-2 py-1 rounded-full bg-green-100 text-green-800">
+                        {camp.visibility}
+                      </span>
                     </div>
-                  </CardContent>
-                </a>
-              </Link>
+                    <div className="text-sm text-gray-500">
+                      <p>Registration: {new Date(camp.registrationStartDate).toLocaleDateString()} - {new Date(camp.registrationEndDate).toLocaleDateString()}</p>
+                      <p>Camp: {new Date(camp.startDate).toLocaleDateString()} - {new Date(camp.endDate).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </button> {/*Replaced Link with button */}
             </Card>
           ))}
         </div>
