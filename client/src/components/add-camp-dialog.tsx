@@ -104,7 +104,8 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create camp");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create camp");
       }
 
       return response.json();
@@ -127,7 +128,17 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
     },
   });
 
-  const onSubmit = (data: z.infer<typeof insertCampSchema>) => {
+  const onSubmit = async (data: z.infer<typeof insertCampSchema>) => {
+    const isValid = await form.trigger();
+    if (!isValid) {
+      toast({
+        title: "Error",
+        description: "Please fill out all mandatory fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!selectedSport) {
       toast({
         title: "Error",
@@ -136,6 +147,7 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
       });
       return;
     }
+
     console.log("Submitting with sport:", selectedSport);
     createCampMutation.mutate(data);
   };
