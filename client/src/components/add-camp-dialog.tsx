@@ -6,65 +6,205 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { insertCampSchema } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2 } from 'lucide-react';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Loader2 } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { CaretSortIcon, CheckIcon } from "@radix-ui/react-icons";
 import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/api";
 
 // Map sport names to IDs for the API
 const sportsMap: Record<string, number> = {
-  "Archery": 1, "Badminton": 2, "Baseball": 3, "Basketball": 4, "Biathlon": 5,
-  "Billiards": 6, "Bobsleigh": 7, "Bodybuilding": 8, "Bowling": 9, "Boxing": 10,
-  "Canoeing": 11, "Cheerleading": 12, "Chess": 13, "Climbing": 14, "Cricket": 15,
-  "CrossFit": 16, "Curling": 17, "Cycling": 18, "Darts": 19, "Equestrian": 20,
-  "Fencing": 21, "Field Hockey": 22, "Figure Skating": 23, "Fishing": 24, "Football (American)": 25,
-  "Frisbee (Ultimate)": 26, "Golf": 27, "Gymnastics": 28, "Handball": 29, "Hockey (Ice)": 30,
-  "Hockey (Roller)": 31, "Judo": 32, "Karate": 33, "Kayaking": 34, "Kickboxing": 35,
-  "Lacrosse": 36, "Mixed Martial Arts (MMA)": 37, "Motocross": 38, "Netball": 39, "Paddleboarding": 40,
-  "Paintball": 41, "Parkour": 42, "Pickleball": 43, "Powerlifting": 44, "Racquetball": 45,
-  "Rock Climbing": 46, "Rowing": 47, "Rugby": 48, "Running": 49, "Sailing": 50,
-  "Skateboarding": 51, "Skiing": 52, "Snowboarding": 53, "Soccer": 54, "Softball": 55,
-  "Speed Skating": 56, "Squash": 57, "Surfing": 58, "Swimming": 59, "Table Tennis": 60,
-  "Taekwondo": 61, "Tennis": 62, "Track and Field": 63, "Triathlon": 64, "Volleyball": 65,
-  "Water Polo": 66, "Weightlifting": 67, "Wrestling": 68, "Yoga": 69, "Zumba": 70
+  Archery: 1,
+  Badminton: 2,
+  Baseball: 3,
+  Basketball: 4,
+  Biathlon: 5,
+  Billiards: 6,
+  Bobsleigh: 7,
+  Bodybuilding: 8,
+  Bowling: 9,
+  Boxing: 10,
+  Canoeing: 11,
+  Cheerleading: 12,
+  Chess: 13,
+  Climbing: 14,
+  Cricket: 15,
+  CrossFit: 16,
+  Curling: 17,
+  Cycling: 18,
+  Darts: 19,
+  Equestrian: 20,
+  Fencing: 21,
+  "Field Hockey": 22,
+  "Figure Skating": 23,
+  Fishing: 24,
+  "Football (American)": 25,
+  "Frisbee (Ultimate)": 26,
+  Golf: 27,
+  Gymnastics: 28,
+  Handball: 29,
+  "Hockey (Ice)": 30,
+  "Hockey (Roller)": 31,
+  Judo: 32,
+  Karate: 33,
+  Kayaking: 34,
+  Kickboxing: 35,
+  Lacrosse: 36,
+  "Mixed Martial Arts (MMA)": 37,
+  Motocross: 38,
+  Netball: 39,
+  Paddleboarding: 40,
+  Paintball: 41,
+  Parkour: 42,
+  Pickleball: 43,
+  Powerlifting: 44,
+  Racquetball: 45,
+  "Rock Climbing": 46,
+  Rowing: 47,
+  Rugby: 48,
+  Running: 49,
+  Sailing: 50,
+  Skateboarding: 51,
+  Skiing: 52,
+  Snowboarding: 53,
+  Soccer: 54,
+  Softball: 55,
+  "Speed Skating": 56,
+  Squash: 57,
+  Surfing: 58,
+  Swimming: 59,
+  "Table Tennis": 60,
+  Taekwondo: 61,
+  Tennis: 62,
+  "Track and Field": 63,
+  Triathlon: 64,
+  Volleyball: 65,
+  "Water Polo": 66,
+  Weightlifting: 67,
+  Wrestling: 68,
+  Yoga: 69,
+  Zumba: 70,
 };
 
 const sportsList = [
-  "Archery", "Badminton", "Baseball", "Basketball", "Biathlon",
-  "Billiards", "Bobsleigh", "Bodybuilding", "Bowling", "Boxing",
-  "Canoeing", "Cheerleading", "Chess", "Climbing", "Cricket",
-  "CrossFit", "Curling", "Cycling", "Darts", "Equestrian",
-  "Fencing", "Field Hockey", "Figure Skating", "Fishing", "Football (American)",
-  "Frisbee (Ultimate)", "Golf", "Gymnastics", "Handball", "Hockey (Ice)",
-  "Hockey (Roller)", "Judo", "Karate", "Kayaking", "Kickboxing",
-  "Lacrosse", "Mixed Martial Arts (MMA)", "Motocross", "Netball", "Paddleboarding",
-  "Paintball", "Parkour", "Pickleball", "Powerlifting", "Racquetball",
-  "Rock Climbing", "Rowing", "Rugby", "Running", "Sailing",
-  "Skateboarding", "Skiing", "Snowboarding", "Soccer", "Softball",
-  "Speed Skating", "Squash", "Surfing", "Swimming", "Table Tennis",
-  "Taekwondo", "Tennis", "Track and Field", "Triathlon", "Volleyball",
-  "Water Polo", "Weightlifting", "Wrestling", "Yoga", "Zumba"
+  "Archery",
+  "Badminton",
+  "Baseball",
+  "Basketball",
+  "Biathlon",
+  "Billiards",
+  "Bobsleigh",
+  "Bodybuilding",
+  "Bowling",
+  "Boxing",
+  "Canoeing",
+  "Cheerleading",
+  "Chess",
+  "Climbing",
+  "Cricket",
+  "CrossFit",
+  "Curling",
+  "Cycling",
+  "Darts",
+  "Equestrian",
+  "Fencing",
+  "Field Hockey",
+  "Figure Skating",
+  "Fishing",
+  "Football (American)",
+  "Frisbee (Ultimate)",
+  "Golf",
+  "Gymnastics",
+  "Handball",
+  "Hockey (Ice)",
+  "Hockey (Roller)",
+  "Judo",
+  "Karate",
+  "Kayaking",
+  "Kickboxing",
+  "Lacrosse",
+  "Mixed Martial Arts (MMA)",
+  "Motocross",
+  "Netball",
+  "Paddleboarding",
+  "Paintball",
+  "Parkour",
+  "Pickleball",
+  "Powerlifting",
+  "Racquetball",
+  "Rock Climbing",
+  "Rowing",
+  "Rugby",
+  "Running",
+  "Sailing",
+  "Skateboarding",
+  "Skiing",
+  "Snowboarding",
+  "Soccer",
+  "Softball",
+  "Speed Skating",
+  "Squash",
+  "Surfing",
+  "Swimming",
+  "Table Tennis",
+  "Taekwondo",
+  "Tennis",
+  "Track and Field",
+  "Triathlon",
+  "Volleyball",
+  "Water Polo",
+  "Weightlifting",
+  "Wrestling",
+  "Yoga",
+  "Zumba",
 ].sort();
 
 // Map UI skill levels to schema skill levels
 const skillLevelMap: Record<string, string> = {
-  "Beginner": "beginner",
-  "Intermediate": "intermediate",
-  "Advanced": "advanced",
-  "All Levels": "beginner" // Default to beginner for "All Levels"
+  Beginner: "beginner",
+  Intermediate: "intermediate",
+  Advanced: "advanced",
+  "All Levels": "beginner", // Default to beginner for "All Levels"
 };
 
 const skillLevels = ["Beginner", "Intermediate", "Advanced", "All Levels"];
 
-export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+export function AddCampDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -101,10 +241,10 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
       maxAge: 18,
       repeatType: "none",
       repeatCount: 0,
-      registrationStartDate: regStart.toISOString().split('T')[0],
-      registrationEndDate: regEnd.toISOString().split('T')[0],
-      startDate: campStart.toISOString().split('T')[0],
-      endDate: campEnd.toISOString().split('T')[0],
+      registrationStartDate: regStart.toISOString().split("T")[0],
+      registrationEndDate: regEnd.toISOString().split("T")[0],
+      startDate: campStart.toISOString().split("T")[0],
+      endDate: campEnd.toISOString().split("T")[0],
     },
   });
 
@@ -191,8 +331,8 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
         <div className="flex-1 overflow-y-auto">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <Tabs 
-                defaultValue="basic" 
+              <Tabs
+                defaultValue="basic"
                 className="w-full"
                 value={currentTab}
                 onValueChange={setCurrentTab}
@@ -225,7 +365,10 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                       <FormItem>
                         <FormLabel>Description</FormLabel>
                         <FormControl>
-                          <Textarea {...field} placeholder="Describe the camp" />
+                          <Textarea
+                            {...field}
+                            placeholder="Describe the camp"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -237,10 +380,14 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                       <FormLabel>Sport</FormLabel>
                       <select
                         value={selectedSport || ""}
-                        onChange={(e) => setSelectedSport(e.target.value || null)}
+                        onChange={(e) =>
+                          setSelectedSport(e.target.value || null)
+                        }
                         className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                       >
-                        <option value="" disabled>Select a sport...</option>
+                        <option value="" disabled>
+                          Select a sport...
+                        </option>
                         {sportsList.map((sport) => (
                           <option key={sport} value={sport}>
                             {sport}
@@ -342,7 +489,11 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                               type="number"
                               {...field}
                               value={field.value === 0 ? "" : field.value}
-                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 5)}
+                              onChange={(e) =>
+                                field.onChange(
+                                  e.target.value ? parseInt(e.target.value) : 5,
+                                )
+                              }
                               min={1}
                             />
                           </FormControl>
@@ -362,7 +513,13 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                               type="number"
                               {...field}
                               value={field.value === 0 ? "" : field.value}
-                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 18)}
+                              onChange={(e) =>
+                                field.onChange(
+                                  e.target.value
+                                    ? parseInt(e.target.value)
+                                    : 18,
+                                )
+                              }
                               min={1}
                             />
                           </FormControl>
@@ -384,7 +541,11 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                               type="number"
                               {...field}
                               value={field.value === 0 ? "" : field.value}
-                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 0)}
+                              onChange={(e) =>
+                                field.onChange(
+                                  e.target.value ? parseInt(e.target.value) : 0,
+                                )
+                              }
                               min={0}
                             />
                           </FormControl>
@@ -400,11 +561,17 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                         <FormItem>
                           <FormLabel>Capacity</FormLabel>
                           <FormControl>
-                            <Input 
-                              type="number" 
-                              {...field} 
+                            <Input
+                              type="number"
+                              {...field}
                               min={1}
-                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 20)}
+                              onChange={(e) =>
+                                field.onChange(
+                                  e.target.value
+                                    ? parseInt(e.target.value)
+                                    : 20,
+                                )
+                              }
                             />
                           </FormControl>
                           <FormMessage />
@@ -413,10 +580,13 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                     />
                   </div>
                   <div className="flex justify-end space-x-2 pt-4">
-                    <Button 
-                      type="button" 
+                    <Button
+                      type="button"
                       onClick={async () => {
-                        const isValid = await form.trigger(["name", "description"]);
+                        const isValid = await form.trigger([
+                          "name",
+                          "description",
+                        ]);
                         if (isValid) {
                           setCurrentTab("location");
                         }
@@ -478,7 +648,11 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                         <FormItem>
                           <FormLabel>ZIP Code</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="12345" pattern="\d{5}(-\d{4})?" />
+                            <Input
+                              {...field}
+                              placeholder="12345"
+                              pattern="\d{5}(-\d{4})?"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -493,17 +667,19 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                       <FormItem>
                         <FormLabel>Additional Location Information</FormLabel>
                         <FormControl>
-                          <Textarea {...field} placeholder="Any additional details about the location" />
+                          <Textarea
+                            {...field}
+                            placeholder="Any additional details about the location"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-
                   <div className="flex justify-between space-x-2 pt-4">
-                    <Button 
-                      type="button" 
+                    <Button
+                      type="button"
                       variant="outline"
                       onClick={() => {
                         setCurrentTab("basic");
@@ -511,10 +687,15 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                     >
                       Previous
                     </Button>
-                    <Button 
-                      type="button" 
+                    <Button
+                      type="button"
                       onClick={async () => {
-                        const isValid = await form.trigger(["streetAddress", "city", "state", "zipCode"]);
+                        const isValid = await form.trigger([
+                          "streetAddress",
+                          "city",
+                          "state",
+                          "zipCode",
+                        ]);
                         if (isValid) {
                           setCurrentTab("settings");
                         }
@@ -581,7 +762,9 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                             className="h-4 w-4"
                           />
                         </FormControl>
-                        <FormLabel className="font-normal">Enable waitlist when camp is full</FormLabel>
+                        <FormLabel className="font-normal">
+                          Enable waitlist when camp is full
+                        </FormLabel>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -615,14 +798,24 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>
-                            Number of {form.watch("repeatType") === "weekly" ? "Weeks" : "Months"} to Repeat
+                            Number of{" "}
+                            {form.watch("repeatType") === "weekly"
+                              ? "Weeks"
+                              : "Months"}{" "}
+                            to Repeat
                           </FormLabel>
                           <FormControl>
                             <Input
                               type="number"
                               {...field}
                               value={field.value || ""}
-                              onChange={(e) => field.onChange(e.target.value === "" ? 0 : parseInt(e.target.value))}
+                              onChange={(e) =>
+                                field.onChange(
+                                  e.target.value === ""
+                                    ? 0
+                                    : parseInt(e.target.value),
+                                )
+                              }
                               min={0}
                             />
                           </FormControl>
@@ -633,8 +826,8 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                   )}
 
                   <div className="flex justify-between pt-4">
-                    <Button 
-                      type="button" 
+                    <Button
+                      type="button"
                       variant="outline"
                       onClick={() => {
                         setCurrentTab("location");
@@ -642,7 +835,7 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                     >
                       Previous
                     </Button>
-                    <Button 
+                    <Button
                       type="submit"
                       disabled={createCampMutation.isPending}
                     >
