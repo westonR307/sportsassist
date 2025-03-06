@@ -313,7 +313,10 @@ export async function registerRoutes(app: Express): Server {
 
       // Validate input data
       console.log("Validating camp data with schema...");
-      const parsed = insertCampSchema.safeParse(req.body);
+      const parsed = insertCampSchema.safeParse({
+        ...req.body,
+        organizationId: req.user.organizationId
+      });
 
       if (!parsed.success) {
         const validationErrors = parsed.error.flatten();
@@ -328,45 +331,45 @@ export async function registerRoutes(app: Express): Server {
 
       // Format and prepare camp data for storage
       const campData = {
-        name: parsed.data.name,
-        description: parsed.data.description,
+        name: parsed.data.name.trim(),
+        description: parsed.data.description.trim(),
         organizationId: req.user.organizationId,
-        type: parsed.data.type ?? "group",
         streetAddress: parsed.data.streetAddress.trim(),
         city: parsed.data.city.trim(),
         state: parsed.data.state.trim().toUpperCase(),
         zipCode: parsed.data.zipCode.trim(),
+        additionalLocationDetails: parsed.data.additionalLocationDetails?.trim(),
         startDate: new Date(parsed.data.startDate),
         endDate: new Date(parsed.data.endDate),
         registrationStartDate: new Date(parsed.data.registrationStartDate),
         registrationEndDate: new Date(parsed.data.registrationEndDate),
-        price: typeof parsed.data.price === 'string' ? 
-          parseFloat(parsed.data.price) : 
-          parsed.data.price ?? 0,
-        capacity: parsed.data.capacity,
-        minAge: typeof parsed.data.minAge === 'string' ? 
-          parseInt(parsed.data.minAge) : 
-          parsed.data.minAge ?? 5,
-        maxAge: typeof parsed.data.maxAge === 'string' ? 
-          parseInt(parsed.data.maxAge) : 
-          parsed.data.maxAge ?? 18,
+        price: Number(parsed.data.price),
+        capacity: Number(parsed.data.capacity),
         waitlistEnabled: parsed.data.waitlistEnabled ?? true,
-        type: parsed.data.type ?? "group",
+        type: parsed.data.type,
         visibility: parsed.data.visibility ?? "public",
+        minAge: Number(parsed.data.minAge),
+        maxAge: Number(parsed.data.maxAge),
         repeatType: parsed.data.repeatType ?? "none",
-        repeatCount: typeof parsed.data.repeatCount === 'string' ? 
-          parseInt(parsed.data.repeatCount) : 
-          parsed.data.repeatCount ?? 0,
-        sport: parsed.data.sport,
-        skillLevel: parsed.data.skillLevel,
-        additionalLocationDetails: parsed.data.additionalLocationDetails?.trim() ?? null
+        repeatCount: Number(parsed.data.repeatCount ?? 0)
       };
 
       console.log("Processed camp data for database:", campData);
 
       try {
+        // Create the camp first
         const camp = await storage.createCamp(campData);
         console.log("Camp created successfully:", camp);
+
+        // If sport and skill level are provided, create the camp sport association
+        if (parsed.data.sportId && parsed.data.skillLevel) {
+          await storage.createCampSport({
+            campId: camp.id,
+            sportId: parsed.data.sportId,
+            skillLevel: parsed.data.skillLevel
+          });
+        }
+
         res.status(201).json(camp);
       } catch (storageError) {
         console.error("Database error creating camp:", storageError);

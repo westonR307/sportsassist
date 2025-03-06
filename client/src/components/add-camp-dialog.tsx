@@ -87,15 +87,11 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
         throw new Error("Organization ID required");
       }
 
-      if (!selectedSport) {
-        throw new Error("Sport selection is required");
-      }
-
       // Log the request data
       console.log("Creating camp with data:", {
         ...data,
         organizationId: user.organizationId,
-        sport: selectedSport,
+        sportId: selectedSport,
         skillLevel: skillLevel
       });
 
@@ -104,9 +100,16 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,
-          organizationId: user.organizationId,
-          sport: selectedSport,
-          skillLevel: skillLevel
+          price: Number(data.price),
+          capacity: Number(data.capacity),
+          minAge: Number(data.minAge),
+          maxAge: Number(data.maxAge),
+          repeatCount: Number(data.repeatCount || 0),
+          sportId: Number(selectedSport),
+          skillLevel: skillLevel,
+          waitlistEnabled: data.waitlistEnabled ?? true,
+          visibility: data.visibility ?? "public",
+          repeatType: data.repeatType ?? "none"
         }),
       });
 
@@ -479,6 +482,7 @@ export function AddCampDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                     )}
                   />
                   
+
                   <div className="flex justify-between space-x-2 pt-4">
                     <Button 
                       type="button" 
