@@ -6,6 +6,7 @@ import {
   children,
   campSports,
   registrations,
+  campSchedules,
   type User,
   type InsertUser,
   type Role,
@@ -17,7 +18,9 @@ import {
   type Child,
   type CampSport,
   type SportLevel,
-  type Registration
+  type Registration,
+  type CampSchedule,
+  type InsertCampSchedule
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, and } from "drizzle-orm";
@@ -34,7 +37,7 @@ export interface IStorage {
   createUser(user: InsertUser & { organizationId?: number }): Promise<User>;
   updateUserRole(userId: number, newRole: Role): Promise<User>;
   getOrganizationStaff(orgId: number): Promise<User[]>;
-  createCamp(camp: Omit<Camp, "id">): Promise<Camp>;
+  createCamp(camp: Omit<Camp, "id"> & { schedules?: InsertCampSchedule[] }): Promise<Camp>;
   listCamps(): Promise<Camp[]>;
   getCamp(id: number): Promise<Camp | undefined>;
   getRegistrationsByCamp(campId: number): Promise<Registration[]>;
@@ -50,6 +53,7 @@ export interface IStorage {
   getChildrenByParent(parentId: number): Promise<Child[]>;
   getChild(childId: number): Promise<Child | undefined>;
   createCampSport(campSport: { campId: number; sportId: number; skillLevel: SportLevel; }): Promise<CampSport>;
+  getCampSchedules(campId: number): Promise<CampSchedule[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -107,33 +111,78 @@ export class DatabaseStorage implements IStorage {
       );
   }
 
-  async createCamp(camp: Omit<Camp, "id">): Promise<Camp> {
+  async createCamp(camp: Omit<Camp, "id"> & { schedules?: InsertCampSchedule[] }): Promise<Camp> {
     try {
+      console.log("Creating camp with data:", {
+        ...camp,
+        schedules: camp.schedules?.length || 0
+      });
+
       const [newCamp] = await db.insert(camps).values({
         name: camp.name,
         description: camp.description,
-        streetAddress: camp.streetAddress,
+        street_address: camp.streetAddress,
         city: camp.city,
         state: camp.state,
-        zipCode: camp.zipCode,
-        additionalLocationDetails: camp.additionalLocationDetails,
-        startDate: camp.startDate,
-        endDate: camp.endDate,
-        registrationStartDate: camp.registrationStartDate,
-        registrationEndDate: camp.registrationEndDate,
+        zip_code: camp.zipCode,
+        additional_location_details: camp.additionalLocationDetails,
+        start_date: new Date(camp.startDate),
+        end_date: new Date(camp.endDate),
+        registration_start_date: new Date(camp.registrationStartDate),
+        registration_end_date: new Date(camp.registrationEndDate),
         price: camp.price,
         capacity: camp.capacity,
-        organizationId: camp.organizationId,
+        organization_id: camp.organizationId,
         type: camp.type,
         visibility: camp.visibility,
-        waitlistEnabled: camp.waitlistEnabled,
-        minAge: camp.minAge,
-        maxAge: camp.maxAge,
-        repeatType: camp.repeatType,
-        repeatCount: camp.repeatCount
+        waitlist_enabled: camp.waitlistEnabled,
+        min_age: camp.minAge,
+        max_age: camp.maxAge,
+        repeat_type: camp.repeatType,
+        repeat_count: camp.repeatCount
       }).returning();
 
-      return newCamp;
+      console.log("Created camp:", newCamp);
+
+      // Temporarily commented out schedule creation for testing
+      /* if (camp.schedules && camp.schedules.length > 0) {
+        console.log("Creating schedules for camp:", newCamp.id);
+        const scheduleValues = camp.schedules.map(schedule => ({
+          campId: newCamp.id,
+          dayOfWeek: schedule.dayOfWeek,
+          startTime: schedule.startTime,
+          endTime: schedule.endTime
+        }));
+
+        const createdSchedules = await db.insert(campSchedules).values(scheduleValues).returning();
+        console.log("Created schedules:", createdSchedules);
+      } */
+
+      return {
+        id: newCamp.id,
+        name: newCamp.name,
+        description: newCamp.description,
+        streetAddress: newCamp.street_address,
+        city: newCamp.city,
+        state: newCamp.state,
+        zipCode: newCamp.zip_code,
+        additionalLocationDetails: newCamp.additional_location_details,
+        startDate: newCamp.start_date,
+        endDate: newCamp.end_date,
+        registrationStartDate: newCamp.registration_start_date,
+        registrationEndDate: newCamp.registration_end_date,
+        price: newCamp.price,
+        capacity: newCamp.capacity,
+        organizationId: newCamp.organization_id,
+        type: newCamp.type,
+        visibility: newCamp.visibility,
+        waitlistEnabled: newCamp.waitlist_enabled,
+        minAge: newCamp.min_age,
+        maxAge: newCamp.max_age,
+        repeatType: newCamp.repeat_type,
+        repeatCount: newCamp.repeat_count
+      } as Camp;
+
     } catch (error) {
       console.error("Error creating camp:", error);
       throw error;
@@ -260,6 +309,12 @@ export class DatabaseStorage implements IStorage {
   }): Promise<CampSport> {
     const [newCampSport] = await db.insert(campSports).values(campSport).returning();
     return newCampSport;
+  }
+  async getCampSchedules(campId: number): Promise<CampSchedule[]> {
+    return await db.select()
+      .from(campSchedules)
+      .where(eq(campSchedules.campId, campId))
+      .orderBy(campSchedules.dayOfWeek);
   }
 }
 

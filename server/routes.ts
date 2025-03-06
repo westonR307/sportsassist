@@ -276,7 +276,7 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ message: "User has no organization" });
       }
 
-      // Validate input data
+      // Validate input data with schedules
       console.log("Validating camp data with schema...");
       const parsed = insertCampSchema.safeParse({
         ...req.body,
@@ -294,37 +294,32 @@ export async function registerRoutes(app: Express) {
 
       console.log("Validated camp data:", parsed.data);
 
-      // Format and prepare camp data for storage
-      const campData = {
-        name: parsed.data.name.trim(),
-        description: parsed.data.description.trim(),
-        organizationId: req.user.organizationId,
-        streetAddress: parsed.data.streetAddress.trim(),
-        city: parsed.data.city.trim(),
-        state: parsed.data.state.trim().toUpperCase(),
-        zipCode: parsed.data.zipCode.trim(),
-        additionalLocationDetails: parsed.data.additionalLocationDetails?.trim() ?? null,
-        startDate: new Date(parsed.data.startDate),
-        endDate: new Date(parsed.data.endDate),
-        registrationStartDate: new Date(parsed.data.registrationStartDate),
-        registrationEndDate: new Date(parsed.data.registrationEndDate),
-        price: Number(parsed.data.price),
-        capacity: Number(parsed.data.capacity),
-        waitlistEnabled: parsed.data.waitlistEnabled ?? true,
-        type: parsed.data.type,
-        visibility: parsed.data.visibility ?? "public",
-        minAge: Number(parsed.data.minAge),
-        maxAge: Number(parsed.data.maxAge),
-        repeatType: parsed.data.repeatType ?? "none",
-        repeatCount: Number(parsed.data.repeatCount ?? 0)
-      };
-
-      console.log("Processed camp data for database:", campData);
-
       try {
-        // Create the camp first
-        const camp = await storage.createCamp(campData);
-        console.log("Camp created successfully:", camp);
+        // Create the camp with schedules
+        const camp = await storage.createCamp({
+          name: parsed.data.name.trim(),
+          description: parsed.data.description.trim(),
+          organizationId: req.user.organizationId,
+          streetAddress: parsed.data.streetAddress.trim(),
+          city: parsed.data.city.trim(),
+          state: parsed.data.state.trim().toUpperCase(),
+          zipCode: parsed.data.zipCode.trim(),
+          additionalLocationDetails: parsed.data.additionalLocationDetails?.trim() ?? null,
+          startDate: new Date(parsed.data.startDate),
+          endDate: new Date(parsed.data.endDate),
+          registrationStartDate: new Date(parsed.data.registrationStartDate),
+          registrationEndDate: new Date(parsed.data.registrationEndDate),
+          price: Number(parsed.data.price),
+          capacity: Number(parsed.data.capacity),
+          waitlistEnabled: parsed.data.waitlistEnabled ?? true,
+          type: parsed.data.type,
+          visibility: parsed.data.visibility ?? "public",
+          minAge: Number(parsed.data.minAge),
+          maxAge: Number(parsed.data.maxAge),
+          repeatType: parsed.data.repeatType ?? "none",
+          repeatCount: Number(parsed.data.repeatCount ?? 0),
+          schedules: parsed.data.schedules
+        });
 
         // If sport and skill level are provided, create the camp sport association
         if (parsed.data.sportId && parsed.data.skillLevel) {
@@ -355,6 +350,17 @@ export async function registerRoutes(app: Express) {
   app.get("/api/camps", async (req, res) => {
     const camps = await storage.listCamps();
     res.json(camps);
+  });
+
+  // Add route to get camp schedules
+  app.get("/api/camps/:id/schedules", async (req, res) => {
+    try {
+      const schedules = await storage.getCampSchedules(parseInt(req.params.id));
+      res.json(schedules);
+    } catch (error) {
+      console.error("Error fetching camp schedules:", error);
+      res.status(500).json({ message: "Failed to fetch camp schedules" });
+    }
   });
 
   // Registration routes

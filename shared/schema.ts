@@ -105,7 +105,7 @@ export const campStaff = pgTable("camp_staff", {
   id: serial("id").primaryKey(),
   campId: integer("camp_id").references(() => camps.id).notNull(),
   userId: integer("user_id").references(() => users.id).notNull(),
-  role: text("role").$type<Role>().notNull(),
+  role: text("role").$type<StaffRole>().notNull(),
 });
 
 export const registrations = pgTable("registrations", {
@@ -204,6 +204,11 @@ export const insertCampSchema = createInsertSchema(camps).extend({
   maxAge: z.number().min(1, "Maximum age must be at least 1"),
   repeatType: z.enum(["none", "weekly", "monthly"]).default("none"),
   repeatCount: z.number().min(0, "Repeat count must be 0 or greater").default(0),
+  schedules: z.array(z.object({
+    dayOfWeek: z.number().min(0).max(6),
+    startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
+    endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
+  })).optional(),
 }).refine((data) => {
   const startDate = new Date(data.startDate);
   const endDate = new Date(data.endDate);
@@ -240,6 +245,7 @@ export type Sport = typeof sports.$inferSelect;
 export type ChildSport = typeof childSports.$inferSelect;
 export type InsertChildSport = z.infer<typeof insertChildSchema>["sportsInterests"][number];
 export type CampSchedule = typeof campSchedules.$inferSelect;
+export type InsertCampSchedule = z.infer<typeof insertCampSchema>["schedules"][number];
 export type CampSport = typeof campSports.$inferSelect;
 
 export const predefinedSports = [
@@ -258,3 +264,7 @@ export const predefinedSports = [
   "Taekwondo", "Tennis", "Track and Field", "Triathlon", "Volleyball",
   "Water Polo", "Weightlifting", "Wrestling", "Yoga", "Zumba"
 ] as const;
+
+export {
+  campSchedules,
+};
