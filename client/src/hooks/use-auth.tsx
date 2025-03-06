@@ -1,7 +1,8 @@
 import { createContext, ReactNode, useContext } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { insertUserSchema, User as SelectUser, InsertUser } from "@shared/schema";
-import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
+import { queryClient } from "../lib/queryClient";
+import { apiRequest } from "../lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 
@@ -93,7 +94,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
   } = useQuery<SelectUser | null>({
     queryKey: ["/api/user"],
-    queryFn: getQueryFn({ on401: "returnNull" }),
+    queryFn: async () => {
+      try {
+        return await apiRequest("GET", "/api/user");
+      } catch (error) {
+        if (error instanceof Error && error.message.includes("401")) {
+          return null;
+        }
+        throw error;
+      }
+    },
   });
 
   const loginMutation = useLoginMutation();
