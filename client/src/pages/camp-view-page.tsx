@@ -1,7 +1,7 @@
 import React from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { DashboardLayout } from "./dashboard";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,8 @@ function CampViewPage() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const { toast } = useToast();
+  const [location, navigate] = useLocation();
+
 
   const { data: camp, isLoading } = useQuery<Camp>({
     queryKey: [`/api/camps/${id}`],

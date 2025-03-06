@@ -12,16 +12,16 @@ import {
   Loader2,
   Menu,
 } from "lucide-react";
-import { useLocation as useWouterLocation, useNavigate as useWouterNavigate } from "wouter"; //Import from wouter
+import { useLocation as useWouterLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { type Camp } from "@shared/schema";
 import { AddCampDialog } from "@/components/add-camp-dialog";
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const [location, navigate] = useWouterNavigate(); //Initialize useNavigate from wouter
+  const [location, navigate] = useWouterLocation();
   const { user, logoutMutation } = useAuth();
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
-  const wouterLocation = useWouterLocation()[0]; // Use wouter's useLocation
+  const wouterLocation = useWouterLocation()[0];
 
 
   if (!user?.organizationId) return null;
@@ -128,7 +128,7 @@ function CampsDashboard() {
   const { data: camps, isLoading } = useQuery<Camp[]>({
     queryKey: ["/api/camps"],
   });
-  const [location, navigate] = useWouterNavigate(); //Initialize useNavigate from wouter
+  const [location, navigate] = useWouterLocation();
 
   return (
     <div className="space-y-6">
@@ -158,7 +158,7 @@ function CampsDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {camps.map((camp) => (
             <Card key={camp.id}>
-              <button onClick={() => navigate(`/dashboard/camps/${camp.id}`)} className="block hover:opacity-80"> {/*Replaced Link with button */}
+              <button onClick={() => navigate(`/dashboard/camps/${camp.id}`)} className="block hover:opacity-80">
                 <CardHeader>
                   <CardTitle>{camp.name}</CardTitle>
                 </CardHeader>
@@ -176,7 +176,7 @@ function CampsDashboard() {
                     </div>
                   </div>
                 </CardContent>
-              </button> {/*Replaced Link with button */}
+              </button>
             </Card>
           ))}
         </div>
