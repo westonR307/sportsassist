@@ -309,6 +309,12 @@ export function AddCampDialog({
           description: "Please correct the highlighted fields.",
           variant: "destructive",
         });
+      } else if (error.message === "Network Error") {
+        toast({
+          title: "Network Error",
+          description: "Please check your internet connection and try again.",
+          variant: "destructive",
+        });
       } else {
         toast({
           title: "Error",
