@@ -4,10 +4,9 @@ import './CampRegistrationForm.css';
 const CampRegistrationForm = () => {
   const [formData, setFormData] = useState({
     campName: '',
-    startDate: '',
-    endDate: '',
-    location: '',
-    description: ''
+    campLocation: '',
+    campDate: '',
+    campDescription: ''
   });
 
   const [formValid, setFormValid] = useState(true);
@@ -22,11 +21,9 @@ const CampRegistrationForm = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const { campName, startDate, endDate, location, description } = formData;
-
-    if (campName && startDate && endDate && location && description) {
+    if (formData.campName && formData.campLocation && formData.campDate && formData.campDescription) {
       setFormValid(true);
-      // Submit form data to the server or perform any other necessary actions
+      // Add your form submission logic here
     } else {
       setFormValid(false);
     }
@@ -36,55 +33,22 @@ const CampRegistrationForm = () => {
     <form onSubmit={handleSubmit}>
       <div>
         <label>Camp Name:</label>
-        <input
-          type="text"
-          name="campName"
-          value={formData.campName}
-          onChange={handleChange}
-          required
-        />
+        <input type="text" name="campName" value={formData.campName} onChange={handleChange} required />
       </div>
       <div>
-        <label>Start Date:</label>
-        <input
-          type="date"
-          name="startDate"
-          value={formData.startDate}
-          onChange={handleChange}
-          required
-        />
+        <label>Camp Location:</label>
+        <input type="text" name="campLocation" value={formData.campLocation} onChange={handleChange} required />
       </div>
       <div>
-        <label>End Date:</label>
-        <input
-          type="date"
-          name="endDate"
-          value={formData.endDate}
-          onChange={handleChange}
-          required
-        />
+        <label>Camp Date:</label>
+        <input type="date" name="campDate" value={formData.campDate} onChange={handleChange} required />
       </div>
       <div>
-        <label>Location:</label>
-        <input
-          type="text"
-          name="location"
-          value={formData.location}
-          onChange={handleChange}
-          required
-        />
+        <label>Camp Description:</label>
+        <textarea name="campDescription" value={formData.campDescription} onChange={handleChange} required />
       </div>
-      <div>
-        <label>Description:</label>
-        <textarea
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          required
-        />
-      </div>
-      {!formValid && <p className="error-message">Please fill out all required fields.</p>}
       <button type="submit">Create Camp</button>
+      {!formValid && <div className="error-message">Please fill out all required fields.</div>}
     </form>
   );
 };
