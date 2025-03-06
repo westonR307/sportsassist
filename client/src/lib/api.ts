@@ -4,6 +4,7 @@ export const apiRequest = async (
   body?: unknown
 ) => {
   const apiUrl = import.meta.env?.VITE_API_URL || "";
+  console.log(`Making ${method} request to ${path}`);
 
   try {
     const response = await fetch(`${apiUrl}${path}`, {
@@ -12,40 +13,55 @@ export const apiRequest = async (
         "Content-Type": "application/json",
       },
       body: body ? JSON.stringify(body) : undefined,
-      credentials: "include",
+      credentials: "include", // Always include credentials
     });
+
+    // Log response details for debugging
+    console.log(`Response status for ${path}:`, response.status);
+    console.log(`Response headers for ${path}:`, Object.fromEntries(response.headers.entries()));
 
     if (!response.ok) {
       const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
+      let errorMessage = `Request failed with status ${response.status}`;
+
+      if (contentType?.includes("application/json")) {
         const error = await response.json();
-        if (response.status >= 500) {
-          throw new Error(`Server error: ${error.message || response.statusText}`);
+        console.error(`API error response for ${path}:`, error);
+
+        if (response.status === 401) {
+          errorMessage = "Session expired. Please log in again.";
+          // Trigger a page reload to reset the app state
+          window.location.href = "/auth";
+          return null;
+        } else if (response.status >= 500) {
+          errorMessage = `Server error: ${error.message || response.statusText}`;
         } else if (response.status >= 400) {
-          throw new Error(`Client error: ${error.message || response.statusText}`);
+          errorMessage = `Request error: ${error.message || response.statusText}`;
         }
-      } else {
-        throw new Error(`API request failed with status ${response.status}`);
       }
+
+      throw new Error(errorMessage);
     }
 
     const contentType = response.headers.get("content-type");
-    if (contentType && contentType.includes("application/json")) {
-      return await response.json();
+    if (contentType?.includes("application/json")) {
+      const data = await response.json();
+      console.log(`API response data for ${path}:`, data);
+      return data;
     }
 
     return response;
   } catch (error) {
-    console.error("API Request failed:", error);
+    console.error(`API Request to ${path} failed:`, error);
 
     if (error instanceof Error) {
-      if (error.message.includes("NetworkError")) {
+      if (error.message.includes("NetworkError") || error.message.includes("Failed to fetch")) {
         throw new Error("Network error: Please check your internet connection.");
       } else {
-        throw new Error(`API request failed: ${error.message}`);
+        throw error;
       }
     } else {
-      throw new Error("API request failed with an unknown error");
+      throw new Error("An unexpected error occurred");
     }
   }
-}
+};

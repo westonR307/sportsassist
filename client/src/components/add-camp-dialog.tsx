@@ -232,6 +232,7 @@ export function AddCampDialog({
       city: "",
       state: "",
       zipCode: "",
+      additionalLocationDetails: "", // Add this field
       price: 0,
       capacity: 20,
       type: "group",
@@ -258,37 +259,43 @@ export function AddCampDialog({
         throw new Error("Sport selection is required");
       }
 
-      const sportId = sportsMap[selectedSport] || 1; // Fallback to ID 1 if not found
+      const sportId = sportsMap[selectedSport] || 1;
       const mappedSkillLevel = skillLevelMap[skillLevel] || "beginner";
 
       // Prepare the request data
       const requestData = {
         ...data,
         organizationId: user.organizationId,
-        sportId: sportId,
-        skillLevel: mappedSkillLevel,
+        additionalLocationDetails: data.additionalLocationDetails || null,
         price: Number(data.price) || 0,
         capacity: Number(data.capacity) || 20,
         minAge: Number(data.minAge) || 5,
         maxAge: Number(data.maxAge) || 18,
         repeatCount: Number(data.repeatCount) || 0,
+        // Add these as custom fields that won't interfere with the schema
+        _sportId: sportId,
+        _skillLevel: mappedSkillLevel,
       };
 
-      // Log the request data
       console.log("Creating camp with data:", requestData);
 
       try {
         const response = await apiRequest("POST", "/api/camps", requestData);
         console.log("Camp created successfully:", response);
         return response;
-      } catch (error) {
+      } catch (error: any) {
         console.error("Camp creation error:", error);
+        // Improve error handling
+        if (error.response?.data?.message) {
+          throw new Error(error.response.data.message);
+        }
         throw error;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
       onOpenChange(false);
+      form.reset(); // Reset form after successful submission
       toast({
         title: "Success",
         description: "Camp created successfully",
@@ -296,7 +303,10 @@ export function AddCampDialog({
     },
     onError: (error: any) => {
       console.error("Camp creation error:", error);
-      if (error.response && error.response.data && error.response.data.errors) {
+      // Enhanced error handling
+      let errorMessage = "Failed to create camp";
+
+      if (error.response?.data?.errors) {
         const validationErrors = error.response.data.errors;
         Object.keys(validationErrors).forEach((field) => {
           form.setError(field as any, {
@@ -304,24 +314,16 @@ export function AddCampDialog({
             message: validationErrors[field].join(", "),
           });
         });
-        toast({
-          title: "Validation Error",
-          description: "Please correct the highlighted fields.",
-          variant: "destructive",
-        });
-      } else if (error.message === "Network Error") {
-        toast({
-          title: "Network Error",
-          description: "Please check your internet connection and try again.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: error.message || "Failed to create camp",
-          variant: "destructive",
-        });
+        errorMessage = "Please correct the highlighted fields";
+      } else if (error.message) {
+        errorMessage = error.message;
       }
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
     },
   });
 
@@ -336,10 +338,41 @@ export function AddCampDialog({
       return;
     }
 
-    console.log("Submitting form with data:", data);
-    console.log("Selected sport:", selectedSport);
-    console.log("Skill level:", skillLevel);
+    // Validate dates
+    const today = new Date();
+    const startDate = new Date(data.startDate);
+    const endDate = new Date(data.endDate);
+    const regStartDate = new Date(data.registrationStartDate);
+    const regEndDate = new Date(data.registrationEndDate);
 
+    if (regEndDate <= regStartDate) {
+      toast({
+        title: "Error",
+        description: "Registration end date must be after registration start date",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (endDate <= startDate) {
+      toast({
+        title: "Error",
+        description: "Camp end date must be after camp start date",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (startDate <= regEndDate) {
+      toast({
+        title: "Error",
+        description: "Camp start date must be after registration end date",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log("Submitting form with data:", data);
     createCampMutation.mutate(data);
   };
 

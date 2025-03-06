@@ -135,7 +135,7 @@ export class DatabaseStorage implements IStorage {
       const requiredFields = [
         "name", "description", "streetAddress", "city", "state", "zipCode",
         "startDate", "endDate", "registrationStartDate", "registrationEndDate",
-        "price", "capacity", "organizationId", "type", "visibility", 
+        "price", "capacity", "organizationId", "type", "visibility",
         "waitlistEnabled", "minAge", "maxAge", "repeatType", "repeatCount"
       ];
 
@@ -183,7 +183,6 @@ export class DatabaseStorage implements IStorage {
 
   async getCamp(id: number): Promise<Camp | undefined> {
     try {
-      // Use specific column selection to avoid schema issues
       const [camp] = await db.select({
         id: camps.id,
         name: camps.name,
@@ -206,9 +205,9 @@ export class DatabaseStorage implements IStorage {
         maxAge: camps.maxAge,
         repeatType: camps.repeatType,
         repeatCount: camps.repeatCount,
-        // Exclude additionalLocationDetails if it's causing issues
+        additionalLocationDetails: camps.additionalLocationDetails,
       }).from(camps).where(eq(camps.id, id));
-      
+
       return camp;
     } catch (error) {
       console.error("Error in getCamp:", error);
@@ -241,14 +240,13 @@ export class DatabaseStorage implements IStorage {
         maxAge: camps.maxAge,
         repeatType: camps.repeatType,
         repeatCount: camps.repeatCount,
-        // Exclude the additionalLocationDetails field if it's causing issues
+        additionalLocationDetails: camps.additionalLocationDetails,
       }).from(camps);
-      
+
       console.log("Successfully retrieved camps");
       return campList;
     } catch (error) {
       console.error("Error in listCamps:", error);
-      // Return empty array instead of crashing
       return [];
     }
   }
