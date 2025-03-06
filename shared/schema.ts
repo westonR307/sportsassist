@@ -1,6 +1,18 @@
-import { pgTable, text, serial, integer, boolean, timestamp, time } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import {
+  organizations,
+  users,
+  invitations,
+  sports,
+  children,
+  childSports,
+  camps,
+  campStaff,
+  registrations,
+  campSchedules,
+  campSports
+} from "./tables";
 
 export type Role = "camp_creator" | "manager" | "coach" | "volunteer" | "parent" | "athlete";
 export type SportLevel = "beginner" | "intermediate" | "advanced";
@@ -11,130 +23,9 @@ export type CampVisibility = "public" | "private";
 export type RepeatType = "none" | "weekly" | "monthly";
 export type StaffRole = "manager" | "coach" | "volunteer";
 
-// Roles that can register directly (not requiring invitation)
 export const publicRoles = ["camp_creator", "parent", "athlete"] as const;
 
-// Define all tables first
-export const organizations = pgTable("organizations", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description"),
-  stripeAccountId: text("stripe_account_id"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  role: text("role").$type<Role>().notNull(),
-  organizationId: integer("organization_id").references(() => organizations.id),
-  email: text("email").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const invitations = pgTable("invitations", {
-  id: serial("id").primaryKey(),
-  email: text("email").notNull(),
-  role: text("role").$type<Role>().notNull(),
-  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
-  token: text("token").notNull().unique(),
-  accepted: boolean("accepted").notNull().default(false),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  expiresAt: timestamp("expires_at").notNull(),
-});
-
-export const sports = pgTable("sports", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull().unique(),
-});
-
-export const children = pgTable("children", {
-  id: serial("id").primaryKey(),
-  fullName: text("full_name").notNull(),
-  dateOfBirth: timestamp("date_of_birth").notNull(),
-  gender: text("gender").$type<Gender>().notNull(),
-  profilePhoto: text("profile_photo"),
-  parentId: integer("parent_id").references(() => users.id).notNull(),
-  emergencyContact: text("emergency_contact"),
-  emergencyPhone: text("emergency_phone"),
-  emergencyRelation: text("emergency_relation"),
-  allergies: text("allergies").array(),
-  medicalConditions: text("medical_conditions").array(),
-  medications: text("medications").array(),
-  specialNeeds: text("special_needs"),
-  preferredContact: text("preferred_contact").$type<ContactMethod>().notNull(),
-  communicationOptIn: boolean("communication_opt_in").notNull(),
-});
-
-export const childSports = pgTable("child_sports", {
-  id: serial("id").primaryKey(),
-  childId: integer("child_id").references(() => children.id).notNull(),
-  sportId: integer("sport_id").references(() => sports.id).notNull(),
-  skillLevel: text("skill_level").$type<SportLevel>().notNull(),
-  preferredPositions: text("preferred_positions").array(),
-  currentTeam: text("current_team"),
-});
-
-export const camps = pgTable("camps", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description").notNull(),
-  streetAddress: text("street_address").notNull(),
-  city: text("city").notNull(),
-  state: text("state").notNull(),
-  zipCode: text("zip_code").notNull(),
-  additionalLocationDetails: text("additional_location_details"),
-  startDate: timestamp("start_date").notNull(),
-  endDate: timestamp("end_date").notNull(),
-  registrationStartDate: timestamp("registration_start_date").notNull(),
-  registrationEndDate: timestamp("registration_end_date").notNull(),
-  price: integer("price").notNull(),
-  capacity: integer("capacity").notNull(),
-  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
-  waitlistEnabled: boolean("waitlist_enabled").notNull().default(true),
-  type: text("type").$type<CampType>().notNull(),
-  visibility: text("visibility").$type<CampVisibility>().notNull().default("public"),
-  minAge: integer("min_age").notNull(),
-  maxAge: integer("max_age").notNull(),
-  repeatType: text("repeat_type").$type<RepeatType>().notNull().default("none"),
-  repeatCount: integer("repeat_count").notNull().default(0),
-});
-
-export const campStaff = pgTable("camp_staff", {
-  id: serial("id").primaryKey(),
-  campId: integer("camp_id").references(() => camps.id).notNull(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  role: text("role").$type<StaffRole>().notNull(),
-});
-
-export const registrations = pgTable("registrations", {
-  id: serial("id").primaryKey(),
-  campId: integer("camp_id").references(() => camps.id).notNull(),
-  childId: integer("child_id").references(() => children.id).notNull(),
-  paid: boolean("paid").notNull().default(false),
-  stripePaymentId: text("stripe_payment_id"),
-  waitlisted: boolean("waitlisted").notNull().default(false),
-  registeredAt: timestamp("registered_at").notNull().defaultNow(),
-});
-
-export const campSchedules = pgTable("camp_schedules", {
-  id: serial("id").primaryKey(),
-  campId: integer("camp_id").references(() => camps.id).notNull(),
-  dayOfWeek: integer("day_of_week").notNull(),
-  startTime: time("start_time").notNull(),
-  endTime: time("end_time").notNull(),
-});
-
-export const campSports = pgTable("camp_sports", {
-  id: serial("id").primaryKey(),
-  campId: integer("camp_id").references(() => camps.id).notNull(),
-  sportId: integer("sport_id").references(() => sports.id),
-  customSport: text("custom_sport"),
-  skillLevel: text("skill_level").$type<SportLevel>().notNull(),
-});
-
-// Now define all schemas after tables are defined
+// Define all schemas after tables are defined
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -206,9 +97,22 @@ export const insertCampSchema = createInsertSchema(camps).extend({
   repeatCount: z.number().min(0, "Repeat count must be 0 or greater").default(0),
   schedules: z.array(z.object({
     dayOfWeek: z.number().min(0).max(6),
-    startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
-    endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
-  })).optional(),
+    startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
+      message: "Start time must be in HH:mm format (00:00-23:59)"
+    }),
+    endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
+      message: "End time must be in HH:mm format (00:00-23:59)"
+    }),
+  })).optional().refine((schedules) => {
+    if (!schedules) return true;
+    return schedules.every(schedule => {
+      const start = new Date(`1970-01-01T${schedule.startTime}`);
+      const end = new Date(`1970-01-01T${schedule.endTime}`);
+      return start < end;
+    });
+  }, {
+    message: "End time must be after start time for each schedule"
+  }),
 }).refine((data) => {
   const startDate = new Date(data.startDate);
   const endDate = new Date(data.endDate);
@@ -220,7 +124,7 @@ export const insertCampSchema = createInsertSchema(camps).extend({
          startDate <= endDate && // Camp start must be before or on camp end
          data.minAge <= data.maxAge; // Min age must be less than or equal to max age
 }, {
-  message: "Invalid date sequence or age range. Registration period must end before camp starts, camp end date must be after start date, and minimum age must not exceed maximum age.",
+  message: "Invalid date sequence or age range",
   path: ["dates"]
 });
 
@@ -265,6 +169,17 @@ export const predefinedSports = [
   "Water Polo", "Weightlifting", "Wrestling", "Yoga", "Zumba"
 ] as const;
 
+// Re-export tables
 export {
+  organizations,
+  users,
+  invitations,
+  sports,
+  children,
+  childSports,
+  camps,
+  campStaff,
+  registrations,
   campSchedules,
+  campSports
 };
