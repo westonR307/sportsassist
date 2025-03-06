@@ -348,6 +348,9 @@ export async function registerRoutes(app: Express): Server {
         visibility: parsed.data.visibility ?? "public",
         repeatType: parsed.data.repeatType ?? "none",
         repeatCount: parsed.data.repeatCount ?? 0,
+        sport: parsed.data.sport,
+        skillLevel: parsed.data.skillLevel,
+        additionalLocationDetails: parsed.data.additionalLocationDetails ?? null
       };
 
       console.log("Processed camp data for database:", campData);
