@@ -3,8 +3,7 @@ export const apiRequest = async (
   path: string,
   body?: unknown
 ) => {
-  // In browser environments, use import.meta.env instead of process.env
-  const apiUrl = import.meta.env?.VITE_API_URL || ""; // Use empty string as base if not defined
+  const apiUrl = import.meta.env?.VITE_API_URL || "";
 
   try {
     const response = await fetch(`${apiUrl}${path}`, {
@@ -13,23 +12,23 @@ export const apiRequest = async (
         "Content-Type": "application/json",
       },
       body: body ? JSON.stringify(body) : undefined,
-      credentials: "include", // Include cookies for authentication
+      credentials: "include",
     });
 
-    // First check if response is ok (status in 200-299 range)
     if (!response.ok) {
-      // Try to get error message from response
       const contentType = response.headers.get("content-type");
       if (contentType && contentType.includes("application/json")) {
         const error = await response.json();
-        throw new Error(error.message || `API request failed with status ${response.status}`);
+        if (response.status >= 500) {
+          throw new Error(`Server error: ${error.message || response.statusText}`);
+        } else if (response.status >= 400) {
+          throw new Error(`Client error: ${error.message || response.statusText}`);
+        }
       } else {
-        // If not JSON, throw generic error with status
         throw new Error(`API request failed with status ${response.status}`);
       }
     }
 
-    // Only try to parse JSON if we have a JSON content type
     const contentType = response.headers.get("content-type");
     if (contentType && contentType.includes("application/json")) {
       return await response.json();
@@ -39,9 +38,12 @@ export const apiRequest = async (
   } catch (error) {
     console.error("API Request failed:", error);
 
-    // Provide detailed feedback to the user on API errors
     if (error instanceof Error) {
-      throw new Error(`API request failed: ${error.message}`);
+      if (error.message.includes("NetworkError")) {
+        throw new Error("Network error: Please check your internet connection.");
+      } else {
+        throw new Error(`API request failed: ${error.message}`);
+      }
     } else {
       throw new Error("API request failed with an unknown error");
     }
