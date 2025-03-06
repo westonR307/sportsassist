@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
@@ -22,6 +21,7 @@ interface AuthContextType {
   loginMutation: any;
   registerMutation: any;
   logout: () => Promise<void>;
+  logoutMutation: any; // Added logoutMutation
 }
 
 // Create the auth context
@@ -146,6 +146,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Logout Mutation
+  const logoutMutation = useMutation({
+    mutationFn: logout,
+    onSuccess: () => {
+      queryClient.setQueryData(["/api/user"], null);
+      toast({ title: "Logged out", description: "You have been logged out successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Logout failed", description: error.message, variant: "destructive" });
+    }
+  });
+
+
   // Provide the auth context
   return (
     <AuthContext.Provider
@@ -156,6 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loginMutation,
         registerMutation,
         logout,
+        logoutMutation, // Added logoutMutation to the return value
       }}
     >
       {children}
