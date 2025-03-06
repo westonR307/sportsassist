@@ -38,6 +38,12 @@ export const apiRequest = async (
     return response;
   } catch (error) {
     console.error("API Request failed:", error);
-    throw error;
+
+    // Provide detailed feedback to the user on API errors
+    if (error instanceof Error) {
+      throw new Error(`API request failed: ${error.message}`);
+    } else {
+      throw new Error("API request failed with an unknown error");
+    }
   }
 }
