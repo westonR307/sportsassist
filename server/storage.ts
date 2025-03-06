@@ -49,11 +49,7 @@ export interface IStorage {
   listOrganizationInvitations(organizationId: number): Promise<Invitation[]>;
   getChildrenByParent(parentId: number): Promise<Child[]>;
   getChild(childId: number): Promise<Child | undefined>;
-  createCampSport(campSport: {
-    campId: number;
-    sportId: number;
-    skillLevel: SportLevel;
-  }): Promise<CampSport>;
+  createCampSport(campSport: { campId: number; sportId: number; skillLevel: SportLevel; }): Promise<CampSport>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -67,42 +63,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    console.log("Getting user by ID:", id);
     const [user] = await db.select().from(users).where(eq(users.id, id));
-    if (user) {
-      console.log("Found user:", {
-        id: user.id,
-        username: user.username,
-        role: user.role,
-        organizationId: user.organizationId
-      });
-    } else {
-      console.log("No user found with ID:", id);
-    }
     return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    console.log("Getting user by username:", username);
     const [user] = await db
       .select()
       .from(users)
       .where(sql`LOWER(${users.username}) = LOWER(${username})`);
-    if (user) {
-      console.log("Found user:", {
-        id: user.id,
-        username: user.username,
-        role: user.role,
-        organizationId: user.organizationId
-      });
-    } else {
-      console.log("No user found with username:", username);
-    }
     return user;
   }
 
   async createUser(insertUser: InsertUser & { organizationId?: number }): Promise<User> {
-    console.log("Creating user:", { ...insertUser, password: '[REDACTED]' });
     const [user] = await db.insert(users).values({
       username: insertUser.username.toLowerCase(),
       password: insertUser.password,
@@ -110,35 +83,16 @@ export class DatabaseStorage implements IStorage {
       role: insertUser.role,
       organizationId: insertUser.organizationId,
     }).returning();
-    console.log("Created user:", { ...user, password: '[REDACTED]' });
     return user;
   }
 
   async updateUserRole(userId: number, newRole: Role): Promise<User> {
-    console.log("Starting role update for user:", userId, "to role:", newRole);
-    try {
-      const [user] = await db
-        .update(users)
-        .set({ role: newRole })
-        .where(eq(users.id, userId))
-        .returning();
-
-      if (!user) {
-        const error = new Error(`Failed to update user ${userId} to role ${newRole}`);
-        console.error("Role update failed:", error);
-        throw error;
-      }
-
-      console.log("Successfully updated user role:", {
-        userId,
-        oldRole: user.role,
-        newRole: newRole
-      });
-      return user;
-    } catch (error) {
-      console.error("Database error during role update:", error);
-      throw error;
-    }
+    const [user] = await db
+      .update(users)
+      .set({ role: newRole })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
   }
 
   async getOrganizationStaff(orgId: number): Promise<User[]> {
@@ -155,58 +109,31 @@ export class DatabaseStorage implements IStorage {
 
   async createCamp(camp: Omit<Camp, "id">): Promise<Camp> {
     try {
-      console.log("Creating camp with data:", camp);
-
       const [newCamp] = await db.insert(camps).values({
         name: camp.name,
         description: camp.description,
-        street_address: camp.streetAddress,
+        streetAddress: camp.streetAddress,
         city: camp.city,
         state: camp.state,
-        zip_code: camp.zipCode,
-        additional_location_details: camp.additionalLocationDetails,
-        start_date: new Date(camp.startDate),
-        end_date: new Date(camp.endDate),
-        registration_start_date: new Date(camp.registrationStartDate),
-        registration_end_date: new Date(camp.registrationEndDate),
+        zipCode: camp.zipCode,
+        additionalLocationDetails: camp.additionalLocationDetails,
+        startDate: camp.startDate,
+        endDate: camp.endDate,
+        registrationStartDate: camp.registrationStartDate,
+        registrationEndDate: camp.registrationEndDate,
         price: camp.price,
         capacity: camp.capacity,
-        organization_id: camp.organizationId,
+        organizationId: camp.organizationId,
         type: camp.type,
         visibility: camp.visibility,
-        waitlist_enabled: camp.waitlistEnabled,
-        min_age: camp.minAge,
-        max_age: camp.maxAge,
-        repeat_type: camp.repeatType,
-        repeat_count: camp.repeatCount
+        waitlistEnabled: camp.waitlistEnabled,
+        minAge: camp.minAge,
+        maxAge: camp.maxAge,
+        repeatType: camp.repeatType,
+        repeatCount: camp.repeatCount
       }).returning();
 
-      // Map snake_case back to camelCase
-      return {
-        id: newCamp.id,
-        name: newCamp.name,
-        description: newCamp.description,
-        streetAddress: newCamp.street_address,
-        city: newCamp.city,
-        state: newCamp.state,
-        zipCode: newCamp.zip_code,
-        additionalLocationDetails: newCamp.additional_location_details,
-        startDate: newCamp.start_date,
-        endDate: newCamp.end_date,
-        registrationStartDate: newCamp.registration_start_date,
-        registrationEndDate: newCamp.registration_end_date,
-        price: newCamp.price,
-        capacity: newCamp.capacity,
-        organizationId: newCamp.organization_id,
-        type: newCamp.type,
-        visibility: newCamp.visibility,
-        waitlistEnabled: newCamp.waitlist_enabled,
-        minAge: newCamp.min_age,
-        maxAge: newCamp.max_age,
-        repeatType: newCamp.repeat_type,
-        repeatCount: newCamp.repeat_count
-      } as Camp;
-
+      return newCamp;
     } catch (error) {
       console.error("Error creating camp:", error);
       throw error;
@@ -215,33 +142,7 @@ export class DatabaseStorage implements IStorage {
 
   async listCamps(): Promise<Camp[]> {
     try {
-      const campList = await db.select().from(camps);
-      console.log("Retrieved camps from database:", campList);
-
-      return campList.map(camp => ({
-        id: camp.id,
-        name: camp.name,
-        description: camp.description,
-        streetAddress: camp.street_address,
-        city: camp.city,
-        state: camp.state,
-        zipCode: camp.zip_code,
-        additionalLocationDetails: camp.additional_location_details,
-        startDate: camp.start_date,
-        endDate: camp.end_date,
-        registrationStartDate: camp.registration_start_date,
-        registrationEndDate: camp.registration_end_date,
-        price: camp.price,
-        capacity: camp.capacity,
-        organizationId: camp.organization_id,
-        type: camp.type,
-        visibility: camp.visibility,
-        waitlistEnabled: camp.waitlist_enabled,
-        minAge: camp.min_age,
-        maxAge: camp.max_age,
-        repeatType: camp.repeat_type,
-        repeatCount: camp.repeat_count
-      } as Camp));
+      return await db.select().from(camps);
     } catch (error) {
       console.error("Error listing camps:", error);
       throw error;
@@ -251,32 +152,7 @@ export class DatabaseStorage implements IStorage {
   async getCamp(id: number): Promise<Camp | undefined> {
     try {
       const [camp] = await db.select().from(camps).where(eq(camps.id, id));
-      if (!camp) return undefined;
-
-      return {
-        id: camp.id,
-        name: camp.name,
-        description: camp.description,
-        streetAddress: camp.street_address,
-        city: camp.city,
-        state: camp.state,
-        zipCode: camp.zip_code,
-        additionalLocationDetails: camp.additional_location_details,
-        startDate: camp.start_date,
-        endDate: camp.end_date,
-        registrationStartDate: camp.registration_start_date,
-        registrationEndDate: camp.registration_end_date,
-        price: camp.price,
-        capacity: camp.capacity,
-        organizationId: camp.organization_id,
-        type: camp.type,
-        visibility: camp.visibility,
-        waitlistEnabled: camp.waitlist_enabled,
-        minAge: camp.min_age,
-        maxAge: camp.max_age,
-        repeatType: camp.repeat_type,
-        repeatCount: camp.repeat_count
-      } as Camp;
+      return camp || undefined;
     } catch (error) {
       console.error("Error getting camp:", error);
       throw error;
@@ -285,8 +161,7 @@ export class DatabaseStorage implements IStorage {
 
   async getRegistrationsByCamp(campId: number): Promise<Registration[]> {
     try {
-      const registrationsList = await db.select().from(registrations).where(eq(registrations.campId, campId));
-      return registrationsList;
+      return await db.select().from(registrations).where(eq(registrations.campId, campId));
     } catch (error) {
       console.error("Error in getRegistrationsByCamp:", error);
       return [];
