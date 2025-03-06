@@ -45,9 +45,9 @@ app.use((req, res, next) => {
     log("Routes registered successfully");
 
     // Set up error handling after routes
-    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
       console.error('Server error:', err);
-      const status = err.status || err.statusCode || 500;
+      const status = err instanceof HttpError ? err.status : 500;
       const message = err.message || "Internal Server Error";
       res.status(status).json({ message });
     });
@@ -61,37 +61,43 @@ app.use((req, res, next) => {
       serveStatic(app);
     }
 
-    // Try the original port first, then fall back to an alternative if needed
-    const preferredPort = process.env.PORT ? parseInt(process.env.PORT) : 5000;
-    const altPort = process.env.PORT ? parseInt(process.env.PORT) + 1 : 3000;
-    
-    // Try to start server with preferred port first
-    server.listen({
-      port: preferredPort,
-      host: "0.0.0.0",
-      reusePort: true,
-    }, () => {
-      log(`Server started successfully, serving on port ${preferredPort}`);
-    }).on('error', (err) => {
-      if (err.code === 'EADDRINUSE') {
-        log(`Port ${preferredPort} is in use, trying port ${altPort} instead`);
-        
-        // If preferred port fails, try the alternative port
-        server.listen({
-          port: altPort,
-          host: "0.0.0.0",
-          reusePort: true,
-        }, () => {
-          log(`Server started successfully, serving on port ${altPort}`);
-        }).on('error', (e) => {
-          console.error('Failed to start server on alternative port:', e);
-          process.exit(1);
+    // Try ports in sequence until one works
+    const ports = [5000, 3000, 8000, 8080];
+    let started = false;
+
+    for (const port of ports) {
+      try {
+        await new Promise((resolve, reject) => {
+          server.listen({
+            port,
+            host: "0.0.0.0",
+          })
+          .once('listening', () => {
+            log(`Server started successfully on port ${port}`);
+            started = true;
+            resolve(true);
+          })
+          .once('error', (err: NodeJS.ErrnoException) => {
+            if (err.code === 'EADDRINUSE') {
+              log(`Port ${port} is in use, trying next port`);
+              resolve(false);
+            } else {
+              reject(err);
+            }
+          });
         });
-      } else {
-        console.error('Failed to start server:', err);
-        process.exit(1);
+
+        if (started) break;
+      } catch (error) {
+        console.error(`Error trying port ${port}:`, error);
+        // Continue to next port
       }
-    });
+    }
+
+    if (!started) {
+      throw new Error("Failed to start server on any available port");
+    }
+
   } catch (error) {
     console.error('Failed to start server:', error);
     if (error instanceof Error) {
@@ -104,3 +110,11 @@ app.use((req, res, next) => {
     process.exit(1);
   }
 })();
+
+// Custom error class for HTTP errors
+class HttpError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+    this.name = 'HttpError';
+  }
+}
