@@ -10,7 +10,6 @@ import {
   type Organization,
   type InsertOrganization,
   type Invitation,
-  type InsertInvitation,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, and, inArray } from "drizzle-orm";
@@ -240,7 +239,7 @@ export class DatabaseStorage implements IStorage {
         minAge: camps.minAge,
         maxAge: camps.maxAge,
         repeatType: camps.repeatType,
-        repeatCount: camps.repeatCount,
+        repeatCount,
         // Exclude the additionalLocationDetails field if it's causing issues
       }).from(camps);
       
