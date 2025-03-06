@@ -294,13 +294,28 @@ export function AddCampDialog({
         description: "Camp created successfully",
       });
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       console.error("Camp creation error:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create camp",
-        variant: "destructive",
-      });
+      if (error.response && error.response.data && error.response.data.errors) {
+        const validationErrors = error.response.data.errors;
+        Object.keys(validationErrors).forEach((field) => {
+          form.setError(field as any, {
+            type: "manual",
+            message: validationErrors[field].join(", "),
+          });
+        });
+        toast({
+          title: "Validation Error",
+          description: "Please correct the highlighted fields.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create camp",
+          variant: "destructive",
+        });
+      }
     },
   });
 
