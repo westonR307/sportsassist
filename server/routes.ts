@@ -431,14 +431,26 @@ export async function registerRoutes(app: Express): Server {
 
   app.post("/api/logout", (req, res, next) => {
     console.log("Logout attempt - Current user:", req.user?.username);
-    req.session.destroy((err) => {
+    req.logout((err) => {
       if (err) {
-        console.error("Session destruction error:", err);
+        console.error("Logout error:", err);
         return next(err);
       }
-      console.log("Logout successful - Session destroyed");
-      res.clearCookie('connect.sid');
-      res.sendStatus(200);
+      
+      if (req.session) {
+        req.session.destroy((err) => {
+          if (err) {
+            console.error("Session destruction error:", err);
+            return next(err);
+          }
+          console.log("Logout successful - Session destroyed");
+          res.clearCookie('connect.sid');
+          res.sendStatus(200);
+        });
+      } else {
+        res.clearCookie('connect.sid');
+        res.sendStatus(200);
+      }
     });
   });
 

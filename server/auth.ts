@@ -78,7 +78,11 @@ export function setupAuth(app: Express) {
   // Register route is handled in routes.ts
 
   app.post("/api/login", passport.authenticate("local"), (req, res) => {
-    res.status(200).json(req.user);
+    if (req.user) {
+      return res.status(200).json(req.user);
+    } else {
+      return res.status(401).json({ message: "Authentication failed" });
+    }
   });
 
   app.post("/api/logout", (req, res, next) => {
