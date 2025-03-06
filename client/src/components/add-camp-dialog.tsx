@@ -232,7 +232,6 @@ export function AddCampDialog({
       city: "",
       state: "",
       zipCode: "",
-      additionalLocationDetails: "", // Add this field
       price: 0,
       capacity: 20,
       type: "group",
@@ -266,13 +265,11 @@ export function AddCampDialog({
       const requestData = {
         ...data,
         organizationId: user.organizationId,
-        additionalLocationDetails: data.additionalLocationDetails || null,
         price: Number(data.price) || 0,
         capacity: Number(data.capacity) || 20,
         minAge: Number(data.minAge) || 5,
         maxAge: Number(data.maxAge) || 18,
         repeatCount: Number(data.repeatCount) || 0,
-        // Add these as custom fields that won't interfere with the schema
         _sportId: sportId,
         _skillLevel: mappedSkillLevel,
       };
@@ -285,17 +282,13 @@ export function AddCampDialog({
         return response;
       } catch (error: any) {
         console.error("Camp creation error:", error);
-        // Improve error handling
-        if (error.response?.data?.message) {
-          throw new Error(error.response.data.message);
-        }
         throw error;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
       onOpenChange(false);
-      form.reset(); // Reset form after successful submission
+      form.reset();
       toast({
         title: "Success",
         description: "Camp created successfully",
@@ -303,7 +296,6 @@ export function AddCampDialog({
     },
     onError: (error: any) => {
       console.error("Camp creation error:", error);
-      // Enhanced error handling
       let errorMessage = "Failed to create camp";
 
       if (error.response?.data?.errors) {

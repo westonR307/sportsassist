@@ -116,7 +116,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getOrganizationStaff(orgId: number): Promise<User[]> {
-    const staffRoles = ["coach", "manager", "volunteer"];
+    const staffRoles = ["coach", "manager", "volunteer"] as const;
     return await db.select()
       .from(users)
       .where(
@@ -148,14 +148,58 @@ export class DatabaseStorage implements IStorage {
         throw new Error(`Missing required fields: ${missingFields.join(", ")}`);
       }
 
-      // Insert the camp with all fields
+      // Insert the camp with all valid fields
       console.log("Inserting camp into database...");
-      const [newCamp] = await db.insert(camps).values(camp).returning();
+      const [newCamp] = await db.insert(camps).values({
+        name: camp.name,
+        description: camp.description,
+        streetAddress: camp.streetAddress,
+        city: camp.city,
+        state: camp.state,
+        zipCode: camp.zipCode,
+        startDate: camp.startDate,
+        endDate: camp.endDate,
+        registrationStartDate: camp.registrationStartDate,
+        registrationEndDate: camp.registrationEndDate,
+        price: camp.price,
+        capacity: camp.capacity,
+        organizationId: camp.organizationId,
+        type: camp.type,
+        visibility: camp.visibility,
+        waitlistEnabled: camp.waitlistEnabled,
+        minAge: camp.minAge,
+        maxAge: camp.maxAge,
+        repeatType: camp.repeatType,
+        repeatCount: camp.repeatCount,
+        additionalLocationDetails: camp.additionalLocationDetails
+      }).returning();
+
       console.log("Created camp successfully:", newCamp);
       return newCamp;
     } catch (error) {
       console.error("Error in storage.createCamp:", error);
       throw error;
+    }
+  }
+
+  async getCamp(id: number): Promise<Camp | undefined> {
+    try {
+      const [camp] = await db.select().from(camps).where(eq(camps.id, id));
+      return camp;
+    } catch (error) {
+      console.error("Error in getCamp:", error);
+      return undefined;
+    }
+  }
+
+  async listCamps(): Promise<Camp[]> {
+    try {
+      const campList = await db.select().from(camps);
+      console.log("Successfully retrieved camps:", campList);
+      return campList;
+    } catch (error) {
+      console.error("Error in listCamps:", error);
+      return [];
     }
   }
   async createChild(child: Omit<Child, "id">): Promise<Child> {
@@ -181,76 +225,16 @@ export class DatabaseStorage implements IStorage {
       .orderBy(children.fullName);
   }
 
-  async getCamp(id: number): Promise<Camp | undefined> {
+  async getRegistrationsByCamp(campId: number): Promise<any[]> {
     try {
-      const [camp] = await db.select({
-        id: camps.id,
-        name: camps.name,
-        description: camps.description,
-        streetAddress: camps.streetAddress,
-        city: camps.city,
-        state: camps.state,
-        zipCode: camps.zipCode,
-        startDate: camps.startDate,
-        endDate: camps.endDate,
-        registrationStartDate: camps.registrationStartDate,
-        registrationEndDate: camps.registrationEndDate,
-        price: camps.price,
-        capacity: camps.capacity,
-        organizationId: camps.organizationId,
-        waitlistEnabled: camps.waitlistEnabled,
-        type: camps.type,
-        visibility: camps.visibility,
-        minAge: camps.minAge,
-        maxAge: camps.maxAge,
-        repeatType: camps.repeatType,
-        repeatCount: camps.repeatCount,
-        additionalLocationDetails: camps.additionalLocationDetails,
-      }).from(camps).where(eq(camps.id, id));
-
-      return camp;
+      // Import registrations from schema
+      const { registrations } = await import("@shared/schema");
+      return await db.select().from(registrations).where(eq(registrations.campId, campId));
     } catch (error) {
-      console.error("Error in getCamp:", error);
-      return undefined;
-    }
-  }
-
-  async listCamps(): Promise<Camp[]> {
-    try {
-      // Use a specific column selection to avoid schema issues
-      const campList = await db.select({
-        id: camps.id,
-        name: camps.name,
-        description: camps.description,
-        streetAddress: camps.streetAddress,
-        city: camps.city,
-        state: camps.state,
-        zipCode: camps.zipCode,
-        startDate: camps.startDate,
-        endDate: camps.endDate,
-        registrationStartDate: camps.registrationStartDate,
-        registrationEndDate: camps.registrationEndDate,
-        price: camps.price,
-        capacity: camps.capacity,
-        organizationId: camps.organizationId,
-        waitlistEnabled: camps.waitlistEnabled,
-        type: camps.type,
-        visibility: camps.visibility,
-        minAge: camps.minAge,
-        maxAge: camps.maxAge,
-        repeatType: camps.repeatType,
-        repeatCount: camps.repeatCount,
-        additionalLocationDetails: camps.additionalLocationDetails,
-      }).from(camps);
-
-      console.log("Successfully retrieved camps");
-      return campList;
-    } catch (error) {
-      console.error("Error in listCamps:", error);
+      console.error("Error in getRegistrationsByCamp:", error);
       return [];
     }
   }
-
   async createRegistration(registration: Omit<Registration, "id">): Promise<Registration> {
     const [newRegistration] = await db.insert(registrations).values({
       campId: registration.campId,
@@ -267,18 +251,6 @@ export class DatabaseStorage implements IStorage {
     const [registration] = await db.select().from(registrations).where(eq(registrations.id, id));
     return registration;
   }
-
-  async getRegistrationsByCamp(campId: number): Promise<any[]> {
-    try {
-      // Import registrations from schema
-      const { registrations } = await import("@shared/schema");
-      return await db.select().from(registrations).where(eq(registrations.campId, campId));
-    } catch (error) {
-      console.error("Error in getRegistrationsByCamp:", error);
-      return [];
-    }
-  }
-
   async createOrganization(org: InsertOrganization): Promise<Organization> {
     const [organization] = await db.insert(organizations)
       .values({
