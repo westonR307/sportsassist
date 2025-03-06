@@ -131,26 +131,8 @@ export class DatabaseStorage implements IStorage {
 
   async createCamp(camp: Omit<Camp, "id">): Promise<Camp> {
     try {
-      console.log("Creating camp in database with data:", camp);
+      console.log("Creating camp with data:", camp);
 
-      // Ensure all required fields are present
-      const requiredFields = [
-        "name", "description", "streetAddress", "city", "state", "zipCode",
-        "startDate", "endDate", "registrationStartDate", "registrationEndDate",
-        "price", "capacity", "organizationId", "type", "visibility",
-        "waitlistEnabled", "minAge", "maxAge", "repeatType", "repeatCount"
-      ];
-
-      const missingFields = requiredFields.filter(
-        field => camp[field as keyof typeof camp] === undefined
-      );
-
-      if (missingFields.length > 0) {
-        console.error("Missing required fields for camp creation:", missingFields);
-        throw new Error(`Missing required fields: ${missingFields.join(", ")}`);
-      }
-
-      // Map camelCase to snake_case for database insertion
       const [newCamp] = await db.insert(camps).values({
         name: camp.name,
         description: camp.description,
@@ -174,18 +156,26 @@ export class DatabaseStorage implements IStorage {
         repeat_count: camp.repeatCount
       }).returning();
 
-      console.log("Created camp successfully:", newCamp);
+      console.log("Successfully created camp:", newCamp);
 
-      // Map snake_case back to camelCase for the response
+      // Map snake_case back to camelCase
       return {
-        ...newCamp,
+        id: newCamp.id,
+        name: newCamp.name,
+        description: newCamp.description,
         streetAddress: newCamp.street_address,
+        city: newCamp.city,
+        state: newCamp.state,
         zipCode: newCamp.zip_code,
         startDate: newCamp.start_date,
         endDate: newCamp.end_date,
         registrationStartDate: newCamp.registration_start_date,
         registrationEndDate: newCamp.registration_end_date,
+        price: newCamp.price,
+        capacity: newCamp.capacity,
         organizationId: newCamp.organization_id,
+        type: newCamp.type,
+        visibility: newCamp.visibility,
         waitlistEnabled: newCamp.waitlist_enabled,
         minAge: newCamp.min_age,
         maxAge: newCamp.max_age,
@@ -193,7 +183,7 @@ export class DatabaseStorage implements IStorage {
         repeatCount: newCamp.repeat_count
       } as Camp;
     } catch (error) {
-      console.error("Error in storage.createCamp:", error);
+      console.error("Error creating camp:", error);
       throw error;
     }
   }
@@ -201,27 +191,34 @@ export class DatabaseStorage implements IStorage {
   async listCamps(): Promise<Camp[]> {
     try {
       const campList = await db.select().from(camps);
-      console.log("Successfully retrieved camps:", campList);
+      console.log("Retrieved camps from database:", campList);
 
-      // Map snake_case to camelCase for each camp
       return campList.map(camp => ({
-        ...camp,
+        id: camp.id,
+        name: camp.name,
+        description: camp.description,
         streetAddress: camp.street_address,
+        city: camp.city,
+        state: camp.state,
         zipCode: camp.zip_code,
         startDate: camp.start_date,
         endDate: camp.end_date,
         registrationStartDate: camp.registration_start_date,
         registrationEndDate: camp.registration_end_date,
+        price: camp.price,
+        capacity: camp.capacity,
         organizationId: camp.organization_id,
+        type: camp.type,
+        visibility: camp.visibility,
         waitlistEnabled: camp.waitlist_enabled,
         minAge: camp.min_age,
         maxAge: camp.max_age,
         repeatType: camp.repeat_type,
         repeatCount: camp.repeat_count
-      }) as Camp);
+      } as Camp));
     } catch (error) {
-      console.error("Error in listCamps:", error);
-      return [];
+      console.error("Error listing camps:", error);
+      throw error;
     }
   }
 
@@ -230,16 +227,23 @@ export class DatabaseStorage implements IStorage {
       const [camp] = await db.select().from(camps).where(eq(camps.id, id));
       if (!camp) return undefined;
 
-      // Map snake_case to camelCase
       return {
-        ...camp,
+        id: camp.id,
+        name: camp.name,
+        description: camp.description,
         streetAddress: camp.street_address,
+        city: camp.city,
+        state: camp.state,
         zipCode: camp.zip_code,
         startDate: camp.start_date,
         endDate: camp.end_date,
         registrationStartDate: camp.registration_start_date,
         registrationEndDate: camp.registration_end_date,
+        price: camp.price,
+        capacity: camp.capacity,
         organizationId: camp.organization_id,
+        type: camp.type,
+        visibility: camp.visibility,
         waitlistEnabled: camp.waitlist_enabled,
         minAge: camp.min_age,
         maxAge: camp.max_age,
@@ -247,8 +251,8 @@ export class DatabaseStorage implements IStorage {
         repeatCount: camp.repeat_count
       } as Camp;
     } catch (error) {
-      console.error("Error in getCamp:", error);
-      return undefined;
+      console.error("Error getting camp:", error);
+      throw error;
     }
   }
   async getRegistrationsByCamp(campId: number): Promise<any[]> {
