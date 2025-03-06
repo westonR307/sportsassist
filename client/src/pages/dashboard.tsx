@@ -12,16 +12,17 @@ import {
   Loader2,
   Menu,
 } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom"; //Import useNavigate
+import { useLocation as useWouterLocation, useNavigate as useWouterNavigate } from "wouter"; //Import from wouter
 import { useQuery } from "@tanstack/react-query";
 import { type Camp } from "@shared/schema";
 import { AddCampDialog } from "@/components/add-camp-dialog";
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const [location] = useLocation();
+  const [location, navigate] = useWouterNavigate(); //Initialize useNavigate from wouter
   const { user, logoutMutation } = useAuth();
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
-  const navigate = useNavigate(); //Initialize useNavigate
+  const wouterLocation = useWouterLocation()[0]; // Use wouter's useLocation
+
 
   if (!user?.organizationId) return null;
 
@@ -56,7 +57,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
           <button
             onClick={() => navigate("/dashboard")}
             className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
-              location === '/dashboard' ? 'bg-gray-100' : ''
+              wouterLocation === '/dashboard' ? 'bg-gray-100' : ''
             }`}
           >
             <Calendar className="h-5 w-5 flex-shrink-0" />
@@ -65,7 +66,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
           <button
             onClick={() => navigate("/dashboard/reports")}
             className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
-              location === '/dashboard/reports' ? 'bg-gray-100' : ''
+              wouterLocation === '/dashboard/reports' ? 'bg-gray-100' : ''
             }`}
           >
             <BarChart3 className="h-5 w-5 flex-shrink-0" />
@@ -74,7 +75,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
           <button
             onClick={() => navigate("/dashboard/team")}
             className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
-              location === '/dashboard/team' ? 'bg-gray-100' : ''
+              wouterLocation === '/dashboard/team' ? 'bg-gray-100' : ''
             }`}
           >
             <Users className="h-5 w-5 flex-shrink-0" />
@@ -83,7 +84,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
           <button
             onClick={() => navigate("/dashboard/settings")}
             className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
-              location === '/dashboard/settings' ? 'bg-gray-100' : ''
+              wouterLocation === '/dashboard/settings' ? 'bg-gray-100' : ''
             }`}
           >
             <Settings className="h-5 w-5 flex-shrink-0" />
@@ -127,7 +128,7 @@ function CampsDashboard() {
   const { data: camps, isLoading } = useQuery<Camp[]>({
     queryKey: ["/api/camps"],
   });
-  const navigate = useNavigate(); //Initialize useNavigate
+  const [location, navigate] = useWouterNavigate(); //Initialize useNavigate from wouter
 
   return (
     <div className="space-y-6">
