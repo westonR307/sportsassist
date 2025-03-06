@@ -20,25 +20,11 @@ import { useState } from "react";
 
 const loginSchema = insertUserSchema.pick({ username: true, password: true });
 
-import { LogoutButton } from "@/components/logout-button";
-
 export default function AuthPage() {
   const { user } = useAuth();
 
   if (user) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>You're already logged in</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center gap-4">
-            <p>Currently logged in as: <strong>{user.username}</strong></p>
-            <LogoutButton />
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <Redirect to="/dashboard" />;
   }
 
   return (
