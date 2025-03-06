@@ -326,31 +326,40 @@ export async function registerRoutes(app: Express): Server {
 
       console.log("Validated camp data:", parsed.data);
 
-      // Ensure all required fields are present
+      // Format and prepare camp data for storage
       const campData = {
         name: parsed.data.name,
         description: parsed.data.description,
-        streetAddress: parsed.data.streetAddress,
-        city: parsed.data.city,
-        state: parsed.data.state,
-        zipCode: parsed.data.zipCode,
+        organizationId: req.user.organizationId,
+        type: parsed.data.type ?? "group",
+        streetAddress: parsed.data.streetAddress.trim(),
+        city: parsed.data.city.trim(),
+        state: parsed.data.state.trim().toUpperCase(),
+        zipCode: parsed.data.zipCode.trim(),
         startDate: new Date(parsed.data.startDate),
         endDate: new Date(parsed.data.endDate),
         registrationStartDate: new Date(parsed.data.registrationStartDate),
         registrationEndDate: new Date(parsed.data.registrationEndDate),
-        price: parsed.data.price ?? 0,
+        price: typeof parsed.data.price === 'string' ? 
+          parseFloat(parsed.data.price) : 
+          parsed.data.price ?? 0,
         capacity: parsed.data.capacity,
-        minAge: parsed.data.minAge ?? 5,
-        maxAge: parsed.data.maxAge ?? 18,
-        organizationId: req.user.organizationId,
+        minAge: typeof parsed.data.minAge === 'string' ? 
+          parseInt(parsed.data.minAge) : 
+          parsed.data.minAge ?? 5,
+        maxAge: typeof parsed.data.maxAge === 'string' ? 
+          parseInt(parsed.data.maxAge) : 
+          parsed.data.maxAge ?? 18,
         waitlistEnabled: parsed.data.waitlistEnabled ?? true,
         type: parsed.data.type ?? "group",
         visibility: parsed.data.visibility ?? "public",
         repeatType: parsed.data.repeatType ?? "none",
-        repeatCount: parsed.data.repeatCount ?? 0,
+        repeatCount: typeof parsed.data.repeatCount === 'string' ? 
+          parseInt(parsed.data.repeatCount) : 
+          parsed.data.repeatCount ?? 0,
         sport: parsed.data.sport,
         skillLevel: parsed.data.skillLevel,
-        additionalLocationDetails: parsed.data.additionalLocationDetails ?? null
+        additionalLocationDetails: parsed.data.additionalLocationDetails?.trim() ?? null
       };
 
       console.log("Processed camp data for database:", campData);
@@ -363,7 +372,7 @@ export async function registerRoutes(app: Express): Server {
         console.error("Database error creating camp:", storageError);
         res.status(500).json({ 
           message: "Database error creating camp", 
-          error: storageError.message 
+          error: storageError instanceof Error ? storageError.message : String(storageError)
         });
       }
     } catch (error) {
