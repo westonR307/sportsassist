@@ -107,27 +107,6 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
         ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-16'}
         pt-16 lg:pt-0
       `}>
-        <div className="fixed top-2 right-2 z-50">
-          <button 
-            className="bg-red-500 text-white px-4 py-2 rounded shadow hover:bg-red-600"
-            onClick={() => {
-              // Force logout with direct fetch call
-              fetch('/api/logout', {
-                method: 'POST',
-                credentials: 'include'
-              }).then(() => {
-                // Force reload to clear any state
-                window.location.href = '/';
-              }).catch(err => {
-                console.error('Logout failed:', err);
-                // Try to redirect anyway
-                window.location.href = '/';
-              });
-            }}
-          >
-            Emergency Logout
-          </button>
-        </div>
         <main className="container mx-auto px-6 py-8">
           {children}
         </main>
