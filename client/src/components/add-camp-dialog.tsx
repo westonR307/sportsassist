@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
@@ -24,20 +25,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2 } from "lucide-react";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { CaretSortIcon, CheckIcon } from "@radix-ui/react-icons";
+import { Loader2, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/api";
 
@@ -198,6 +186,22 @@ const skillLevelMap: Record<string, string> = {
 
 const skillLevels = ["Beginner", "Intermediate", "Advanced", "All Levels"];
 
+interface Schedule {
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+}
+
+const daysOfWeek = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
 export function AddCampDialog({
   open,
   onOpenChange,
@@ -211,6 +215,7 @@ export function AddCampDialog({
   const [selectedSport, setSelectedSport] = React.useState<string | null>(null);
   const [skillLevel, setSkillLevel] = React.useState("Beginner");
   const [openSportCombobox, setOpenSportCombobox] = React.useState(false);
+  const [schedules, setSchedules] = React.useState<Schedule[]>([]);
   const [currentTab, setCurrentTab] = React.useState("basic");
 
   // Get default dates
@@ -245,6 +250,7 @@ export function AddCampDialog({
       registrationEndDate: regEnd.toISOString().split("T")[0],
       startDate: campStart.toISOString().split("T")[0],
       endDate: campEnd.toISOString().split("T")[0],
+      schedules: [],
     },
   });
 
@@ -272,6 +278,7 @@ export function AddCampDialog({
         repeatCount: Number(data.repeatCount) || 0,
         _sportId: sportId,
         _skillLevel: mappedSkillLevel,
+        schedules: schedules,
       };
 
       console.log("Creating camp with data:", requestData);
@@ -319,6 +326,20 @@ export function AddCampDialog({
     },
   });
 
+  const addSchedule = () => {
+    setSchedules([...schedules, { dayOfWeek: 0, startTime: "09:00", endTime: "17:00" }]);
+  };
+
+  const removeSchedule = (index: number) => {
+    setSchedules(schedules.filter((_, i) => i !== index));
+  };
+
+  const updateSchedule = (index: number, field: keyof Schedule, value: string | number) => {
+    const newSchedules = [...schedules];
+    newSchedules[index] = { ...newSchedules[index], [field]: value };
+    setSchedules(newSchedules);
+  };
+
   const onSubmit = async (data: z.infer<typeof insertCampSchema>) => {
     if (!selectedSport) {
       toast({
@@ -328,6 +349,31 @@ export function AddCampDialog({
       });
       setCurrentTab("basic");
       return;
+    }
+
+    if (schedules.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please add at least one schedule",
+        variant: "destructive",
+      });
+      setCurrentTab("settings");
+      return;
+    }
+
+    // Add schedule validation
+    for (const schedule of schedules) {
+      const start = new Date(`1970-01-01T${schedule.startTime}`);
+      const end = new Date(`1970-01-01T${schedule.endTime}`);
+      if (end <= start) {
+        toast({
+          title: "Error",
+          description: "End time must be after start time",
+          variant: "destructive",
+        });
+        setCurrentTab("settings");
+        return;
+      }
     }
 
     // Validate dates
@@ -364,8 +410,8 @@ export function AddCampDialog({
       return;
     }
 
-    console.log("Submitting form with data:", data);
-    createCampMutation.mutate(data);
+    console.log("Submitting form with data:", { ...data, schedules });
+    createCampMutation.mutate({ ...data, schedules });
   };
 
   return (
@@ -383,9 +429,10 @@ export function AddCampDialog({
                 value={currentTab}
                 onValueChange={setCurrentTab}
               >
-                <TabsList className="grid grid-cols-3 mb-4 sticky top-0 bg-background z-10">
+                <TabsList className="grid grid-cols-4 mb-4 sticky top-0 bg-background z-10">
                   <TabsTrigger value="basic">Basic Information</TabsTrigger>
                   <TabsTrigger value="location">Location</TabsTrigger>
+                  <TabsTrigger value="schedule">Schedule</TabsTrigger>
                   <TabsTrigger value="settings">Settings</TabsTrigger>
                 </TabsList>
 
@@ -743,7 +790,110 @@ export function AddCampDialog({
                           "zipCode",
                         ]);
                         if (isValid) {
+                          setCurrentTab("schedule");
+                        }
+                      }}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="schedule" className="space-y-4 mt-0">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-medium">Camp Schedule</h3>
+                      <Button type="button" onClick={addSchedule} size="sm">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Schedule
+                      </Button>
+                    </div>
+
+                    {schedules.map((schedule, index) => (
+                      <div
+                        key={index}
+                        className="flex items-start space-x-4 p-4 border rounded-lg relative"
+                      >
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute top-2 right-2"
+                          onClick={() => removeSchedule(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+
+                        <div className="flex-1 space-y-4">
+                          <div>
+                            <Label>Day of Week</Label>
+                            <select
+                              value={schedule.dayOfWeek}
+                              onChange={(e) =>
+                                updateSchedule(index, "dayOfWeek", parseInt(e.target.value))
+                              }
+                              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                            >
+                              {daysOfWeek.map((day, i) => (
+                                <option key={i} value={i}>
+                                  {day}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label>Start Time</Label>
+                              <Input
+                                type="time"
+                                value={schedule.startTime}
+                                onChange={(e) =>
+                                  updateSchedule(index, "startTime", e.target.value)
+                                }
+                              />
+                            </div>
+                            <div>
+                              <Label>End Time</Label>
+                              <Input
+                                type="time"
+                                value={schedule.endTime}
+                                onChange={(e) =>
+                                  updateSchedule(index, "endTime", e.target.value)
+                                }
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {schedules.length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No schedules added. Click "Add Schedule" to create camp schedules.
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-between space-x-2 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCurrentTab("location")}
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (schedules.length > 0) {
                           setCurrentTab("settings");
+                        } else {
+                          toast({
+                            title: "Warning",
+                            description: "Please add at least one schedule.",
+                            variant: "destructive",
+                          });
                         }
                       }}
                     >
@@ -876,7 +1026,7 @@ export function AddCampDialog({
                       type="button"
                       variant="outline"
                       onClick={() => {
-                        setCurrentTab("location");
+                        setCurrentTab("schedule");
                       }}
                     >
                       Previous
