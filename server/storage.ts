@@ -118,6 +118,14 @@ export class DatabaseStorage implements IStorage {
         schedules: camp.schedules?.length || 0
       });
 
+      // Ensure dates are in proper format for PostgreSQL
+      const formatDate = (date: Date | string) => {
+        if (typeof date === 'string') {
+          date = new Date(date);
+        }
+        return date;
+      };
+
       const [newCamp] = await db.insert(camps).values({
         name: camp.name,
         description: camp.description,
@@ -126,10 +134,10 @@ export class DatabaseStorage implements IStorage {
         state: camp.state,
         zip_code: camp.zipCode,
         additional_location_details: camp.additionalLocationDetails,
-        start_date: new Date(camp.startDate),
-        end_date: new Date(camp.endDate),
-        registration_start_date: new Date(camp.registrationStartDate),
-        registration_end_date: new Date(camp.registrationEndDate),
+        start_date: formatDate(camp.startDate),
+        end_date: formatDate(camp.endDate),
+        registration_start_date: formatDate(camp.registrationStartDate),
+        registration_end_date: formatDate(camp.registrationEndDate),
         price: camp.price,
         capacity: camp.capacity,
         organization_id: camp.organizationId,

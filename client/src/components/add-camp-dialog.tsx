@@ -202,6 +202,13 @@ const daysOfWeek = [
   "Saturday",
 ];
 
+const formatDate = (date: string) => {
+    // Ensure proper ISO format for PostgreSQL
+    const d = new Date(date);
+    // Make sure we're in UTC to avoid timezone issues
+    return d.toISOString().slice(0, 19).replace('T', ' ');
+  };
+
 export function AddCampDialog({
   open,
   onOpenChange,
@@ -267,13 +274,7 @@ export function AddCampDialog({
       const sportId = sportsMap[selectedSport] || 1;
       const mappedSkillLevel = skillLevelMap[skillLevel] || "beginner";
 
-      // Format dates properly for PostgreSQL
-      const formatDate = (date: string) => {
-        const d = new Date(date);
-        return d.toISOString();
-      };
-
-      // Prepare the request data
+      // Prepare the request data with proper formatting
       const requestData = {
         ...data,
         startDate: formatDate(data.startDate),
@@ -289,11 +290,11 @@ export function AddCampDialog({
         _sportId: sportId,
         _skillLevel: mappedSkillLevel,
         schedules: schedules.map(schedule => ({
-          ...schedule,
-          // Ensure times are in proper format
+          dayOfWeek: schedule.dayOfWeek,
+          // Ensure consistent time format HH:MM
           startTime: schedule.startTime.padStart(5, '0'),
           endTime: schedule.endTime.padStart(5, '0')
-        })),
+        }))
       };
 
       console.log("Creating camp with data:", requestData);
@@ -311,6 +312,7 @@ export function AddCampDialog({
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
       onOpenChange(false);
       form.reset();
+      setSchedules([]);
       toast({
         title: "Success",
         description: "Camp created successfully",

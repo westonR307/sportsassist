@@ -276,7 +276,14 @@ export async function registerRoutes(app: Express) {
   // Camp routes
   app.post("/api/camps", async (req, res) => {
     try {
-      console.log("Received camp creation request:", req.body);
+      console.log("Received camp creation request:", {
+        ...req.body,
+        schedules: req.body.schedules?.map((s: any) => ({
+          dayOfWeek: s.dayOfWeek,
+          startTime: s.startTime,
+          endTime: s.endTime
+        }))
+      });
 
       // Check authentication
       if (!req.user) {
@@ -338,15 +345,25 @@ export async function registerRoutes(app: Express) {
           maxAge: Number(parsed.data.maxAge),
           repeatType: parsed.data.repeatType ?? "none",
           repeatCount: Number(parsed.data.repeatCount ?? 0),
-          schedules: parsed.data.schedules
+          schedules: parsed.data.schedules?.map(schedule => ({
+            dayOfWeek: schedule.dayOfWeek,
+            startTime: schedule.startTime,
+            endTime: schedule.endTime
+          }))
         });
 
         // If sport and skill level are provided, create the camp sport association
-        if (parsed.data.sportId && parsed.data.skillLevel) {
+        if (req.body._sportId && req.body._skillLevel) {
+          console.log("Creating camp sport association:", {
+            campId: camp.id,
+            sportId: req.body._sportId,
+            skillLevel: req.body._skillLevel
+          });
+
           await storage.createCampSport({
             campId: camp.id,
-            sportId: parsed.data.sportId,
-            skillLevel: parsed.data.skillLevel
+            sportId: req.body._sportId,
+            skillLevel: req.body._skillLevel
           });
         }
 
