@@ -267,9 +267,19 @@ export function AddCampDialog({
       const sportId = sportsMap[selectedSport] || 1;
       const mappedSkillLevel = skillLevelMap[skillLevel] || "beginner";
 
+      // Format dates properly for PostgreSQL
+      const formatDate = (date: string) => {
+        const d = new Date(date);
+        return d.toISOString();
+      };
+
       // Prepare the request data
       const requestData = {
         ...data,
+        startDate: formatDate(data.startDate),
+        endDate: formatDate(data.endDate),
+        registrationStartDate: formatDate(data.registrationStartDate),
+        registrationEndDate: formatDate(data.registrationEndDate),
         organizationId: user.organizationId,
         price: Number(data.price) || 0,
         capacity: Number(data.capacity) || 20,
@@ -278,7 +288,12 @@ export function AddCampDialog({
         repeatCount: Number(data.repeatCount) || 0,
         _sportId: sportId,
         _skillLevel: mappedSkillLevel,
-        schedules: schedules,
+        schedules: schedules.map(schedule => ({
+          ...schedule,
+          // Ensure times are in proper format
+          startTime: schedule.startTime.padStart(5, '0'),
+          endTime: schedule.endTime.padStart(5, '0')
+        })),
       };
 
       console.log("Creating camp with data:", requestData);
@@ -430,9 +445,9 @@ export function AddCampDialog({
                 onValueChange={setCurrentTab}
               >
                 <TabsList className="grid grid-cols-4 mb-4 sticky top-0 bg-background z-10">
-                  <TabsTrigger value="basic">Basic Information</TabsTrigger>
-                  <TabsTrigger value="location">Location</TabsTrigger>
+                  <TabsTrigger value="basic">Information</TabsTrigger>
                   <TabsTrigger value="schedule">Schedule</TabsTrigger>
+                  <TabsTrigger value="location">Location</TabsTrigger>
                   <TabsTrigger value="settings">Settings</TabsTrigger>
                 </TabsList>
 
@@ -681,7 +696,110 @@ export function AddCampDialog({
                           "description",
                         ]);
                         if (isValid) {
+                          setCurrentTab("schedule");
+                        }
+                      }}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="schedule" className="space-y-4 mt-0">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-medium">Camp Schedule</h3>
+                      <Button type="button" onClick={addSchedule} size="sm">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Schedule
+                      </Button>
+                    </div>
+
+                    {schedules.map((schedule, index) => (
+                      <div
+                        key={index}
+                        className="flex items-start space-x-4 p-4 border rounded-lg relative"
+                      >
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute top-2 right-2"
+                          onClick={() => removeSchedule(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+
+                        <div className="flex-1 space-y-4">
+                          <div>
+                            <Label>Day of Week</Label>
+                            <select
+                              value={schedule.dayOfWeek}
+                              onChange={(e) =>
+                                updateSchedule(index, "dayOfWeek", parseInt(e.target.value))
+                              }
+                              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                            >
+                              {daysOfWeek.map((day, i) => (
+                                <option key={i} value={i}>
+                                  {day}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label>Start Time</Label>
+                              <Input
+                                type="time"
+                                value={schedule.startTime}
+                                onChange={(e) =>
+                                  updateSchedule(index, "startTime", e.target.value)
+                                }
+                              />
+                            </div>
+                            <div>
+                              <Label>End Time</Label>
+                              <Input
+                                type="time"
+                                value={schedule.endTime}
+                                onChange={(e) =>
+                                  updateSchedule(index, "endTime", e.target.value)
+                                }
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {schedules.length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No schedules added. Click "Add Schedule" to create camp schedules.
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-between space-x-2 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCurrentTab("basic")}
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (schedules.length > 0) {
                           setCurrentTab("location");
+                        } else {
+                          toast({
+                            title: "Warning",
+                            description: "Please add at least one schedule.",
+                            variant: "destructive",
+                          });
                         }
                       }}
                     >
@@ -775,7 +893,7 @@ export function AddCampDialog({
                       type="button"
                       variant="outline"
                       onClick={() => {
-                        setCurrentTab("basic");
+                        setCurrentTab("schedule");
                       }}
                     >
                       Previous
@@ -790,110 +908,7 @@ export function AddCampDialog({
                           "zipCode",
                         ]);
                         if (isValid) {
-                          setCurrentTab("schedule");
-                        }
-                      }}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="schedule" className="space-y-4 mt-0">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-lg font-medium">Camp Schedule</h3>
-                      <Button type="button" onClick={addSchedule} size="sm">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Schedule
-                      </Button>
-                    </div>
-
-                    {schedules.map((schedule, index) => (
-                      <div
-                        key={index}
-                        className="flex items-start space-x-4 p-4 border rounded-lg relative"
-                      >
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute top-2 right-2"
-                          onClick={() => removeSchedule(index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-
-                        <div className="flex-1 space-y-4">
-                          <div>
-                            <Label>Day of Week</Label>
-                            <select
-                              value={schedule.dayOfWeek}
-                              onChange={(e) =>
-                                updateSchedule(index, "dayOfWeek", parseInt(e.target.value))
-                              }
-                              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                            >
-                              {daysOfWeek.map((day, i) => (
-                                <option key={i} value={i}>
-                                  {day}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <Label>Start Time</Label>
-                              <Input
-                                type="time"
-                                value={schedule.startTime}
-                                onChange={(e) =>
-                                  updateSchedule(index, "startTime", e.target.value)
-                                }
-                              />
-                            </div>
-                            <div>
-                              <Label>End Time</Label>
-                              <Input
-                                type="time"
-                                value={schedule.endTime}
-                                onChange={(e) =>
-                                  updateSchedule(index, "endTime", e.target.value)
-                                }
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-
-                    {schedules.length === 0 && (
-                      <div className="text-center py-8 text-muted-foreground">
-                        No schedules added. Click "Add Schedule" to create camp schedules.
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex justify-between space-x-2 pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setCurrentTab("location")}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        if (schedules.length > 0) {
                           setCurrentTab("settings");
-                        } else {
-                          toast({
-                            title: "Warning",
-                            description: "Please add at least one schedule.",
-                            variant: "destructive",
-                          });
                         }
                       }}
                     >
@@ -1026,7 +1041,7 @@ export function AddCampDialog({
                       type="button"
                       variant="outline"
                       onClick={() => {
-                        setCurrentTab("schedule");
+                        setCurrentTab("location");
                       }}
                     >
                       Previous
