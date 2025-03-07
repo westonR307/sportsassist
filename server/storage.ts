@@ -118,14 +118,7 @@ export class DatabaseStorage implements IStorage {
         schedules: camp.schedules?.length || 0
       });
 
-      // Ensure dates are in proper format for PostgreSQL
-      const formatDate = (date: Date | string) => {
-        if (typeof date === 'string') {
-          date = new Date(date);
-        }
-        return date;
-      };
-
+      // Create the camp
       const [newCamp] = await db.insert(camps).values({
         name: camp.name,
         description: camp.description,
@@ -134,10 +127,10 @@ export class DatabaseStorage implements IStorage {
         state: camp.state,
         zip_code: camp.zipCode,
         additional_location_details: camp.additionalLocationDetails,
-        start_date: formatDate(camp.startDate),
-        end_date: formatDate(camp.endDate),
-        registration_start_date: formatDate(camp.registrationStartDate),
-        registration_end_date: formatDate(camp.registrationEndDate),
+        start_date: new Date(camp.startDate),
+        end_date: new Date(camp.endDate),
+        registration_start_date: new Date(camp.registrationStartDate),
+        registration_end_date: new Date(camp.registrationEndDate),
         price: camp.price,
         capacity: camp.capacity,
         organization_id: camp.organizationId,
@@ -156,17 +149,16 @@ export class DatabaseStorage implements IStorage {
       if (camp.schedules && camp.schedules.length > 0) {
         console.log("Creating schedules for camp:", newCamp.id);
         const scheduleValues = camp.schedules.map(schedule => ({
-          campId: newCamp.id,
-          dayOfWeek: schedule.dayOfWeek,
-          startTime: schedule.startTime,
-          endTime: schedule.endTime
+          camp_id: newCamp.id,
+          day_of_week: schedule.dayOfWeek,
+          start_time: schedule.startTime.padStart(5, '0'),
+          end_time: schedule.endTime.padStart(5, '0')
         }));
 
         const createdSchedules = await db.insert(campSchedules).values(scheduleValues).returning();
         console.log("Created schedules:", createdSchedules);
       }
 
-      // Map database fields to camelCase for response
       return {
         id: newCamp.id,
         name: newCamp.name,
@@ -176,10 +168,10 @@ export class DatabaseStorage implements IStorage {
         state: newCamp.state,
         zipCode: newCamp.zip_code,
         additionalLocationDetails: newCamp.additional_location_details,
-        startDate: newCamp.start_date,
-        endDate: newCamp.end_date,
-        registrationStartDate: newCamp.registration_start_date,
-        registrationEndDate: newCamp.registration_end_date,
+        startDate: new Date(newCamp.start_date),
+        endDate: new Date(newCamp.end_date),
+        registrationStartDate: new Date(newCamp.registration_start_date),
+        registrationEndDate: new Date(newCamp.registration_end_date),
         price: newCamp.price,
         capacity: newCamp.capacity,
         organizationId: newCamp.organization_id,
@@ -190,8 +182,7 @@ export class DatabaseStorage implements IStorage {
         maxAge: newCamp.max_age,
         repeatType: newCamp.repeat_type,
         repeatCount: newCamp.repeat_count
-      } as Camp;
-
+      };
     } catch (error) {
       console.error("Error creating camp:", error);
       throw error;
@@ -200,8 +191,8 @@ export class DatabaseStorage implements IStorage {
 
   async listCamps(): Promise<Camp[]> {
     try {
-      const campList = await db.select().from(camps);
-      return campList.map(camp => ({
+      const camps = await db.select().from(camps);
+      return camps.map(camp => ({
         id: camp.id,
         name: camp.name,
         description: camp.description,
@@ -224,7 +215,7 @@ export class DatabaseStorage implements IStorage {
         maxAge: camp.max_age,
         repeatType: camp.repeat_type,
         repeatCount: camp.repeat_count
-      } as Camp));
+      }));
     } catch (error) {
       console.error("Error listing camps:", error);
       throw error;
@@ -259,7 +250,7 @@ export class DatabaseStorage implements IStorage {
         maxAge: camp.max_age,
         repeatType: camp.repeat_type,
         repeatCount: camp.repeat_count
-      } as Camp;
+      };
     } catch (error) {
       console.error("Error getting camp:", error);
       throw error;
@@ -369,10 +360,15 @@ export class DatabaseStorage implements IStorage {
     return newCampSport;
   }
   async getCampSchedules(campId: number): Promise<CampSchedule[]> {
-    return await db.select()
-      .from(campSchedules)
-      .where(eq(campSchedules.campId, campId))
-      .orderBy(campSchedules.dayOfWeek);
+    try {
+      return await db.select()
+        .from(campSchedules)
+        .where(eq(campSchedules.campId, campId))
+        .orderBy(campSchedules.dayOfWeek);
+    } catch (error) {
+      console.error("Error getting camp schedules:", error);
+      throw error;
+    }
   }
 }
 

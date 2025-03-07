@@ -67,6 +67,16 @@ export const insertChildSchema = createInsertSchema(children)
     medications: z.array(z.string()).optional().default([]),
   });
 
+export const insertCampScheduleSchema = z.object({
+  dayOfWeek: z.number().min(0).max(6),
+  startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
+    message: "Start time must be in HH:mm format (00:00-23:59)"
+  }),
+  endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
+    message: "End time must be in HH:mm format (00:00-23:59)"
+  }),
+});
+
 export const insertCampSchema = createInsertSchema(camps).extend({
   name: z.string().min(1, "Name is required"),
   description: z.string().min(1, "Description is required"),
@@ -75,8 +85,6 @@ export const insertCampSchema = createInsertSchema(camps).extend({
   state: z.string().length(2, "Please use 2-letter state code"),
   zipCode: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format"),
   additionalLocationDetails: z.string().optional(),
-  sportId: z.number().optional(),
-  skillLevel: z.enum(["beginner", "intermediate", "advanced"]).optional(),
   startDate: z.string().refine((date) => new Date(date) >= new Date(), {
     message: "Start date must be in the future",
   }),
@@ -94,25 +102,9 @@ export const insertCampSchema = createInsertSchema(camps).extend({
   maxAge: z.number().min(1, "Maximum age must be at least 1"),
   repeatType: z.enum(["none", "weekly", "monthly"]).default("none"),
   repeatCount: z.number().min(0, "Repeat count must be 0 or greater").default(0),
-  schedules: z.array(z.object({
-    dayOfWeek: z.number().min(0).max(6),
-    startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
-      message: "Start time must be in HH:mm format (00:00-23:59)"
-    }),
-    endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
-      message: "End time must be in HH:mm format (00:00-23:59)"
-    }),
-  })).optional().refine((schedules) => {
-    if (!schedules) return true;
-    return schedules.every(schedule => {
-      const start = new Date(`1970-01-01T${schedule.startTime}`);
-      const end = new Date(`1970-01-01T${schedule.endTime}`);
-      return start < end;
-    });
-  }, {
-    message: "End time must be after start time for each schedule"
-  }),
+  schedules: z.array(insertCampScheduleSchema).min(1, "At least one schedule is required"),
 }).refine((data) => {
+  // Validate date sequence
   const startDate = new Date(data.startDate);
   const endDate = new Date(data.endDate);
   const regStartDate = new Date(data.registrationStartDate);
@@ -148,7 +140,7 @@ export type Sport = typeof sports.$inferSelect;
 export type ChildSport = typeof childSports.$inferSelect;
 export type InsertChildSport = z.infer<typeof insertChildSchema>["sportsInterests"][number];
 export type CampSchedule = typeof campSchedules.$inferSelect;
-export type InsertCampSchedule = z.infer<typeof insertCampSchema>["schedules"][number];
+export type InsertCampSchedule = z.infer<typeof insertCampScheduleSchema>;
 export type CampSport = typeof campSports.$inferSelect;
 
 // Re-export tables

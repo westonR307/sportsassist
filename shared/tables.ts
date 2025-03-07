@@ -1,7 +1,6 @@
 import { pgTable, text, serial, integer, boolean, timestamp, time } from "drizzle-orm/pg-core";
 import { type Role, type SportLevel, type Gender, type ContactMethod, type CampType, type CampVisibility, type RepeatType, type StaffRole } from "./types";
 
-// Define camps table first since other tables reference it
 export const camps = pgTable("camps", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -103,6 +102,14 @@ export const campStaff = pgTable("camp_staff", {
   role: text("role").$type<StaffRole>().notNull(),
 });
 
+export const campSports = pgTable("camp_sports", {
+  id: serial("id").primaryKey(),
+  campId: integer("camp_id").references(() => camps.id).notNull(),
+  sportId: integer("sport_id").references(() => sports.id),
+  customSport: text("custom_sport"),
+  skillLevel: text("skill_level").$type<SportLevel>().notNull(),
+});
+
 export const registrations = pgTable("registrations", {
   id: serial("id").primaryKey(),
   campId: integer("camp_id").references(() => camps.id).notNull(),
@@ -111,12 +118,4 @@ export const registrations = pgTable("registrations", {
   stripePaymentId: text("stripe_payment_id"),
   waitlisted: boolean("waitlisted").notNull().default(false),
   registeredAt: timestamp("registered_at").notNull().defaultNow(),
-});
-
-export const campSports = pgTable("camp_sports", {
-  id: serial("id").primaryKey(),
-  campId: integer("camp_id").references(() => camps.id).notNull(),
-  sportId: integer("sport_id").references(() => sports.id),
-  customSport: text("custom_sport"),
-  skillLevel: text("skill_level").$type<SportLevel>().notNull(),
 });

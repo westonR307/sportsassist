@@ -202,11 +202,10 @@ const daysOfWeek = [
   "Saturday",
 ];
 
-const formatDate = (date: string) => {
-    // Ensure proper ISO format for PostgreSQL
-    const d = new Date(date);
-    // Make sure we're in UTC to avoid timezone issues
-    return d.toISOString().slice(0, 19).replace('T', ' ');
+
+const formatDateForPostgres = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toISOString().slice(0, 19).replace('T', ' ');
   };
 
 export function AddCampDialog({
@@ -274,13 +273,13 @@ export function AddCampDialog({
       const sportId = sportsMap[selectedSport] || 1;
       const mappedSkillLevel = skillLevelMap[skillLevel] || "beginner";
 
-      // Prepare the request data with proper formatting
+
       const requestData = {
         ...data,
-        startDate: formatDate(data.startDate),
-        endDate: formatDate(data.endDate),
-        registrationStartDate: formatDate(data.registrationStartDate),
-        registrationEndDate: formatDate(data.registrationEndDate),
+        startDate: formatDateForPostgres(data.startDate),
+        endDate: formatDateForPostgres(data.endDate),
+        registrationStartDate: formatDateForPostgres(data.registrationStartDate),
+        registrationEndDate: formatDateForPostgres(data.registrationEndDate),
         organizationId: user.organizationId,
         price: Number(data.price) || 0,
         capacity: Number(data.capacity) || 20,
@@ -291,7 +290,6 @@ export function AddCampDialog({
         _skillLevel: mappedSkillLevel,
         schedules: schedules.map(schedule => ({
           dayOfWeek: schedule.dayOfWeek,
-          // Ensure consistent time format HH:MM
           startTime: schedule.startTime.padStart(5, '0'),
           endTime: schedule.endTime.padStart(5, '0')
         }))
@@ -313,6 +311,8 @@ export function AddCampDialog({
       onOpenChange(false);
       form.reset();
       setSchedules([]);
+      setSelectedSport(null);
+      setSkillLevel("Beginner");
       toast({
         title: "Success",
         description: "Camp created successfully",
