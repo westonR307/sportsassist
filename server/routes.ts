@@ -276,35 +276,39 @@ export async function registerRoutes(app: Express) {
   // Camp routes
   app.post("/api/camps", async (req, res) => {
     try {
-      console.log("Received camp creation request:", {
-        ...req.body,
-        schedules: req.body.schedules?.map((s: any) => ({
-          dayOfWeek: s.dayOfWeek,
-          startTime: s.startTime,
-          endTime: s.endTime
-        }))
-      });
+      console.log("========= Camp Creation Debug Start =========");
+      console.log("Raw request body:", JSON.stringify(req.body, null, 2));
 
       // Check authentication
       if (!req.user) {
-        console.error("No authenticated user found");
+        console.error("Authentication failed - no user found");
         return res.status(401).json({ message: "Authentication required" });
       }
 
+      console.log("Authenticated user:", {
+        id: req.user.id,
+        role: req.user.role,
+        organizationId: req.user.organizationId
+      });
+
       // Check authorization
       if (!["camp_creator", "manager"].includes(req.user.role)) {
-        console.error("Unauthorized role:", req.user.role);
+        console.error("Authorization failed - invalid role:", req.user.role);
         return res.status(403).json({ message: "Unauthorized role for camp creation" });
       }
 
       // Check if user has organization
       if (!req.user.organizationId) {
-        console.error("User has no organization ID:", req.user);
+        console.error("Organization check failed - no organization ID for user:", req.user.id);
         return res.status(400).json({ message: "User has no organization" });
       }
 
       // Validate input data with schedules
-      console.log("Validating camp data with schema...");
+      console.log("Preparing data for schema validation:", {
+        ...req.body,
+        organizationId: req.user.organizationId
+      });
+
       const parsed = insertCampSchema.safeParse({
         ...req.body,
         organizationId: req.user.organizationId
@@ -312,16 +316,21 @@ export async function registerRoutes(app: Express) {
 
       if (!parsed.success) {
         const validationErrors = parsed.error.flatten();
-        console.error("Validation error details:", validationErrors);
+        console.error("Schema validation failed:", validationErrors);
         return res.status(400).json({
           message: "Invalid camp data",
           errors: validationErrors
         });
       }
 
-      console.log("Validated camp data:", parsed.data);
+      console.log("Schema validation passed. Validated data:", parsed.data);
 
       try {
+        console.log("Attempting to create camp with data:", {
+          ...parsed.data,
+          schedules: parsed.data.schedules.length
+        });
+
         // Create the camp with schedules
         const camp = await storage.createCamp({
           name: parsed.data.name.trim(),
@@ -349,16 +358,27 @@ export async function registerRoutes(app: Express) {
         });
 
         console.log("Camp created successfully:", camp);
+        console.log("========= Camp Creation Debug End =========");
         res.status(201).json(camp);
       } catch (storageError) {
         console.error("Database error creating camp:", storageError);
+        console.error("Error details:", {
+          message: storageError.message,
+          code: storageError.code,
+          detail: storageError.detail,
+          stack: storageError.stack
+        });
         res.status(500).json({
           message: "Database error creating camp",
           error: storageError instanceof Error ? storageError.message : String(storageError)
         });
       }
     } catch (error) {
-      console.error("Unexpected error creating camp:", error);
+      console.error("Unexpected error in camp creation:", error);
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack
+      });
       res.status(500).json({
         message: "An unexpected error occurred",
         error: error instanceof Error ? error.message : String(error)

@@ -113,7 +113,8 @@ export class DatabaseStorage implements IStorage {
 
   async createCamp(camp: Omit<Camp, "id"> & { schedules?: InsertCampSchedule[] }): Promise<Camp> {
     try {
-      console.log("Creating camp with data:", {
+      console.log("========= Storage: Creating Camp =========");
+      console.log("Received camp data:", {
         ...camp,
         schedules: camp.schedules?.length || 0
       });
@@ -143,11 +144,15 @@ export class DatabaseStorage implements IStorage {
         repeat_count: camp.repeatCount
       }).returning();
 
-      console.log("Created camp:", newCamp);
+      console.log("Created camp in database:", newCamp);
 
       // Create schedules if provided
       if (camp.schedules && camp.schedules.length > 0) {
-        console.log("Creating schedules for camp:", newCamp.id);
+        console.log("Creating schedules for camp:", {
+          campId: newCamp.id,
+          scheduleCount: camp.schedules.length
+        });
+
         const scheduleValues = camp.schedules.map(schedule => ({
           camp_id: newCamp.id,
           day_of_week: schedule.dayOfWeek,
@@ -155,8 +160,18 @@ export class DatabaseStorage implements IStorage {
           end_time: schedule.endTime
         }));
 
-        await db.insert(campSchedules).values(scheduleValues);
+        console.log("Schedule values to insert:", scheduleValues);
+
+        try {
+          await db.insert(campSchedules).values(scheduleValues);
+          console.log("Successfully created schedules");
+        } catch (scheduleError) {
+          console.error("Error creating schedules:", scheduleError);
+          throw scheduleError;
+        }
       }
+
+      console.log("========= Storage: Camp Creation Complete =========");
 
       return {
         id: newCamp.id,
@@ -183,7 +198,13 @@ export class DatabaseStorage implements IStorage {
         repeatCount: newCamp.repeat_count
       };
     } catch (error) {
-      console.error("Error creating camp:", error);
+      console.error("Error in createCamp:", error);
+      console.error("Error details:", {
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        stack: error.stack
+      });
       throw error;
     }
   }
