@@ -85,10 +85,10 @@ export const insertCampSchema = createInsertSchema(camps).extend({
   state: z.string().length(2, "Please use 2-letter state code"),
   zipCode: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format"),
   additionalLocationDetails: z.string().optional(),
-  startDate: z.string(),
-  endDate: z.string(),
-  registrationStartDate: z.string(),
-  registrationEndDate: z.string(),
+  startDate: z.string().transform(str => new Date(str).toISOString()),
+  endDate: z.string().transform(str => new Date(str).toISOString()),
+  registrationStartDate: z.string().transform(str => new Date(str).toISOString()),
+  registrationEndDate: z.string().transform(str => new Date(str).toISOString()),
   price: z.number().min(0, "Price must be 0 or greater"),
   capacity: z.number().min(1, "Capacity must be at least 1"),
   type: z.enum(["one_on_one", "group", "team", "virtual"]),
@@ -104,6 +104,11 @@ export const insertCampSchema = createInsertSchema(camps).extend({
   const endDate = new Date(data.endDate);
   const regStartDate = new Date(data.registrationStartDate);
   const regEndDate = new Date(data.registrationEndDate);
+
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || 
+      isNaN(regStartDate.getTime()) || isNaN(regEndDate.getTime())) {
+    return false;
+  }
 
   return regStartDate <= regEndDate && 
          regEndDate <= startDate && 
