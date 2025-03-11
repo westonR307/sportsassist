@@ -165,7 +165,7 @@ export class DatabaseStorage implements IStorage {
         try {
           await db.insert(campSchedules).values(scheduleValues);
           console.log("Successfully created schedules");
-        } catch (scheduleError) {
+        } catch (scheduleError: any) {
           console.error("Error creating schedules:", scheduleError);
           throw scheduleError;
         }
@@ -197,7 +197,7 @@ export class DatabaseStorage implements IStorage {
         repeatType: newCamp.repeat_type,
         repeatCount: newCamp.repeat_count
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error in createCamp:", error);
       console.error("Error details:", {
         message: error.message,

@@ -335,7 +335,6 @@ export async function registerRoutes(app: Express) {
         const camp = await storage.createCamp({
           name: parsed.data.name.trim(),
           description: parsed.data.description.trim(),
-          organizationId: req.user.organizationId,
           streetAddress: parsed.data.streetAddress.trim(),
           city: parsed.data.city.trim(),
           state: parsed.data.state.trim().toUpperCase(),
@@ -347,9 +346,10 @@ export async function registerRoutes(app: Express) {
           registrationEndDate: new Date(parsed.data.registrationEndDate),
           price: Number(parsed.data.price),
           capacity: Number(parsed.data.capacity),
-          waitlistEnabled: parsed.data.waitlistEnabled ?? true,
+          organizationId: req.user.organizationId,
           type: parsed.data.type,
-          visibility: parsed.data.visibility ?? "public",
+          visibility: parsed.data.visibility,
+          waitlistEnabled: parsed.data.waitlistEnabled ?? true,
           minAge: Number(parsed.data.minAge),
           maxAge: Number(parsed.data.maxAge),
           repeatType: parsed.data.repeatType ?? "none",
@@ -360,7 +360,7 @@ export async function registerRoutes(app: Express) {
         console.log("Camp created successfully:", camp);
         console.log("========= Camp Creation Debug End =========");
         res.status(201).json(camp);
-      } catch (storageError) {
+      } catch (storageError: any) {
         console.error("Database error creating camp:", storageError);
         console.error("Error details:", {
           message: storageError.message,
@@ -373,7 +373,7 @@ export async function registerRoutes(app: Express) {
           error: storageError instanceof Error ? storageError.message : String(storageError)
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Unexpected error in camp creation:", error);
       console.error("Error details:", {
         message: error.message,
