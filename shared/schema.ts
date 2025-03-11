@@ -85,14 +85,10 @@ export const insertCampSchema = createInsertSchema(camps).extend({
   state: z.string().length(2, "Please use 2-letter state code"),
   zipCode: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format"),
   additionalLocationDetails: z.string().optional(),
-  startDate: z.string().refine((date) => new Date(date) >= new Date(), {
-    message: "Start date must be in the future",
-  }),
-  endDate: z.string().refine((date) => new Date(date) >= new Date(), {
-    message: "End date must be in the future",
-  }),
-  registrationStartDate: z.string(),
-  registrationEndDate: z.string(),
+  startDate: z.string().datetime(),
+  endDate: z.string().datetime(),
+  registrationStartDate: z.string().datetime(),
+  registrationEndDate: z.string().datetime(),
   price: z.number().min(0, "Price must be 0 or greater"),
   capacity: z.number().min(1, "Capacity must be at least 1"),
   type: z.enum(["one_on_one", "group", "team", "virtual"]),
@@ -104,16 +100,15 @@ export const insertCampSchema = createInsertSchema(camps).extend({
   repeatCount: z.number().min(0, "Repeat count must be 0 or greater").default(0),
   schedules: z.array(insertCampScheduleSchema).min(1, "At least one schedule is required"),
 }).refine((data) => {
-  // Validate date sequence
   const startDate = new Date(data.startDate);
   const endDate = new Date(data.endDate);
   const regStartDate = new Date(data.registrationStartDate);
   const regEndDate = new Date(data.registrationEndDate);
 
-  return regStartDate <= regEndDate && // Registration start must be before or on registration end
-         regEndDate <= startDate && // Registration must end before or on camp start
-         startDate <= endDate && // Camp start must be before or on camp end
-         data.minAge <= data.maxAge; // Min age must be less than or equal to max age
+  return regStartDate <= regEndDate && 
+         regEndDate <= startDate && 
+         startDate <= endDate && 
+         data.minAge <= data.maxAge;
 }, {
   message: "Invalid date sequence or age range",
   path: ["dates"]

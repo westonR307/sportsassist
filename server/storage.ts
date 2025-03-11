@@ -155,7 +155,7 @@ export class DatabaseStorage implements IStorage {
           end_time: schedule.endTime
         }));
 
-        await db.insert(campSchedules).values(scheduleValues).returning();
+        await db.insert(campSchedules).values(scheduleValues);
       }
 
       return {

@@ -292,7 +292,7 @@ export async function registerRoutes(app: Express) {
       }
 
       // Check authorization
-      if (!["admin", "manager", "camp_creator"].includes(req.user.role)) {
+      if (!["camp_creator", "manager"].includes(req.user.role)) {
         console.error("Unauthorized role:", req.user.role);
         return res.status(403).json({ message: "Unauthorized role for camp creation" });
       }
@@ -345,28 +345,10 @@ export async function registerRoutes(app: Express) {
           maxAge: Number(parsed.data.maxAge),
           repeatType: parsed.data.repeatType ?? "none",
           repeatCount: Number(parsed.data.repeatCount ?? 0),
-          schedules: parsed.data.schedules.map((schedule) => ({
-            dayOfWeek: schedule.dayOfWeek,
-            startTime: schedule.startTime.padStart(5, '0'),
-            endTime: schedule.endTime.padStart(5, '0')
-          }))
+          schedules: parsed.data.schedules
         });
 
-        // If sport and skill level are provided, create the camp sport association
-        if (req.body._sportId && req.body._skillLevel) {
-          console.log("Creating camp sport association:", {
-            campId: camp.id,
-            sportId: req.body._sportId,
-            skillLevel: req.body._skillLevel
-          });
-
-          await storage.createCampSport({
-            campId: camp.id,
-            sportId: req.body._sportId,
-            skillLevel: req.body._skillLevel
-          });
-        }
-
+        console.log("Camp created successfully:", camp);
         res.status(201).json(camp);
       } catch (storageError) {
         console.error("Database error creating camp:", storageError);
