@@ -127,10 +127,10 @@ export class DatabaseStorage implements IStorage {
         state: camp.state,
         zip_code: camp.zipCode,
         additional_location_details: camp.additionalLocationDetails,
-        start_date: new Date(camp.startDate),
-        end_date: new Date(camp.endDate),
-        registration_start_date: new Date(camp.registrationStartDate),
-        registration_end_date: new Date(camp.registrationEndDate),
+        start_date: camp.startDate,
+        end_date: camp.endDate,
+        registration_start_date: camp.registrationStartDate,
+        registration_end_date: camp.registrationEndDate,
         price: camp.price,
         capacity: camp.capacity,
         organization_id: camp.organizationId,
@@ -151,12 +151,11 @@ export class DatabaseStorage implements IStorage {
         const scheduleValues = camp.schedules.map(schedule => ({
           camp_id: newCamp.id,
           day_of_week: schedule.dayOfWeek,
-          start_time: schedule.startTime.padStart(5, '0'),
-          end_time: schedule.endTime.padStart(5, '0')
+          start_time: schedule.startTime,
+          end_time: schedule.endTime
         }));
 
-        const createdSchedules = await db.insert(campSchedules).values(scheduleValues).returning();
-        console.log("Created schedules:", createdSchedules);
+        await db.insert(campSchedules).values(scheduleValues).returning();
       }
 
       return {
@@ -168,10 +167,10 @@ export class DatabaseStorage implements IStorage {
         state: newCamp.state,
         zipCode: newCamp.zip_code,
         additionalLocationDetails: newCamp.additional_location_details,
-        startDate: new Date(newCamp.start_date),
-        endDate: new Date(newCamp.end_date),
-        registrationStartDate: new Date(newCamp.registration_start_date),
-        registrationEndDate: new Date(newCamp.registration_end_date),
+        startDate: newCamp.start_date,
+        endDate: newCamp.end_date,
+        registrationStartDate: newCamp.registration_start_date,
+        registrationEndDate: newCamp.registration_end_date,
         price: newCamp.price,
         capacity: newCamp.capacity,
         organizationId: newCamp.organization_id,
@@ -191,8 +190,8 @@ export class DatabaseStorage implements IStorage {
 
   async listCamps(): Promise<Camp[]> {
     try {
-      const camps = await db.select().from(camps);
-      return camps.map(camp => ({
+      const dbCamps = await db.select().from(camps);
+      return dbCamps.map(camp => ({
         id: camp.id,
         name: camp.name,
         description: camp.description,
