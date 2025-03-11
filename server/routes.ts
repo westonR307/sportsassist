@@ -303,16 +303,19 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ message: "User has no organization" });
       }
 
-      // Validate input data with schedules
-      console.log("Preparing data for schema validation:", {
+      // Prepare data for validation
+      const validationData = {
         ...req.body,
-        organizationId: req.user.organizationId
-      });
+        organizationId: req.user.organizationId,
+        startDate: new Date(req.body.startDate).toISOString(),
+        endDate: new Date(req.body.endDate).toISOString(),
+        registrationStartDate: new Date(req.body.registrationStartDate).toISOString(),
+        registrationEndDate: new Date(req.body.registrationEndDate).toISOString()
+      };
 
-      const parsed = insertCampSchema.safeParse({
-        ...req.body,
-        organizationId: req.user.organizationId
-      });
+      console.log("Preparing data for schema validation:", validationData);
+
+      const parsed = insertCampSchema.safeParse(validationData);
 
       if (!parsed.success) {
         const validationErrors = parsed.error.flatten();
@@ -326,11 +329,6 @@ export async function registerRoutes(app: Express) {
       console.log("Schema validation passed. Validated data:", parsed.data);
 
       try {
-        console.log("Attempting to create camp with data:", {
-          ...parsed.data,
-          schedules: parsed.data.schedules.length
-        });
-
         // Create the camp with schedules
         const camp = await storage.createCamp({
           name: parsed.data.name.trim(),
@@ -340,10 +338,10 @@ export async function registerRoutes(app: Express) {
           state: parsed.data.state.trim().toUpperCase(),
           zipCode: parsed.data.zipCode.trim(),
           additionalLocationDetails: parsed.data.additionalLocationDetails?.trim() ?? null,
-          startDate: parsed.data.startDate,
-          endDate: parsed.data.endDate,
-          registrationStartDate: parsed.data.registrationStartDate,
-          registrationEndDate: parsed.data.registrationEndDate,
+          startDate: new Date(parsed.data.startDate),
+          endDate: new Date(parsed.data.endDate),
+          registrationStartDate: new Date(parsed.data.registrationStartDate),
+          registrationEndDate: new Date(parsed.data.registrationEndDate),
           price: Number(parsed.data.price),
           capacity: Number(parsed.data.capacity),
           organizationId: req.user.organizationId,
