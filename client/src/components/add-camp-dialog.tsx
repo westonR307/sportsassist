@@ -51,7 +51,6 @@ const sportsMap: Record<string, number> = {
   Cycling: 18,
   Darts: 19,
   Equestrian: 20,
-  Fencing: 21,
   "Field Hockey": 22,
   "Figure Skating": 23,
   Fishing: 24,
@@ -202,11 +201,10 @@ const daysOfWeek = [
   "Saturday",
 ];
 
-
 const formatDateForPostgres = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toISOString().slice(0, 19).replace('T', ' ');
-  };
+  const date = new Date(dateStr);
+  return date.toISOString().slice(0, 19).replace('T', ' ');
+};
 
 export function AddCampDialog({
   open,
@@ -378,10 +376,31 @@ export function AddCampDialog({
       return;
     }
 
-    // Add schedule validation
+    // Enhanced schedule validation
     for (const schedule of schedules) {
+      if (!schedule.startTime || !schedule.endTime) {
+        toast({
+          title: "Error",
+          description: "Schedule times cannot be empty",
+          variant: "destructive",
+        });
+        setCurrentTab("settings");
+        return;
+      }
+
       const start = new Date(`1970-01-01T${schedule.startTime}`);
       const end = new Date(`1970-01-01T${schedule.endTime}`);
+
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        toast({
+          title: "Error",
+          description: "Invalid time format",
+          variant: "destructive",
+        });
+        setCurrentTab("settings");
+        return;
+      }
+
       if (end <= start) {
         toast({
           title: "Error",
@@ -394,11 +413,20 @@ export function AddCampDialog({
     }
 
     // Validate dates
-    const today = new Date();
-    const startDate = new Date(data.startDate);
-    const endDate = new Date(data.endDate);
     const regStartDate = new Date(data.registrationStartDate);
     const regEndDate = new Date(data.registrationEndDate);
+    const startDate = new Date(data.startDate);
+    const endDate = new Date(data.endDate);
+
+    if (isNaN(regStartDate.getTime()) || isNaN(regEndDate.getTime()) || 
+        isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      toast({
+        title: "Error",
+        description: "Invalid date format",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (regEndDate <= regStartDate) {
       toast({
@@ -427,7 +455,13 @@ export function AddCampDialog({
       return;
     }
 
-    console.log("Submitting form with data:", { ...data, schedules });
+    console.log("Submitting form with data:", { 
+      ...data, 
+      schedules,
+      sportId: sportsMap[selectedSport],
+      skillLevel: skillLevelMap[skillLevel] 
+    });
+
     createCampMutation.mutate({ ...data, schedules });
   };
 

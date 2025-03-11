@@ -303,13 +303,6 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ message: "User has no organization" });
       }
 
-      // Format dates for PostgreSQL
-      const formatDate = (date: string) => {
-        const d = new Date(date);
-        // Format as YYYY-MM-DD HH:mm:ss
-        return d.toISOString().slice(0, 19).replace('T', ' ');
-      };
-
       // Validate input data with schedules
       console.log("Validating camp data with schema...");
       const parsed = insertCampSchema.safeParse({
@@ -339,10 +332,10 @@ export async function registerRoutes(app: Express) {
           state: parsed.data.state.trim().toUpperCase(),
           zipCode: parsed.data.zipCode.trim(),
           additionalLocationDetails: parsed.data.additionalLocationDetails?.trim() ?? null,
-          startDate: formatDate(parsed.data.startDate),
-          endDate: formatDate(parsed.data.endDate),
-          registrationStartDate: formatDate(parsed.data.registrationStartDate),
-          registrationEndDate: formatDate(parsed.data.registrationEndDate),
+          startDate: new Date(parsed.data.startDate),
+          endDate: new Date(parsed.data.endDate),
+          registrationStartDate: new Date(parsed.data.registrationStartDate),
+          registrationEndDate: new Date(parsed.data.registrationEndDate),
           price: Number(parsed.data.price),
           capacity: Number(parsed.data.capacity),
           waitlistEnabled: parsed.data.waitlistEnabled ?? true,
@@ -352,7 +345,7 @@ export async function registerRoutes(app: Express) {
           maxAge: Number(parsed.data.maxAge),
           repeatType: parsed.data.repeatType ?? "none",
           repeatCount: Number(parsed.data.repeatCount ?? 0),
-          schedules: req.body.schedules?.map((schedule: any) => ({
+          schedules: parsed.data.schedules.map((schedule) => ({
             dayOfWeek: schedule.dayOfWeek,
             startTime: schedule.startTime.padStart(5, '0'),
             endTime: schedule.endTime.padStart(5, '0')
