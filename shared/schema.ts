@@ -105,14 +105,14 @@ export const insertCampSchema = createInsertSchema(camps).extend({
   const regStartDate = new Date(data.registrationStartDate);
   const regEndDate = new Date(data.registrationEndDate);
 
-  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || 
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) ||
       isNaN(regStartDate.getTime()) || isNaN(regEndDate.getTime())) {
     return false;
   }
 
-  return regStartDate <= regEndDate && 
-         regEndDate <= startDate && 
-         startDate <= endDate && 
+  return regStartDate <= regEndDate &&
+         regEndDate <= startDate &&
+         startDate <= endDate &&
          data.minAge <= data.maxAge;
 }, {
   message: "Invalid date sequence or age range",
@@ -138,7 +138,7 @@ export type Invitation = typeof invitations.$inferSelect;
 export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
 export type Sport = typeof sports.$inferSelect;
 export type ChildSport = typeof childSports.$inferSelect;
-export type InsertChildSport = z.infer<typeof insertChildSchema>["sportsInterests"][number];
+export type InsertChildSport = Exclude<z.infer<typeof insertChildSchema>["sportsInterests"], undefined>[number];
 export type CampSchedule = typeof campSchedules.$inferSelect;
 export type InsertCampSchedule = z.infer<typeof insertCampScheduleSchema>;
 export type CampSport = typeof campSports.$inferSelect;
