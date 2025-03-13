@@ -114,73 +114,70 @@ export class DatabaseStorage implements IStorage {
 
   async createCamp(campData: Omit<Camp, "id"> & { schedules?: InsertCampSchedule[] }): Promise<Camp> {
     try {
-      console.log("========= Creating Camp - Debug Info =========");
-      console.log("Raw camp data:", JSON.stringify(campData, null, 2));
+      console.log("========= Creating Camp - Step by Step Debug =========");
+      console.log("1. Raw camp data received:", {
+        ...campData,
+        type: typeof campData.type,
+        price: typeof campData.price,
+        capacity: typeof campData.capacity,
+        schedules: campData.schedules?.length
+      });
 
-      const baseData = {
-        name: campData.name,
-        description: campData.description,
-        streetAddress: campData.streetAddress,
-        city: campData.city,
-        state: campData.state,
-        zipCode: campData.zipCode,
-        additionalLocationDetails: campData.additionalLocationDetails,
-        startDate: campData.startDate,
-        endDate: campData.endDate,
-        registrationStartDate: campData.registrationStartDate,
-        registrationEndDate: campData.registrationEndDate,
-        price: Number(campData.price),
-        capacity: Number(campData.capacity),
-        organizationId: Number(campData.organizationId),
-        type: campData.type,
-        visibility: campData.visibility || "public",
+      // Parse all number fields explicitly
+      const parsedData = {
+        ...campData,
+        price: parseInt(String(campData.price), 10),
+        capacity: parseInt(String(campData.capacity), 10),
+        organizationId: parseInt(String(campData.organizationId), 10),
+        minAge: parseInt(String(campData.minAge), 10),
+        maxAge: parseInt(String(campData.maxAge), 10),
+        repeatCount: parseInt(String(campData.repeatCount || '0'), 10),
         waitlistEnabled: true,
-        minAge: Number(campData.minAge),
-        maxAge: Number(campData.maxAge),
-        repeatType: campData.repeatType || "none",
-        repeatCount: Number(campData.repeatCount || 0)
+        visibility: campData.visibility || "public",
+        repeatType: campData.repeatType || "none"
       };
 
-      console.log("Processed camp data:", JSON.stringify(baseData, null, 2));
+      console.log("2. Parsed data:", parsedData);
 
-      // First create the camp
-      const [newCamp] = await db.insert(camps)
-        .values(baseData)
-        .returning();
+      // Create the camp with explicit type casting
+      const query = db.insert(camps).values(parsedData).returning();
+      console.log("3. Generated SQL:", query.toSQL());
 
-      console.log("Created camp:", JSON.stringify(newCamp, null, 2));
+      const [newCamp] = await query;
+      console.log("4. Created camp:", newCamp);
 
-      // Then create schedules if provided
-      if (campData.schedules && campData.schedules.length > 0) {
-        console.log("Creating schedules:", JSON.stringify(campData.schedules, null, 2));
+      // Handle schedules if they exist
+      if (campData.schedules?.length > 0) {
+        console.log("5. Processing schedules:", campData.schedules);
 
         for (const schedule of campData.schedules) {
           const scheduleData = {
             campId: newCamp.id,
-            dayOfWeek: Number(schedule.dayOfWeek),
+            dayOfWeek: parseInt(String(schedule.dayOfWeek), 10),
             startTime: schedule.startTime,
             endTime: schedule.endTime
           };
 
-          console.log("Creating schedule:", JSON.stringify(scheduleData, null, 2));
+          console.log("6. Creating schedule:", scheduleData);
+          const scheduleQuery = db.insert(campSchedules).values(scheduleData).returning();
+          console.log("7. Schedule SQL:", scheduleQuery.toSQL());
 
-          await db.insert(campSchedules)
-            .values(scheduleData)
-            .returning();
+          await scheduleQuery;
         }
       }
 
       return newCamp;
     } catch (error: any) {
       console.error("Camp creation failed:", {
-        error: error.message,
-        sqlState: error.sqlState,
+        name: error.name,
+        message: error.message,
         code: error.code,
         detail: error.detail,
         table: error.table,
         constraint: error.constraint,
         routine: error.routine,
-        schema: error.schema,
+        sql: error.sql,
+        parameters: error.parameters,
         stack: error.stack
       });
       throw error;

@@ -74,27 +74,27 @@ export const insertCampSchema = z.object({
   city: z.string().min(1, "City is required"),
   state: z.string().length(2, "Please use 2-letter state code"),
   zipCode: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format"),
-  additionalLocationDetails: z.string().optional(),
+  additionalLocationDetails: z.string().optional().nullable(),
   startDate: z.string(),
   endDate: z.string(),
   registrationStartDate: z.string(),
   registrationEndDate: z.string(),
-  price: z.any().transform(val => Number(val)),
-  capacity: z.any().transform(val => Number(val)),
-  organizationId: z.any().transform(val => Number(val)),
+  price: z.preprocess((val) => parseInt(String(val), 10), z.number()),
+  capacity: z.preprocess((val) => parseInt(String(val), 10), z.number()),
+  organizationId: z.preprocess((val) => parseInt(String(val), 10), z.number()),
   type: z.enum(["one_on_one", "group", "team", "virtual"]),
   visibility: z.enum(["public", "private"]).default("public"),
   waitlistEnabled: z.boolean().default(true),
-  minAge: z.any().transform(val => Number(val)),
-  maxAge: z.any().transform(val => Number(val)),
+  minAge: z.preprocess((val) => parseInt(String(val), 10), z.number()),
+  maxAge: z.preprocess((val) => parseInt(String(val), 10), z.number()),
   repeatType: z.enum(["none", "weekly", "monthly"]).default("none"),
-  repeatCount: z.any().transform(val => Number(val)).default(0),
+  repeatCount: z.preprocess((val) => parseInt(String(val || '0'), 10), z.number()).default(0),
   schedules: z.array(z.object({
-    dayOfWeek: z.any().transform(val => Number(val)),
+    dayOfWeek: z.preprocess((val) => parseInt(String(val), 10), z.number()),
     startTime: z.string(),
     endTime: z.string()
   })).min(1, "At least one schedule is required")
-});
+}).strict();
 
 export const insertRegistrationSchema = createInsertSchema(registrations);
 export const insertOrganizationSchema = createInsertSchema(organizations).omit({
