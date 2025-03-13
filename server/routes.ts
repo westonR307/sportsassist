@@ -352,7 +352,11 @@ export async function registerRoutes(app: Express) {
           maxAge: Number(parsed.data.maxAge),
           repeatType: parsed.data.repeatType ?? "none",
           repeatCount: Number(parsed.data.repeatCount ?? 0),
-          schedules: parsed.data.schedules
+          schedules: parsed.data.schedules.map(schedule => ({
+            dayOfWeek: schedule.dayOfWeek,
+            startTime: schedule.startTime.padStart(5, '0'),
+            endTime: schedule.endTime.padStart(5, '0')
+          }))
         });
 
         console.log("Camp created successfully:", camp);

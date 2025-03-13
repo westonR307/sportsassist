@@ -91,8 +91,8 @@ export const insertCampSchema = z.object({
   repeatCount: z.preprocess((val) => parseInt(String(val || '0'), 10), z.number()).default(0),
   schedules: z.array(z.object({
     dayOfWeek: z.preprocess((val) => parseInt(String(val), 10), z.number()),
-    startTime: z.string(),
-    endTime: z.string()
+    startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format"),
+    endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format")
   })).min(1, "At least one schedule is required")
 }).strict();
 

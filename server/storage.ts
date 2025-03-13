@@ -134,7 +134,11 @@ export class DatabaseStorage implements IStorage {
         repeatCount: parseInt(String(campData.repeatCount || '0'), 10),
         waitlistEnabled: true,
         visibility: campData.visibility || "public",
-        repeatType: campData.repeatType || "none"
+        repeatType: campData.repeatType || "none",
+        startDate: new Date(campData.startDate).toISOString(),
+        endDate: new Date(campData.endDate).toISOString(),
+        registrationStartDate: new Date(campData.registrationStartDate).toISOString(),
+        registrationEndDate: new Date(campData.registrationEndDate).toISOString()
       };
 
       console.log("2. Parsed data:", parsedData);
