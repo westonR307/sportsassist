@@ -114,21 +114,16 @@ export class DatabaseStorage implements IStorage {
   async createCamp(camp: Omit<Camp, "id"> & { schedules?: InsertCampSchedule[] }): Promise<Camp> {
     try {
       console.log("========= Storage: Creating Camp =========");
-      console.log("Received camp data:", JSON.stringify(camp, null, 2));
+      console.log("Raw camp data:", {
+        ...camp,
+        startDate: typeof camp.startDate,
+        endDate: typeof camp.endDate,
+        registrationStartDate: typeof camp.registrationStartDate,
+        registrationEndDate: typeof camp.registrationEndDate,
+      });
 
       // Ensure dates are properly formatted as ISO strings
-      const formattedCamp = {
-        ...camp,
-        startDate: new Date(camp.startDate).toISOString(),
-        endDate: new Date(camp.endDate).toISOString(),
-        registrationStartDate: new Date(camp.registrationStartDate).toISOString(),
-        registrationEndDate: new Date(camp.registrationEndDate).toISOString(),
-      };
-
-      console.log("Formatted camp data:", JSON.stringify(formattedCamp, null, 2));
-
-      // Create the camp
-      const [newCamp] = await db.insert(camps).values({
+      const campData = {
         name: camp.name,
         description: camp.description,
         streetAddress: camp.streetAddress,
@@ -136,47 +131,64 @@ export class DatabaseStorage implements IStorage {
         state: camp.state,
         zipCode: camp.zipCode,
         additionalLocationDetails: camp.additionalLocationDetails,
-        startDate: formattedCamp.startDate,
-        endDate: formattedCamp.endDate,
-        registrationStartDate: formattedCamp.registrationStartDate,
-        registrationEndDate: formattedCamp.registrationEndDate,
+        startDate: new Date(camp.startDate).toISOString(),
+        endDate: new Date(camp.endDate).toISOString(),
+        registrationStartDate: new Date(camp.registrationStartDate).toISOString(),
+        registrationEndDate: new Date(camp.registrationEndDate).toISOString(),
         price: camp.price,
         capacity: camp.capacity,
         organizationId: camp.organizationId,
         type: camp.type,
-        visibility: camp.visibility,
-        waitlistEnabled: camp.waitlistEnabled,
+        visibility: camp.visibility || "public",
+        waitlistEnabled: camp.waitlistEnabled ?? true,
         minAge: camp.minAge,
         maxAge: camp.maxAge,
-        repeatType: camp.repeatType,
-        repeatCount: camp.repeatCount
-      }).returning();
+        repeatType: camp.repeatType || "none",
+        repeatCount: camp.repeatCount ?? 0
+      };
 
-      console.log("Created camp in database:", newCamp);
+      console.log("Formatted camp data for insert:", JSON.stringify(campData, null, 2));
 
-      // Create schedules if provided
-      if (camp.schedules && camp.schedules.length > 0) {
-        console.log("Creating schedules for camp:", {
-          campId: newCamp.id,
-          scheduleCount: camp.schedules.length,
-          schedules: JSON.stringify(camp.schedules, null, 2)
-        });
+      try {
+        // Create the camp
+        const [newCamp] = await db.insert(camps).values(campData).returning();
+        console.log("Successfully created camp:", newCamp);
 
-        for (const schedule of camp.schedules) {
-          await db.insert(campSchedules).values({
+        // Create schedules if provided
+        if (camp.schedules && camp.schedules.length > 0) {
+          console.log("Creating schedules for camp:", {
             campId: newCamp.id,
-            dayOfWeek: schedule.dayOfWeek,
-            startTime: schedule.startTime,
-            endTime: schedule.endTime
+            scheduleCount: camp.schedules.length,
+            schedules: camp.schedules
           });
-        }
-        console.log("Successfully created all schedules");
-      }
 
-      return newCamp;
+          for (const schedule of camp.schedules) {
+            const scheduleData = {
+              campId: newCamp.id,
+              dayOfWeek: schedule.dayOfWeek,
+              startTime: schedule.startTime,
+              endTime: schedule.endTime
+            };
+            console.log("Creating schedule:", scheduleData);
+            await db.insert(campSchedules).values(scheduleData);
+          }
+          console.log("Successfully created all schedules");
+        }
+
+        return newCamp;
+      } catch (dbError: any) {
+        console.error("Database operation failed:", {
+          error: dbError,
+          code: dbError.code,
+          detail: dbError.detail,
+          constraint: dbError.constraint,
+          table: dbError.table,
+          column: dbError.column
+        });
+        throw dbError;
+      }
     } catch (error: any) {
-      console.error("Error in createCamp:", error);
-      console.error("Error details:", {
+      console.error("Error in createCamp:", {
         name: error.name,
         message: error.message,
         code: error.code,
