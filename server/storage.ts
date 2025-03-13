@@ -114,42 +114,18 @@ export class DatabaseStorage implements IStorage {
 
   async createCamp(campData: Omit<Camp, "id"> & { schedules?: InsertCampSchedule[] }): Promise<Camp> {
     try {
+      console.log("Received camp data:", campData);
+
       // Validate and transform the data
-      const validatedData = insertCampSchema.parse({
-        ...campData,
-        startDate: new Date(campData.startDate).toISOString(),
-        endDate: new Date(campData.endDate).toISOString(),
-        registrationStartDate: new Date(campData.registrationStartDate).toISOString(),
-        registrationEndDate: new Date(campData.registrationEndDate).toISOString(),
-      });
+      const validatedData = insertCampSchema.parse(campData);
+      console.log("Validated camp data:", validatedData);
 
       // Create the camp
-      const [newCamp] = await db.insert(camps).values({
-        name: validatedData.name,
-        description: validatedData.description,
-        streetAddress: validatedData.streetAddress,
-        city: validatedData.city,
-        state: validatedData.state,
-        zipCode: validatedData.zipCode,
-        additionalLocationDetails: validatedData.additionalLocationDetails,
-        startDate: validatedData.startDate,
-        endDate: validatedData.endDate,
-        registrationStartDate: validatedData.registrationStartDate,
-        registrationEndDate: validatedData.registrationEndDate,
-        price: validatedData.price,
-        capacity: validatedData.capacity,
-        organizationId: validatedData.organizationId,
-        type: validatedData.type,
-        visibility: validatedData.visibility,
-        waitlistEnabled: validatedData.waitlistEnabled,
-        minAge: validatedData.minAge,
-        maxAge: validatedData.maxAge,
-        repeatType: validatedData.repeatType,
-        repeatCount: validatedData.repeatCount
-      }).returning();
+      const [newCamp] = await db.insert(camps).values(validatedData).returning();
+      console.log("Created camp:", newCamp);
 
-      // Create schedules
-      if (validatedData.schedules) {
+      // Create schedules if provided
+      if (validatedData.schedules?.length > 0) {
         await Promise.all(
           validatedData.schedules.map(schedule =>
             db.insert(campSchedules).values({

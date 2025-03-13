@@ -67,16 +67,6 @@ export const insertChildSchema = createInsertSchema(children)
     medications: z.array(z.string()).optional().default([]),
   });
 
-export const insertCampScheduleSchema = z.object({
-  dayOfWeek: z.number().min(0).max(6),
-  startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
-    message: "Start time must be in HH:mm format (00:00-23:59)"
-  }),
-  endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
-    message: "End time must be in HH:mm format (00:00-23:59)"
-  }),
-});
-
 export const insertCampSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().min(1, "Description is required"),
@@ -89,17 +79,21 @@ export const insertCampSchema = z.object({
   endDate: z.string(),
   registrationStartDate: z.string(),
   registrationEndDate: z.string(),
-  price: z.string().or(z.number()).transform(val => Number(val)),
-  capacity: z.string().or(z.number()).transform(val => Number(val)),
-  organizationId: z.string().or(z.number()).transform(val => Number(val)),
+  price: z.union([z.string(), z.number()]).transform(val => Number(val)),
+  capacity: z.union([z.string(), z.number()]).transform(val => Number(val)),
+  organizationId: z.union([z.string(), z.number()]).transform(val => Number(val)),
   type: z.enum(["one_on_one", "group", "team", "virtual"]),
   visibility: z.enum(["public", "private"]).default("public"),
   waitlistEnabled: z.boolean().default(true),
-  minAge: z.string().or(z.number()).transform(val => Number(val)),
-  maxAge: z.string().or(z.number()).transform(val => Number(val)),
+  minAge: z.union([z.string(), z.number()]).transform(val => Number(val)),
+  maxAge: z.union([z.string(), z.number()]).transform(val => Number(val)),
   repeatType: z.enum(["none", "weekly", "monthly"]).default("none"),
-  repeatCount: z.string().or(z.number()).transform(val => Number(val)).default(0),
-  schedules: z.array(insertCampScheduleSchema).min(1, "At least one schedule is required"),
+  repeatCount: z.union([z.string(), z.number()]).transform(val => Number(val)).default(0),
+  schedules: z.array(z.object({
+    dayOfWeek: z.union([z.string(), z.number()]).transform(val => Number(val)),
+    startTime: z.string(),
+    endTime: z.string()
+  })).min(1, "At least one schedule is required")
 });
 
 export const insertRegistrationSchema = createInsertSchema(registrations);

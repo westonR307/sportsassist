@@ -1,5 +1,5 @@
 import { pgTable, text, serial, integer, boolean, timestamp, time } from "drizzle-orm/pg-core";
-import { type Role, type SportLevel, type Gender, type ContactMethod, type CampType, type CampVisibility, type RepeatType, type StaffRole } from "./types";
+import { type CampType, type CampVisibility, type RepeatType } from "./types";
 
 export const camps = pgTable("camps", {
   id: serial("id").primaryKey(),
@@ -10,10 +10,10 @@ export const camps = pgTable("camps", {
   state: text("state").notNull(),
   zipCode: text("zip_code").notNull(),
   additionalLocationDetails: text("additional_location_details"),
-  startDate: timestamp("start_date").notNull(),
-  endDate: timestamp("end_date").notNull(),
-  registrationStartDate: timestamp("registration_start_date").notNull(),
-  registrationEndDate: timestamp("registration_end_date").notNull(),
+  startDate: text("start_date").notNull(),
+  endDate: text("end_date").notNull(),
+  registrationStartDate: text("registration_start_date").notNull(),
+  registrationEndDate: text("registration_end_date").notNull(),
   price: integer("price").notNull(),
   capacity: integer("capacity").notNull(),
   organizationId: integer("organization_id").references(() => organizations.id).notNull(),
