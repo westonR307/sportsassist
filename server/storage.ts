@@ -143,16 +143,25 @@ export class DatabaseStorage implements IStorage {
 
       console.log("2. Parsed data:", parsedData);
 
+      // Validate the parsed data using insertCampSchema
+      const validation = insertCampSchema.safeParse(parsedData);
+      if (!validation.success) {
+        console.error("Validation failed:", validation.error.flatten());
+        throw new Error("Validation failed");
+      }
+
+      console.log("3. Validated data:", validation.data);
+
       // Create the camp with explicit type casting
-      const query = db.insert(camps).values(parsedData).returning();
-      console.log("3. Generated SQL:", query.toSQL());
+      const query = db.insert(camps).values(validation.data).returning();
+      console.log("4. Generated SQL:", query.toSQL());
 
       const [newCamp] = await query;
-      console.log("4. Created camp:", newCamp);
+      console.log("5. Created camp:", newCamp);
 
       // Handle schedules if they exist
       if (campData.schedules?.length > 0) {
-        console.log("5. Processing schedules:", campData.schedules);
+        console.log("6. Processing schedules:", campData.schedules);
 
         for (const schedule of campData.schedules) {
           const scheduleData = {
@@ -162,9 +171,9 @@ export class DatabaseStorage implements IStorage {
             endTime: schedule.endTime
           };
 
-          console.log("6. Creating schedule:", scheduleData);
+          console.log("7. Creating schedule:", scheduleData);
           const scheduleQuery = db.insert(campSchedules).values(scheduleData).returning();
-          console.log("7. Schedule SQL:", scheduleQuery.toSQL());
+          console.log("8. Schedule SQL:", scheduleQuery.toSQL());
 
           await scheduleQuery;
         }

@@ -1,7 +1,8 @@
 export const apiRequest = async (
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
   path: string,
-  body?: unknown
+  body?: unknown,
+  retries = 3 // Add retries parameter with default value
 ) => {
   const apiUrl = import.meta.env?.VITE_API_URL || "";
   console.log(`Making ${method} request to ${path}`);
@@ -56,7 +57,12 @@ export const apiRequest = async (
 
     if (error instanceof Error) {
       if (error.message.includes("NetworkError") || error.message.includes("Failed to fetch")) {
-        throw new Error("Network error: Please check your internet connection.");
+        if (retries > 0) {
+          console.warn(`Retrying request to ${path} (${retries} retries left)`);
+          return apiRequest(method, path, body, retries - 1);
+        } else {
+          throw new Error("Network error: Please check your internet connection.");
+        }
       } else {
         throw error;
       }
