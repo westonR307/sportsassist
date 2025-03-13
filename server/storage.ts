@@ -135,19 +135,19 @@ export class DatabaseStorage implements IStorage {
         endDate: new Date(camp.endDate).toISOString(),
         registrationStartDate: new Date(camp.registrationStartDate).toISOString(),
         registrationEndDate: new Date(camp.registrationEndDate).toISOString(),
-        price: camp.price,
-        capacity: camp.capacity,
-        organizationId: camp.organizationId,
+        price: Number(camp.price),
+        capacity: Number(camp.capacity),
+        organizationId: Number(camp.organizationId),
         type: camp.type,
         visibility: camp.visibility || "public",
         waitlistEnabled: camp.waitlistEnabled ?? true,
-        minAge: camp.minAge,
-        maxAge: camp.maxAge,
+        minAge: Number(camp.minAge),
+        maxAge: Number(camp.maxAge),
         repeatType: camp.repeatType || "none",
-        repeatCount: camp.repeatCount ?? 0
+        repeatCount: Number(camp.repeatCount ?? 0)
       };
 
-      console.log("Formatted camp data for insert:", JSON.stringify(campData, null, 2));
+      console.log("Formatted camp data before insert:", JSON.stringify(campData, null, 2));
 
       try {
         // Create the camp
@@ -165,7 +165,7 @@ export class DatabaseStorage implements IStorage {
           for (const schedule of camp.schedules) {
             const scheduleData = {
               campId: newCamp.id,
-              dayOfWeek: schedule.dayOfWeek,
+              dayOfWeek: Number(schedule.dayOfWeek),
               startTime: schedule.startTime,
               endTime: schedule.endTime
             };
