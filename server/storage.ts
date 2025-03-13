@@ -120,25 +120,25 @@ export class DatabaseStorage implements IStorage {
       const [newCamp] = await db.insert(camps).values({
         name: camp.name,
         description: camp.description,
-        street_address: camp.streetAddress,
+        streetAddress: camp.streetAddress,
         city: camp.city,
         state: camp.state,
-        zip_code: camp.zipCode,
-        additional_location_details: camp.additionalLocationDetails,
-        start_date: new Date(camp.startDate),
-        end_date: new Date(camp.endDate),
-        registration_start_date: new Date(camp.registrationStartDate),
-        registration_end_date: new Date(camp.registrationEndDate),
+        zipCode: camp.zipCode,
+        additionalLocationDetails: camp.additionalLocationDetails,
+        startDate: new Date(camp.startDate),
+        endDate: new Date(camp.endDate),
+        registrationStartDate: new Date(camp.registrationStartDate),
+        registrationEndDate: new Date(camp.registrationEndDate),
         price: camp.price,
         capacity: camp.capacity,
-        organization_id: camp.organizationId,
+        organizationId: camp.organizationId,
         type: camp.type,
         visibility: camp.visibility,
-        waitlist_enabled: camp.waitlistEnabled,
-        min_age: camp.minAge,
-        max_age: camp.maxAge,
-        repeat_type: camp.repeatType,
-        repeat_count: camp.repeatCount
+        waitlistEnabled: camp.waitlistEnabled,
+        minAge: camp.minAge,
+        maxAge: camp.maxAge,
+        repeatType: camp.repeatType,
+        repeatCount: camp.repeatCount
       }).returning();
 
       console.log("Created camp in database:", newCamp);
@@ -152,39 +152,16 @@ export class DatabaseStorage implements IStorage {
 
         for (const schedule of camp.schedules) {
           await db.insert(campSchedules).values({
-            camp_id: newCamp.id,
-            day_of_week: schedule.dayOfWeek,
-            start_time: schedule.startTime,
-            end_time: schedule.endTime
+            campId: newCamp.id,
+            dayOfWeek: schedule.dayOfWeek,
+            startTime: schedule.startTime,
+            endTime: schedule.endTime
           });
         }
         console.log("Successfully created all schedules");
       }
 
-      return {
-        id: newCamp.id,
-        name: newCamp.name,
-        description: newCamp.description,
-        streetAddress: newCamp.street_address,
-        city: newCamp.city,
-        state: newCamp.state,
-        zipCode: newCamp.zip_code,
-        additionalLocationDetails: newCamp.additional_location_details,
-        startDate: newCamp.start_date,
-        endDate: newCamp.end_date,
-        registrationStartDate: newCamp.registration_start_date,
-        registrationEndDate: newCamp.registration_end_date,
-        price: newCamp.price,
-        capacity: newCamp.capacity,
-        organizationId: newCamp.organization_id,
-        type: newCamp.type,
-        visibility: newCamp.visibility,
-        waitlistEnabled: newCamp.waitlist_enabled,
-        minAge: newCamp.min_age,
-        maxAge: newCamp.max_age,
-        repeatType: newCamp.repeat_type,
-        repeatCount: newCamp.repeat_count
-      };
+      return newCamp;
     } catch (error: any) {
       console.error("Error in createCamp:", error);
       console.error("Error details:", {
