@@ -85,34 +85,21 @@ export const insertCampSchema = z.object({
   state: z.string().length(2, "Please use 2-letter state code"),
   zipCode: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format"),
   additionalLocationDetails: z.string().optional(),
-  startDate: z.string().transform(str => new Date(str).toISOString()),
-  endDate: z.string().transform(str => new Date(str).toISOString()),
-  registrationStartDate: z.string().transform(str => new Date(str).toISOString()),
-  registrationEndDate: z.string().transform(str => new Date(str).toISOString()),
-  price: z.number().or(z.string().regex(/^\d+$/).transform(Number)),
-  capacity: z.number().or(z.string().regex(/^\d+$/).transform(Number)),
-  organizationId: z.number().or(z.string().regex(/^\d+$/).transform(Number)),
+  startDate: z.string(),
+  endDate: z.string(),
+  registrationStartDate: z.string(),
+  registrationEndDate: z.string(),
+  price: z.string().or(z.number()).transform(val => Number(val)),
+  capacity: z.string().or(z.number()).transform(val => Number(val)),
+  organizationId: z.string().or(z.number()).transform(val => Number(val)),
   type: z.enum(["one_on_one", "group", "team", "virtual"]),
   visibility: z.enum(["public", "private"]).default("public"),
   waitlistEnabled: z.boolean().default(true),
-  minAge: z.number().or(z.string().regex(/^\d+$/).transform(Number)),
-  maxAge: z.number().or(z.string().regex(/^\d+$/).transform(Number)),
+  minAge: z.string().or(z.number()).transform(val => Number(val)),
+  maxAge: z.string().or(z.number()).transform(val => Number(val)),
   repeatType: z.enum(["none", "weekly", "monthly"]).default("none"),
-  repeatCount: z.number().or(z.string().regex(/^\d+$/).transform(Number)).default(0),
+  repeatCount: z.string().or(z.number()).transform(val => Number(val)).default(0),
   schedules: z.array(insertCampScheduleSchema).min(1, "At least one schedule is required"),
-}).refine((data) => {
-  const startDate = new Date(data.startDate);
-  const endDate = new Date(data.endDate);
-  const regStartDate = new Date(data.registrationStartDate);
-  const regEndDate = new Date(data.registrationEndDate);
-
-  return regStartDate <= regEndDate &&
-         regEndDate <= startDate &&
-         startDate <= endDate &&
-         data.minAge <= data.maxAge;
-}, {
-  message: "Invalid date sequence or age range",
-  path: ["dates"]
 });
 
 export const insertRegistrationSchema = createInsertSchema(registrations);

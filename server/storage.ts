@@ -20,44 +20,14 @@ import {
   type SportLevel,
   type Registration,
   type CampSchedule,
-  type InsertCampSchedule
+  type InsertCampSchedule,
+  insertCampSchema
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, and } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
-import { z } from 'zod';
-
-const insertCampSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
-  streetAddress: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  zipCode: z.string().optional(),
-  additionalLocationDetails: z.string().optional(),
-  startDate: z.date(),
-  endDate: z.date(),
-  registrationStartDate: z.date(),
-  registrationEndDate: z.date(),
-  price: z.number().min(0),
-  capacity: z.number().min(1),
-  organizationId: z.number().min(1),
-  type: z.string().min(1),
-  visibility: z.enum(['public', 'private']).optional(),
-  waitlistEnabled: z.boolean().optional(),
-  minAge: z.number().min(0).optional(),
-  maxAge: z.number().min(0).optional(),
-  repeatType: z.enum(['none', 'daily', 'weekly', 'monthly']).optional(),
-  repeatCount: z.number().min(0).optional(),
-  schedules: z.array(z.object({
-    dayOfWeek: z.number().min(0).max(6),
-    startTime: z.string(),
-    endTime: z.string()
-  })).optional()
-});
-
 
 const PostgresSessionStore = connectPg(session);
 
@@ -142,23 +112,51 @@ export class DatabaseStorage implements IStorage {
       );
   }
 
-  async createCamp(camp: Omit<Camp, "id"> & { schedules?: InsertCampSchedule[] }): Promise<Camp> {
+  async createCamp(campData: Omit<Camp, "id"> & { schedules?: InsertCampSchedule[] }): Promise<Camp> {
     try {
-      // Parse and validate the camp data
-      const validatedCamp = insertCampSchema.parse(camp);
+      // Validate and transform the data
+      const validatedData = insertCampSchema.parse({
+        ...campData,
+        startDate: new Date(campData.startDate).toISOString(),
+        endDate: new Date(campData.endDate).toISOString(),
+        registrationStartDate: new Date(campData.registrationStartDate).toISOString(),
+        registrationEndDate: new Date(campData.registrationEndDate).toISOString(),
+      });
 
-      // Create the camp with validated data
-      const [newCamp] = await db.insert(camps)
-        .values(validatedCamp)
-        .returning();
+      // Create the camp
+      const [newCamp] = await db.insert(camps).values({
+        name: validatedData.name,
+        description: validatedData.description,
+        streetAddress: validatedData.streetAddress,
+        city: validatedData.city,
+        state: validatedData.state,
+        zipCode: validatedData.zipCode,
+        additionalLocationDetails: validatedData.additionalLocationDetails,
+        startDate: validatedData.startDate,
+        endDate: validatedData.endDate,
+        registrationStartDate: validatedData.registrationStartDate,
+        registrationEndDate: validatedData.registrationEndDate,
+        price: validatedData.price,
+        capacity: validatedData.capacity,
+        organizationId: validatedData.organizationId,
+        type: validatedData.type,
+        visibility: validatedData.visibility,
+        waitlistEnabled: validatedData.waitlistEnabled,
+        minAge: validatedData.minAge,
+        maxAge: validatedData.maxAge,
+        repeatType: validatedData.repeatType,
+        repeatCount: validatedData.repeatCount
+      }).returning();
 
-      // Create schedules if provided
-      if (validatedCamp.schedules?.length > 0) {
+      // Create schedules
+      if (validatedData.schedules) {
         await Promise.all(
-          validatedCamp.schedules.map(schedule =>
+          validatedData.schedules.map(schedule =>
             db.insert(campSchedules).values({
               campId: newCamp.id,
-              ...schedule
+              dayOfWeek: schedule.dayOfWeek,
+              startTime: schedule.startTime,
+              endTime: schedule.endTime
             })
           )
         );
@@ -166,7 +164,7 @@ export class DatabaseStorage implements IStorage {
 
       return newCamp;
     } catch (error: any) {
-      console.error("Failed to create camp:", {
+      console.error("Camp creation failed:", {
         error: error.message,
         details: error.errors || error.detail,
         code: error.code
