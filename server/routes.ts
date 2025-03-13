@@ -303,23 +303,46 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ message: "User has no organization" });
       }
 
-      // Prepare data for validation
+      // Prepare data for validation - ensure all fields are properly formatted
       const validationData = {
         ...req.body,
-        organizationId: req.user.organizationId,
+        organizationId: parseInt(String(req.user.organizationId), 10),
+        price: parseInt(String(req.body.price), 10),
+        capacity: parseInt(String(req.body.capacity), 10),
+        minAge: parseInt(String(req.body.minAge), 10),
+        maxAge: parseInt(String(req.body.maxAge), 10),
+        repeatCount: parseInt(String(req.body.repeatCount || '0'), 10),
+        waitlistEnabled: req.body.waitlistEnabled !== false,
+        visibility: req.body.visibility || "public",
+        repeatType: req.body.repeatType || "none",
         startDate: new Date(req.body.startDate).toISOString(),
         endDate: new Date(req.body.endDate).toISOString(),
         registrationStartDate: new Date(req.body.registrationStartDate).toISOString(),
-        registrationEndDate: new Date(req.body.registrationEndDate).toISOString()
+        registrationEndDate: new Date(req.body.registrationEndDate).toISOString(),
+        type: req.body.type || "group"
       };
 
-      console.log("Preparing data for schema validation:", validationData);
+      console.log("Preparing data for schema validation:", JSON.stringify(validationData, null, 2));
+
+      // Ensure schedules are properly formatted
+      if (Array.isArray(validationData.schedules)) {
+        validationData.schedules = validationData.schedules.map(schedule => ({
+          dayOfWeek: parseInt(String(schedule.dayOfWeek), 10),
+          startTime: String(schedule.startTime).padStart(5, '0'),
+          endTime: String(schedule.endTime).padStart(5, '0')
+        }));
+      } else {
+        console.error("No schedules provided");
+        return res.status(400).json({
+          message: "At least one schedule is required for the camp"
+        });
+      }
 
       const parsed = insertCampSchema.safeParse(validationData);
 
       if (!parsed.success) {
         const validationErrors = parsed.error.flatten();
-        console.error("Schema validation failed:", validationErrors);
+        console.error("Schema validation failed:", JSON.stringify(validationErrors, null, 2));
         return res.status(400).json({
           message: "Invalid camp data",
           errors: validationErrors

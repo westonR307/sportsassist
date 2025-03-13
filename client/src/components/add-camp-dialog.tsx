@@ -221,6 +221,7 @@ export function AddCampDialog({
   const [openSportCombobox, setOpenSportCombobox] = React.useState(false);
   const [schedules, setSchedules] = React.useState<Schedule[]>([]);
   const [currentTab, setCurrentTab] = React.useState("basic");
+  const [submitting, setSubmitting] = React.useState(false); // Added for loading state
 
   // Get default dates
   const today = new Date();
@@ -260,6 +261,7 @@ export function AddCampDialog({
 
   const createCampMutation = useMutation({
     mutationFn: async (data: z.infer<typeof insertCampSchema>) => {
+      setSubmitting(true); // Set submitting to true before API call
       if (!user?.organizationId) {
         throw new Error("Organization ID required");
       }
@@ -284,8 +286,8 @@ export function AddCampDialog({
         minAge: Number(data.minAge) || 5,
         maxAge: Number(data.maxAge) || 18,
         repeatCount: Number(data.repeatCount) || 0,
-        _sportId: sportId,
-        _skillLevel: mappedSkillLevel,
+        sportId: sportId, // Removed _ from sportId and skillLevel
+        skillLevel: mappedSkillLevel, // Removed _ from sportId and skillLevel
         schedules: schedules.map(schedule => ({
           dayOfWeek: schedule.dayOfWeek,
           startTime: schedule.startTime.padStart(5, '0'),
@@ -293,7 +295,7 @@ export function AddCampDialog({
         }))
       };
 
-      console.log("Creating camp with data:", requestData);
+      console.log("Creating camp with data:", JSON.stringify(requestData, null, 2));
 
       try {
         const response = await apiRequest("POST", "/api/camps", requestData);
@@ -302,6 +304,8 @@ export function AddCampDialog({
       } catch (error: any) {
         console.error("Camp creation error:", error);
         throw error;
+      } finally {
+        setSubmitting(false); // Set submitting to false after API call, regardless of success or failure
       }
     },
     onSuccess: () => {
@@ -1084,9 +1088,9 @@ export function AddCampDialog({
                     </Button>
                     <Button
                       type="submit"
-                      disabled={createCampMutation.isPending}
+                      disabled={createCampMutation.isPending || submitting} // Disable button while submitting
                     >
-                      {createCampMutation.isPending ? (
+                      {createCampMutation.isPending || submitting ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Creating...
