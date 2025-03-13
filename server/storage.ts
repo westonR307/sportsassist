@@ -114,7 +114,18 @@ export class DatabaseStorage implements IStorage {
   async createCamp(camp: Omit<Camp, "id"> & { schedules?: InsertCampSchedule[] }): Promise<Camp> {
     try {
       console.log("========= Storage: Creating Camp =========");
-      console.log("Received camp data:", camp);
+      console.log("Received camp data:", JSON.stringify(camp, null, 2));
+
+      // Ensure dates are properly formatted as ISO strings
+      const formattedCamp = {
+        ...camp,
+        startDate: new Date(camp.startDate).toISOString(),
+        endDate: new Date(camp.endDate).toISOString(),
+        registrationStartDate: new Date(camp.registrationStartDate).toISOString(),
+        registrationEndDate: new Date(camp.registrationEndDate).toISOString(),
+      };
+
+      console.log("Formatted camp data:", JSON.stringify(formattedCamp, null, 2));
 
       // Create the camp
       const [newCamp] = await db.insert(camps).values({
@@ -125,10 +136,10 @@ export class DatabaseStorage implements IStorage {
         state: camp.state,
         zipCode: camp.zipCode,
         additionalLocationDetails: camp.additionalLocationDetails,
-        startDate: new Date(camp.startDate),
-        endDate: new Date(camp.endDate),
-        registrationStartDate: new Date(camp.registrationStartDate),
-        registrationEndDate: new Date(camp.registrationEndDate),
+        startDate: formattedCamp.startDate,
+        endDate: formattedCamp.endDate,
+        registrationStartDate: formattedCamp.registrationStartDate,
+        registrationEndDate: formattedCamp.registrationEndDate,
         price: camp.price,
         capacity: camp.capacity,
         organizationId: camp.organizationId,
@@ -147,7 +158,8 @@ export class DatabaseStorage implements IStorage {
       if (camp.schedules && camp.schedules.length > 0) {
         console.log("Creating schedules for camp:", {
           campId: newCamp.id,
-          scheduleCount: camp.schedules.length
+          scheduleCount: camp.schedules.length,
+          schedules: JSON.stringify(camp.schedules, null, 2)
         });
 
         for (const schedule of camp.schedules) {
@@ -165,9 +177,12 @@ export class DatabaseStorage implements IStorage {
     } catch (error: any) {
       console.error("Error in createCamp:", error);
       console.error("Error details:", {
+        name: error.name,
         message: error.message,
         code: error.code,
         detail: error.detail,
+        table: error.table,
+        constraint: error.constraint,
         stack: error.stack
       });
       throw error;
