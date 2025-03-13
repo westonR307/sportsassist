@@ -176,31 +176,7 @@ export class DatabaseStorage implements IStorage {
 
   async listCamps(): Promise<Camp[]> {
     try {
-      const dbCamps = await db.select().from(camps);
-      return dbCamps.map(camp => ({
-        id: camp.id,
-        name: camp.name,
-        description: camp.description,
-        streetAddress: camp.street_address,
-        city: camp.city,
-        state: camp.state,
-        zipCode: camp.zip_code,
-        additionalLocationDetails: camp.additional_location_details,
-        startDate: camp.start_date,
-        endDate: camp.end_date,
-        registrationStartDate: camp.registration_start_date,
-        registrationEndDate: camp.registration_end_date,
-        price: camp.price,
-        capacity: camp.capacity,
-        organizationId: camp.organization_id,
-        type: camp.type,
-        visibility: camp.visibility,
-        waitlistEnabled: camp.waitlist_enabled,
-        minAge: camp.min_age,
-        maxAge: camp.max_age,
-        repeatType: camp.repeat_type,
-        repeatCount: camp.repeat_count
-      }));
+      return await db.select().from(camps);
     } catch (error) {
       console.error("Error listing camps:", error);
       throw error;
@@ -210,32 +186,7 @@ export class DatabaseStorage implements IStorage {
   async getCamp(id: number): Promise<Camp | undefined> {
     try {
       const [camp] = await db.select().from(camps).where(eq(camps.id, id));
-      if (!camp) return undefined;
-
-      return {
-        id: camp.id,
-        name: camp.name,
-        description: camp.description,
-        streetAddress: camp.street_address,
-        city: camp.city,
-        state: camp.state,
-        zipCode: camp.zip_code,
-        additionalLocationDetails: camp.additional_location_details,
-        startDate: camp.start_date,
-        endDate: camp.end_date,
-        registrationStartDate: camp.registration_start_date,
-        registrationEndDate: camp.registration_end_date,
-        price: camp.price,
-        capacity: camp.capacity,
-        organizationId: camp.organization_id,
-        type: camp.type,
-        visibility: camp.visibility,
-        waitlistEnabled: camp.waitlist_enabled,
-        minAge: camp.min_age,
-        maxAge: camp.max_age,
-        repeatType: camp.repeat_type,
-        repeatCount: camp.repeat_count
-      };
+      return camp;
     } catch (error) {
       console.error("Error getting camp:", error);
       throw error;
