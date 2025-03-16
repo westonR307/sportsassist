@@ -10,7 +10,6 @@ import {
   type User,
   type InsertUser,
   type Role,
-  type Camp,
   type Organization,
   type InsertOrganization,
   type Invitation,
@@ -114,69 +113,57 @@ export class DatabaseStorage implements IStorage {
 
   async createCamp(campData: Omit<Camp, "id"> & { schedules?: InsertCampSchedule[] }): Promise<Camp> {
     try {
-      console.log("========= Creating Camp - Step by Step Debug =========");
-      console.log("1. Raw camp data received:", {
+      console.log("Creating camp with data:", {
         ...campData,
         type: typeof campData.type,
         price: typeof campData.price,
-        capacity: typeof campData.capacity,
-        schedules: campData.schedules?.length
+        startDate: typeof campData.startDate
       });
 
-      // Parse all number fields explicitly
-      const parsedData = {
-        ...campData,
-        price: parseInt(String(campData.price), 10),
-        capacity: parseInt(String(campData.capacity), 10),
-        organizationId: parseInt(String(campData.organizationId), 10),
-        minAge: parseInt(String(campData.minAge), 10),
-        maxAge: parseInt(String(campData.maxAge), 10),
-        repeatCount: parseInt(String(campData.repeatCount || '0'), 10),
-        waitlistEnabled: true,
-        visibility: campData.visibility || "public",
-        repeatType: campData.repeatType || "none",
-        startDate: new Date(campData.startDate).toISOString(),
-        endDate: new Date(campData.endDate).toISOString(),
-        registrationStartDate: new Date(campData.registrationStartDate).toISOString(),
-        registrationEndDate: new Date(campData.registrationEndDate).toISOString()
-      };
+      // Step 1: Validate the input data
+      const validatedData = insertCampSchema.parse(campData);
+      console.log("Validated data:", validatedData);
 
-      console.log("2. Parsed data:", parsedData);
+      // Step 2: Create the camp
+      const [newCamp] = await db.insert(camps).values({
+        name: validatedData.name,
+        description: validatedData.description,
+        streetAddress: validatedData.streetAddress,
+        city: validatedData.city,
+        state: validatedData.state,
+        zipCode: validatedData.zipCode,
+        additionalLocationDetails: validatedData.additionalLocationDetails,
+        startDate: validatedData.startDate,
+        endDate: validatedData.endDate,
+        registrationStartDate: validatedData.registrationStartDate,
+        registrationEndDate: validatedData.registrationEndDate,
+        price: validatedData.price,
+        capacity: validatedData.capacity,
+        organizationId: validatedData.organizationId,
+        type: validatedData.type,
+        visibility: validatedData.visibility,
+        waitlistEnabled: validatedData.waitlistEnabled,
+        minAge: validatedData.minAge,
+        maxAge: validatedData.maxAge,
+        repeatType: validatedData.repeatType,
+        repeatCount: validatedData.repeatCount
+      }).returning();
 
-      // Validate the parsed data using insertCampSchema
-      const validation = insertCampSchema.safeParse(parsedData);
-      if (!validation.success) {
-        console.error("Validation failed:", validation.error.flatten());
-        throw new Error("Validation failed");
-      }
+      console.log("Created camp:", newCamp);
 
-      console.log("3. Validated data:", validation.data);
-
-      // Create the camp with explicit type casting
-      const query = db.insert(camps).values(validation.data).returning();
-      console.log("4. Generated SQL:", query.toSQL());
-
-      const [newCamp] = await query;
-      console.log("5. Created camp:", newCamp);
-
-      // Handle schedules if they exist
-      if (campData.schedules?.length > 0) {
-        console.log("6. Processing schedules:", campData.schedules);
-
-        for (const schedule of campData.schedules) {
-          const scheduleData = {
-            campId: newCamp.id,
-            dayOfWeek: parseInt(String(schedule.dayOfWeek), 10),
-            startTime: schedule.startTime,
-            endTime: schedule.endTime
-          };
-
-          console.log("7. Creating schedule:", scheduleData);
-          const scheduleQuery = db.insert(campSchedules).values(scheduleData).returning();
-          console.log("8. Schedule SQL:", scheduleQuery.toSQL());
-
-          await scheduleQuery;
-        }
+      // Step 3: Create schedules
+      if (validatedData.schedules?.length > 0) {
+        console.log("Creating schedules:", validatedData.schedules);
+        await Promise.all(
+          validatedData.schedules.map(schedule =>
+            db.insert(campSchedules).values({
+              campId: newCamp.id,
+              dayOfWeek: schedule.dayOfWeek,
+              startTime: schedule.startTime,
+              endTime: schedule.endTime
+            })
+          )
+        );
       }
 
       return newCamp;
@@ -184,14 +171,9 @@ export class DatabaseStorage implements IStorage {
       console.error("Camp creation failed:", {
         name: error.name,
         message: error.message,
+        errors: error.errors,
         code: error.code,
-        detail: error.detail,
-        table: error.table,
-        constraint: error.constraint,
-        routine: error.routine,
-        sql: error.sql,
-        parameters: error.parameters,
-        stack: error.stack
+        detail: error.detail
       });
       throw error;
     }

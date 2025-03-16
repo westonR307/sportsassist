@@ -75,24 +75,27 @@ export const insertCampSchema = z.object({
   state: z.string().length(2, "Please use 2-letter state code"),
   zipCode: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format"),
   additionalLocationDetails: z.string().optional().nullable(),
-  startDate: z.string(),
-  endDate: z.string(),
-  registrationStartDate: z.string(),
-  registrationEndDate: z.string(),
-  price: z.preprocess((val) => parseInt(String(val), 10), z.number()),
-  capacity: z.preprocess((val) => parseInt(String(val), 10), z.number()),
-  organizationId: z.preprocess((val) => parseInt(String(val), 10), z.number()),
+  // Convert string dates to timestamps
+  startDate: z.string().transform(str => new Date(str)),
+  endDate: z.string().transform(str => new Date(str)),
+  registrationStartDate: z.string().transform(str => new Date(str)),
+  registrationEndDate: z.string().transform(str => new Date(str)),
+  // Convert string numbers to integers
+  price: z.union([z.string(), z.number()]).transform(val => Number(val)),
+  capacity: z.union([z.string(), z.number()]).transform(val => Number(val)),
+  organizationId: z.union([z.string(), z.number()]).transform(val => Number(val)),
   type: z.enum(["one_on_one", "group", "team", "virtual"]),
   visibility: z.enum(["public", "private"]).default("public"),
   waitlistEnabled: z.boolean().default(true),
-  minAge: z.preprocess((val) => parseInt(String(val), 10), z.number()),
-  maxAge: z.preprocess((val) => parseInt(String(val), 10), z.number()),
+  minAge: z.union([z.string(), z.number()]).transform(val => Number(val)),
+  maxAge: z.union([z.string(), z.number()]).transform(val => Number(val)),
   repeatType: z.enum(["none", "weekly", "monthly"]).default("none"),
-  repeatCount: z.preprocess((val) => parseInt(String(val || '0'), 10), z.number()).default(0),
+  repeatCount: z.union([z.string(), z.number()]).transform(val => Number(val)).default(0),
+  // Schedule validation
   schedules: z.array(z.object({
-    dayOfWeek: z.preprocess((val) => parseInt(String(val), 10), z.number()),
-    startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format"),
-    endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format")
+    dayOfWeek: z.union([z.string(), z.number()]).transform(val => Number(val)),
+    startTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format"),
+    endTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format")
   })).min(1, "At least one schedule is required")
 }).strict();
 
@@ -117,7 +120,7 @@ export type Sport = typeof sports.$inferSelect;
 export type ChildSport = typeof childSports.$inferSelect;
 export type InsertChildSport = Exclude<z.infer<typeof insertChildSchema>["sportsInterests"], undefined>[number];
 export type CampSchedule = typeof campSchedules.$inferSelect;
-export type InsertCampSchedule = z.infer<typeof insertCampScheduleSchema>;
+//export type InsertCampSchedule = z.infer<typeof insertCampScheduleSchema>;
 export type CampSport = typeof campSports.$inferSelect;
 
 // Re-export tables
