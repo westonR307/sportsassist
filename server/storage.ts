@@ -172,28 +172,6 @@ export class DatabaseStorage implements IStorage {
 
         return newCamp;
       });
-        name: campData.name,
-        description: campData.description,
-        streetAddress: campData.streetAddress,
-        city: campData.city,
-        state: campData.state,
-        zipCode: campData.zipCode,
-        additionalLocationDetails: campData.additionalLocationDetails,
-        startDate: new Date(campData.startDate),
-        endDate: new Date(campData.endDate),
-        registrationStartDate: new Date(campData.registrationStartDate),
-        registrationEndDate: new Date(campData.registrationEndDate),
-        price: parseInt(String(campData.price), 10),
-        capacity: parseInt(String(campData.capacity), 10),
-        organizationId: organizationId,
-        type: campData.type,
-        visibility: campData.visibility || "public",
-        waitlistEnabled: true,
-        minAge: parseInt(String(campData.minAge), 10),
-        maxAge: parseInt(String(campData.maxAge), 10),
-        repeatType: campData.repeatType || "none",
-        repeatCount: parseInt(String(campData.repeatCount || '0'), 10)
-      };
 
       console.log("2. Prepared data:", JSON.stringify(preparedData, null, 2));
 
