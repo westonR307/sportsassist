@@ -383,8 +383,6 @@ export async function registerRoutes(app: Express) {
 
         console.log("Attempting to create camp with data:", JSON.stringify(campData, null, 2));
         const camp = await storage.createCamp(campData);
-        });
-
         console.log("Camp created successfully:", camp);
         console.log("========= Camp Creation Debug End =========");
         res.status(201).json(camp);
