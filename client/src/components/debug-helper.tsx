@@ -49,10 +49,7 @@ export function DebugHelper() {
       const data = JSON.parse(campData)
 
       // Make the API request
-      const result = await apiRequest("/api/camps", {
-        method: "POST",
-        body: JSON.stringify(data),
-      })
+      const result = await apiRequest("POST", "/api/camps", data)
 
       // Get the response
       const responseText = await result.text()
