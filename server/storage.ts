@@ -115,65 +115,17 @@ export class DatabaseStorage implements IStorage {
       console.log("=== Camp Creation Process Start ===");
       console.log("1. Raw camp data:", JSON.stringify(campData, null, 2));
 
-      return await db.transaction(async (trx) => {
-        // Create the camp
-        const [newCamp] = await trx.insert(camps).values({
-          name: campData.name,
-          description: campData.description,
-          streetAddress: campData.streetAddress,
-          city: campData.city,
-          state: campData.state,
-          zipCode: campData.zipCode,
-          additionalLocationDetails: campData.additionalLocationDetails,
-          startDate: new Date(campData.startDate),
-          endDate: new Date(campData.endDate),
-          registrationStartDate: new Date(campData.registrationStartDate),
-          registrationEndDate: new Date(campData.registrationEndDate),
-          price: Number(campData.price),
-          capacity: Number(campData.capacity),
-          organizationId: Number(campData.organizationId),
-          type: campData.type,
-          visibility: campData.visibility || "public",
-          waitlistEnabled: true,
-          minAge: Number(campData.minAge),
-          maxAge: Number(campData.maxAge),
-          repeatType: campData.repeatType || "none",
-          repeatCount: Number(campData.repeatCount || 0)
-        }).returning();
-
-        // Create schedules if provided
-        if (campData.schedules?.length > 0) {
-          await trx.insert(campSchedules).values(
-            campData.schedules.map((schedule: any) => ({
-              campId: newCamp.id,
-              dayOfWeek: Number(schedule.dayOfWeek),
-              startTime: schedule.startTime,
-              endTime: schedule.endTime
-            }))
-          );
+      // First ensure organizationId is a number
+      let organizationId: number;
+      try {
+        organizationId = parseInt(String(campData.organizationId), 10);
+        if (isNaN(organizationId)) {
+          throw new Error("Invalid organization ID");
         }
-
-        // Create camp sport if provided
-        if (campData.sportId && campData.skillLevel) {
-          await trx.insert(campSports).values({
-            campId: newCamp.id,
-            sportId: Number(campData.sportId),
-            skillLevel: campData.skillLevel
-          });
-        }
-
-        return newCamp;
-      });
-    } catch (error: any) {
-      console.error("Camp creation failed:", {
-        message: error.message,
-        code: error.code,
-        detail: error.detail,
-        stack: error.stack
-      });
-      throw error;
-    }
-  }
+      } catch (error) {
+        console.error("Organization ID conversion failed:", error);
+        throw new Error("Invalid organization ID format");
+      }
 
       // Prepare the data with explicit type conversions
       const preparedData = {
