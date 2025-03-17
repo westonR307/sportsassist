@@ -75,25 +75,62 @@ export const insertCampSchema = z.object({
   state: z.string().length(2, "Please use 2-letter state code"),
   zipCode: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format"),
   additionalLocationDetails: z.string().optional().nullable(),
-  // Convert string dates to timestamps
-  startDate: z.string().transform(str => new Date(str)),
-  endDate: z.string().transform(str => new Date(str)),
-  registrationStartDate: z.string().transform(str => new Date(str)),
-  registrationEndDate: z.string().transform(str => new Date(str)),
-  // Convert string numbers to integers
-  price: z.union([z.string(), z.number()]).transform(val => Number(val)),
-  capacity: z.union([z.string(), z.number()]).transform(val => Number(val)),
-  organizationId: z.union([z.string(), z.number()]).transform(val => Number(val)),
+  startDate: z.string().or(z.date()).transform(val => {
+    if (val instanceof Date) return val;
+    return new Date(val);
+  }),
+  endDate: z.string().or(z.date()).transform(val => {
+    if (val instanceof Date) return val;
+    return new Date(val);
+  }),
+  registrationStartDate: z.string().or(z.date()).transform(val => {
+    if (val instanceof Date) return val;
+    return new Date(val);
+  }),
+  registrationEndDate: z.string().or(z.date()).transform(val => {
+    if (val instanceof Date) return val;
+    return new Date(val);
+  }),
+  price: z.any().transform(val => {
+    const num = Number(val);
+    if (isNaN(num)) throw new Error("Price must be a number");
+    return num;
+  }),
+  capacity: z.any().transform(val => {
+    const num = Number(val);
+    if (isNaN(num)) throw new Error("Capacity must be a number");
+    return num;
+  }),
+  organizationId: z.any().transform(val => {
+    const num = Number(val);
+    if (isNaN(num)) throw new Error("Organization ID must be a number");
+    return num;
+  }),
   type: z.enum(["one_on_one", "group", "team", "virtual"]),
   visibility: z.enum(["public", "private"]).default("public"),
   waitlistEnabled: z.boolean().default(true),
-  minAge: z.union([z.string(), z.number()]).transform(val => Number(val)),
-  maxAge: z.union([z.string(), z.number()]).transform(val => Number(val)),
+  minAge: z.any().transform(val => {
+    const num = Number(val);
+    if (isNaN(num)) throw new Error("Minimum age must be a number");
+    return num;
+  }),
+  maxAge: z.any().transform(val => {
+    const num = Number(val);
+    if (isNaN(num)) throw new Error("Maximum age must be a number");
+    return num;
+  }),
   repeatType: z.enum(["none", "weekly", "monthly"]).default("none"),
-  repeatCount: z.union([z.string(), z.number()]).transform(val => Number(val)).default(0),
-  // Schedule validation
+  repeatCount: z.any().transform(val => {
+    const num = Number(val || 0);
+    if (isNaN(num)) throw new Error("Repeat count must be a number");
+    return num;
+  }),
   schedules: z.array(z.object({
-    dayOfWeek: z.union([z.string(), z.number()]).transform(val => Number(val)),
+    dayOfWeek: z.any().transform(val => {
+      const num = Number(val);
+      if (isNaN(num) || num < 0 || num > 6) throw new Error("Day of week must be a number between 0 and 6");
+      return num;
+    }),
     startTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format"),
     endTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format")
   })).min(1, "At least one schedule is required")
