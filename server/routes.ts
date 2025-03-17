@@ -426,10 +426,19 @@ export async function registerRoutes(app: Express) {
       console.log("Fetching camps list");
       const camps = await storage.listCamps();
       console.log(`Retrieved ${camps.length} camps`);
+      
+      // Force fresh response
+      res.setHeader('Cache-Control', 'no-cache');
       res.json(camps);
     } catch (error) {
-      console.error("Error fetching camps:", error);
-      res.status(500).json({ message: "Failed to fetch camps" });
+      console.error("Error fetching camps:", {
+        message: error.message,
+        stack: error.stack
+      });
+      res.status(500).json({ 
+        message: "Failed to fetch camps",
+        error: error.message
+      });
     }
   });
 

@@ -198,8 +198,13 @@ export class DatabaseStorage implements IStorage {
       console.log("Retrieved camps:", JSON.stringify(allCamps, null, 2));
       return allCamps;
     } catch (error) {
-      console.error("Error listing camps:", error);
-      throw error;
+      console.error("Error listing camps:", {
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        stack: error.stack
+      });
+      throw new Error(`Failed to list camps: ${error.message}`);
     }
   }
 
