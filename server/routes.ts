@@ -427,11 +427,15 @@ export async function registerRoutes(app: Express) {
       const camps = await storage.listCamps();
       console.log(`Retrieved ${camps.length} camps`);
 
-      // Force fresh response
-      res.setHeader('Cache-Control', 'no-store');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-      res.setHeader('Surrogate-Control', 'no-store');
+      // Force fresh response with multiple cache control headers
+      res.set({
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Surrogate-Control': 'no-store',
+        'ETag': Date.now().toString() // Force new ETag each time
+      });
+
       res.json(camps);
     } catch (error) {
       console.error("Error fetching camps:", {
