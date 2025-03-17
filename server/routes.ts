@@ -369,34 +369,20 @@ export async function registerRoutes(app: Express) {
       }
 
       try {
-        // Create the camp with schedules and sport
-        const camp = await storage.createCamp({
-          name: parsed.data.name.trim(),
-          description: parsed.data.description.trim(),
-          streetAddress: parsed.data.streetAddress.trim(),
-          city: parsed.data.city.trim(),
-          state: parsed.data.state.trim().toUpperCase(),
-          zipCode: parsed.data.zipCode.trim(),
-          additionalLocationDetails: parsed.data.additionalLocationDetails?.trim() ?? null,
-          startDate: parsed.data.startDate,
-          endDate: parsed.data.endDate,
-          registrationStartDate: parsed.data.registrationStartDate,
-          registrationEndDate: parsed.data.registrationEndDate,
-          price: Number(parsed.data.price),
-          capacity: Number(parsed.data.capacity),
-          organizationId: req.user.organizationId,
-          type: parsed.data.type,
-          visibility: parsed.data.visibility,
-          waitlistEnabled: parsed.data.waitlistEnabled ?? true,
-          minAge: Number(parsed.data.minAge),
-          maxAge: Number(parsed.data.maxAge),
-          repeatType: parsed.data.repeatType ?? "none",
-          repeatCount: Number(parsed.data.repeatCount ?? 0),
+        // Add sport data to the validated data
+        const campData = {
+          ...parsed.data,
+          sportId: parseInt(String(req.body.sportId), 10),
+          skillLevel: req.body.skillLevel,
           schedules: parsed.data.schedules.map(schedule => ({
-            dayOfWeek: schedule.dayOfWeek,
-            startTime: schedule.startTime.padStart(5, '0'),
-            endTime: schedule.endTime.padStart(5, '0')
+            dayOfWeek: parseInt(String(schedule.dayOfWeek), 10),
+            startTime: String(schedule.startTime).padStart(5, '0'),
+            endTime: String(schedule.endTime).padStart(5, '0')
           }))
+        };
+
+        console.log("Attempting to create camp with data:", JSON.stringify(campData, null, 2));
+        const camp = await storage.createCamp(campData);
         });
 
         console.log("Camp created successfully:", camp);

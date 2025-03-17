@@ -115,20 +115,63 @@ export class DatabaseStorage implements IStorage {
       console.log("=== Camp Creation Process Start ===");
       console.log("1. Raw camp data:", JSON.stringify(campData, null, 2));
 
-      // First ensure organizationId is a number
-      let organizationId: number;
-      try {
-        organizationId = parseInt(String(campData.organizationId), 10);
-        if (isNaN(organizationId)) {
-          throw new Error("Invalid organization ID");
-        }
-      } catch (error) {
-        console.error("Organization ID conversion failed:", error);
-        throw new Error("Invalid organization ID format");
+      // Validate required fields
+      if (!campData.sportId || !campData.skillLevel) {
+        throw new Error("Sport ID and skill level are required");
       }
 
-      // Prepare the data with explicit type conversions
-      const preparedData = {
+      return await db.transaction(async (trx) => {
+        // Create the camp
+        const [newCamp] = await trx.insert(camps).values({
+          name: String(campData.name).trim(),
+          description: String(campData.description).trim(),
+          streetAddress: String(campData.streetAddress).trim(),
+          city: String(campData.city).trim(),
+          state: String(campData.state).trim().toUpperCase(),
+          zipCode: String(campData.zipCode).trim(),
+          additionalLocationDetails: campData.additionalLocationDetails ? String(campData.additionalLocationDetails).trim() : null,
+          startDate: new Date(campData.startDate),
+          endDate: new Date(campData.endDate),
+          registrationStartDate: new Date(campData.registrationStartDate),
+          registrationEndDate: new Date(campData.registrationEndDate),
+          price: parseInt(String(campData.price), 10),
+          capacity: parseInt(String(campData.capacity), 10),
+          organizationId: parseInt(String(campData.organizationId), 10),
+          type: campData.type || "group",
+          visibility: campData.visibility || "public",
+          waitlistEnabled: campData.waitlistEnabled ?? true,
+          minAge: parseInt(String(campData.minAge), 10),
+          maxAge: parseInt(String(campData.maxAge), 10),
+          repeatType: campData.repeatType || "none",
+          repeatCount: parseInt(String(campData.repeatCount || '0'), 10)
+        }).returning();
+
+        console.log("2. Created camp:", JSON.stringify(newCamp, null, 2));
+
+        // Create camp sport
+        await trx.insert(campSports).values({
+          campId: newCamp.id,
+          sportId: parseInt(String(campData.sportId), 10),
+          skillLevel: campData.skillLevel
+        });
+
+        console.log("3. Created camp sport relation");
+
+        // Create schedules if provided
+        if (campData.schedules?.length > 0) {
+          for (const schedule of campData.schedules) {
+            await trx.insert(campSchedules).values({
+              campId: newCamp.id,
+              dayOfWeek: parseInt(String(schedule.dayOfWeek), 10),
+              startTime: schedule.startTime.padStart(5, '0'),
+              endTime: schedule.endTime.padStart(5, '0')
+            });
+          }
+          console.log("4. Created schedules");
+        }
+
+        return newCamp;
+      });
         name: campData.name,
         description: campData.description,
         streetAddress: campData.streetAddress,
