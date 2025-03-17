@@ -114,11 +114,7 @@ export class DatabaseStorage implements IStorage {
   async createCamp(campData: any): Promise<any> {
     try {
       console.log("=== Camp Creation Process Start ===");
-      console.log("1. Incoming camp data:", {
-        ...campData,
-        organizationId: campData.organizationId,
-        schedules: campData.schedules
-      });
+      console.log("1. Raw camp data:", JSON.stringify(campData, null, 2));
 
       // First ensure organizationId is a number
       let organizationId: number;
@@ -132,107 +128,64 @@ export class DatabaseStorage implements IStorage {
         throw new Error("Invalid organization ID format");
       }
 
-      // Prepare the data
+      // Prepare the data with explicit type conversions
       const preparedData = {
-        ...campData,
-        organizationId,
-        price: Number(campData.price),
-        capacity: Number(campData.capacity),
-        minAge: Number(campData.minAge),
-        maxAge: Number(campData.maxAge),
-        repeatCount: Number(campData.repeatCount || 0),
-        waitlistEnabled: true,
-        visibility: campData.visibility || "public",
-        repeatType: campData.repeatType || "none",
+        name: campData.name,
+        description: campData.description,
+        streetAddress: campData.streetAddress,
+        city: campData.city,
+        state: campData.state,
+        zipCode: campData.zipCode,
+        additionalLocationDetails: campData.additionalLocationDetails,
         startDate: new Date(campData.startDate),
         endDate: new Date(campData.endDate),
         registrationStartDate: new Date(campData.registrationStartDate),
-        registrationEndDate: new Date(campData.registrationEndDate)
+        registrationEndDate: new Date(campData.registrationEndDate),
+        price: parseInt(String(campData.price), 10),
+        capacity: parseInt(String(campData.capacity), 10),
+        organizationId: organizationId,
+        type: campData.type,
+        visibility: campData.visibility || "public",
+        waitlistEnabled: true,
+        minAge: parseInt(String(campData.minAge), 10),
+        maxAge: parseInt(String(campData.maxAge), 10),
+        repeatType: campData.repeatType || "none",
+        repeatCount: parseInt(String(campData.repeatCount || '0'), 10)
       };
 
-      console.log("2. Prepared data:", preparedData);
-
-      // Validate the data
-      let validatedData;
-      try {
-        const validation = insertCampSchema.safeParse(preparedData);
-        if (!validation.success) {
-          console.error("Validation errors:", validation.error.errors);
-          throw validation.error;
-        }
-        validatedData = validation.data;
-        console.log("3. Data validated successfully");
-      } catch (error) {
-        console.error("Validation failed:", error);
-        throw error;
-      }
+      console.log("2. Prepared data:", JSON.stringify(preparedData, null, 2));
 
       // Create the camp
-      let newCamp;
-      try {
-        [newCamp] = await db.insert(camps).values({
-          name: validatedData.name,
-          description: validatedData.description,
-          streetAddress: validatedData.streetAddress,
-          city: validatedData.city,
-          state: validatedData.state,
-          zipCode: validatedData.zipCode,
-          additionalLocationDetails: validatedData.additionalLocationDetails,
-          startDate: validatedData.startDate,
-          endDate: validatedData.endDate,
-          registrationStartDate: validatedData.registrationStartDate,
-          registrationEndDate: validatedData.registrationEndDate,
-          price: validatedData.price,
-          capacity: validatedData.capacity,
-          organizationId: validatedData.organizationId,
-          type: validatedData.type,
-          visibility: validatedData.visibility,
-          waitlistEnabled: validatedData.waitlistEnabled,
-          minAge: validatedData.minAge,
-          maxAge: validatedData.maxAge,
-          repeatType: validatedData.repeatType,
-          repeatCount: validatedData.repeatCount
-        }).returning();
-        console.log("4. Camp created successfully:", newCamp);
-      } catch (error) {
-        console.error("Database insertion failed:", {
-          error: error,
-          sql: error.sql,
-          parameters: error.parameters
+      const [newCamp] = await db.insert(camps).values(preparedData).returning();
+      console.log("3. Created camp:", JSON.stringify(newCamp, null, 2));
+
+      // Create schedules if provided
+      if (campData.schedules?.length > 0) {
+        console.log("4. Creating schedules:", JSON.stringify(campData.schedules, null, 2));
+
+        const schedulePromises = campData.schedules.map(schedule => {
+          const scheduleData = {
+            campId: newCamp.id,
+            dayOfWeek: parseInt(String(schedule.dayOfWeek), 10),
+            startTime: schedule.startTime,
+            endTime: schedule.endTime
+          };
+          return db.insert(campSchedules).values(scheduleData);
         });
-        throw error;
+
+        await Promise.all(schedulePromises);
+        console.log("5. Schedules created successfully");
       }
 
-      // Create schedules
-      if (validatedData.schedules?.length > 0) {
-        try {
-          console.log("5. Creating schedules:", validatedData.schedules);
-          await Promise.all(
-            validatedData.schedules.map(schedule =>
-              db.insert(campSchedules).values({
-                campId: newCamp.id,
-                dayOfWeek: Number(schedule.dayOfWeek),
-                startTime: schedule.startTime,
-                endTime: schedule.endTime
-              })
-            )
-          );
-          console.log("6. Schedules created successfully");
-        } catch (error) {
-          console.error("Schedule creation failed:", error);
-          throw error;
-        }
-      }
-
-      console.log("=== Camp Creation Complete ===");
       return newCamp;
     } catch (error: any) {
       console.error("Camp creation failed:", {
-        name: error.name,
         message: error.message,
-        errors: error.errors,
         code: error.code,
         detail: error.detail,
+        constraint: error.constraint,
+        sql: error.sql,
+        parameters: error.parameters,
         stack: error.stack
       });
       throw error;
@@ -241,7 +194,10 @@ export class DatabaseStorage implements IStorage {
 
   async listCamps(): Promise<Camp[]> {
     try {
-      return await db.select().from(camps);
+      console.log("Fetching all camps");
+      const camps = await db.select().from(camps);
+      console.log("Retrieved camps:", JSON.stringify(camps, null, 2));
+      return camps;
     } catch (error) {
       console.error("Error listing camps:", error);
       throw error;
