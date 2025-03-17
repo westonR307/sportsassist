@@ -298,8 +298,8 @@ export function AddCampDialog({
         minAge: Number(data.minAge) || 5,
         maxAge: Number(data.maxAge) || 18,
         repeatCount: Number(data.repeatCount) || 0,
-        sportId: SPORT_IDS[data.sport] || 1, // Map sport name to ID, default to Basketball if not found
-        skillLevel: mappedSkillLevel, // Removed _ from sportId and skillLevel
+        sportId: 1, // Fixed ID for Basketball based on DB schema
+        skillLevel: mappedSkillLevel,
         schedules: schedules.map(schedule => ({
           dayOfWeek: schedule.dayOfWeek,
           startTime: schedule.startTime.padStart(5, '0'),
