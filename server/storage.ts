@@ -113,46 +113,33 @@ export class DatabaseStorage implements IStorage {
 
   async createCamp(campData: any): Promise<any> {
     try {
-      // Log incoming data
       console.log("=== Camp Creation Debug ===");
-      console.log("1. Raw incoming data:", JSON.stringify(campData, null, 2));
-      console.log("Data types:", {
-        startDate: typeof campData.startDate,
-        endDate: typeof campData.endDate,
-        price: typeof campData.price,
-        capacity: typeof campData.capacity,
-        organizationId: typeof campData.organizationId
-      });
 
-      // Prepare the data for validation
-      const preparedData = {
+      // Pre-process organizationId specifically
+      const processedData = {
         ...campData,
-        price: Number(campData.price),
-        capacity: Number(campData.capacity),
-        organizationId: Number(campData.organizationId),
-        minAge: Number(campData.minAge),
-        maxAge: Number(campData.maxAge),
-        repeatCount: Number(campData.repeatCount || 0),
-        waitlistEnabled: true,
-        visibility: campData.visibility || "public",
-        repeatType: campData.repeatType || "none"
+        organizationId: parseInt(String(campData.organizationId), 10)
       };
 
-      console.log("2. Prepared data:", JSON.stringify(preparedData, null, 2));
+      console.log("1. Processed data:", {
+        ...processedData,
+        organizationId: processedData.organizationId,
+        type: typeof processedData.organizationId
+      });
 
       // Validate the data
-      const validationResult = insertCampSchema.safeParse(preparedData);
+      const validationResult = insertCampSchema.safeParse(processedData);
 
       if (!validationResult.success) {
-        console.error("3. Validation failed:", validationResult.error);
+        console.error("2. Validation failed:", validationResult.error);
         throw new Error(`Validation failed: ${validationResult.error.message}`);
       }
 
       const validatedData = validationResult.data;
-      console.log("4. Validated data:", JSON.stringify(validatedData, null, 2));
+      console.log("3. Validated data:", validatedData);
 
       // Create the camp
-      const query = db.insert(camps).values({
+      const [newCamp] = await db.insert(camps).values({
         name: validatedData.name,
         description: validatedData.description,
         streetAddress: validatedData.streetAddress,
@@ -176,14 +163,11 @@ export class DatabaseStorage implements IStorage {
         repeatCount: validatedData.repeatCount
       }).returning();
 
-      console.log("5. Generated SQL:", query.toSQL());
-
-      const [newCamp] = await query;
-      console.log("6. Created camp:", newCamp);
+      console.log("4. Created camp:", newCamp);
 
       // Create schedules if they exist
       if (validatedData.schedules?.length > 0) {
-        console.log("7. Creating schedules:", validatedData.schedules);
+        console.log("5. Creating schedules:", validatedData.schedules);
 
         for (const schedule of validatedData.schedules) {
           const scheduleData = {
@@ -192,8 +176,6 @@ export class DatabaseStorage implements IStorage {
             startTime: schedule.startTime,
             endTime: schedule.endTime
           };
-
-          console.log("8. Schedule data:", scheduleData);
 
           await db.insert(campSchedules)
             .values(scheduleData)
