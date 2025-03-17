@@ -9,19 +9,18 @@ import {
   campSchedules,
   type User,
   type InsertUser,
-  type Role,
   type Organization,
   type InsertOrganization,
   type Invitation,
   type InsertInvitation,
   type Child,
   type CampSport,
-  type SportLevel,
   type Registration,
   type CampSchedule,
-  type InsertCampSchedule,
+  type Camp,
   insertCampSchema
 } from "@shared/schema";
+import { type Role, type SportLevel } from "@shared/types";
 import { db } from "./db";
 import { eq, sql, and } from "drizzle-orm";
 import session from "express-session";
