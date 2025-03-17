@@ -403,11 +403,15 @@ export async function registerRoutes(app: Express) {
       console.error("Unexpected error in camp creation:", error);
       console.error("Error details:", {
         message: error.message,
-        stack: error.stack
+        stack: error.stack,
+        code: error.code,
+        detail: error.detail,
+        constraint: error.constraint
       });
       res.status(500).json({
         message: "An unexpected error occurred",
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
+        details: error.detail || error.code || null
       });
     }
   });

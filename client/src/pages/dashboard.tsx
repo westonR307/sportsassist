@@ -16,13 +16,13 @@ import { useLocation as useWouterLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { type Camp } from "@shared/schema";
 import { AddCampDialog } from "@/components/add-camp-dialog";
+import { DebugHelper } from "@/components/debug-helper";
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useWouterLocation();
   const { user, logoutMutation } = useAuth();
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
   const wouterLocation = useWouterLocation()[0];
-
 
   if (!user?.organizationId) return null;
 
@@ -40,16 +40,18 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Sidebar */}
-      <div className={`
+      <div
+        className={`
         fixed left-0 top-0 h-screen bg-white border-r 
         transition-all duration-300 ease-in-out z-40
-        ${sidebarOpen ? 'w-64' : 'w-0 lg:w-16'} 
+        ${sidebarOpen ? "w-64" : "w-0 lg:w-16"} 
         lg:translate-x-0
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
         overflow-hidden
-      `}>
+      `}
+      >
         <div className="p-4 border-b whitespace-nowrap">
-          <h2 className={`font-semibold text-lg ${!sidebarOpen && 'lg:opacity-0'}`}>
+          <h2 className={`font-semibold text-lg ${!sidebarOpen && "lg:opacity-0"}`}>
             Sports Camp Manager
           </h2>
         </div>
@@ -57,38 +59,38 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
           <button
             onClick={() => navigate("/dashboard")}
             className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
-              wouterLocation === '/dashboard' ? 'bg-gray-100' : ''
+              wouterLocation === "/dashboard" ? "bg-gray-100" : ""
             }`}
           >
             <Calendar className="h-5 w-5 flex-shrink-0" />
-            <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Camps</span>
+            <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Camps</span>
           </button>
           <button
             onClick={() => navigate("/dashboard/reports")}
             className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
-              wouterLocation === '/dashboard/reports' ? 'bg-gray-100' : ''
+              wouterLocation === "/dashboard/reports" ? "bg-gray-100" : ""
             }`}
           >
             <BarChart3 className="h-5 w-5 flex-shrink-0" />
-            <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Reports</span>
+            <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Reports</span>
           </button>
           <button
             onClick={() => navigate("/dashboard/team")}
             className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
-              wouterLocation === '/dashboard/team' ? 'bg-gray-100' : ''
+              wouterLocation === "/dashboard/team" ? "bg-gray-100" : ""
             }`}
           >
             <Users className="h-5 w-5 flex-shrink-0" />
-            <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Team</span>
+            <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Team</span>
           </button>
           <button
             onClick={() => navigate("/dashboard/settings")}
             className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
-              wouterLocation === '/dashboard/settings' ? 'bg-gray-100' : ''
+              wouterLocation === "/dashboard/settings" ? "bg-gray-100" : ""
             }`}
           >
             <Settings className="h-5 w-5 flex-shrink-0" />
-            <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Settings</span>
+            <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Settings</span>
           </button>
           <Button
             variant="ghost"
@@ -96,20 +98,20 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
             onClick={() => logoutMutation.mutate()}
           >
             <LogOut className="h-5 w-5 mr-2 flex-shrink-0" />
-            <span className={!sidebarOpen ? 'lg:opacity-0' : ''}>Logout</span>
+            <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Logout</span>
           </Button>
         </nav>
       </div>
 
       {/* Main Content */}
-      <div className={`
+      <div
+        className={`
         transition-all duration-300 ease-in-out
-        ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-16'}
+        ${sidebarOpen ? "lg:pl-64" : "lg:pl-16"}
         pt-16 lg:pt-0
-      `}>
-        <main className="container mx-auto px-6 py-8">
-          {children}
-        </main>
+      `}
+      >
+        <main className="container mx-auto px-6 py-8">{children}</main>
       </div>
 
       {/* Mobile Overlay */}
@@ -129,7 +131,7 @@ function CampsDashboard() {
     queryKey: ["/api/camps", Date.now()], // Add timestamp to force fresh data
     staleTime: 0,
     refetchOnMount: true,
-    refetchOnWindowFocus: true
+    refetchOnWindowFocus: true,
   });
   const [location, navigate] = useWouterLocation();
 
@@ -161,7 +163,10 @@ function CampsDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {camps.map((camp) => (
             <Card key={camp.id}>
-              <button onClick={() => navigate(`/dashboard/camps/${camp.id}`)} className="block hover:opacity-80">
+              <button
+                onClick={() => navigate(`/dashboard/camps/${camp.id}`)}
+                className="block hover:opacity-80"
+              >
                 <CardHeader>
                   <CardTitle>{camp.name}</CardTitle>
                 </CardHeader>
@@ -174,8 +179,15 @@ function CampsDashboard() {
                       </span>
                     </div>
                     <div className="text-sm text-gray-500">
-                      <p>Registration: {new Date(camp.registrationStartDate).toLocaleDateString()} - {new Date(camp.registrationEndDate).toLocaleDateString()}</p>
-                      <p>Camp: {new Date(camp.startDate).toLocaleDateString()} - {new Date(camp.endDate).toLocaleDateString()}</p>
+                      <p>
+                        Registration:{" "}
+                        {new Date(camp.registrationStartDate).toLocaleDateString()} -{" "}
+                        {new Date(camp.registrationEndDate).toLocaleDateString()}
+                      </p>
+                      <p>
+                        Camp: {new Date(camp.startDate).toLocaleDateString()} -{" "}
+                        {new Date(camp.endDate).toLocaleDateString()}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -191,6 +203,9 @@ function CampsDashboard() {
           onOpenChange={setShowAddCampDialog}
         />
       )}
+
+      {/* DebugHelper component added at the end */}
+      <DebugHelper />
     </div>
   );
 }
