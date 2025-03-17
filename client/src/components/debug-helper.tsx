@@ -52,17 +52,8 @@ export function DebugHelper() {
       const result = await apiRequest("POST", "/api/camps", data)
 
       // Get the response
-      const responseText = await result.text()
-      let formattedResponse
-
-      try {
-        // Try to parse as JSON for pretty printing
-        const jsonResponse = JSON.parse(responseText)
-        formattedResponse = JSON.stringify(jsonResponse, null, 2)
-      } catch {
-        // If not JSON, use the raw text
-        formattedResponse = responseText
-      }
+      const responseData = await result.json()
+      const formattedResponse = JSON.stringify(responseData, null, 2)
 
       setResponse(formattedResponse)
 
