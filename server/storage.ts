@@ -194,9 +194,9 @@ export class DatabaseStorage implements IStorage {
   async listCamps(): Promise<Camp[]> {
     try {
       console.log("Fetching all camps");
-      const camps = await db.select().from(camps);
-      console.log("Retrieved camps:", JSON.stringify(camps, null, 2));
-      return camps;
+      const allCamps = await db.select().from(camps);
+      console.log("Retrieved camps:", JSON.stringify(allCamps, null, 2));
+      return allCamps;
     } catch (error) {
       console.error("Error listing camps:", error);
       throw error;
