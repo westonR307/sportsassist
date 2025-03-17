@@ -126,9 +126,8 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 function CampsDashboard() {
   const [showAddCampDialog, setShowAddCampDialog] = React.useState(false);
   const { data: camps, isLoading } = useQuery<Camp[]>({
-    queryKey: ["/api/camps"],
+    queryKey: ["/api/camps", Date.now()], // Add timestamp to force fresh data
     staleTime: 0,
-    cacheTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true
   });

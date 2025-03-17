@@ -426,9 +426,12 @@ export async function registerRoutes(app: Express) {
       console.log("Fetching camps list");
       const camps = await storage.listCamps();
       console.log(`Retrieved ${camps.length} camps`);
-      
+
       // Force fresh response
-      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Cache-Control', 'no-store');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('Surrogate-Control', 'no-store');
       res.json(camps);
     } catch (error) {
       console.error("Error fetching camps:", {
