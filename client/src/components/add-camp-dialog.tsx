@@ -30,6 +30,18 @@ import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/api";
 
 // Map sport names to IDs for the API
+const SPORT_IDS = {
+  "Basketball": 1,
+  "Soccer": 2,
+  "Baseball": 3,
+  "Tennis": 4,
+  "Swimming": 5,
+  "Football": 6,
+  "Volleyball": 7,
+  "Track and Field": 8,
+  "Golf": 9,
+  "Hockey": 10
+};
 const sportsMap: Record<string, number> = {
   Archery: 1,
   Badminton: 2,
@@ -286,7 +298,7 @@ export function AddCampDialog({
         minAge: Number(data.minAge) || 5,
         maxAge: Number(data.maxAge) || 18,
         repeatCount: Number(data.repeatCount) || 0,
-        sportId: sportId, // Removed _ from sportId and skillLevel
+        sportId: SPORT_IDS[data.sport] || 1, // Map sport name to ID, default to Basketball if not found
         skillLevel: mappedSkillLevel, // Removed _ from sportId and skillLevel
         schedules: schedules.map(schedule => ({
           dayOfWeek: schedule.dayOfWeek,
