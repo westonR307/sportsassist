@@ -75,26 +75,50 @@ export const insertCampSchema = z.object({
   state: z.string().length(2, "Please use 2-letter state code"),
   zipCode: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format"),
   additionalLocationDetails: z.string().optional().nullable(),
-  startDate: z.date().or(z.string().transform(val => new Date(val))),
-  endDate: z.date().or(z.string().transform(val => new Date(val))),
-  registrationStartDate: z.date().or(z.string().transform(val => new Date(val))),
-  registrationEndDate: z.date().or(z.string().transform(val => new Date(val))),
-  price: z.number().or(z.string().transform(val => Number(val))),
-  capacity: z.number().or(z.string().transform(val => Number(val))),
-  organizationId: z.number().or(z.string().transform(val => {
-    const num = parseInt(String(val), 10);
+  startDate: z.date().or(z.string().transform(str => new Date(str))),
+  endDate: z.date().or(z.string().transform(str => new Date(str))),
+  registrationStartDate: z.date().or(z.string().transform(str => new Date(str))),
+  registrationEndDate: z.date().or(z.string().transform(str => new Date(str))),
+  price: z.number().or(z.string().transform(str => {
+    const num = Number(str);
+    if (isNaN(num)) throw new Error("Price must be a valid number");
+    return num;
+  })),
+  capacity: z.number().or(z.string().transform(str => {
+    const num = Number(str);
+    if (isNaN(num)) throw new Error("Capacity must be a valid number");
+    return num;
+  })),
+  organizationId: z.number().or(z.string().transform(str => {
+    const num = parseInt(String(str), 10);
     if (isNaN(num)) throw new Error("Organization ID must be a valid number");
     return num;
   })),
   type: z.enum(["one_on_one", "group", "team", "virtual"]),
   visibility: z.enum(["public", "private"]).default("public"),
   waitlistEnabled: z.boolean().default(true),
-  minAge: z.number().or(z.string().transform(val => Number(val))),
-  maxAge: z.number().or(z.string().transform(val => Number(val))),
+  minAge: z.number().or(z.string().transform(str => {
+    const num = Number(str);
+    if (isNaN(num)) throw new Error("Minimum age must be a valid number");
+    return num;
+  })),
+  maxAge: z.number().or(z.string().transform(str => {
+    const num = Number(str);
+    if (isNaN(num)) throw new Error("Maximum age must be a valid number");
+    return num;
+  })),
   repeatType: z.enum(["none", "weekly", "monthly"]).default("none"),
-  repeatCount: z.number().or(z.string().transform(val => Number(val))).default(0),
+  repeatCount: z.number().or(z.string().transform(str => {
+    const num = Number(str || '0');
+    if (isNaN(num)) throw new Error("Repeat count must be a valid number");
+    return num;
+  })).default(0),
   schedules: z.array(z.object({
-    dayOfWeek: z.number().or(z.string().transform(val => Number(val))),
+    dayOfWeek: z.number().or(z.string().transform(str => {
+      const num = Number(str);
+      if (isNaN(num) || num < 0 || num > 6) throw new Error("Day of week must be a number between 0 and 6");
+      return num;
+    })),
     startTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format"),
     endTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format")
   })).min(1, "At least one schedule is required")

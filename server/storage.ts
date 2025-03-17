@@ -113,76 +113,118 @@ export class DatabaseStorage implements IStorage {
 
   async createCamp(campData: any): Promise<any> {
     try {
-      console.log("=== Camp Creation Debug ===");
-
-      // Pre-process organizationId specifically
-      const processedData = {
+      console.log("=== Camp Creation Process Start ===");
+      console.log("1. Incoming camp data:", {
         ...campData,
-        organizationId: parseInt(String(campData.organizationId), 10)
-      };
-
-      console.log("1. Processed data:", {
-        ...processedData,
-        organizationId: processedData.organizationId,
-        type: typeof processedData.organizationId
+        organizationId: campData.organizationId,
+        schedules: campData.schedules
       });
 
-      // Validate the data
-      const validationResult = insertCampSchema.safeParse(processedData);
-
-      if (!validationResult.success) {
-        console.error("2. Validation failed:", validationResult.error);
-        throw new Error(`Validation failed: ${validationResult.error.message}`);
+      // First ensure organizationId is a number
+      let organizationId: number;
+      try {
+        organizationId = parseInt(String(campData.organizationId), 10);
+        if (isNaN(organizationId)) {
+          throw new Error("Invalid organization ID");
+        }
+      } catch (error) {
+        console.error("Organization ID conversion failed:", error);
+        throw new Error("Invalid organization ID format");
       }
 
-      const validatedData = validationResult.data;
-      console.log("3. Validated data:", validatedData);
+      // Prepare the data
+      const preparedData = {
+        ...campData,
+        organizationId,
+        price: Number(campData.price),
+        capacity: Number(campData.capacity),
+        minAge: Number(campData.minAge),
+        maxAge: Number(campData.maxAge),
+        repeatCount: Number(campData.repeatCount || 0),
+        waitlistEnabled: true,
+        visibility: campData.visibility || "public",
+        repeatType: campData.repeatType || "none",
+        startDate: new Date(campData.startDate),
+        endDate: new Date(campData.endDate),
+        registrationStartDate: new Date(campData.registrationStartDate),
+        registrationEndDate: new Date(campData.registrationEndDate)
+      };
+
+      console.log("2. Prepared data:", preparedData);
+
+      // Validate the data
+      let validatedData;
+      try {
+        const validation = insertCampSchema.safeParse(preparedData);
+        if (!validation.success) {
+          console.error("Validation errors:", validation.error.errors);
+          throw validation.error;
+        }
+        validatedData = validation.data;
+        console.log("3. Data validated successfully");
+      } catch (error) {
+        console.error("Validation failed:", error);
+        throw error;
+      }
 
       // Create the camp
-      const [newCamp] = await db.insert(camps).values({
-        name: validatedData.name,
-        description: validatedData.description,
-        streetAddress: validatedData.streetAddress,
-        city: validatedData.city,
-        state: validatedData.state,
-        zipCode: validatedData.zipCode,
-        additionalLocationDetails: validatedData.additionalLocationDetails,
-        startDate: validatedData.startDate,
-        endDate: validatedData.endDate,
-        registrationStartDate: validatedData.registrationStartDate,
-        registrationEndDate: validatedData.registrationEndDate,
-        price: validatedData.price,
-        capacity: validatedData.capacity,
-        organizationId: validatedData.organizationId,
-        type: validatedData.type,
-        visibility: validatedData.visibility,
-        waitlistEnabled: validatedData.waitlistEnabled,
-        minAge: validatedData.minAge,
-        maxAge: validatedData.maxAge,
-        repeatType: validatedData.repeatType,
-        repeatCount: validatedData.repeatCount
-      }).returning();
+      let newCamp;
+      try {
+        [newCamp] = await db.insert(camps).values({
+          name: validatedData.name,
+          description: validatedData.description,
+          streetAddress: validatedData.streetAddress,
+          city: validatedData.city,
+          state: validatedData.state,
+          zipCode: validatedData.zipCode,
+          additionalLocationDetails: validatedData.additionalLocationDetails,
+          startDate: validatedData.startDate,
+          endDate: validatedData.endDate,
+          registrationStartDate: validatedData.registrationStartDate,
+          registrationEndDate: validatedData.registrationEndDate,
+          price: validatedData.price,
+          capacity: validatedData.capacity,
+          organizationId: validatedData.organizationId,
+          type: validatedData.type,
+          visibility: validatedData.visibility,
+          waitlistEnabled: validatedData.waitlistEnabled,
+          minAge: validatedData.minAge,
+          maxAge: validatedData.maxAge,
+          repeatType: validatedData.repeatType,
+          repeatCount: validatedData.repeatCount
+        }).returning();
+        console.log("4. Camp created successfully:", newCamp);
+      } catch (error) {
+        console.error("Database insertion failed:", {
+          error: error,
+          sql: error.sql,
+          parameters: error.parameters
+        });
+        throw error;
+      }
 
-      console.log("4. Created camp:", newCamp);
-
-      // Create schedules if they exist
+      // Create schedules
       if (validatedData.schedules?.length > 0) {
-        console.log("5. Creating schedules:", validatedData.schedules);
-
-        for (const schedule of validatedData.schedules) {
-          const scheduleData = {
-            campId: newCamp.id,
-            dayOfWeek: Number(schedule.dayOfWeek),
-            startTime: schedule.startTime,
-            endTime: schedule.endTime
-          };
-
-          await db.insert(campSchedules)
-            .values(scheduleData)
-            .returning();
+        try {
+          console.log("5. Creating schedules:", validatedData.schedules);
+          await Promise.all(
+            validatedData.schedules.map(schedule =>
+              db.insert(campSchedules).values({
+                campId: newCamp.id,
+                dayOfWeek: Number(schedule.dayOfWeek),
+                startTime: schedule.startTime,
+                endTime: schedule.endTime
+              })
+            )
+          );
+          console.log("6. Schedules created successfully");
+        } catch (error) {
+          console.error("Schedule creation failed:", error);
+          throw error;
         }
       }
 
+      console.log("=== Camp Creation Complete ===");
       return newCamp;
     } catch (error: any) {
       console.error("Camp creation failed:", {
