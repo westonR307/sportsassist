@@ -361,8 +361,15 @@ export async function registerRoutes(app: Express) {
 
       console.log("Schema validation passed. Validated data:", parsed.data);
 
+      // Validate sport data
+      if (!req.body.sportId || !req.body.skillLevel) {
+        return res.status(400).json({
+          message: "Sport ID and skill level are required"
+        });
+      }
+
       try {
-        // Create the camp with schedules
+        // Create the camp with schedules and sport
         const camp = await storage.createCamp({
           name: parsed.data.name.trim(),
           description: parsed.data.description.trim(),

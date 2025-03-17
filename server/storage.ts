@@ -158,6 +158,21 @@ export class DatabaseStorage implements IStorage {
       const [newCamp] = await db.insert(camps).values(preparedData).returning();
       console.log("3. Created camp:", JSON.stringify(newCamp, null, 2));
 
+      // Create camp sport if provided
+      if (campData.sportId && campData.skillLevel) {
+        console.log("4. Creating camp sport with:", {
+          campId: newCamp.id,
+          sportId: parseInt(String(campData.sportId), 10),
+          skillLevel: campData.skillLevel
+        });
+        
+        await db.insert(campSports).values({
+          campId: newCamp.id,
+          sportId: parseInt(String(campData.sportId), 10),
+          skillLevel: campData.skillLevel
+        });
+      }
+
       // Create schedules if provided
       if (campData.schedules?.length > 0) {
         console.log("4. Creating schedules:", JSON.stringify(campData.schedules, null, 2));
