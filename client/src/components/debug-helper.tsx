@@ -52,8 +52,18 @@ export function DebugHelper() {
       const result = await apiRequest("POST", "/api/camps", data)
 
       // Get the response
-      const responseData = await result.json()
-      const formattedResponse = JSON.stringify(responseData, null, 2)
+      const contentType = result.headers.get("content-type");
+      let responseData;
+      
+      if (contentType && contentType.includes("application/json")) {
+        responseData = await result.json();
+      } else {
+        responseData = await result.text();
+      }
+
+      const formattedResponse = typeof responseData === 'string' 
+        ? responseData 
+        : JSON.stringify(responseData, null, 2);
 
       setResponse(formattedResponse)
 
