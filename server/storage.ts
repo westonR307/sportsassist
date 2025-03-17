@@ -18,7 +18,8 @@ import {
   type Registration,
   type CampSchedule,
   type Camp,
-  insertCampSchema
+  insertCampSchema,
+  sports
 } from "@shared/schema";
 import { type Role, type SportLevel } from "@shared/types";
 import { db } from "./db";
@@ -119,6 +120,16 @@ export class DatabaseStorage implements IStorage {
     if (!campData.sportId || !campData.skillLevel) {
       throw new Error("Sport ID and skill level are required");
     }
+
+    // First verify the sport exists
+    const sport = await db.query.sports.findFirst({
+      where: (sports, { eq }) => eq(sports.id, campData.sportId)
+    });
+
+    if (!sport) {
+      throw new Error(`Sport with ID ${campData.sportId} does not exist`);
+    }
+
 
     return await db.transaction(async (trx) => {
       // Create the camp
