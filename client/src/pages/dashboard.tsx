@@ -127,8 +127,10 @@ function CampsDashboard() {
   const [showAddCampDialog, setShowAddCampDialog] = React.useState(false);
   const { data: camps, isLoading } = useQuery<Camp[]>({
     queryKey: ["/api/camps"],
-    staleTime: 0, // Don't cache the data
-    cacheTime: 0  // Remove from cache immediately
+    staleTime: 0,
+    cacheTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true
   });
   const [location, navigate] = useWouterLocation();
 

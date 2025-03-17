@@ -26,9 +26,11 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
 export async function registerRoutes(app: Express) {
   // Add cache control middleware
   app.use((req, res, next) => {
+    // Force no caching
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
     next();
   });
 
@@ -311,7 +313,7 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ message: "User has no organization" });
       }
 
-      // Prepare data for validation - ensure all fields are properly formatted
+      // Prepare data for validation
       const validationData = {
         ...req.body,
         organizationId: parseInt(String(req.user.organizationId), 10),
