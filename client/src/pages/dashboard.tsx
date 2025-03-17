@@ -128,10 +128,10 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 function CampsDashboard() {
   const [showAddCampDialog, setShowAddCampDialog] = React.useState(false);
   const { data: camps, isLoading } = useQuery<Camp[]>({
-    queryKey: ["/api/camps", Date.now()], // Add timestamp to force fresh data
-    staleTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
+    queryKey: ["/api/camps"],
+    staleTime: 5000, // Only refetch after 5 seconds
+    refetchOnMount: "if-stale",
+    refetchOnWindowFocus: false,
   });
   const [location, navigate] = useWouterLocation();
 
