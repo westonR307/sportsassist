@@ -24,6 +24,14 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
 });
 
 export async function registerRoutes(app: Express) {
+  // Add cache control middleware
+  app.use((req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    next();
+  });
+
   // Add health check endpoint
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
@@ -412,8 +420,15 @@ export async function registerRoutes(app: Express) {
   });
 
   app.get("/api/camps", async (req, res) => {
-    const camps = await storage.listCamps();
-    res.json(camps);
+    try {
+      console.log("Fetching camps list");
+      const camps = await storage.listCamps();
+      console.log(`Retrieved ${camps.length} camps`);
+      res.json(camps);
+    } catch (error) {
+      console.error("Error fetching camps:", error);
+      res.status(500).json({ message: "Failed to fetch camps" });
+    }
   });
 
   // Add route to get camp schedules
