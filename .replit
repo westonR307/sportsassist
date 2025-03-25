@@ -1,4 +1,13 @@
-modules = ["postgresql-16"]
+
+run = "npm run dev"
+modules = ["nodejs-20:v8-20230920-bd784b9", "postgresql-16"]
+
+[deployment]
+build = ["npm", "install"]
+run = ["npm", "run", "dev"]
+
+[nix]
+channel = "stable-23_11"
 
 [workflows]
 runButton = "Run"
