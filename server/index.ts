@@ -2,11 +2,21 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import cors from "cors";
+import { setupAuth } from "./auth";
 
 const app = express();
-app.use(cors());
+
+// Configure CORS to allow credentials
+app.use(cors({
+  origin: true, // Allow all origins in development
+  credentials: true // Allow credentials (cookies)
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Set up authentication
+setupAuth(app);
 
 // Add request logging
 app.use((req, res, next) => {
@@ -43,14 +53,6 @@ app.use((req, res, next) => {
 
     const server = await registerRoutes(app);
     log("Routes registered successfully");
-
-    // Set up error handling after routes
-    app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-      console.error('Server error:', err);
-      const status = err instanceof HttpError ? err.status : 500;
-      const message = err.message || "Internal Server Error";
-      res.status(status).json({ message });
-    });
 
     if (app.get("env") === "development") {
       log("Setting up Vite for development...");
@@ -100,13 +102,6 @@ app.use((req, res, next) => {
 
   } catch (error) {
     console.error('Failed to start server:', error);
-    if (error instanceof Error) {
-      console.error('Error details:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      });
-    }
     process.exit(1);
   }
 })();

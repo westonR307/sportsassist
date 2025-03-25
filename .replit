@@ -1,6 +1,6 @@
 
 run = "npm run dev"
-modules = ["nodejs-20:v8-20230920-bd784b9", "postgresql-16"]
+modules = ["postgresql-16", "nodejs-20"]
 
 [deployment]
 build = ["npm", "install"]
