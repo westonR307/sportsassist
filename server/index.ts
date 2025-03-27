@@ -2,30 +2,40 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import cors from "cors";
-import { setupAuth } from "./auth";
 
 const app = express();
-
-// Configure CORS to allow credentials
-app.use(cors({
-  origin: true, // Allow all origins in development
-  credentials: true // Allow credentials (cookies)
-}));
-
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Add detailed logging
+// Add request logging
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
-  if (req.path.startsWith('/api/')) {
-    console.log('Request body:', req.body);
-  }
+  const start = Date.now();
+  const path = req.path;
+  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+
+  const originalResJson = res.json;
+  res.json = function (bodyJson, ...args) {
+    capturedJsonResponse = bodyJson;
+    return originalResJson.apply(res, [bodyJson, ...args]);
+  };
+
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    if (path.startsWith("/api")) {
+      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      if (capturedJsonResponse) {
+        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+      }
+      if (logLine.length > 80) {
+        logLine = logLine.slice(0, 79) + "…";
+      }
+      log(logLine);
+    }
+  });
+
   next();
 });
-
-// Set up authentication
-setupAuth(app);
 
 (async () => {
   try {
@@ -33,6 +43,14 @@ setupAuth(app);
 
     const server = await registerRoutes(app);
     log("Routes registered successfully");
+
+    // Set up error handling after routes
+    app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+      console.error('Server error:', err);
+      const status = err instanceof HttpError ? err.status : 500;
+      const message = err.message || "Internal Server Error";
+      res.status(status).json({ message });
+    });
 
     if (app.get("env") === "development") {
       log("Setting up Vite for development...");
@@ -72,6 +90,7 @@ setupAuth(app);
         if (started) break;
       } catch (error) {
         console.error(`Error trying port ${port}:`, error);
+        // Continue to next port
       }
     }
 
@@ -81,6 +100,13 @@ setupAuth(app);
 
   } catch (error) {
     console.error('Failed to start server:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
+    }
     process.exit(1);
   }
 })();

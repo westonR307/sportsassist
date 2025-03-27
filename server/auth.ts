@@ -5,8 +5,13 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User } from "@shared/schema";
-import connectPg from "connect-pg-simple";
+import { User as SelectUser } from "@shared/schema";
+
+declare global {
+  namespace Express {
+    interface User extends SelectUser {}
+  }
+}
 
 const scryptAsync = promisify(scrypt);
 
@@ -24,129 +29,170 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
-  const PostgresStore = connectPg(session);
-
-  // Session configuration
-  app.use(session({
-    store: new PostgresStore({
-      conObject: {
-        connectionString: process.env.DATABASE_URL,
-      },
-      createTableIfMissing: true,
-    }),
-    secret: process.env.SESSION_SECRET || 'dev-secret-key',
+  // Enhanced session settings for development
+  const isProduction = process.env.NODE_ENV === "production";
+  const sessionSettings: session.SessionOptions = {
+    secret: process.env.SESSION_SECRET || "local-dev-secret",
     resave: false,
     saveUninitialized: false,
+    store: storage.sessionStore,
+    name: 'sports-camp-sid',
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
+      secure: isProduction, // Only require HTTPS in production
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: 'lax'
-    }
-  }));
+      sameSite: isProduction ? 'strict' : 'lax',
+      path: '/'
+    },
+    rolling: true // Extend session lifetime on activity
+  };
 
+  // Trust proxy in production
+  if (isProduction) {
+    app.set("trust proxy", 1);
+  }
+
+  app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Passport configuration
-  passport.use(new LocalStrategy(async (username, password, done) => {
-    try {
-      const user = await storage.getUserByUsername(username);
-      if (!user) {
-        return done(null, false, { message: "Invalid username or password" });
+  // Enhanced logging for authentication and session
+  app.use((req, res, next) => {
+    console.log('Auth Debug:', {
+      sessionID: req.sessionID,
+      isAuthenticated: req.isAuthenticated(),
+      user: req.user ? {
+        id: req.user.id,
+        username: req.user.username,
+        role: req.user.role
+      } : null,
+      session: req.session
+    });
+    next();
+  });
+
+  passport.use(
+    new LocalStrategy(async (username, password, done) => {
+      try {
+        console.log(`Login attempt for user: ${username}`);
+        const user = await storage.getUserByUsername(username);
+
+        if (!user) {
+          console.log(`No user found with username: ${username}`);
+          return done(null, false, { message: "Invalid username or password" });
+        }
+
+        const isValid = await comparePasswords(password, user.password);
+        console.log(`Password validation result for ${username}: ${isValid}`);
+
+        if (!isValid) {
+          return done(null, false, { message: "Invalid username or password" });
+        }
+
+        console.log(`Successful login for user: ${username}`);
+        return done(null, user);
+      } catch (err) {
+        console.error("Login error:", err);
+        return done(err);
       }
+    }),
+  );
 
-      const isValid = await comparePasswords(password, user.password);
-      if (!isValid) {
-        return done(null, false, { message: "Invalid username or password" });
-      }
-
-      return done(null, user);
-    } catch (err) {
-      return done(err);
-    }
-  }));
-
-  passport.serializeUser((user: User, done) => {
+  passport.serializeUser((user, done) => {
+    console.log(`Serializing user:`, {
+      id: user.id,
+      username: user.username,
+      role: user.role
+    });
     done(null, user.id);
   });
 
   passport.deserializeUser(async (id: number, done) => {
     try {
+      console.log(`Deserializing user ID: ${id}`);
       const user = await storage.getUser(id);
+      if (!user) {
+        console.log(`No user found for ID: ${id}`);
+        return done(null, false);
+      }
+      console.log(`Successfully deserialized user:`, {
+        id: user.id,
+        username: user.username,
+        role: user.role
+      });
       done(null, user);
     } catch (err) {
+      console.error("Deserialization error:", err);
       done(err);
     }
   });
 
-  // Auth routes
-  app.post("/api/register", async (req, res) => {
-    try {
-      const { username, password, email } = req.body;
-
-      // Check if user exists
-      const existingUser = await storage.getUserByUsername(username);
-      if (existingUser) {
-        return res.status(400).json({ message: "Username already exists" });
-      }
-
-      // Create new user
-      const hashedPassword = await hashPassword(password);
-      const user = await storage.createUser({
-        username,
-        password: hashedPassword,
-        email,
-        role: 'user'
-      });
-
-      // Log in the new user
-      req.login(user, (err) => {
-        if (err) {
-          console.error("Login error after registration:", err);
-          return res.status(500).json({ message: "Error logging in after registration" });
-        }
-        return res.status(201).json(user);
-      });
-    } catch (error) {
-      console.error("Registration error:", error);
-      res.status(500).json({ message: "Error creating user" });
-    }
-  });
-
   app.post("/api/login", (req, res, next) => {
+    console.log("Login request received for:", req.body.username);
     passport.authenticate("local", (err, user, info) => {
       if (err) {
         console.error("Login error:", err);
         return next(err);
       }
       if (!user) {
+        console.log("Authentication failed:", info?.message);
         return res.status(401).json({ message: info?.message || "Authentication failed" });
       }
-      req.login(user, (err) => {
+      req.logIn(user, (err) => {
         if (err) {
           console.error("Session creation error:", err);
           return next(err);
         }
-        return res.json(user);
+        console.log(`User ${user.username} logged in successfully`);
+        return res.status(200).json(user);
       });
     })(req, res, next);
   });
 
-  app.post("/api/logout", (req, res) => {
+  app.post("/api/logout", (req, res, next) => {
+    const username = req.user?.username;
+    console.log(`Logout request received for user: ${username}`);
+
+    if (!req.isAuthenticated()) {
+      console.log("Logout requested but no user was authenticated");
+      return res.sendStatus(200);
+    }
+
     req.logout((err) => {
       if (err) {
         console.error("Logout error:", err);
-        return res.status(500).json({ message: "Error during logout" });
+        return next(err);
       }
-      res.status(200).json({ message: "Logged out successfully" });
+
+      req.session.destroy((err) => {
+        if (err) {
+          console.error("Session destruction error:", err);
+          return next(err);
+        }
+        res.clearCookie('sports-camp-sid');
+        console.log(`User ${username} logged out successfully`);
+        res.sendStatus(200);
+      });
     });
   });
 
   app.get("/api/user", (req, res) => {
+    console.log("Current user request received");
+    console.log("Session ID:", req.sessionID);
+    console.log("Is Authenticated:", req.isAuthenticated());
+    console.log("Session:", req.session);
+
     if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Not authenticated" });
+      console.log("User not authenticated");
+      return res.sendStatus(401);
     }
+
+    console.log("Returning user data:", {
+      id: req.user?.id,
+      username: req.user?.username,
+      role: req.user?.role,
+      organizationId: req.user?.organizationId
+    });
     res.json(req.user);
   });
 }
