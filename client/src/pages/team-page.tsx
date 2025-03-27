@@ -17,9 +17,19 @@ interface StaffMember {
   role: string;
 }
 
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus } from "lucide-react";
+import { useState } from "react";
+
 function InviteMemberDialog() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("coach");
 
   const inviteMutation = useMutation({
     mutationFn: async (data: { email: string; role: string }) => {
@@ -47,20 +57,96 @@ function InviteMemberDialog() {
         title: "Success",
         description: "Invitation sent successfully",
       });
+      setOpen(false);
+      setEmail("");
+      setRole("coach");
     },
     onError: (error: Error) => {
+      // Extract the error message from the API response if available
+      let errorMessage = error.message;
+      try {
+        // Check if the error message is a JSON string containing more detailed error info
+        const errorData = JSON.parse(errorMessage);
+        if (errorData.errors?.fieldErrors?.email) {
+          errorMessage = `Email error: ${errorData.errors.fieldErrors.email.join(", ")}`;
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      } catch (e) {
+        // If parsing fails, use the original error message
+      }
+      
       toast({
-        title: "Error",
-        description: error.message,
+        title: "Error sending invitation",
+        description: errorMessage,
         variant: "destructive",
       });
     },
   });
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    inviteMutation.mutate({ email, role });
+  };
+
   return (
-    <Button variant="outline" onClick={() => inviteMutation.mutate({ email: "", role: "coach" })}>
-      Invite Team Member
-    </Button>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button>
+          <Plus className="h-4 w-4 mr-2" />
+          Invite Team Member
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Invite team member</DialogTitle>
+          <DialogDescription>
+            Send an invitation to join your organization.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email address</Label>
+            <Input 
+              id="email" 
+              type="email" 
+              placeholder="team.member@example.com" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="role">Role</Label>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="coach">Coach</SelectItem>
+                <SelectItem value="manager">Manager</SelectItem>
+                <SelectItem value="volunteer">Volunteer</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button 
+              type="submit" 
+              disabled={inviteMutation.isPending}
+            >
+              {inviteMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                "Send invitation"
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -90,9 +176,23 @@ function ResendButton({ invitation, organizationId }: { invitation: Invitation; 
       });
     },
     onError: (error: Error) => {
+      // Extract the error message from the API response if available
+      let errorMessage = error.message;
+      try {
+        // Check if the error message is a JSON string containing more detailed error info
+        const errorData = JSON.parse(errorMessage);
+        if (errorData.errors?.fieldErrors?.email) {
+          errorMessage = `Email error: ${errorData.errors.fieldErrors.email.join(", ")}`;
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      } catch (e) {
+        // If parsing fails, use the original error message
+      }
+      
       toast({
-        title: "Error",
-        description: error.message,
+        title: "Error resending invitation",
+        description: errorMessage,
         variant: "destructive",
       });
     },

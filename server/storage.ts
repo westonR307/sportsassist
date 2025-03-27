@@ -23,7 +23,7 @@ import {
 } from "@shared/schema";
 import { type Role, type SportLevel } from "@shared/types";
 import { db } from "./db";
-import { eq, sql, and } from "drizzle-orm";
+import { eq, sql, and, or } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -100,13 +100,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getOrganizationStaff(orgId: number): Promise<User[]> {
-    const staffRoles = ["coach", "manager", "volunteer"] as Role[];
+    // Instead of using Array ANY, use OR conditions for each role
     return await db.select()
       .from(users)
       .where(
         and(
           eq(users.organizationId, orgId),
-          sql`${users.role} = ANY(${staffRoles})`
+          or(
+            eq(users.role, "coach" as Role),
+            eq(users.role, "manager" as Role),
+            eq(users.role, "volunteer" as Role)
+          )
         )
       );
   }

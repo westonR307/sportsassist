@@ -23,25 +23,13 @@ const loginSchema = insertUserSchema.pick({ username: true, password: true });
 export default function AuthPage() {
   const { user } = useAuth();
 
+  // Redirect to / if the user is already logged in
   if (user) {
-    return <Redirect to="/dashboard" />;
+    return <Redirect to="/" />;
   }
 
   return (
     <div className="min-h-screen grid md:grid-cols-2">
-      <div className="hidden md:block bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1529165980561-f19d4acc4f3f')" }}>
-        <div className="h-full bg-primary/50 p-12 flex items-center">
-          <div className="text-white">
-            <h1 className="text-4xl font-bold mb-4">
-              Welcome to Sports Camp Manager
-            </h1>
-            <p className="text-lg">
-              Manage your sports camps efficiently and securely
-            </p>
-          </div>
-        </div>
-      </div>
-
       <div className="p-8 flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardHeader>
@@ -63,6 +51,46 @@ export default function AuthPage() {
           </CardContent>
         </Card>
       </div>
+
+      <div className="hidden md:block bg-gradient-to-br from-primary to-primary-foreground p-12 flex items-center">
+        <div className="text-white">
+          <h1 className="text-4xl font-bold mb-4">
+            Sports Camp Manager
+          </h1>
+          <p className="text-lg mb-6">
+            The comprehensive platform for sports camp management
+          </p>
+          <div className="space-y-4">
+            <div className="flex items-start space-x-3">
+              <div className="bg-white p-2 rounded-full text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-xl">Easy Camp Creation</h3>
+                <p>Create and manage sports camps with minimal effort</p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <div className="bg-white p-2 rounded-full text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-xl">Team Collaboration</h3>
+                <p>Invite staff and manage your team efficiently</p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <div className="bg-white p-2 rounded-full text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-xl">Powerful Analytics</h3>
+                <p>Track registrations and generate insightful reports</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -79,7 +107,7 @@ function LoginForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit((data) => loginMutation.mutate(data))} className="space-y-4">
+      <form onSubmit={form.handleSubmit((data) => loginMutation.mutate(data))} className="space-y-4 mt-4">
         <FormField
           control={form.control}
           name="username"
@@ -131,7 +159,7 @@ function RegisterForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit((data) => registerMutation.mutate(data))} className="space-y-4">
+      <form onSubmit={form.handleSubmit((data) => registerMutation.mutate(data))} className="space-y-4 mt-4">
         <FormField
           control={form.control}
           name="username"
