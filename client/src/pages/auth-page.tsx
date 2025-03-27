@@ -23,9 +23,9 @@ const loginSchema = insertUserSchema.pick({ username: true, password: true });
 export default function AuthPage() {
   const { user } = useAuth();
 
-  // Redirect to / if the user is already logged in
+  // Redirect to dashboard if the user is already logged in
   if (user) {
-    return <Redirect to="/" />;
+    return <Redirect to="/dashboard" />;
   }
 
   return (
