@@ -1,0 +1,83 @@
+User not authenticated
+5:42:44 PM [express] GET /api/user 401 in 2ms
+Auth Debug: {
+  sessionID: 'CkE82hXZe40mbAtP6BZWwOxFmy6_NlLL',
+  isAuthenticated: false,
+  user: null,
+  session: Session {
+    cookie: {
+      path: '/',
+      _expires: 2025-03-28T17:42:44.479Z,
+      originalMaxAge: 86400000,
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax'
+    }
+  }
+}
+Current user request received
+Session ID: CkE82hXZe40mbAtP6BZWwOxFmy6_NlLL
+Is Authenticated: false
+Session: Session {
+  cookie: {
+    path: '/',
+    _expires: 2025-03-28T17:42:44.479Z,
+    originalMaxAge: 86400000,
+    httpOnly: true,
+    secure: false,
+    sameSite: 'lax'
+  }
+}
+User not authenticated
+5:42:44 PM [express] GET /api/user 401 in 2ms
+Auth Debug: {
+  sessionID: 'GR5v9ymaq-ZHYO3hleSx0sYIkm4tFMJO',
+  isAuthenticated: false,
+  user: null,
+  session: Session {
+    cookie: {
+      path: '/',
+      _expires: 2025-03-28T17:42:53.197Z,
+      originalMaxAge: 86400000,
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax'
+    }
+  }
+}
+Login request received for: weston
+Login attempt for user: weston
+Login error: TypeError [ERR_INVALID_ARG_TYPE]: The "salt" argument must be of type string or an instance of ArrayBuffer, Buffer, TypedArray, or DataView. Received undefined
+    at check (node:internal/crypto/scrypt:84:10)
+    at scrypt (node:internal/crypto/scrypt:46:13)
+    at node:internal/util:432:7
+    at new Promise (<anonymous>)
+    at scrypt (node:internal/util:418:12)
+    at comparePasswords (/home/runner/workspace/server/auth.ts:27:30)
+    at Strategy._verify (/home/runner/workspace/server/auth.ts:85:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  code: 'ERR_INVALID_ARG_TYPE'
+}
+Login error: TypeError [ERR_INVALID_ARG_TYPE]: The "salt" argument must be of type string or an instance of ArrayBuffer, Buffer, TypedArray, or DataView. Received undefined
+    at check (node:internal/crypto/scrypt:84:10)
+    at scrypt (node:internal/crypto/scrypt:46:13)
+    at node:internal/util:432:7
+    at new Promise (<anonymous>)
+    at scrypt (node:internal/util:418:12)
+    at comparePasswords (/home/runner/workspace/server/auth.ts:27:30)
+    at Strategy._verify (/home/runner/workspace/server/auth.ts:85:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  code: 'ERR_INVALID_ARG_TYPE'
+}
+Server error: TypeError [ERR_INVALID_ARG_TYPE]: The "salt" argument must be of type string or an instance of ArrayBuffer, Buffer, TypedArray, or DataView. Received undefined
+    at check (node:internal/crypto/scrypt:84:10)
+    at scrypt (node:internal/crypto/scrypt:46:13)
+    at node:internal/util:432:7
+    at new Promise (<anonymous>)
+    at scrypt (node:internal/util:418:12)
+    at comparePasswords (/home/runner/workspace/server/auth.ts:27:30)
+    at Strategy._verify (/home/runner/workspace/server/auth.ts:85:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  code: 'ERR_INVALID_ARG_TYPE'
+}
+5:42:53 PM [express] POST /api/login 500 in 644ms :: {"message":"The \"salt\" argument must be of ty…

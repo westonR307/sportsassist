@@ -22,7 +22,20 @@ async function hashPassword(password: string) {
 }
 
 async function comparePasswords(supplied: string, stored: string) {
+  // Check if stored password has the expected format
+  if (!stored || !stored.includes(".")) {
+    console.error("Invalid password format. Expected format: hash.salt");
+    return false;
+  }
+  
   const [hashed, salt] = stored.split(".");
+  
+  // Validate both parts exist
+  if (!hashed || !salt) {
+    console.error("Invalid password components. Missing hash or salt.");
+    return false;
+  }
+  
   const hashedBuf = Buffer.from(hashed, "hex");
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
   return timingSafeEqual(hashedBuf, suppliedBuf);
