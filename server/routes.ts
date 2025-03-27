@@ -443,6 +443,33 @@ export async function registerRoutes(app: Express) {
       });
     }
   });
+  
+  // Route to get a camp by ID (detailed version with better error handling)
+  app.get("/api/camps/:id", async (req, res) => {
+    try {
+      const campId = parseInt(req.params.id);
+      if (isNaN(campId)) {
+        return res.status(400).json({ message: "Invalid camp ID format" });
+      }
+      
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      res.json(camp);
+    } catch (error) {
+      console.error("Error fetching camp by ID:", {
+        id: req.params.id,
+        message: error.message,
+        stack: error.stack
+      });
+      res.status(500).json({ 
+        message: "Failed to fetch camp",
+        error: error.message
+      });
+    }
+  });
 
   // Add route to get camp schedules
   app.get("/api/camps/:id/schedules", async (req, res) => {
@@ -478,18 +505,7 @@ export async function registerRoutes(app: Express) {
     res.status(201).json(registration);
   });
 
-  app.get("/api/camps/:id", async (req, res) => {
-    try {
-      const camp = await storage.getCamp(parseInt(req.params.id));
-      if (!camp) {
-        return res.status(404).json({ message: "Camp not found" });
-      }
-      res.json(camp);
-    } catch (error) {
-      console.error("Error fetching camp:", error);
-      res.status(500).json({ message: "Failed to fetch camp" });
-    }
-  });
+  // Route removed (duplicate of the one above)
 
   app.get("/api/camps/:id/registrations", async (req, res) => {
     try {
