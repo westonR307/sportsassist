@@ -1,27 +1,18 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/api";
+import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "./use-toast";
-
-// Define the User type based on your schema
-interface User {
-  id: number;
-  username: string;
-  email: string;
-  role: string;
-  organizationId?: number;
-  organizationName?: string;
-}
+import { User as SelectUser } from "@shared/schema";
 
 // Define the context shape
 interface AuthContextType {
-  user: User | null;
+  user: SelectUser | null;
   isLoading: boolean;
   isInitialized: boolean;
   loginMutation: any;
   registerMutation: any;
   logout: () => Promise<void>;
-  logoutMutation: any; // Added logoutMutation
+  logoutMutation: any;
 }
 
 // Create the auth context
@@ -43,20 +34,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Query to get the current user
-  const { data: user, isLoading } = useQuery({
+  const { data: user, isLoading } = useQuery<SelectUser | null, Error>({
     queryKey: ["/api/user"],
-    queryFn: async () => {
-      try {
-        const response = await apiRequest("GET", "/api/user");
-        return response as User;
-      } catch (error) {
-        // Don't throw on 401 - it's an expected state
-        if (error instanceof Response && error.status === 401) {
-          return null;
-        }
-        throw error;
-      }
-    },
+    queryFn: getQueryFn({ on401: "returnNull" }),
     retry: false,
     refetchOnWindowFocus: false,
   });
@@ -71,15 +51,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
-      try {
-        const response = await apiRequest("POST", "/api/login", credentials);
-        return response as User;
-      } catch (error) {
-        console.error("Login error:", error);
-        throw new Error(
-          "Login failed. Please check your credentials and try again."
-        );
-      }
+      const res = await apiRequest("POST", "/api/login", credentials);
+      return await res.json() as SelectUser;
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/user"], data);
@@ -100,15 +73,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Register mutation
   const registerMutation = useMutation({
     mutationFn: async (data: any) => {
-      try {
-        const response = await apiRequest("POST", "/api/register", data);
-        return response as User;
-      } catch (error) {
-        console.error("Registration error:", error);
-        throw new Error(
-          "Registration failed. Please check your information and try again."
-        );
-      }
+      const res = await apiRequest("POST", "/api/register", data);
+      return await res.json() as SelectUser;
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/user"], data);
@@ -158,21 +124,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   });
 
-
   // Provide the auth context
   return (
     <AuthContext.Provider
       value={{
-        user: user || null,
+        user: user ?? null,
         isLoading,
         isInitialized,
         loginMutation,
         registerMutation,
         logout,
-        logoutMutation, // Added logoutMutation to the return value
+        logoutMutation,
       }}
     >
       {children}
     </AuthContext.Provider>
   );
+}
+
+// Helper function for handling 401 responses
+type UnauthorizedBehavior = "returnNull" | "throw";
+function getQueryFn<T>({ on401 }: { on401: UnauthorizedBehavior }): () => Promise<T | null> {
+  return async () => {
+    try {
+      const res = await fetch("/api/user", {
+        credentials: "include",
+      });
+
+      if (on401 === "returnNull" && res.status === 401) {
+        return null;
+      }
+
+      if (!res.ok) {
+        throw new Error(`Request failed with status ${res.status}`);
+      }
+
+      return await res.json();
+    } catch (error) {
+      console.error("User query error:", error);
+      if (on401 === "returnNull") {
+        return null;
+      }
+      throw error;
+    }
+  };
 }
