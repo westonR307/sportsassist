@@ -46,7 +46,8 @@ export async function registerRoutes(app: Express) {
       username: req.body.username,
       role: req.body.role,
       email: req.body.email,
-      organizationName: req.body.organizationName
+      organizationName: req.body.organizationName,
+      password: req.body.password ? "Present" : "Missing"
     });
 
     const existingUser = await storage.getUserByUsername(req.body.username);

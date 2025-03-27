@@ -29,7 +29,9 @@ import {
 export const publicRoles = ["camp_creator", "parent", "athlete"] as const;
 
 // Define schemas
-export const insertUserSchema = createInsertSchema(users).extend({
+export const insertUserSchema = createInsertSchema(users, {
+  passwordHash: z.string().optional() // Make it optional in schema since we'll set it in the backend
+}).extend({
   role: z.enum(publicRoles),
   organizationName: z.string().optional(),
   organizationDescription: z.string().optional(),

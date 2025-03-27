@@ -46,10 +46,14 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  passwordHash: text("passwordHash").notNull(),
   role: text("role").$type<Role>().notNull(),
   organizationId: integer("organization_id").references(() => organizations.id),
   email: text("email").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  first_name: text("first_name"),
+  last_name: text("last_name"),
 });
 
 export const invitations = pgTable("invitations", {
