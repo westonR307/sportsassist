@@ -83,6 +83,7 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db.insert(users).values({
       username: insertUser.username.toLowerCase(),
       password: insertUser.password,
+      passwordHash: insertUser.password, // Add the passwordHash field with the same value
       email: insertUser.email,
       role: insertUser.role,
       organizationId: insertUser.organizationId,
