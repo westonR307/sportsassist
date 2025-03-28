@@ -46,7 +46,7 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
   const [showExceptionDialog, setShowExceptionDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("regular");
 
-  // Query regular schedules
+  // Query regular schedules with explicit fetcher
   const { 
     data: scheduleData, 
     isLoading: schedulesLoading, 
@@ -54,9 +54,16 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
   } = useQuery({
     queryKey: ['/api/camps', campId, 'schedules'],
     refetchOnWindowFocus: false,
+    queryFn: async () => {
+      const res = await fetch(`/api/camps/${campId}/schedules`);
+      if (!res.ok) {
+        throw new Error('Failed to fetch schedules');
+      }
+      return res.json();
+    }
   });
 
-  // Query schedule exceptions
+  // Query schedule exceptions with explicit fetcher
   const { 
     data: exceptionsData, 
     isLoading: exceptionsLoading, 
@@ -64,19 +71,29 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
   } = useQuery({
     queryKey: ['/api/camps', campId, 'schedule-exceptions'],
     refetchOnWindowFocus: false,
+    queryFn: async () => {
+      const res = await fetch(`/api/camps/${campId}/schedule-exceptions`);
+      if (!res.ok) {
+        throw new Error('Failed to fetch schedule exceptions');
+      }
+      return res.json();
+    }
   });
 
-  // Debug logs
+  // Enhanced debug logs
+  console.log("Camp ID:", campId);
   console.log("Schedule Data:", scheduleData);
   console.log("Exceptions Data:", exceptionsData);
+  console.log("Schedule Errors:", schedulesError);
+  console.log("Exception Errors:", exceptionsError);
 
   const isLoading = schedulesLoading || exceptionsLoading;
   const error = schedulesError || exceptionsError;
   
-  // Fixed data extraction
-  const canManage = scheduleData?.permissions?.canManage || false;
-  const schedules = scheduleData?.schedules || [];
-  const exceptions = exceptionsData?.exceptions || [];
+  // Fixed data extraction with strict type checks
+  const canManage = scheduleData && scheduleData.permissions ? scheduleData.permissions.canManage : false;
+  const schedules = scheduleData && Array.isArray(scheduleData.schedules) ? scheduleData.schedules : [];
+  const exceptions = exceptionsData && Array.isArray(exceptionsData.exceptions) ? exceptionsData.exceptions : [];
 
   if (isLoading) {
     return (

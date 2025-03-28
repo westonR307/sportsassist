@@ -559,23 +559,31 @@ export async function registerRoutes(app: Express) {
   app.get("/api/camps/:id/schedules", async (req, res) => {
     try {
       const campId = parseInt(req.params.id);
+      console.log("Fetching schedules for camp ID:", campId);
+      
       const schedules = await storage.getCampSchedules(campId);
+      console.log("Retrieved schedules:", JSON.stringify(schedules));
       
       // Add additional data for authorized users (e.g., admin functions)
       const camp = await storage.getCamp(campId);
+      console.log("Camp info:", camp ? "Found" : "Not found", camp?.id || "N/A");
       
       // Add permissions for the frontend to know what actions to show
       let canManage = false;
       if (req.user && camp) {
         canManage = req.user.organizationId === camp.organizationId;
+        console.log("User can manage this camp:", canManage);
       }
       
-      res.json({
+      const response = {
         schedules,
         permissions: {
           canManage
         }
-      });
+      };
+      
+      console.log("Sending response:", JSON.stringify(response, null, 2).substring(0, 100) + "...");
+      res.json(response);
     } catch (error) {
       console.error("Error fetching camp schedules:", error);
       res.status(500).json({ message: "Failed to fetch camp schedules" });
@@ -586,28 +594,36 @@ export async function registerRoutes(app: Express) {
   app.get("/api/camps/:id/schedule-exceptions", async (req, res) => {
     try {
       const campId = parseInt(req.params.id);
+      console.log("Fetching schedule exceptions for camp ID:", campId);
       
       // Check if the camp exists
       const camp = await storage.getCamp(campId);
+      console.log("Camp found for exceptions:", camp ? "Yes" : "No");
       if (!camp) {
         return res.status(404).json({ message: "Camp not found" });
       }
       
       // Get all schedule exceptions for this camp
       const exceptions = await storage.getCampScheduleExceptions(campId);
+      console.log("Retrieved exceptions count:", exceptions.length);
+      console.log("Exceptions data sample:", JSON.stringify(exceptions.slice(0, 2)));
       
       // Add permissions for the frontend to know what actions to show
       let canManage = false;
       if (req.user) {
         canManage = req.user.organizationId === camp.organizationId;
+        console.log("User can manage exceptions:", canManage);
       }
       
-      res.json({
+      const response = {
         exceptions,
         permissions: {
           canManage
         }
-      });
+      };
+      
+      console.log("Sending exceptions response with keys:", Object.keys(response));
+      res.json(response);
     } catch (error) {
       console.error("Error fetching schedule exceptions:", error);
       res.status(500).json({ message: "Failed to fetch schedule exceptions" });
