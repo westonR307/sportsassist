@@ -8,6 +8,13 @@
       "when": 1741064370646,
       "tag": "0000_cute_mandrill",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1743205076409,
+      "tag": "0001_foamy_apocalypse",
+      "breakpoints": true
     }
   ]
 }

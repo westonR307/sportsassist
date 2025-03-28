@@ -11,7 +11,7 @@ import type { Express } from "express";
 import { createServer } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertCampSchema, insertChildSchema, insertRegistrationSchema, insertOrganizationSchema, insertInvitationSchema, sports, children, childSports } from "@shared/schema";
+import { insertCampSchema, insertChildSchema, insertRegistrationSchema, insertOrganizationSchema, insertInvitationSchema, insertScheduleExceptionSchema, sports, children, childSports } from "@shared/schema";
 import Stripe from "stripe";
 import { hashPassword } from "./utils";
 import { randomBytes } from "crypto";
@@ -579,6 +579,78 @@ export async function registerRoutes(app: Express) {
     } catch (error) {
       console.error("Error fetching camp schedules:", error);
       res.status(500).json({ message: "Failed to fetch camp schedules" });
+    }
+  });
+  
+  // Get schedule exceptions for a specific camp
+  app.get("/api/camps/:id/schedule-exceptions", async (req, res) => {
+    try {
+      const campId = parseInt(req.params.id);
+      
+      // Check if the camp exists
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Get all schedule exceptions for this camp
+      const exceptions = await storage.getCampScheduleExceptions(campId);
+      
+      // Add permissions for the frontend to know what actions to show
+      let canManage = false;
+      if (req.user) {
+        canManage = req.user.organizationId === camp.organizationId;
+      }
+      
+      res.json({
+        exceptions,
+        permissions: {
+          canManage
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching schedule exceptions:", error);
+      res.status(500).json({ message: "Failed to fetch schedule exceptions" });
+    }
+  });
+  
+  // Create a new schedule exception
+  app.post("/api/camps/:id/schedule-exceptions", async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      
+      // Check if the camp exists
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if the user has permission to manage this camp
+      const canManage = req.user.organizationId === camp.organizationId;
+      if (!canManage) {
+        return res.status(403).json({ message: "You don't have permission to manage this camp" });
+      }
+      
+      // Validate and create the exception
+      const parsed = insertScheduleExceptionSchema.safeParse({
+        ...req.body,
+        campId
+      });
+      
+      if (!parsed.success) {
+        return res.status(400).json(parsed.error);
+      }
+      
+      const exception = await storage.createScheduleException(parsed.data);
+      
+      res.status(201).json(exception);
+    } catch (error) {
+      console.error("Error creating schedule exception:", error);
+      res.status(500).json({ message: "Failed to create schedule exception" });
     }
   });
 

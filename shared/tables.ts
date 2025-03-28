@@ -1,5 +1,9 @@
 import { pgTable, text, serial, integer, boolean, timestamp, time } from "drizzle-orm/pg-core";
-import { type CampType, type CampVisibility, type RepeatType } from "./types";
+import { 
+  type CampType, type CampVisibility, type RepeatType, 
+  type Role, type Gender, type ContactMethod, 
+  type SportLevel, type StaffRole 
+} from "./types";
 
 export const camps = pgTable("camps", {
   id: serial("id").primaryKey(),
@@ -32,6 +36,20 @@ export const campSchedules = pgTable("camp_schedules", {
   dayOfWeek: integer("day_of_week").notNull(),
   startTime: time("start_time").notNull(),
   endTime: time("end_time").notNull(),
+});
+
+// Table for handling one-time schedule exceptions
+export const scheduleExceptions = pgTable("schedule_exceptions", {
+  id: serial("id").primaryKey(),
+  campId: integer("camp_id").references(() => camps.id).notNull(),
+  originalScheduleId: integer("original_schedule_id").references(() => campSchedules.id),
+  exceptionDate: timestamp("exception_date").notNull(),
+  dayOfWeek: integer("day_of_week").notNull(),
+  startTime: time("start_time").notNull(),
+  endTime: time("end_time").notNull(),
+  status: text("status").notNull().default("active"), // active, cancelled, rescheduled
+  reason: text("reason"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const organizations = pgTable("organizations", {

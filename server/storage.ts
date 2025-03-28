@@ -7,6 +7,7 @@ import {
   campSports,
   registrations,
   campSchedules,
+  scheduleExceptions,
   type User,
   type InsertUser,
   type Organization,
@@ -17,6 +18,8 @@ import {
   type CampSport,
   type Registration,
   type CampSchedule,
+  type ScheduleException,
+  type InsertScheduleException,
   type Camp,
   insertCampSchema,
   sports
@@ -55,6 +58,10 @@ export interface IStorage {
   getChild(childId: number): Promise<Child | undefined>;
   createCampSport(campSport: { campId: number; sportId: number; skillLevel: SportLevel; }): Promise<CampSport>;
   getCampSchedules(campId: number): Promise<CampSchedule[]>;
+  getCampScheduleExceptions(campId: number): Promise<ScheduleException[]>;
+  createScheduleException(exception: InsertScheduleException): Promise<ScheduleException>;
+  updateScheduleException(id: number, exception: Partial<Omit<ScheduleException, "id">>): Promise<ScheduleException>;
+  getScheduleException(id: number): Promise<ScheduleException | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -399,6 +406,72 @@ export class DatabaseStorage implements IStorage {
         .orderBy(campSchedules.dayOfWeek);
     } catch (error) {
       console.error("Error getting camp schedules:", error);
+      throw error;
+    }
+  }
+  
+  async getCampScheduleExceptions(campId: number): Promise<ScheduleException[]> {
+    try {
+      return await db.select()
+        .from(scheduleExceptions)
+        .where(eq(scheduleExceptions.campId, campId))
+        .orderBy(scheduleExceptions.exceptionDate);
+    } catch (error) {
+      console.error("Error getting schedule exceptions:", error);
+      throw error;
+    }
+  }
+  
+  async createScheduleException(exception: InsertScheduleException): Promise<ScheduleException> {
+    try {
+      const [newException] = await db.insert(scheduleExceptions).values({
+        campId: exception.campId,
+        originalScheduleId: exception.originalScheduleId,
+        exceptionDate: new Date(exception.exceptionDate),
+        dayOfWeek: exception.dayOfWeek,
+        startTime: exception.startTime,
+        endTime: exception.endTime,
+        status: exception.status || "active",
+        reason: exception.reason
+      }).returning();
+      
+      return newException;
+    } catch (error) {
+      console.error("Error creating schedule exception:", error);
+      throw error;
+    }
+  }
+  
+  async updateScheduleException(id: number, exception: Partial<Omit<ScheduleException, "id">>): Promise<ScheduleException> {
+    try {
+      const [updatedException] = await db.update(scheduleExceptions)
+        .set({
+          ...(exception.exceptionDate !== undefined && { exceptionDate: new Date(exception.exceptionDate) }),
+          ...(exception.dayOfWeek !== undefined && { dayOfWeek: exception.dayOfWeek }),
+          ...(exception.startTime !== undefined && { startTime: exception.startTime }),
+          ...(exception.endTime !== undefined && { endTime: exception.endTime }),
+          ...(exception.status !== undefined && { status: exception.status }),
+          ...(exception.reason !== undefined && { reason: exception.reason })
+        })
+        .where(eq(scheduleExceptions.id, id))
+        .returning();
+        
+      return updatedException;
+    } catch (error) {
+      console.error("Error updating schedule exception:", error);
+      throw error;
+    }
+  }
+  
+  async getScheduleException(id: number): Promise<ScheduleException | undefined> {
+    try {
+      const [exception] = await db.select()
+        .from(scheduleExceptions)
+        .where(eq(scheduleExceptions.id, id));
+      
+      return exception;
+    } catch (error) {
+      console.error("Error getting schedule exception:", error);
       throw error;
     }
   }

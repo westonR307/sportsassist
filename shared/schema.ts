@@ -11,7 +11,8 @@ import {
   campStaff,
   registrations,
   campSchedules,
-  campSports
+  campSports,
+  scheduleExceptions
 } from "./tables";
 
 // Import types
@@ -68,6 +69,20 @@ export const insertChildSchema = createInsertSchema(children)
     medicalConditions: z.array(z.string()).optional().default([]),
     medications: z.array(z.string()).optional().default([]),
   });
+
+export const insertScheduleExceptionSchema = z.object({
+  campId: z.number(),
+  originalScheduleId: z.number().optional(),
+  exceptionDate: z.string().or(z.date()).transform(val => {
+    if (val instanceof Date) return val;
+    return new Date(val);
+  }),
+  dayOfWeek: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
+  startTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format"),
+  endTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format"),
+  status: z.enum(["active", "cancelled", "rescheduled"]).default("active"),
+  reason: z.string().optional()
+});
 
 export const insertCampSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -133,6 +148,8 @@ export type Sport = typeof sports.$inferSelect;
 export type ChildSport = typeof childSports.$inferSelect;
 export type InsertChildSport = Exclude<z.infer<typeof insertChildSchema>["sportsInterests"], undefined>[number];
 export type CampSchedule = typeof campSchedules.$inferSelect;
+export type ScheduleException = typeof scheduleExceptions.$inferSelect;
+export type InsertScheduleException = z.infer<typeof insertScheduleExceptionSchema>;
 //export type InsertCampSchedule = z.infer<typeof insertCampScheduleSchema>;
 export type CampSport = typeof campSports.$inferSelect;
 
@@ -148,7 +165,8 @@ export {
   campStaff,
   registrations,
   campSports,
-  campSchedules
+  campSchedules,
+  scheduleExceptions
 };
 
 export const predefinedSports = [
