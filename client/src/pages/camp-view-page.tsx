@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { DashboardLayout } from "./dashboard";
 import { useParams, useLocation } from "wouter";
@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Edit, MessageSquare, Users, ShieldAlert } from "lucide-react";
 import { type Camp } from "@shared/schema";
 import { apiRequest } from "@/lib/api";
+import { EditCampDialog } from "@/components/edit-camp-dialog";
 
 // Extended camp type to include permissions from the server
 interface CampWithPermissions extends Camp {
@@ -30,6 +31,7 @@ function CampViewPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [location, navigate] = useLocation();
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   // Updated to use the extended type with permissions
   const { data: camp, isLoading } = useQuery<CampWithPermissions>({
@@ -89,7 +91,7 @@ function CampViewPage() {
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Message Athletes
                 </Button>
-                <Button>
+                <Button onClick={() => setEditDialogOpen(true)}>
                   <Edit className="h-4 w-4 mr-2" />
                   Edit Camp
                 </Button>
@@ -232,6 +234,15 @@ function CampViewPage() {
           </Card>
         </div>
       </div>
+      
+      {/* Edit Camp Dialog */}
+      {camp && (
+        <EditCampDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          camp={camp}
+        />
+      )}
     </DashboardLayout>
   );
 }

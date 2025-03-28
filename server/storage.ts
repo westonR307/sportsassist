@@ -37,8 +37,9 @@ export interface IStorage {
   createUser(user: InsertUser & { organizationId?: number }): Promise<User>;
   updateUserRole(userId: number, newRole: Role): Promise<User>;
   getOrganizationStaff(orgId: number): Promise<User[]>;
-  createCamp(camp: Omit<Camp, "id"> & { schedules?: InsertCampSchedule[] }): Promise<Camp>;
-  listCamps(): Promise<Camp[]>;
+  createCamp(camp: Omit<Camp, "id"> & { schedules?: CampSchedule[] }): Promise<Camp>;
+  updateCamp(id: number, campData: Partial<Omit<Camp, "id" | "organizationId">>): Promise<Camp>;
+  listCamps(organizationId?: number): Promise<Camp[]>;
   getCamp(id: number): Promise<Camp | undefined>;
   getRegistrationsByCamp(campId: number): Promise<Registration[]>;
   createRegistration(registration: Omit<Registration, "id">): Promise<Registration>;
@@ -233,6 +234,58 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error getting camp:", error);
       throw error;
+    }
+  }
+  
+  async updateCamp(id: number, campData: Partial<Omit<Camp, "id" | "organizationId">>): Promise<Camp> {
+    try {
+      console.log(`Updating camp ${id} with data:`, campData);
+      
+      // We need to first get the current camp to preserve fields not being updated
+      const currentCamp = await this.getCamp(id);
+      if (!currentCamp) {
+        throw new Error(`Camp with ID ${id} not found`);
+      }
+      
+      // Update the camp
+      const [updatedCamp] = await db.update(camps)
+        .set({
+          // Only update fields that are provided in campData
+          ...(campData.name !== undefined && { name: campData.name }),
+          ...(campData.description !== undefined && { description: campData.description }),
+          ...(campData.streetAddress !== undefined && { streetAddress: campData.streetAddress }),
+          ...(campData.city !== undefined && { city: campData.city }),
+          ...(campData.state !== undefined && { state: campData.state }),
+          ...(campData.zipCode !== undefined && { zipCode: campData.zipCode }),
+          ...(campData.additionalLocationDetails !== undefined && { additionalLocationDetails: campData.additionalLocationDetails }),
+          ...(campData.startDate !== undefined && { startDate: new Date(campData.startDate) }),
+          ...(campData.endDate !== undefined && { endDate: new Date(campData.endDate) }),
+          ...(campData.registrationStartDate !== undefined && { registrationStartDate: new Date(campData.registrationStartDate) }),
+          ...(campData.registrationEndDate !== undefined && { registrationEndDate: new Date(campData.registrationEndDate) }),
+          ...(campData.price !== undefined && { price: campData.price }),
+          ...(campData.capacity !== undefined && { capacity: campData.capacity }),
+          ...(campData.type !== undefined && { type: campData.type }),
+          ...(campData.visibility !== undefined && { visibility: campData.visibility }),
+          ...(campData.waitlistEnabled !== undefined && { waitlistEnabled: campData.waitlistEnabled }),
+          ...(campData.minAge !== undefined && { minAge: campData.minAge }),
+          ...(campData.maxAge !== undefined && { maxAge: campData.maxAge }),
+          ...(campData.repeatType !== undefined && { repeatType: campData.repeatType }),
+          ...(campData.repeatCount !== undefined && { repeatCount: campData.repeatCount }),
+        })
+        .where(eq(camps.id, id))
+        .returning();
+      
+      console.log(`Updated camp ${id} successfully`);
+      return updatedCamp;
+    } catch (error: any) {
+      console.error(`Error updating camp ${id}:`, {
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        constraint: error.constraint,
+        stack: error.stack
+      });
+      throw new Error(`Failed to update camp: ${error.message}`);
     }
   }
 

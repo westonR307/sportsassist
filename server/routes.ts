@@ -505,6 +505,55 @@ export async function registerRoutes(app: Express) {
       });
     }
   });
+  
+  // Route to update a camp by ID
+  app.patch("/api/camps/:id", async (req, res) => {
+    try {
+      // Check if user is authenticated
+      if (!req.user) {
+        return res.status(401).json({ message: "You must be logged in to update a camp" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      if (isNaN(campId)) {
+        return res.status(400).json({ message: "Invalid camp ID format" });
+      }
+      
+      // Get the camp to check permissions
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if user has permission to update this camp
+      if (req.user.organizationId !== camp.organizationId) {
+        return res.status(403).json({ 
+          message: "You don't have permission to update this camp" 
+        });
+      }
+      
+      // Validate the update data
+      // We use a subset of insertCampSchema for updates
+      const campUpdateResult = await storage.updateCamp(campId, req.body);
+      
+      res.json({
+        ...campUpdateResult,
+        permissions: {
+          canManage: true
+        }
+      });
+    } catch (error) {
+      console.error("Error updating camp:", {
+        id: req.params.id,
+        message: error.message,
+        stack: error.stack
+      });
+      res.status(500).json({ 
+        message: "Failed to update camp",
+        error: error.message
+      });
+    }
+  });
 
   // Add route to get camp schedules
   app.get("/api/camps/:id/schedules", async (req, res) => {
