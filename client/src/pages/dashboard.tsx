@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { FlipCard } from "@/components/ui/flip-card";
 import {
   Plus,
   Settings,
@@ -21,6 +22,12 @@ import {
   Tag,
   CalendarDays,
   Info,
+  RefreshCw,
+  Phone,
+  Mail,
+  FileText,
+  Award,
+  Clipboard,
 } from "lucide-react";
 import { useLocation as useWouterLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -195,7 +202,7 @@ function CampsDashboard() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {camps.map((camp) => {
             // Check if user can manage this specific camp
             const canManageCamp = camp.permissions?.canManage || false;
@@ -234,113 +241,170 @@ function CampsDashboard() {
               };
               return types[type] || type;
             };
-            
-            return (
-              <Card 
-                key={camp.id} 
-                className={`overflow-hidden transition-all duration-200 hover:shadow-md ${!canManageCamp ? "border-gray-200" : "border-primary/20"}`}
-              >
-                <button
-                  onClick={() => navigate(`/dashboard/camps/${camp.id}`)}
-                  className="block w-full text-left h-full"
-                >
-                  <div className={`h-2 w-full ${campStatus === 'active' ? 'bg-green-500' : campStatus === 'upcoming' ? 'bg-blue-500' : 'bg-gray-400'}`} />
-                  
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start gap-2">
-                      <div>
-                        <CardTitle className="text-lg">{camp.name}</CardTitle>
-                        <CardDescription className="line-clamp-2 mt-1">
-                          {camp.description}
-                        </CardDescription>
-                      </div>
-                      
+           
+            // We'll create two cards - one for the front and one for the back of the flip card
+            const frontCard = (
+              <Card className="h-full border-0 shadow-none">
+                <div className={`h-2 w-full ${campStatus === 'active' ? 'bg-green-500' : campStatus === 'upcoming' ? 'bg-blue-500' : 'bg-gray-400'}`} />
+                
+                <CardHeader className="p-3 pb-1">
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-start">
+                      <CardTitle className="text-base truncate">{camp.name}</CardTitle>
                       {canManageCamp ? (
-                        <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
+                        <Badge className="h-5 text-xs bg-green-100 text-green-800 hover:bg-green-200">
                           Manager
                         </Badge>
-                      ) : (
-                        <Badge variant="outline" className="bg-gray-100 text-gray-700 hover:bg-gray-200">
-                          View Only
-                        </Badge>
-                      )}
+                      ) : null}
                     </div>
-                  </CardHeader>
+                    <CardDescription className="line-clamp-1 text-xs">
+                      {camp.description}
+                    </CardDescription>
+                  </div>
+                </CardHeader>
+                
+                <CardContent className="p-3 pt-0 space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1">
+                      <CalendarRange className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span>{campDays} day{campDays !== 1 ? 's' : ''}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Users2 className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span>{camp.capacity}</span>
+                    </div>
+                  </div>
                   
-                  <CardContent className="pb-3 space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="flex items-center gap-1.5">
-                        <CalendarRange className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{campDays} day{campDays !== 1 ? 's' : ''}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-1.5">
-                        <Tag className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm capitalize">{formatCampType(camp.type)}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-1.5">
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">${camp.price}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-1.5">
-                        <Users2 className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{camp.capacity} spots</span>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-1.5">
-                        <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Camp Period</span>
-                      </div>
-                      <div className="ml-6 text-sm text-gray-600">
-                        {startDate.toLocaleDateString()} - {endDate.toLocaleDateString()}
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Registration</span>
-                      </div>
-                      <div className="ml-6 text-sm text-gray-600 flex items-center justify-between">
-                        <span>{regStartDate.toLocaleDateString()} - {regEndDate.toLocaleDateString()}</span>
-                        <Badge 
-                          className={
-                            regStatus === 'open'
-                              ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                              : regStatus === 'upcoming'
-                                ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                          }
-                        >
-                          {regStatus === 'open' ? 'Open' : regStatus === 'upcoming' ? 'Opening Soon' : 'Closed'}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardContent>
+                  <div className="flex items-center gap-1">
+                    <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="truncate">{camp.city}, {camp.state}</span>
+                  </div>
                   
-                  <CardFooter className="border-t pt-3 pb-3">
-                    <div className="flex items-center gap-1.5 w-full">
-                      <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <span className="text-sm text-gray-600 truncate">
-                        {camp.city}, {camp.state}
-                      </span>
-                      
-                      <div className="flex-grow"></div>
-                      
-                      <Badge 
-                        variant={camp.visibility === 'public' ? 'default' : 'outline'}
-                        className="ml-auto capitalize"
-                      >
-                        {camp.visibility}
-                      </Badge>
-                    </div>
-                  </CardFooter>
-                </button>
+                  <div className="flex items-center justify-between">
+                    <Badge 
+                      className={
+                        regStatus === 'open'
+                          ? 'bg-green-100 text-green-800 hover:bg-green-200 h-5 text-xs'
+                          : regStatus === 'upcoming'
+                            ? 'bg-blue-100 text-blue-800 hover:bg-blue-200 h-5 text-xs'
+                            : 'bg-gray-100 text-gray-800 hover:bg-gray-200 h-5 text-xs'
+                      }
+                    >
+                      {regStatus === 'open' ? 'Registration Open' : regStatus === 'upcoming' ? 'Opening Soon' : 'Closed'}
+                    </Badge>
+                    <span className="text-xs">${camp.price}</span>
+                  </div>
+                </CardContent>
+                
+                <div className="absolute bottom-2 right-2 text-muted-foreground text-xs">
+                  <RefreshCw className="h-3.5 w-3.5 animate-pulse" />
+                </div>
               </Card>
+            );
+            
+            const backCard = (
+              <Card className="h-full border-0 shadow-none overflow-y-auto">
+                <div className={`h-2 w-full ${campStatus === 'active' ? 'bg-green-500' : campStatus === 'upcoming' ? 'bg-blue-500' : 'bg-gray-400'}`} />
+                
+                <CardHeader className="p-3 pb-1">
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-base">{camp.name}</CardTitle>
+                    <Badge 
+                      variant={camp.visibility === 'public' ? 'default' : 'outline'}
+                      className="capitalize h-5 text-xs"
+                    >
+                      {camp.visibility}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                
+                <CardContent className="p-3 text-xs space-y-3">
+                  <p className="text-muted-foreground">{camp.description}</p>
+                  
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5 font-medium">
+                      <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span>Camp Period</span>
+                    </div>
+                    <div className="ml-5 flex justify-between">
+                      <span>{startDate.toLocaleDateString()}</span>
+                      <span>to</span>
+                      <span>{endDate.toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5 font-medium">
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span>Registration</span>
+                    </div>
+                    <div className="ml-5 flex justify-between">
+                      <span>{regStartDate.toLocaleDateString()}</span>
+                      <span>to</span>
+                      <span>{regEndDate.toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="font-medium">Location</span>
+                      </div>
+                      <div className="ml-5 text-muted-foreground">
+                        <div>{camp.streetAddress}</div>
+                        <div>{camp.city}, {camp.state} {camp.zipCode}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5">
+                        <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="font-medium">Details</span>
+                      </div>
+                      <div className="ml-5 space-y-0.5 text-muted-foreground">
+                        <div className="flex justify-between">
+                          <span>Type:</span>
+                          <span>{formatCampType(camp.type)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Ages:</span>
+                          <span>{camp.minAge}-{camp.maxAge}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Price:</span>
+                          <span>${camp.price}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+                
+                <CardFooter className="p-3 pt-0 flex justify-center">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="w-full text-xs h-8"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/dashboard/camps/${camp.id}`);
+                    }}
+                  >
+                    View Details
+                  </Button>
+                </CardFooter>
+              </Card>
+            );
+            
+            // Return the FlipCard component with front and back cards
+            return (
+              <div key={camp.id} className="h-[220px]">
+                <FlipCard
+                  front={frontCard}
+                  back={backCard}
+                  className={`rounded-md overflow-hidden transition-all duration-200 h-full ${!canManageCamp ? "opacity-90" : ""}`}
+                />
+              </div>
             );
           })}
         </div>
