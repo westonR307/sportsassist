@@ -17,7 +17,7 @@ import { useLocation as useWouterLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { type Camp } from "@shared/schema";
 import { AddCampDialog } from "@/components/add-camp-dialog";
-import { DebugHelper } from "@/components/debug-helper";
+
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useWouterLocation();
@@ -245,9 +245,6 @@ function CampsDashboard() {
           onOpenChange={setShowAddCampDialog}
         />
       )}
-
-      {/* DebugHelper component added at the end */}
-      <DebugHelper />
     </div>
   );
 }
