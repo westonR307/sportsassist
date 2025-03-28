@@ -274,42 +274,42 @@ export function AddCampDialog({
   const createCampMutation = useMutation({
     mutationFn: async (data: z.infer<typeof insertCampSchema>) => {
       setSubmitting(true); // Set submitting to true before API call
-      if (!user?.organizationId) {
-        throw new Error("Organization ID required");
-      }
-
-      if (!selectedSport) {
-        throw new Error("Sport selection is required");
-      }
-
-      const sportId = sportsMap[selectedSport] || 1;
-      const mappedSkillLevel = skillLevelMap[skillLevel] || "beginner";
-
-
-      const requestData = {
-        ...data,
-        startDate: formatDateForPostgres(data.startDate),
-        endDate: formatDateForPostgres(data.endDate),
-        registrationStartDate: formatDateForPostgres(data.registrationStartDate),
-        registrationEndDate: formatDateForPostgres(data.registrationEndDate),
-        organizationId: user.organizationId,
-        price: Number(data.price) || 0,
-        capacity: Number(data.capacity) || 20,
-        minAge: Number(data.minAge) || 5,
-        maxAge: Number(data.maxAge) || 18,
-        repeatCount: Number(data.repeatCount) || 0,
-        sportId: 1, // Fixed ID for Basketball based on DB schema
-        skillLevel: mappedSkillLevel,
-        schedules: schedules.map(schedule => ({
-          dayOfWeek: schedule.dayOfWeek,
-          startTime: schedule.startTime.padStart(5, '0'),
-          endTime: schedule.endTime.padStart(5, '0')
-        }))
-      };
-
-      console.log("Creating camp with data:", JSON.stringify(requestData, null, 2));
-
       try {
+        if (!user?.organizationId) {
+          throw new Error("Organization ID required");
+        }
+
+        if (!selectedSport) {
+          throw new Error("Sport selection is required");
+        }
+
+        const sportId = sportsMap[selectedSport] || 1;
+        const mappedSkillLevel = skillLevelMap[skillLevel] || "beginner";
+
+        const requestData = {
+          ...data,
+          startDate: formatDateForPostgres(data.startDate),
+          endDate: formatDateForPostgres(data.endDate),
+          registrationStartDate: formatDateForPostgres(data.registrationStartDate),
+          registrationEndDate: formatDateForPostgres(data.registrationEndDate),
+          organizationId: user.organizationId,
+          price: Number(data.price) || 0,
+          capacity: Number(data.capacity) || 20,
+          minAge: Number(data.minAge) || 5,
+          maxAge: Number(data.maxAge) || 18,
+          repeatCount: Number(data.repeatCount) || 0,
+          sportId: 1, // Fixed ID for Basketball based on DB schema
+          skillLevel: mappedSkillLevel,
+          schedules: schedules.map(schedule => ({
+            dayOfWeek: schedule.dayOfWeek,
+            startTime: schedule.startTime.padStart(5, '0'),
+            endTime: schedule.endTime.padStart(5, '0')
+          }))
+        };
+
+        console.log("Creating camp with data:", JSON.stringify(requestData, null, 2));
+        
+        // The apiRequest function automatically parses JSON responses
         const response = await apiRequest("POST", "/api/camps", requestData);
         console.log("Camp created successfully:", response);
         return response;
@@ -320,7 +320,8 @@ export function AddCampDialog({
         setSubmitting(false); // Set submitting to false after API call, regardless of success or failure
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Camp created successfully with data:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
       onOpenChange(false);
       form.reset();
@@ -336,16 +337,8 @@ export function AddCampDialog({
       console.error("Camp creation error:", error);
       let errorMessage = "Failed to create camp";
 
-      if (error.response?.data?.errors) {
-        const validationErrors = error.response.data.errors;
-        Object.keys(validationErrors).forEach((field) => {
-          form.setError(field as any, {
-            type: "manual",
-            message: validationErrors[field].join(", "),
-          });
-        });
-        errorMessage = "Please correct the highlighted fields";
-      } else if (error.message) {
+      // Our apiRequest throws Error objects with message property
+      if (error.message) {
         errorMessage = error.message;
       }
 
