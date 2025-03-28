@@ -6,10 +6,11 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Edit, MessageSquare, Users, ShieldAlert } from "lucide-react";
+import { Loader2, Edit, MessageSquare, Users, ShieldAlert, CalendarDays } from "lucide-react";
 import { type Camp } from "@shared/schema";
 import { apiRequest } from "@/lib/api";
 import { EditCampDialog } from "@/components/edit-camp-dialog";
+import { CampScheduleDisplay } from "@/components/camp-schedule";
 
 // Extended camp type to include permissions from the server
 interface CampWithPermissions extends Camp {
@@ -108,50 +109,55 @@ function CampViewPage() {
 
         {/* Camp Details */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Camp Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h3 className="font-medium">Description</h3>
-                <p className="text-muted-foreground">{camp.description}</p>
-              </div>
-              <div>
-                <h3 className="font-medium">Location</h3>
-                <p className="text-muted-foreground">
-                  {camp.streetAddress}<br />
-                  {camp.city}, {camp.state} {camp.zipCode}
-                </p>
-              </div>
-              <div>
-                <h3 className="font-medium">Dates</h3>
-                <p className="text-muted-foreground">
-                  {new Date(camp.startDate).toLocaleDateString()} - {new Date(camp.endDate).toLocaleDateString()}
-                </p>
-              </div>
-              <div>
-                <h3 className="font-medium">Registration Period</h3>
-                <p className="text-muted-foreground">
-                  {new Date(camp.registrationStartDate).toLocaleDateString()} - {new Date(camp.registrationEndDate).toLocaleDateString()}
-                </p>
-              </div>
-              <div className="flex justify-between">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Camp Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div>
-                  <h3 className="font-medium">Price</h3>
-                  <p className="text-muted-foreground">${camp.price}</p>
+                  <h3 className="font-medium">Description</h3>
+                  <p className="text-muted-foreground">{camp.description}</p>
                 </div>
                 <div>
-                  <h3 className="font-medium">Capacity</h3>
-                  <p className="text-muted-foreground">{camp.capacity} athletes</p>
+                  <h3 className="font-medium">Location</h3>
+                  <p className="text-muted-foreground">
+                    {camp.streetAddress}<br />
+                    {camp.city}, {camp.state} {camp.zipCode}
+                  </p>
                 </div>
                 <div>
-                  <h3 className="font-medium">Type</h3>
-                  <p className="text-muted-foreground capitalize">{camp.type}</p>
+                  <h3 className="font-medium">Dates</h3>
+                  <p className="text-muted-foreground">
+                    {new Date(camp.startDate).toLocaleDateString()} - {new Date(camp.endDate).toLocaleDateString()}
+                  </p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                <div>
+                  <h3 className="font-medium">Registration Period</h3>
+                  <p className="text-muted-foreground">
+                    {new Date(camp.registrationStartDate).toLocaleDateString()} - {new Date(camp.registrationEndDate).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="flex justify-between">
+                  <div>
+                    <h3 className="font-medium">Price</h3>
+                    <p className="text-muted-foreground">${camp.price}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Capacity</h3>
+                    <p className="text-muted-foreground">{camp.capacity} athletes</p>
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Type</h3>
+                    <p className="text-muted-foreground capitalize">{camp.type}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Camp Schedule Section */}
+            <CampScheduleDisplay campId={parseInt(id)} />
+          </div>
 
           {/* Registrations */}
           <Card>

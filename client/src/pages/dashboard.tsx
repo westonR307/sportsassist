@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FlipCard } from "@/components/ui/flip-card";
+import { CampScheduleSummary } from "@/components/camp-schedule";
 import {
   Plus,
   Settings,
@@ -280,6 +281,11 @@ function CampsDashboard() {
                     <span className="truncate">{camp.city}, {camp.state}</span>
                   </div>
                   
+                  <div className="flex items-center gap-1">
+                    <CalendarDays className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="truncate text-muted-foreground">Click card to see schedule</span>
+                  </div>
+                  
                   <div className="flex items-center justify-between">
                     <Badge 
                       className={
@@ -342,6 +348,22 @@ function CampsDashboard() {
                       <span>{regStartDate.toLocaleDateString()}</span>
                       <span>to</span>
                       <span>{regEndDate.toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                  
+                  {/* Camp Schedule Summary */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5 font-medium">
+                      <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span>Schedule</span>
+                    </div>
+                    <div className="ml-5 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">
+                          {/* We'll fetch this data on camp view page */}
+                          View detailed schedule in camp page
+                        </span>
+                      </div>
                     </div>
                   </div>
                   
