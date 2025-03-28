@@ -11,6 +11,7 @@ import {
   LogOut,
   Loader2,
   Menu,
+  ShieldAlert,
 } from "lucide-react";
 import { useLocation as useWouterLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -125,24 +126,42 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Extended camp type to include permissions from the server
+interface CampWithPermissions extends Camp {
+  permissions?: {
+    canManage: boolean;
+  }
+}
+
 function CampsDashboard() {
   const [showAddCampDialog, setShowAddCampDialog] = React.useState(false);
-  const { data: camps, isLoading } = useQuery<Camp[]>({
+  const { user } = useAuth();
+  const { data: camps, isLoading } = useQuery<CampWithPermissions[]>({
     queryKey: ["/api/camps"],
     staleTime: 5000, // Only refetch after 5 seconds
     refetchOnMount: "if-stale",
     refetchOnWindowFocus: false,
   });
   const [location, navigate] = useWouterLocation();
+  
+  // Check if user is a camp creator or manager who can create camps
+  const canCreateCamps = user && ['camp_creator', 'manager'].includes(user.role);
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Camps</h1>
-        <Button onClick={() => setShowAddCampDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Camp
-        </Button>
+        {canCreateCamps ? (
+          <Button onClick={() => setShowAddCampDialog(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Camp
+          </Button>
+        ) : (
+          <div className="flex items-center text-muted-foreground text-sm">
+            <ShieldAlert className="h-4 w-4 mr-2" />
+            <span>View only mode</span>
+          </div>
+        )}
       </div>
 
       {isLoading ? (
@@ -152,48 +171,71 @@ function CampsDashboard() {
       ) : !camps || camps.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-8">
-            <p className="text-gray-500 mb-4">No camps created yet</p>
-            <Button onClick={() => setShowAddCampDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create your first camp
-            </Button>
+            <p className="text-gray-500 mb-4">No camps {canCreateCamps ? 'created yet' : 'available'}</p>
+            {canCreateCamps ? (
+              <Button onClick={() => setShowAddCampDialog(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create your first camp
+              </Button>
+            ) : (
+              <div className="text-sm text-muted-foreground max-w-md text-center">
+                <p>You don't have permission to create camps.</p>
+                <p className="mt-2">Contact an organization admin if you need to create a new camp.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {camps.map((camp) => (
-            <Card key={camp.id}>
-              <button
-                onClick={() => navigate(`/dashboard/camps/${camp.id}`)}
-                className="block hover:opacity-80"
-              >
-                <CardHeader>
-                  <CardTitle>{camp.name}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Status</span>
-                      <span className="text-sm font-medium px-2 py-1 rounded-full bg-green-100 text-green-800">
-                        {camp.visibility}
-                      </span>
+          {camps.map((camp) => {
+            // Check if user can manage this specific camp
+            const canManageCamp = camp.permissions?.canManage || false;
+            
+            return (
+              <Card key={camp.id} className={!canManageCamp ? "opacity-90" : ""}>
+                <button
+                  onClick={() => navigate(`/dashboard/camps/${camp.id}`)}
+                  className="block hover:opacity-80 w-full text-left"
+                >
+                  <CardHeader className="flex flex-row items-start justify-between pb-2">
+                    <CardTitle>{camp.name}</CardTitle>
+                    {canManageCamp ? (
+                      <div className="flex items-center bg-green-50 px-2 py-1 rounded-full">
+                        <span className="w-2 h-2 rounded-full bg-green-500 mr-1.5"></span>
+                        <span className="text-xs text-green-700">Manager</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center bg-gray-50 px-2 py-1 rounded-full">
+                        <span className="w-2 h-2 rounded-full bg-gray-400 mr-1.5"></span>
+                        <span className="text-xs text-gray-700">View Only</span>
+                      </div>
+                    )}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Status</span>
+                        <span className="text-sm font-medium px-2 py-1 rounded-full bg-green-100 text-green-800">
+                          {camp.visibility}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        <p>
+                          Registration:{" "}
+                          {new Date(camp.registrationStartDate).toLocaleDateString()} -{" "}
+                          {new Date(camp.registrationEndDate).toLocaleDateString()}
+                        </p>
+                        <p>
+                          Camp: {new Date(camp.startDate).toLocaleDateString()} -{" "}
+                          {new Date(camp.endDate).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-500">
-                      <p>
-                        Registration:{" "}
-                        {new Date(camp.registrationStartDate).toLocaleDateString()} -{" "}
-                        {new Date(camp.registrationEndDate).toLocaleDateString()}
-                      </p>
-                      <p>
-                        Camp: {new Date(camp.startDate).toLocaleDateString()} -{" "}
-                        {new Date(camp.endDate).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </button>
-            </Card>
-          ))}
+                  </CardContent>
+                </button>
+              </Card>
+            );
+          })}
         </div>
       )}
 
@@ -225,9 +267,10 @@ function Dashboard() {
     );
   }
 
+  // All user types can see the dashboard, with appropriate permissions
   return (
     <DashboardLayout>
-      {user.role === "camp_creator" && <CampsDashboard />}
+      <CampsDashboard />
     </DashboardLayout>
   );
 }

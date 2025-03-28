@@ -6,9 +6,24 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Edit, MessageSquare, Users } from "lucide-react";
+import { Loader2, Edit, MessageSquare, Users, ShieldAlert } from "lucide-react";
 import { type Camp } from "@shared/schema";
 import { apiRequest } from "@/lib/api";
+
+// Extended camp type to include permissions from the server
+interface CampWithPermissions extends Camp {
+  permissions?: {
+    canManage: boolean;
+  }
+}
+
+// Extended registrations response from the server
+interface RegistrationsResponse {
+  registrations: any[];
+  permissions: {
+    canManage: boolean;
+  }
+}
 
 function CampViewPage() {
   const { id } = useParams<{ id: string }>();
@@ -16,16 +31,23 @@ function CampViewPage() {
   const { toast } = useToast();
   const [location, navigate] = useLocation();
 
-
-  const { data: camp, isLoading } = useQuery<Camp>({
+  // Updated to use the extended type with permissions
+  const { data: camp, isLoading } = useQuery<CampWithPermissions>({
     queryKey: [`/api/camps/${id}`],
     enabled: !!id,
   });
 
-  const { data: registrations, isLoading: isLoadingRegistrations } = useQuery({
+  // Updated to use the response type that includes permissions
+  const { data: registrationsData, isLoading: isLoadingRegistrations } = useQuery<RegistrationsResponse>({
     queryKey: [`/api/camps/${id}/registrations`],
     enabled: !!id,
   });
+
+  // Extract the registrations array from the response
+  const registrations = registrationsData?.registrations || [];
+  
+  // Check if the user has permission to manage this camp
+  const canManage = camp?.permissions?.canManage || false;
 
   if (isLoading) {
     return (
@@ -60,14 +82,25 @@ function CampViewPage() {
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">{camp.name}</h1>
           <div className="flex gap-2">
-            <Button variant="outline">
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Message Athletes
-            </Button>
-            <Button>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Camp
-            </Button>
+            {canManage ? (
+              // Only show management buttons if user has permission
+              <>
+                <Button variant="outline">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Message Athletes
+                </Button>
+                <Button>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Camp
+                </Button>
+              </>
+            ) : (
+              // Show a message for non-organizers
+              <div className="flex items-center text-muted-foreground">
+                <ShieldAlert className="h-4 w-4 mr-2" />
+                <span className="text-sm">View only</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -121,21 +154,78 @@ function CampViewPage() {
           {/* Registrations */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Registered Athletes</CardTitle>
-              <Users className="h-5 w-5 text-muted-foreground" />
+              <CardTitle>
+                Registered Athletes
+                {canManage ? '' : ' (Limited View)'}
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                {canManage && (
+                  <Button variant="outline" size="sm" className="h-8">
+                    <Users className="h-4 w-4 mr-2" />
+                    Manage Athletes
+                  </Button>
+                )}
+                <Users className="h-5 w-5 text-muted-foreground" />
+              </div>
             </CardHeader>
             <CardContent>
               {isLoadingRegistrations ? (
                 <div className="flex justify-center p-4">
                   <Loader2 className="h-6 w-6 animate-spin" />
                 </div>
-              ) : registrations?.length === 0 ? (
-                <p className="text-center text-muted-foreground py-4">
-                  No athletes registered yet
-                </p>
+              ) : !registrations || registrations.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-muted-foreground">
+                    No athletes registered yet
+                  </p>
+                  {canManage && (
+                    <Button variant="outline" size="sm" className="mt-4">
+                      Add Registration
+                    </Button>
+                  )}
+                </div>
               ) : (
                 <div className="space-y-4">
-                  {/* Registration list will go here */}
+                  {/* Note explaining the view permissions */}
+                  {!canManage && (
+                    <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md mb-4">
+                      <p className="flex items-center">
+                        <ShieldAlert className="h-4 w-4 mr-2 text-orange-500" />
+                        You are viewing this camp as {user?.role === 'parent' ? 'a parent' : 'a guest'}.
+                        {user?.role === 'parent' ? 
+                          ' You can only see registrations for your own children.' : 
+                          ' You need to be part of the organization to view detailed registration information.'}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Registration list */}
+                  <div className="space-y-2">
+                    {registrations.map((registration: any) => (
+                      <div 
+                        key={registration.id} 
+                        className="p-3 border rounded-md flex justify-between items-center"
+                      >
+                        <div>
+                          <p className="font-medium">Athlete ID: {registration.childId}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Registered: {new Date(registration.registeredAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center">
+                          <span className={`px-2 py-1 rounded-full text-xs ${registration.paid ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+                            {registration.paid ? 'Paid' : 'Unpaid'}
+                          </span>
+                          
+                          {canManage && (
+                            <Button variant="ghost" size="sm">
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </CardContent>

@@ -420,7 +420,27 @@ export async function registerRoutes(app: Express) {
   app.get("/api/camps", async (req, res) => {
     try {
       console.log("Fetching camps list");
-      const camps = await storage.listCamps();
+      
+      let camps;
+      // Check if we should filter by organization
+      if (req.user) {
+        const userType = req.user.role;
+        
+        // For organization staff members (camp creators, managers), show only their organization camps
+        if (['camp_creator', 'manager', 'coach', 'volunteer'].includes(userType) && req.user.organizationId) {
+          console.log(`Filtering camps for ${userType} with organization ID ${req.user.organizationId}`);
+          camps = await storage.listCamps(req.user.organizationId);
+        } else {
+          // For parents/athletes/public, show all public camps
+          console.log("Showing all camps (public view)");
+          camps = await storage.listCamps();
+        }
+      } else {
+        // For unauthenticated users, show all public camps
+        console.log("Unauthenticated user - showing all public camps");
+        camps = await storage.listCamps();
+      }
+      
       console.log(`Retrieved ${camps.length} camps`);
 
       // Force fresh response with multiple cache control headers
@@ -445,7 +465,7 @@ export async function registerRoutes(app: Express) {
     }
   });
   
-  // Route to get a camp by ID (detailed version with better error handling)
+  // Route to get a camp by ID (detailed version with better error handling and authorization)
   app.get("/api/camps/:id", async (req, res) => {
     try {
       const campId = parseInt(req.params.id);
@@ -458,7 +478,21 @@ export async function registerRoutes(app: Express) {
         return res.status(404).json({ message: "Camp not found" });
       }
       
-      res.json(camp);
+      // Check if user is authorized to perform management operations for the camp
+      let canManage = false;
+      if (req.user) {
+        // Only users from the same organization can manage the camp
+        canManage = req.user.organizationId === camp.organizationId;
+      }
+      
+      // Add management permissions to the response
+      res.json({
+        ...camp,
+        // Include permissions for the frontend to know what actions to show
+        permissions: {
+          canManage: canManage
+        }
+      });
     } catch (error) {
       console.error("Error fetching camp by ID:", {
         id: req.params.id,
@@ -475,8 +509,24 @@ export async function registerRoutes(app: Express) {
   // Add route to get camp schedules
   app.get("/api/camps/:id/schedules", async (req, res) => {
     try {
-      const schedules = await storage.getCampSchedules(parseInt(req.params.id));
-      res.json(schedules);
+      const campId = parseInt(req.params.id);
+      const schedules = await storage.getCampSchedules(campId);
+      
+      // Add additional data for authorized users (e.g., admin functions)
+      const camp = await storage.getCamp(campId);
+      
+      // Add permissions for the frontend to know what actions to show
+      let canManage = false;
+      if (req.user && camp) {
+        canManage = req.user.organizationId === camp.organizationId;
+      }
+      
+      res.json({
+        schedules,
+        permissions: {
+          canManage
+        }
+      });
     } catch (error) {
       console.error("Error fetching camp schedules:", error);
       res.status(500).json({ message: "Failed to fetch camp schedules" });
@@ -510,8 +560,50 @@ export async function registerRoutes(app: Express) {
 
   app.get("/api/camps/:id/registrations", async (req, res) => {
     try {
-      const registrations = await storage.getRegistrationsByCamp(parseInt(req.params.id));
-      res.json(registrations);
+      const campId = parseInt(req.params.id);
+      
+      // First check if the camp exists
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Organization staff can see all registrations, but parents can only see their own children's registrations
+      if (req.user) {
+        // Check if the user belongs to the organization that owns the camp
+        const isOrgStaff = (req.user.organizationId === camp.organizationId) && 
+                          ['camp_creator', 'manager', 'coach', 'volunteer'].includes(req.user.role);
+        
+        if (isOrgStaff) {
+          // Organization staff can see all registrations
+          const registrations = await storage.getRegistrationsByCamp(campId);
+          return res.json({
+            registrations,
+            permissions: { canManage: true }
+          });
+        } else if (req.user.role === 'parent') {
+          // Parents can only see their own children's registrations
+          const registrations = await storage.getRegistrationsByCamp(campId);
+          const children = await storage.getChildrenByParent(req.user.id);
+          const childIds = children.map(child => child.id);
+          
+          // Filter registrations to only include user's children
+          const filteredRegistrations = registrations.filter(reg => 
+            childIds.includes(reg.childId)
+          );
+          
+          return res.json({
+            registrations: filteredRegistrations,
+            permissions: { canManage: false }
+          });
+        }
+      }
+      
+      // For non-authenticated users or users with other roles,
+      // return only basic info or nothing depending on your requirements
+      return res.status(403).json({ 
+        message: "You don't have permission to view these registrations" 
+      });
     } catch (error) {
       console.error("Error fetching camp registrations:", error);
       res.status(500).json({ message: "Failed to fetch registrations" });

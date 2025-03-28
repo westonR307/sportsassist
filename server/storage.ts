@@ -202,11 +202,18 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-  async listCamps(): Promise<Camp[]> {
+  async listCamps(organizationId?: number): Promise<Camp[]> {
     try {
-      console.log("Fetching all camps");
-      const allCamps = await db.select().from(camps);
-      console.log("Retrieved camps:", JSON.stringify(allCamps, null, 2));
+      console.log(organizationId ? `Fetching camps for organization ${organizationId}` : "Fetching all camps");
+      
+      // If organizationId is provided, filter by it
+      let query = db.select().from(camps);
+      if (organizationId) {
+        query = query.where(eq(camps.organizationId, organizationId));
+      }
+      
+      const allCamps = await query;
+      console.log(`Retrieved ${allCamps.length} camps`);
       return allCamps;
     } catch (error) {
       console.error("Error listing camps:", {
