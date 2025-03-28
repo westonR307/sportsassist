@@ -365,7 +365,10 @@ export function AddCampDialog({
   };
 
   const onSubmit = async (data: z.infer<typeof insertCampSchema>) => {
+    console.log("Form submitted with data:", data);
+    
     if (!selectedSport) {
+      console.log("Error: No sport selected");
       toast({
         title: "Error",
         description: "Please select a sport",
@@ -376,6 +379,7 @@ export function AddCampDialog({
     }
 
     if (schedules.length === 0) {
+      console.log("Error: No schedules added");
       toast({
         title: "Error",
         description: "Please add at least one schedule",
@@ -471,7 +475,13 @@ export function AddCampDialog({
       skillLevel: skillLevelMap[skillLevel] 
     });
 
-    createCampMutation.mutate({ ...data, schedules });
+    console.log("About to call mutation with data", { ...data, schedules, sport: selectedSport, level: skillLevel });
+    try {
+      createCampMutation.mutate({ ...data, schedules });
+      console.log("Mutation called successfully");
+    } catch (error) {
+      console.error("Error calling mutation:", error);
+    }
   };
 
   return (
@@ -1092,7 +1102,37 @@ export function AddCampDialog({
                       Previous
                     </Button>
                     <Button
-                      type="submit"
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        console.log("Submit button clicked manually");
+                        if (!selectedSport) {
+                          console.log("Please select a sport");
+                          toast({
+                            title: "Error",
+                            description: "Please select a sport",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                        
+                        if (schedules.length === 0) {
+                          console.log("Please add at least one schedule");
+                          toast({
+                            title: "Error",
+                            description: "Please add at least one schedule",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                        
+                        // Get form data
+                        const data = form.getValues();
+                        console.log("Form data:", data);
+                        
+                        // Call mutation manually
+                        createCampMutation.mutate({ ...data, schedules });
+                      }}
                       disabled={createCampMutation.isPending || submitting} // Disable button while submitting
                     >
                       {createCampMutation.isPending || submitting ? (
