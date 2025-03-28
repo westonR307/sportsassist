@@ -93,23 +93,29 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
   // Mutation for updating a camp
   const updateCampMutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      // Convert date strings to proper ISO format
-      const formattedValues = {
-        ...values,
-        startDate: new Date(values.startDate).toISOString(),
-        endDate: new Date(values.endDate).toISOString(),
-        registrationStartDate: new Date(values.registrationStartDate).toISOString(),
-        registrationEndDate: new Date(values.registrationEndDate).toISOString(),
-      };
+      try {
+        // Convert date strings to proper ISO format
+        const formattedValues = {
+          ...values,
+          startDate: new Date(values.startDate).toISOString(),
+          endDate: new Date(values.endDate).toISOString(),
+          registrationStartDate: new Date(values.registrationStartDate).toISOString(),
+          registrationEndDate: new Date(values.registrationEndDate).toISOString(),
+        };
 
-      const res = await apiRequest("PATCH", `/api/camps/${camp.id}`, formattedValues);
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to update camp");
+        console.log("Making PATCH request with values:", formattedValues);
+        // The apiRequest function automatically parses JSON responses
+        const responseData = await apiRequest("PATCH", `/api/camps/${camp.id}`, formattedValues);
+        console.log("Successfully updated camp with response:", responseData);
+        return responseData;
+      } catch (err: any) {
+        console.error("Error in camp update mutation:", err);
+        throw new Error(err?.message || "Failed to update camp");
       }
-      return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Mutation success with data:", data);
+      
       // Show success message
       toast({
         title: "Camp updated",
@@ -124,10 +130,12 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
       onOpenChange(false);
     },
     onError: (error: Error) => {
+      console.error("Mutation error:", error);
+      
       // Show error message
       toast({
         title: "Failed to update camp",
-        description: error.message,
+        description: error.message || "An unexpected error occurred",
         variant: "destructive",
       });
     },
