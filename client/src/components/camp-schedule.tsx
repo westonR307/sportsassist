@@ -51,7 +51,7 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
     data: scheduleData, 
     isLoading: schedulesLoading, 
     error: schedulesError 
-  } = useQuery<{ schedules: CampSchedule[]; permissions: { canManage: boolean } }>({
+  } = useQuery({
     queryKey: ['/api/camps', campId, 'schedules'],
     refetchOnWindowFocus: false,
   });
@@ -61,13 +61,19 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
     data: exceptionsData, 
     isLoading: exceptionsLoading, 
     error: exceptionsError 
-  } = useQuery<ScheduleExceptionWithPermissions>({
+  } = useQuery({
     queryKey: ['/api/camps', campId, 'schedule-exceptions'],
     refetchOnWindowFocus: false,
   });
 
+  // Debug logs
+  console.log("Schedule Data:", scheduleData);
+  console.log("Exceptions Data:", exceptionsData);
+
   const isLoading = schedulesLoading || exceptionsLoading;
   const error = schedulesError || exceptionsError;
+  
+  // Fixed data extraction
   const canManage = scheduleData?.permissions?.canManage || false;
   const schedules = scheduleData?.schedules || [];
   const exceptions = exceptionsData?.exceptions || [];
