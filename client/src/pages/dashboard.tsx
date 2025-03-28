@@ -1,7 +1,8 @@
 import React from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Plus,
   Settings,
@@ -12,6 +13,14 @@ import {
   Loader2,
   Menu,
   ShieldAlert,
+  MapPin,
+  Clock,
+  DollarSign,
+  Users2,
+  CalendarRange,
+  Tag,
+  CalendarDays,
+  Info,
 } from "lucide-react";
 import { useLocation as useWouterLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -191,47 +200,145 @@ function CampsDashboard() {
             // Check if user can manage this specific camp
             const canManageCamp = camp.permissions?.canManage || false;
             
+            // Calculate date ranges and format for better display
+            const now = new Date();
+            const startDate = new Date(camp.startDate);
+            const endDate = new Date(camp.endDate);
+            const regStartDate = new Date(camp.registrationStartDate);
+            const regEndDate = new Date(camp.registrationEndDate);
+            
+            // Calculate if registration is open, upcoming, or past
+            const regStatus = now < regStartDate 
+              ? "upcoming" 
+              : now > regEndDate 
+                ? "closed" 
+                : "open";
+                
+            // Calculate if camp is active, upcoming, or past
+            const campStatus = now < startDate 
+              ? "upcoming" 
+              : now > endDate 
+                ? "completed" 
+                : "active";
+                
+            // Format duration in days
+            const campDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+            
+            // Format a more user-friendly display of the camp type
+            const formatCampType = (type: string) => {
+              const types: Record<string, string> = {
+                'one_on_one': 'One-on-One',
+                'group': 'Group',
+                'team': 'Team',
+                'virtual': 'Virtual'
+              };
+              return types[type] || type;
+            };
+            
             return (
-              <Card key={camp.id} className={!canManageCamp ? "opacity-90" : ""}>
+              <Card 
+                key={camp.id} 
+                className={`overflow-hidden transition-all duration-200 hover:shadow-md ${!canManageCamp ? "border-gray-200" : "border-primary/20"}`}
+              >
                 <button
                   onClick={() => navigate(`/dashboard/camps/${camp.id}`)}
-                  className="block hover:opacity-80 w-full text-left"
+                  className="block w-full text-left h-full"
                 >
-                  <CardHeader className="flex flex-row items-start justify-between pb-2">
-                    <CardTitle>{camp.name}</CardTitle>
-                    {canManageCamp ? (
-                      <div className="flex items-center bg-green-50 px-2 py-1 rounded-full">
-                        <span className="w-2 h-2 rounded-full bg-green-500 mr-1.5"></span>
-                        <span className="text-xs text-green-700">Manager</span>
+                  <div className={`h-2 w-full ${campStatus === 'active' ? 'bg-green-500' : campStatus === 'upcoming' ? 'bg-blue-500' : 'bg-gray-400'}`} />
+                  
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-start gap-2">
+                      <div>
+                        <CardTitle className="text-lg">{camp.name}</CardTitle>
+                        <CardDescription className="line-clamp-2 mt-1">
+                          {camp.description}
+                        </CardDescription>
                       </div>
-                    ) : (
-                      <div className="flex items-center bg-gray-50 px-2 py-1 rounded-full">
-                        <span className="w-2 h-2 rounded-full bg-gray-400 mr-1.5"></span>
-                        <span className="text-xs text-gray-700">View Only</span>
-                      </div>
-                    )}
+                      
+                      {canManageCamp ? (
+                        <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
+                          Manager
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-gray-100 text-gray-700 hover:bg-gray-200">
+                          View Only
+                        </Badge>
+                      )}
+                    </div>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Status</span>
-                        <span className="text-sm font-medium px-2 py-1 rounded-full bg-green-100 text-green-800">
-                          {camp.visibility}
-                        </span>
+                  
+                  <CardContent className="pb-3 space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex items-center gap-1.5">
+                        <CalendarRange className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{campDays} day{campDays !== 1 ? 's' : ''}</span>
                       </div>
-                      <div className="text-sm text-gray-500">
-                        <p>
-                          Registration:{" "}
-                          {new Date(camp.registrationStartDate).toLocaleDateString()} -{" "}
-                          {new Date(camp.registrationEndDate).toLocaleDateString()}
-                        </p>
-                        <p>
-                          Camp: {new Date(camp.startDate).toLocaleDateString()} -{" "}
-                          {new Date(camp.endDate).toLocaleDateString()}
-                        </p>
+                      
+                      <div className="flex items-center gap-1.5">
+                        <Tag className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm capitalize">{formatCampType(camp.type)}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-1.5">
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">${camp.price}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-1.5">
+                        <Users2 className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{camp.capacity} spots</span>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1.5">
+                        <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">Camp Period</span>
+                      </div>
+                      <div className="ml-6 text-sm text-gray-600">
+                        {startDate.toLocaleDateString()} - {endDate.toLocaleDateString()}
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">Registration</span>
+                      </div>
+                      <div className="ml-6 text-sm text-gray-600 flex items-center justify-between">
+                        <span>{regStartDate.toLocaleDateString()} - {regEndDate.toLocaleDateString()}</span>
+                        <Badge 
+                          className={
+                            regStatus === 'open'
+                              ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                              : regStatus === 'upcoming'
+                                ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                          }
+                        >
+                          {regStatus === 'open' ? 'Open' : regStatus === 'upcoming' ? 'Opening Soon' : 'Closed'}
+                        </Badge>
                       </div>
                     </div>
                   </CardContent>
+                  
+                  <CardFooter className="border-t pt-3 pb-3">
+                    <div className="flex items-center gap-1.5 w-full">
+                      <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="text-sm text-gray-600 truncate">
+                        {camp.city}, {camp.state}
+                      </span>
+                      
+                      <div className="flex-grow"></div>
+                      
+                      <Badge 
+                        variant={camp.visibility === 'public' ? 'default' : 'outline'}
+                        className="ml-auto capitalize"
+                      >
+                        {camp.visibility}
+                      </Badge>
+                    </div>
+                  </CardFooter>
                 </button>
               </Card>
             );
