@@ -7,7 +7,7 @@ import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 
 // Import pages
-import HomePage from "@/pages/home-page";
+import HomePage from "@/pages/simplified-home-page";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
@@ -22,6 +22,7 @@ import CustomFieldsPage from "@/pages/custom-fields-page";
 import MyAthletesPage from "@/pages/my-athletes-page";
 import RegistrationsPage from "@/pages/registrations-page";
 import AvailableCampsPage from "@/pages/available-camps-page";
+import FindCampsPage from "@/pages/find-camps-page";
 import { ProtectedRoute } from "./lib/protected-route";
 
 // Component to handle dashboard routing based on user role
@@ -73,6 +74,7 @@ function Router() {
       }} />
       
       <Route path="/auth" component={AuthPage} />
+      <Route path="/find-camps" component={FindCampsPage} />
       <ProtectedRoute path="/dashboard" component={DashboardRouter} />
       <ProtectedRoute path="/dashboard/my-athletes" component={MyAthletesPage} />
       <ProtectedRoute path="/dashboard/registrations" component={RegistrationsPage} />

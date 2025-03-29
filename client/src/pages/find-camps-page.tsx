@@ -898,11 +898,17 @@ export default function FindCampsPage() {
               <DialogHeader className="p-6 pb-2">
                 <DialogTitle className="text-2xl font-bold">{selectedCamp.name}</DialogTitle>
                 <DialogDescription className="flex flex-wrap gap-2 mt-2">
-                  {selectedCamp.campSports?.map((sport, index) => (
-                    <Badge key={index} variant="outline" className="bg-primary/10">
-                      {sport.sportId && getSportName(sport.sportId)} - {skillLevelNames[sport.skillLevel as keyof typeof skillLevelNames]}
+                  {selectedCamp.campSports && selectedCamp.campSports.length > 0 ? (
+                    selectedCamp.campSports.map((sport, index) => (
+                      <Badge key={index} variant="outline" className="bg-primary/10">
+                        {sport.sportId ? getSportName(sport.sportId) : "Unknown"} - {sport.skillLevel ? skillLevelNames[sport.skillLevel as keyof typeof skillLevelNames] : "Any level"}
+                      </Badge>
+                    ))
+                  ) : (
+                    <Badge variant="outline" className="bg-primary/10">
+                      General - All levels
                     </Badge>
-                  ))}
+                  )}
                 </DialogDescription>
               </DialogHeader>
               <div className="p-6 pt-2">
@@ -1013,11 +1019,17 @@ function CampCard({ camp, onRegisterClick, isAuthenticated, onViewDetails }: Cam
           <div className="space-y-1 flex-1 min-w-0">
             <CardTitle className="text-lg font-bold line-clamp-1">{camp.name}</CardTitle>
             <div className="flex flex-wrap gap-1.5">
-              {camp.campSports?.map((sport, index) => (
-                <Badge key={index} variant="outline" className="bg-primary/10 text-xs">
-                  {sport.sportId && getSportName(sport.sportId)} - {skillLevelNames[sport.skillLevel as keyof typeof skillLevelNames]}
+              {camp.campSports && camp.campSports.length > 0 ? (
+                camp.campSports.map((sport, index) => (
+                  <Badge key={index} variant="outline" className="bg-primary/10 text-xs">
+                    {sport.sportId ? getSportName(sport.sportId) : "Unknown"} - {sport.skillLevel ? skillLevelNames[sport.skillLevel as keyof typeof skillLevelNames] : "Any level"}
+                  </Badge>
+                ))
+              ) : (
+                <Badge variant="outline" className="bg-primary/10 text-xs">
+                  General - All levels
                 </Badge>
-              ))}
+              )}
             </div>
           </div>
           {isFeatured && (
@@ -1131,11 +1143,17 @@ function CampListItem({ camp, onRegisterClick, isAuthenticated, onViewDetails }:
         </div>
         
         <div className="flex flex-wrap gap-1.5 mb-2">
-          {camp.campSports?.map((sport, index) => (
-            <Badge key={index} variant="outline" className="bg-primary/10 text-xs">
-              {sport.sportId && getSportName(sport.sportId)} - {skillLevelNames[sport.skillLevel as keyof typeof skillLevelNames]}
+          {camp.campSports && camp.campSports.length > 0 ? (
+            camp.campSports.map((sport, index) => (
+              <Badge key={index} variant="outline" className="bg-primary/10 text-xs">
+                {sport.sportId ? getSportName(sport.sportId) : "Unknown"} - {sport.skillLevel ? skillLevelNames[sport.skillLevel as keyof typeof skillLevelNames] : "Any level"}
+              </Badge>
+            ))
+          ) : (
+            <Badge variant="outline" className="bg-primary/10 text-xs">
+              General - All levels
             </Badge>
-          ))}
+          )}
         </div>
         
         <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
