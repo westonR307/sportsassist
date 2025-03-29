@@ -7,6 +7,31 @@ function logError(location: string, error: any) {
   });
 }
 
+// Function to register public routes that don't require authentication
+function registerPublicRoutes(app: Express) {
+  // Public camps endpoint for the homepage and public-facing pages
+  app.get("/api/public/camps", async (req, res) => {
+    try {
+      const camps = await storage.listCamps();
+      
+      // For public camps, add location field combining address, city, state
+      const formattedCamps = camps.map(camp => ({
+        ...camp,
+        location: [camp.streetAddress, camp.city, camp.state, camp.zipCode]
+          .filter(Boolean)
+          .join(", "),
+        // Include the campSports for filtering
+        campSports: camp.campSports || []
+      }));
+      
+      res.json(formattedCamps);
+    } catch (error) {
+      logError("GET /api/public/camps", error);
+      res.status(500).json({ error: "Failed to fetch camps" });
+    }
+  });
+}
+
 import type { Express } from "express";
 import { createServer } from "http";
 import { setupAuth } from "./auth";
@@ -67,6 +92,10 @@ export async function registerRoutes(app: Express) {
     res.json({ status: "ok" });
   });
 
+  // Register public routes first (no auth required)
+  registerPublicRoutes(app);
+  
+  // Set up auth after public routes
   setupAuth(app);
   
   // File upload endpoints

@@ -54,7 +54,7 @@ export interface IStorage {
   getOrganizationStaff(orgId: number): Promise<User[]>;
   createCamp(camp: Omit<Camp, "id"> & { schedules?: CampSchedule[] }): Promise<Camp>;
   updateCamp(id: number, campData: Partial<Omit<Camp, "id" | "organizationId">>): Promise<Camp>;
-  listCamps(organizationId?: number): Promise<Camp[]>;
+  listCamps(organizationId?: number): Promise<(Camp & { campSports?: any[], defaultStartTime?: string | null, defaultEndTime?: string | null })[]>;
   getCamp(id: number): Promise<Camp | undefined>;
   getRegistrationsByCamp(campId: number): Promise<Registration[]>;
   createRegistration(registration: Omit<Registration, "id">): Promise<Registration>;
@@ -76,6 +76,8 @@ export interface IStorage {
   createScheduleException(exception: InsertScheduleException): Promise<ScheduleException>;
   updateScheduleException(id: number, exception: Partial<Omit<ScheduleException, "id">>): Promise<ScheduleException>;
   getScheduleException(id: number): Promise<ScheduleException | undefined>;
+  getDefaultStartTimeForCamp(campId: number): Promise<string | null>;
+  getDefaultEndTimeForCamp(campId: number): Promise<string | null>;
   
   // Custom fields methods
   createCustomField(field: InsertCustomField): Promise<CustomField>;
@@ -283,11 +285,11 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-  async listCamps(organizationId?: number): Promise<Camp[]> {
+  async listCamps(organizationId?: number): Promise<(Camp & { campSports?: any[] })[]> {
     try {
       console.log(organizationId ? `Fetching camps for organization ${organizationId}` : "Fetching all camps");
       
-      // If organizationId is provided, filter by it
+      // First, get all camps
       let query = db.select().from(camps);
       if (organizationId) {
         query = query.where(eq(camps.organizationId, organizationId));
@@ -295,7 +297,19 @@ export class DatabaseStorage implements IStorage {
       
       const allCamps = await query;
       console.log(`Retrieved ${allCamps.length} camps`);
-      return allCamps;
+      
+      // For each camp, fetch the related camp sports
+      const enrichedCamps = await Promise.all(allCamps.map(async (camp) => {
+        const sportsList = await db.select().from(campSports).where(eq(campSports.campId, camp.id));
+        return {
+          ...camp,
+          campSports: sportsList,
+          defaultStartTime: await this.getDefaultStartTimeForCamp(camp.id),
+          defaultEndTime: await this.getDefaultEndTimeForCamp(camp.id)
+        };
+      }));
+      
+      return enrichedCamps;
     } catch (error) {
       console.error("Error listing camps:", {
         message: error.message,
@@ -534,6 +548,38 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error creating child:", error);
       throw new Error("Failed to create child");
+    }
+  }
+  
+  async getDefaultStartTimeForCamp(campId: number): Promise<string | null> {
+    try {
+      // Get the default schedule for the camp (first one)
+      const [firstSchedule] = await db.select()
+        .from(campSchedules)
+        .where(eq(campSchedules.campId, campId))
+        .orderBy(campSchedules.dayOfWeek)
+        .limit(1);
+      
+      return firstSchedule?.startTime || null;
+    } catch (error) {
+      console.error("Error getting default start time:", error);
+      return null;
+    }
+  }
+  
+  async getDefaultEndTimeForCamp(campId: number): Promise<string | null> {
+    try {
+      // Get the default schedule for the camp (first one)
+      const [firstSchedule] = await db.select()
+        .from(campSchedules)
+        .where(eq(campSchedules.campId, campId))
+        .orderBy(campSchedules.dayOfWeek)
+        .limit(1);
+      
+      return firstSchedule?.endTime || null;
+    } catch (error) {
+      console.error("Error getting default end time:", error);
+      return null;
     }
   }
   
