@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ParentSidebar } from "@/components/parent-sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, User, ArrowRight, Clock, MapPin, Search, Filter, Laptop, Calendar as CalendarIcon } from "lucide-react";
+import { 
+  Calendar, User, ArrowRight, Clock, MapPin, Search, Filter, 
+  Laptop, Calendar as CalendarIcon, Banknote, Map, Calendar as CalIcon, Users
+} from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -21,11 +24,25 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Camp } from "@shared/schema";
-import { skillLevelNames } from "@shared/sports-utils";
+import { 
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Camp as BaseCamp, CampSport } from "@shared/schema";
+import { skillLevelNames, getSportName } from "@shared/sports-utils";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { getSportName } from "@shared/sports-utils";
+import { Slider } from "@/components/ui/slider";
+
+// Extended camp type with additional properties returned from API
+interface ExtendedCamp extends BaseCamp {
+  campSports?: CampSport[];
+  defaultStartTime?: string;
+  defaultEndTime?: string;
+  location?: string;
+}
 
 export default function AvailableCampsPage() {
   const { user } = useAuth();
@@ -33,9 +50,24 @@ export default function AvailableCampsPage() {
   const [selectedSport, setSelectedSport] = useState<string>("all_sports");
   const [selectedSkillLevel, setSelectedSkillLevel] = useState<string>("any_level");
   const [selectedType, setSelectedType] = useState<string>("any_type");
+  const [selectedCity, setSelectedCity] = useState<string>("any_city");
+  const [selectedState, setSelectedState] = useState<string>("any_state");
   const [showVirtualOnly, setShowVirtualOnly] = useState(false);
+  const [ageRange, setAgeRange] = useState<[number, number]>([5, 18]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  const [dateRange, setDateRange] = useState<{startDate: Date | null, endDate: Date | null}>({
+    startDate: null,
+    endDate: null
+  });
+  
+  // Available states and cities from current camps
+  const [availableCities, setAvailableCities] = useState<string[]>([]);
+  const [availableStates, setAvailableStates] = useState<string[]>([]);
+  
+  // Min-max prices from available camps
+  const [priceMinMax, setPriceMinMax] = useState<[number, number]>([0, 1000]);
 
-  const { data: camps = [], isLoading } = useQuery<Camp[]>({
+  const { data: camps = [], isLoading } = useQuery<ExtendedCamp[]>({
     queryKey: ["/api/camps"],
     enabled: !!user,
   });
@@ -48,6 +80,25 @@ export default function AvailableCampsPage() {
     new Date(camp.endDate) >= now && 
     (camp.visibility === "public" || camp.organizationId === user?.organizationId)
   );
+  
+  // Initialize filter options from available camps 
+  useEffect(() => {
+    if (availableCamps.length > 0) {
+      // Extract unique cities and states
+      const cities = Array.from(new Set(availableCamps.map(camp => camp.city)));
+      const states = Array.from(new Set(availableCamps.map(camp => camp.state)));
+      
+      // Calculate min and max prices
+      const prices = availableCamps.map(camp => camp.price);
+      const minPrice = Math.min(...prices);
+      const maxPrice = Math.max(...prices);
+      
+      setAvailableCities(cities);
+      setAvailableStates(states);
+      setPriceMinMax([minPrice, maxPrice]);
+      setPriceRange([minPrice, maxPrice]);
+    }
+  }, [availableCamps]);
 
   // Apply search and filters
   const filteredCamps = availableCamps.filter(camp => {
@@ -58,19 +109,40 @@ export default function AvailableCampsPage() {
     
     // Sport filter
     const hasSport = selectedSport === "" || selectedSport === "all_sports" || 
-      (camp.campSports && camp.campSports.some(cs => cs.sportId.toString() === selectedSport));
+      (camp.campSports && camp.campSports.some((cs: CampSport) => cs.sportId && cs.sportId.toString() === selectedSport));
     
     // Skill level filter
     const hasSkillLevel = selectedSkillLevel === "" || selectedSkillLevel === "any_level" || 
-      (camp.campSports && camp.campSports.some(cs => cs.skillLevel === selectedSkillLevel));
+      (camp.campSports && camp.campSports.some((cs: CampSport) => cs.skillLevel === selectedSkillLevel));
     
     // Camp type filter
     const matchesType = selectedType === "" || selectedType === "any_type" || camp.type === selectedType;
     
+    // City filter
+    const matchesCity = selectedCity === "any_city" || camp.city === selectedCity;
+    
+    // State filter
+    const matchesState = selectedState === "any_state" || camp.state === selectedState;
+    
+    // Age range filter
+    const matchesAgeRange = 
+      (camp.minAge <= ageRange[1] && camp.maxAge >= ageRange[0]);
+    
+    // Price range filter
+    const matchesPrice = 
+      (camp.price >= priceRange[0] && camp.price <= priceRange[1]);
+    
+    // Date range filter
+    const matchesDateRange = 
+      (!dateRange.startDate || new Date(camp.endDate) >= dateRange.startDate) &&
+      (!dateRange.endDate || new Date(camp.startDate) <= dateRange.endDate);
+      
     // Virtual only filter
     const matchesVirtual = !showVirtualOnly || camp.type === "virtual";
     
-    return matchesSearch && hasSport && hasSkillLevel && matchesType && matchesVirtual;
+    return matchesSearch && hasSport && hasSkillLevel && matchesType && 
+           matchesCity && matchesState && matchesAgeRange && 
+           matchesPrice && matchesDateRange && matchesVirtual;
   });
 
   // Get unique sports from available camps
@@ -78,9 +150,18 @@ export default function AvailableCampsPage() {
     new Set(
       availableCamps
         .flatMap(camp => camp.campSports || [])
-        .map(cs => cs.sportId)
+        .map((cs: CampSport) => cs.sportId)
     )
   );
+  
+  // Format price for display
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-US', { 
+      style: 'currency', 
+      currency: 'USD',
+      maximumFractionDigits: 0 
+    }).format(price);
+  };
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -115,9 +196,9 @@ export default function AvailableCampsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all_sports">All Sports</SelectItem>
-                  {availableSports.map(sportId => (
+                  {availableSports.filter(sportId => sportId !== null).map(sportId => (
                     <SelectItem key={sportId} value={sportId.toString()}>
-                      {getSportName(sportId)}
+                      {getSportName(sportId as number)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -142,35 +223,142 @@ export default function AvailableCampsPage() {
                     <span>More Filters</span>
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80">
+                <PopoverContent className="w-96">
                   <div className="grid gap-4">
-                    <div className="space-y-2">
-                      <h4 className="font-medium leading-none">Camp Type</h4>
-                      <Select value={selectedType} onValueChange={setSelectedType}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Any Type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="any_type">Any Type</SelectItem>
-                          <SelectItem value="one_on_one">One-on-One</SelectItem>
-                          <SelectItem value="group">Group</SelectItem>
-                          <SelectItem value="team">Team</SelectItem>
-                          <SelectItem value="virtual">Virtual</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="virtual-only" 
-                        checked={showVirtualOnly}
-                        onCheckedChange={(checked) => setShowVirtualOnly(checked === true)}
-                      />
-                      <Label htmlFor="virtual-only" className="flex items-center">
-                        <Laptop className="mr-2 h-4 w-4" />
-                        Virtual Camps Only
-                      </Label>
-                    </div>
+                    <Accordion type="single" collapsible className="w-full">
+                      <AccordionItem value="camp-type">
+                        <AccordionTrigger className="py-2">
+                          <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4" />
+                            <span>Camp Type</span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-2 pt-2">
+                            <Select value={selectedType} onValueChange={setSelectedType}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Any Type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="any_type">Any Type</SelectItem>
+                                <SelectItem value="one_on_one">One-on-One</SelectItem>
+                                <SelectItem value="group">Group</SelectItem>
+                                <SelectItem value="team">Team</SelectItem>
+                                <SelectItem value="virtual">Virtual</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            
+                            <div className="flex items-center space-x-2 mt-3">
+                              <Checkbox 
+                                id="virtual-only" 
+                                checked={showVirtualOnly}
+                                onCheckedChange={(checked) => setShowVirtualOnly(checked === true)}
+                              />
+                              <Label htmlFor="virtual-only" className="flex items-center">
+                                <Laptop className="mr-2 h-4 w-4" />
+                                Virtual Camps Only
+                              </Label>
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                      
+                      <AccordionItem value="location">
+                        <AccordionTrigger className="py-2">
+                          <div className="flex items-center gap-2">
+                            <Map className="h-4 w-4" />
+                            <span>Location</span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="grid gap-3 pt-2">
+                            <div className="space-y-1">
+                              <Label>State</Label>
+                              <Select value={selectedState} onValueChange={setSelectedState}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Any State" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="any_state">Any State</SelectItem>
+                                  {availableStates.map(state => (
+                                    <SelectItem key={state} value={state}>
+                                      {state}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <Label>City</Label>
+                              <Select value={selectedCity} onValueChange={setSelectedCity}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Any City" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="any_city">Any City</SelectItem>
+                                  {availableCities.map(city => (
+                                    <SelectItem key={city} value={city}>
+                                      {city}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                      
+                      <AccordionItem value="age">
+                        <AccordionTrigger className="py-2">
+                          <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4" />
+                            <span>Age Range</span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-2 pt-4 px-1">
+                            <div className="flex justify-between mb-1">
+                              <span className="text-sm">{ageRange[0]} years</span>
+                              <span className="text-sm">{ageRange[1]} years</span>
+                            </div>
+                            <Slider 
+                              defaultValue={[5, 18]} 
+                              value={ageRange}
+                              onValueChange={(value) => setAgeRange(value as [number, number])}
+                              min={3} 
+                              max={21} 
+                              step={1}
+                            />
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                      
+                      <AccordionItem value="price">
+                        <AccordionTrigger className="py-2">
+                          <div className="flex items-center gap-2">
+                            <Banknote className="h-4 w-4" />
+                            <span>Price Range</span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-2 pt-4 px-1">
+                            <div className="flex justify-between mb-1">
+                              <span className="text-sm">{formatPrice(priceRange[0])}</span>
+                              <span className="text-sm">{formatPrice(priceRange[1])}</span>
+                            </div>
+                            <Slider 
+                              defaultValue={priceMinMax} 
+                              value={priceRange}
+                              onValueChange={(value) => setPriceRange(value as [number, number])}
+                              min={priceMinMax[0]} 
+                              max={priceMinMax[1]} 
+                              step={5}
+                            />
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
                   </div>
                 </PopoverContent>
               </Popover>
@@ -222,7 +410,7 @@ export default function AvailableCampsPage() {
 }
 
 interface CampCardProps {
-  camp: Camp;
+  camp: ExtendedCamp;
 }
 
 function CampCard({ camp }: CampCardProps) {  
@@ -250,13 +438,13 @@ function CampCard({ camp }: CampCardProps) {
         {/* Sport badges */}
         {camp.campSports && camp.campSports.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
-            {camp.campSports.map((sport, index) => (
+            {camp.campSports.map((sport: CampSport, index: number) => (
               <Badge 
                 key={index} 
                 variant="secondary"
                 className="text-xs"
               >
-                {getSportName(sport.sportId)} ({skillLevelNames[sport.skillLevel]})
+                {sport.sportId ? getSportName(sport.sportId as number) : "Unknown"} ({skillLevelNames[sport.skillLevel]})
               </Badge>
             ))}
           </div>
@@ -310,7 +498,7 @@ function CampCard({ camp }: CampCardProps) {
             <div className="flex flex-col">
               <span className="text-sm font-medium">Type</span>
               <span className="text-sm text-muted-foreground capitalize">
-                {camp.type.replace("_", " ")}
+                {camp.type.replace(/_/g, " ")}
               </span>
             </div>
           </div>
