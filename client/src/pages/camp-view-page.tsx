@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { DashboardLayout } from "./dashboard";
+import { ParentSidebar } from "@/components/parent-sidebar";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -16,7 +17,8 @@ import {
   CalendarDays, 
   Calendar, 
   FileText, 
-  CheckCircle 
+  CheckCircle,
+  ArrowLeft 
 } from "lucide-react";
 import { type Camp } from "@shared/schema";
 import { apiRequest } from "@/lib/api";
@@ -49,6 +51,9 @@ function CampViewPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [scheduleEditorOpen, setScheduleEditorOpen] = useState(false);
 
+  // Check if user is a parent
+  const isParent = user?.role === 'parent';
+
   // Updated to use the extended type with permissions
   const { data: camp, isLoading } = useQuery<CampWithPermissions>({
     queryKey: [`/api/camps/${id}`],
@@ -67,38 +72,47 @@ function CampViewPage() {
   // Check if the user has permission to manage this camp
   const canManage = camp?.permissions?.canManage || false;
 
-  if (isLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-full">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      </DashboardLayout>
-    );
-  }
+  // Render appropriate content for parent vs organization user
+  const renderContent = () => {
+    if (isLoading) {
+      return <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>;
+    }
 
-  if (!camp) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-full">
-          <Card className="w-[400px]">
-            <CardContent className="pt-6">
-              <p className="text-center text-muted-foreground">
-                Camp not found
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </DashboardLayout>
-    );
-  }
+    if (!camp) {
+      return <div className="flex items-center justify-center h-full">
+        <Card className="w-[400px]">
+          <CardContent className="pt-6">
+            <p className="text-center text-muted-foreground">
+              Camp not found
+            </p>
+          </CardContent>
+        </Card>
+      </div>;
+    }
 
-  return (
-    <DashboardLayout>
+    return (
       <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">{camp.name}</h1>
+          {isParent ? (
+            <div className="flex items-center">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigate('/find-camps')}
+                className="mr-2"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Back
+              </Button>
+              <h1 className="text-2xl font-bold">{camp.name}</h1>
+            </div>
+          ) : (
+            <h1 className="text-2xl font-bold">{camp.name}</h1>
+          )}
+          
           <div className="flex gap-2">
             {canManage ? (
               // Only show management buttons if user has permission
@@ -112,8 +126,13 @@ function CampViewPage() {
                   Edit Camp
                 </Button>
               </>
+            ) : isParent ? (
+              // For parents show register button
+              <Button>
+                Register
+              </Button>
             ) : (
-              // Show a message for non-organizers
+              // Show a message for other non-organizers
               <div className="flex items-center text-muted-foreground">
                 <ShieldAlert className="h-4 w-4 mr-2" />
                 <span className="text-sm">View only</span>
@@ -304,25 +323,39 @@ function CampViewPage() {
             </TabsContent>
           )}
         </Tabs>
+        
+        {/* Edit Camp Dialog */}
+        {camp && (
+          <>
+            <EditCampDialog
+              open={editDialogOpen}
+              onOpenChange={setEditDialogOpen}
+              camp={camp}
+            />
+            <ScheduleEditorDialog
+              open={scheduleEditorOpen}
+              onOpenChange={setScheduleEditorOpen}
+              camp={camp}
+            />
+          </>
+        )}
       </div>
-      
-      {/* Edit Camp Dialog */}
-      {camp && (
-        <>
-          <EditCampDialog
-            open={editDialogOpen}
-            onOpenChange={setEditDialogOpen}
-            camp={camp}
-          />
-          <ScheduleEditorDialog
-            open={scheduleEditorOpen}
-            onOpenChange={setScheduleEditorOpen}
-            camp={camp}
-          />
-        </>
-      )}
-    </DashboardLayout>
-  );
+    );
+  };
+
+  // Render content with appropriate layout
+  if (isParent) {
+    return (
+      <div className="flex min-h-screen bg-background">
+        <ParentSidebar />
+        <main className="flex-1 p-6 md:p-8">
+          {renderContent()}
+        </main>
+      </div>
+    );
+  } else {
+    return <DashboardLayout>{renderContent()}</DashboardLayout>;
+  }
 }
 
 export default CampViewPage;
