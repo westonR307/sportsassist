@@ -28,6 +28,7 @@ import {
   Mail,
   FileText,
   Award,
+  ClipboardList,
   Clipboard,
 } from "lucide-react";
 import { useLocation as useWouterLocation } from "wouter";
@@ -147,6 +148,23 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
             <Settings className="h-5 w-5 flex-shrink-0" />
             <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Settings</span>
           </button>
+          
+          {/* Custom Fields Link */}
+          {user?.role === "camp_creator" || user?.role === "manager" ? (
+            <button
+              onClick={() => {
+                navigate("/custom-fields");
+                // Close sidebar on mobile after navigation
+                if (window.innerWidth < 1024) setSidebarOpen(false);
+              }}
+              className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
+                wouterLocation === "/custom-fields" ? "bg-gray-100" : ""
+              }`}
+            >
+              <FileText className="h-5 w-5 flex-shrink-0" />
+              <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Custom Fields</span>
+            </button>
+          ) : null}
           <Button
             variant="ghost"
             className="w-full justify-start whitespace-nowrap"

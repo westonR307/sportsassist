@@ -15,7 +15,7 @@ import {
   ShieldAlert, 
   CalendarDays, 
   Calendar, 
-  ClipboardList, 
+  FileText, 
   CheckCircle 
 } from "lucide-react";
 import { type Camp } from "@shared/schema";
@@ -293,7 +293,7 @@ function CampViewPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <ClipboardList className="h-5 w-5" />
+                    <FileText className="h-5 w-5" />
                     Registration Form Fields
                   </CardTitle>
                 </CardHeader>
