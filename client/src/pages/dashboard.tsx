@@ -64,7 +64,11 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
   }, []);
   const wouterLocation = useWouterLocation()[0];
 
-  if (!user?.organizationId) return null;
+  // Parent and athlete users don't have organizationId
+  const isParentOrAthlete = user?.role === 'parent' || user?.role === 'athlete';
+  
+  // Only check for organizationId for non-parent/athlete roles
+  if (!isParentOrAthlete && !user?.organizationId) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">

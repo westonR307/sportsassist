@@ -65,6 +65,8 @@ export interface IStorage {
   listOrganizationInvitations(organizationId: number): Promise<Invitation[]>;
   getChildrenByParent(parentId: number): Promise<Child[]>;
   getChild(childId: number): Promise<Child | undefined>;
+  createChild(childData: Omit<Child, "id">): Promise<Child>;
+  updateChild(childId: number, childData: Partial<Omit<Child, "id">>): Promise<Child>;
   createCampSport(campSport: { campId: number; sportId: number; skillLevel: SportLevel; }): Promise<CampSport>;
   getCampSchedules(campId: number): Promise<CampSchedule[]>;
   getCampScheduleExceptions(campId: number): Promise<ScheduleException[]>;
@@ -416,6 +418,61 @@ export class DatabaseStorage implements IStorage {
       .from(children)
       .where(eq(children.id, childId));
     return child;
+  }
+  
+  async createChild(childData: Omit<Child, "id">): Promise<Child> {
+    try {
+      console.log("Creating new child:", childData);
+      const [newChild] = await db.insert(children).values({
+        fullName: childData.fullName,
+        dateOfBirth: childData.dateOfBirth,
+        gender: childData.gender,
+        parentId: childData.parentId,
+        profilePhoto: childData.profilePhoto || null,
+        emergencyContact: childData.emergencyContact || null,
+        emergencyPhone: childData.emergencyPhone || null,
+        emergencyRelation: childData.emergencyRelation || null,
+        allergies: childData.allergies || [],
+        medicalConditions: childData.medicalConditions || [],
+        medications: childData.medications || [],
+        specialNeeds: childData.specialNeeds || null,
+        preferredContact: childData.preferredContact,
+        communicationOptIn: childData.communicationOptIn
+      }).returning();
+      
+      return newChild;
+    } catch (error) {
+      console.error("Error creating child:", error);
+      throw new Error("Failed to create child");
+    }
+  }
+  
+  async updateChild(childId: number, childData: Partial<Omit<Child, "id">>): Promise<Child> {
+    try {
+      const [updatedChild] = await db.update(children)
+        .set({
+          ...(childData.fullName !== undefined && { fullName: childData.fullName }),
+          ...(childData.dateOfBirth !== undefined && { dateOfBirth: childData.dateOfBirth }),
+          ...(childData.gender !== undefined && { gender: childData.gender }),
+          ...(childData.profilePhoto !== undefined && { profilePhoto: childData.profilePhoto }),
+          ...(childData.emergencyContact !== undefined && { emergencyContact: childData.emergencyContact }),
+          ...(childData.emergencyPhone !== undefined && { emergencyPhone: childData.emergencyPhone }),
+          ...(childData.emergencyRelation !== undefined && { emergencyRelation: childData.emergencyRelation }),
+          ...(childData.allergies !== undefined && { allergies: childData.allergies }),
+          ...(childData.medicalConditions !== undefined && { medicalConditions: childData.medicalConditions }),
+          ...(childData.medications !== undefined && { medications: childData.medications }),
+          ...(childData.specialNeeds !== undefined && { specialNeeds: childData.specialNeeds }),
+          ...(childData.preferredContact !== undefined && { preferredContact: childData.preferredContact }),
+          ...(childData.communicationOptIn !== undefined && { communicationOptIn: childData.communicationOptIn }),
+        })
+        .where(eq(children.id, childId))
+        .returning();
+      
+      return updatedChild;
+    } catch (error) {
+      console.error("Error updating child:", error);
+      throw new Error("Failed to update child");
+    }
   }
 
   async createCampSport(campSport: {

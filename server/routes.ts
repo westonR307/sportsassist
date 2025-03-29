@@ -28,6 +28,7 @@ import {
 import { campSchedules } from "@shared/tables";
 import Stripe from "stripe";
 import { hashPassword } from "./utils";
+import { registerParentRoutes } from "./parent-routes";
 import { randomBytes } from "crypto";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -1183,6 +1184,9 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ message: "Failed to update custom field response" });
     }
   });
+
+  // Register parent-specific routes
+  registerParentRoutes(app);
 
   return createServer(app);
 }
