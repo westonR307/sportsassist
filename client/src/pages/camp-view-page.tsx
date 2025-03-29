@@ -6,11 +6,12 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Edit, MessageSquare, Users, ShieldAlert, CalendarDays } from "lucide-react";
+import { Loader2, Edit, MessageSquare, Users, ShieldAlert, CalendarDays, Calendar } from "lucide-react";
 import { type Camp } from "@shared/schema";
 import { apiRequest } from "@/lib/api";
 import { EditCampDialog } from "@/components/edit-camp-dialog";
 import { CampScheduleDisplay } from "@/components/camp-schedule";
+import { ScheduleEditorDialog } from "@/components/schedule-editor-dialog";
 
 // Extended camp type to include permissions from the server
 interface CampWithPermissions extends Camp {
@@ -33,6 +34,7 @@ function CampViewPage() {
   const { toast } = useToast();
   const [location, navigate] = useLocation();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [scheduleEditorOpen, setScheduleEditorOpen] = useState(false);
 
   // Updated to use the extended type with permissions
   const { data: camp, isLoading } = useQuery<CampWithPermissions>({
@@ -156,7 +158,25 @@ function CampViewPage() {
             </Card>
             
             {/* Camp Schedule Section */}
-            <CampScheduleDisplay campId={parseInt(id)} />
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Camp Schedule</CardTitle>
+                {canManage && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setScheduleEditorOpen(true)}
+                    className="h-8"
+                  >
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Edit Schedule
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent>
+                <CampScheduleDisplay campId={parseInt(id)} />
+              </CardContent>
+            </Card>
           </div>
 
           {/* Registrations */}
@@ -243,11 +263,18 @@ function CampViewPage() {
       
       {/* Edit Camp Dialog */}
       {camp && (
-        <EditCampDialog
-          open={editDialogOpen}
-          onOpenChange={setEditDialogOpen}
-          camp={camp}
-        />
+        <>
+          <EditCampDialog
+            open={editDialogOpen}
+            onOpenChange={setEditDialogOpen}
+            camp={camp}
+          />
+          <ScheduleEditorDialog
+            open={scheduleEditorOpen}
+            onOpenChange={setScheduleEditorOpen}
+            camp={camp}
+          />
+        </>
       )}
     </DashboardLayout>
   );
