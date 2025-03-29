@@ -56,6 +56,24 @@ export async function registerRoutes(app: Express) {
   });
 
   setupAuth(app);
+  
+  // User profile update endpoint
+  app.put("/api/user/profile", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      console.log("Not authenticated - user/profile update");
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      console.log("Updating user profile for:", req.user?.id);
+      const updatedUser = await storage.updateUserProfile(req.user!.id, req.body);
+      console.log("Profile updated successfully");
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+      res.status(500).json({ message: "Failed to update user profile" });
+    }
+  });
 
   app.post("/api/register", async (req, res, next) => {
     console.log("Registration attempt with data:", {
