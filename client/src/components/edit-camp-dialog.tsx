@@ -69,10 +69,18 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
   const [skillLevel, setSkillLevel] = useState<string>("beginner");
   
   // Fetch camp sports data
-  const { data: campSports } = useQuery({
+  const { data: campSports, isLoading: isLoadingSports, error: sportsError } = useQuery({
     queryKey: [`/api/camps/${camp.id}/sports`],
     enabled: open, // Only fetch when dialog is open
   });
+  
+  // Debug logs
+  React.useEffect(() => {
+    console.log("Edit Camp Dialog - Camp Sports Data:", campSports);
+    console.log("Edit Camp Dialog - Is Loading Sports:", isLoadingSports);
+    console.log("Edit Camp Dialog - Sports Error:", sportsError);
+    console.log("Edit Camp Dialog - Sports List:", sportsList);
+  }, [campSports, isLoadingSports, sportsError]);
 
   // Format date string to YYYY-MM-DD for input[type=date]
   const formatDateForInput = (dateString: string) => {

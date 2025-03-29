@@ -755,8 +755,10 @@ export async function registerRoutes(app: Express) {
       
       // Delete the camp sport
       await db.delete(campSports)
-        .where(eq(campSports.id, sportId))
-        .where(eq(campSports.campId, campId));
+        .where(
+          eq(campSports.id, sportId) && 
+          eq(campSports.campId, campId)
+        );
       
       res.json({ success: true, message: "Sport removed from camp" });
     } catch (error) {
