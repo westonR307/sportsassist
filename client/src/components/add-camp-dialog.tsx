@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { insertCampSchema } from "@shared/schema";
+import { sportsMap, sportsList } from "@shared/sports-utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -29,163 +30,8 @@ import { Loader2, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/api";
 
-// Map sport names to IDs for the API
-const SPORT_IDS = {
-  "Basketball": 1,
-  "Soccer": 2,
-  "Baseball": 3,
-  "Tennis": 4,
-  "Swimming": 5,
-  "Football": 6,
-  "Volleyball": 7,
-  "Track and Field": 8,
-  "Golf": 9,
-  "Hockey": 10
-};
-const sportsMap: Record<string, number> = {
-  Archery: 1,
-  Badminton: 2,
-  Baseball: 3,
-  Basketball: 4,
-  Biathlon: 5,
-  Billiards: 6,
-  Bobsleigh: 7,
-  Bodybuilding: 8,
-  Bowling: 9,
-  Boxing: 10,
-  Canoeing: 11,
-  Cheerleading: 12,
-  Chess: 13,
-  Climbing: 14,
-  Cricket: 15,
-  CrossFit: 16,
-  Curling: 17,
-  Cycling: 18,
-  Darts: 19,
-  Equestrian: 20,
-  "Field Hockey": 22,
-  "Figure Skating": 23,
-  Fishing: 24,
-  "Football (American)": 25,
-  "Frisbee (Ultimate)": 26,
-  Golf: 27,
-  Gymnastics: 28,
-  Handball: 29,
-  "Hockey (Ice)": 30,
-  "Hockey (Roller)": 31,
-  Judo: 32,
-  Karate: 33,
-  Kayaking: 34,
-  Kickboxing: 35,
-  Lacrosse: 36,
-  "Mixed Martial Arts (MMA)": 37,
-  Motocross: 38,
-  Netball: 39,
-  Paddleboarding: 40,
-  Paintball: 41,
-  Parkour: 42,
-  Pickleball: 43,
-  Powerlifting: 44,
-  Racquetball: 45,
-  "Rock Climbing": 46,
-  Rowing: 47,
-  Rugby: 48,
-  Running: 49,
-  Sailing: 50,
-  Skateboarding: 51,
-  Skiing: 52,
-  Snowboarding: 53,
-  Soccer: 54,
-  Softball: 55,
-  "Speed Skating": 56,
-  Squash: 57,
-  Surfing: 58,
-  Swimming: 59,
-  "Table Tennis": 60,
-  Taekwondo: 61,
-  Tennis: 62,
-  "Track and Field": 63,
-  Triathlon: 64,
-  Volleyball: 65,
-  "Water Polo": 66,
-  Weightlifting: 67,
-  Wrestling: 68,
-  Yoga: 69,
-  Zumba: 70,
-};
-
-const sportsList = [
-  "Archery",
-  "Badminton",
-  "Baseball",
-  "Basketball",
-  "Biathlon",
-  "Billiards",
-  "Bobsleigh",
-  "Bodybuilding",
-  "Bowling",
-  "Boxing",
-  "Canoeing",
-  "Cheerleading",
-  "Chess",
-  "Climbing",
-  "Cricket",
-  "CrossFit",
-  "Curling",
-  "Cycling",
-  "Darts",
-  "Equestrian",
-  "Fencing",
-  "Field Hockey",
-  "Figure Skating",
-  "Fishing",
-  "Football (American)",
-  "Frisbee (Ultimate)",
-  "Golf",
-  "Gymnastics",
-  "Handball",
-  "Hockey (Ice)",
-  "Hockey (Roller)",
-  "Judo",
-  "Karate",
-  "Kayaking",
-  "Kickboxing",
-  "Lacrosse",
-  "Mixed Martial Arts (MMA)",
-  "Motocross",
-  "Netball",
-  "Paddleboarding",
-  "Paintball",
-  "Parkour",
-  "Pickleball",
-  "Powerlifting",
-  "Racquetball",
-  "Rock Climbing",
-  "Rowing",
-  "Rugby",
-  "Running",
-  "Sailing",
-  "Skateboarding",
-  "Skiing",
-  "Snowboarding",
-  "Soccer",
-  "Softball",
-  "Speed Skating",
-  "Squash",
-  "Surfing",
-  "Swimming",
-  "Table Tennis",
-  "Taekwondo",
-  "Tennis",
-  "Track and Field",
-  "Triathlon",
-  "Volleyball",
-  "Water Polo",
-  "Weightlifting",
-  "Wrestling",
-  "Yoga",
-  "Zumba",
-].sort();
+// Map UI skill levels to schema skill levels
+const uiSkillLevels = ["Beginner", "Intermediate", "Advanced", "All Levels"];
 
 // Map UI skill levels to schema skill levels
 const skillLevelMap: Record<string, string> = {
@@ -194,8 +40,6 @@ const skillLevelMap: Record<string, string> = {
   Advanced: "advanced",
   "All Levels": "beginner", // Default to beginner for "All Levels"
 };
-
-const skillLevels = ["Beginner", "Intermediate", "Advanced", "All Levels"];
 
 interface Schedule {
   dayOfWeek: number;
@@ -298,7 +142,7 @@ export function AddCampDialog({
           minAge: Number(data.minAge) || 5,
           maxAge: Number(data.maxAge) || 18,
           repeatCount: Number(data.repeatCount) || 0,
-          sportId: 1, // Fixed ID for Basketball based on DB schema
+          sportId: sportId, // Use the sportId from the selected sport
           skillLevel: mappedSkillLevel,
           schedules: schedules.map(schedule => ({
             dayOfWeek: schedule.dayOfWeek,
@@ -571,7 +415,7 @@ export function AddCampDialog({
                         onChange={(e) => setSkillLevel(e.target.value)}
                         className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                       >
-                        {skillLevels.map((level) => (
+                        {uiSkillLevels.map((level) => (
                           <option key={level} value={level}>
                             {level}
                           </option>
