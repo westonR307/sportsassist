@@ -62,8 +62,25 @@ const sportsMap: Record<string, number> = {
   "Water Polo": 66, Weightlifting: 67, Wrestling: 68, Yoga: 69, Zumba: 70,
 };
 
-// Skill level options
-const skillLevels = ["beginner", "intermediate", "advanced"];
+// Skill level options with expanded choices
+const skillLevels = [
+  "beginner", 
+  "beginner_intermediate",
+  "intermediate", 
+  "intermediate_advanced",
+  "advanced", 
+  "elite"
+];
+
+// Skill level display names
+const skillLevelNames: Record<string, string> = {
+  "beginner": "Beginner - Just starting out",
+  "beginner_intermediate": "Beginner to Intermediate",
+  "intermediate": "Intermediate - Some experience",
+  "intermediate_advanced": "Intermediate to Advanced",
+  "advanced": "Advanced - Significant experience",
+  "elite": "Elite - Competitive level"
+};
 
 // Schema for adding a child athlete
 const addChildSchema = z.object({
@@ -85,7 +102,7 @@ const addChildSchema = z.object({
   // Sports interests
   sportsInterests: z.array(z.object({
     sportId: z.number(),
-    skillLevel: z.enum(["beginner", "intermediate", "advanced"]),
+    skillLevel: z.enum(["beginner", "beginner_intermediate", "intermediate", "intermediate_advanced", "advanced", "elite"]),
     preferredPositions: z.array(z.string()).optional(),
     currentTeam: z.string().optional(),
   })).optional(),
@@ -439,20 +456,6 @@ function AddAthleteDialog({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="sportsHistory"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Sports History</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Brief sports background and experience" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -502,6 +505,20 @@ function AddAthleteDialog({
                   Add Sport
                 </Button>
               </div>
+              
+              <FormField
+                control={form.control}
+                name="sportsHistory"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Sports History</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Brief sports background and experience" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               {fields.length > 0 && (
                 <div className="space-y-4 rounded-md border p-4">
@@ -555,9 +572,11 @@ function AddAthleteDialog({
                                   {...field}
                                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                                 >
-                                  <option value="beginner">Beginner</option>
-                                  <option value="intermediate">Intermediate</option>
-                                  <option value="advanced">Advanced</option>
+                                  {skillLevels.map(level => (
+                                    <option key={level} value={level}>
+                                      {skillLevelNames[level]}
+                                    </option>
+                                  ))}
                                 </select>
                               </FormControl>
                               <FormMessage />
