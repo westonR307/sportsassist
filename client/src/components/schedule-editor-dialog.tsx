@@ -236,7 +236,7 @@ export function ScheduleEditorDialog({ open, onOpenChange, camp }: ScheduleEdito
                           >
                             {DAYS_OF_WEEK.map((day, i) => (
                               <option key={i} value={i}>
-                                {day}
+                                {day} {/* DAYS_OF_WEEK is 0-based where 0=Sunday */}
                               </option>
                             ))}
                           </select>
