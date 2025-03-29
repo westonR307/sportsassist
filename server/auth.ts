@@ -99,11 +99,16 @@ export function setupAuth(app: Express) {
         console.log(`No user found for ID: ${id}`);
         return done(null, false);
       }
+      
+      console.log(`Successfully deserialized full user:`, user);
       console.log(`Successfully deserialized user:`, {
         id: user.id,
         username: user.username,
+        first_name: user.first_name,
+        last_name: user.last_name,
         role: user.role
       });
+      
       done(null, user);
     } catch (err) {
       console.error("Deserialization error:", err);
@@ -171,9 +176,12 @@ export function setupAuth(app: Express) {
       return res.sendStatus(401);
     }
 
+    console.log("Full user object:", req.user);
     console.log("Returning user data:", {
       id: req.user?.id,
       username: req.user?.username,
+      first_name: req.user?.first_name,
+      last_name: req.user?.last_name,
       role: req.user?.role,
       organizationId: req.user?.organizationId
     });
@@ -182,6 +190,7 @@ export function setupAuth(app: Express) {
   
   app.post("/api/register", async (req, res, next) => {
     console.log("Registration request received:", req.body.username);
+    console.log("Registration request body:", req.body);
     
     try {
       // Check if username already exists
@@ -193,6 +202,8 @@ export function setupAuth(app: Express) {
       
       // Get user data from request
       const { username, password, role, ...otherFields } = req.body;
+      
+      console.log("Other fields from registration:", otherFields);
       
       // Check if the role is valid
       if (role && !["camp_creator", "parent", "athlete"].includes(role)) {
@@ -209,8 +220,9 @@ export function setupAuth(app: Express) {
         ...otherFields,
       };
       
-      console.log(`Creating user with role: ${userData.role}`);
+      console.log(`Creating user with data:`, userData);
       const user = await storage.createUser(userData);
+      console.log("User created successfully:", user);
       
       // Log the user in
       req.login(user, (err) => {

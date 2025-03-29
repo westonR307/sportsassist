@@ -120,6 +120,8 @@ export class DatabaseStorage implements IStorage {
 
   async createUser(insertUser: InsertUser & { organizationId?: number }): Promise<User> {
     // Ensure we're using the hashed password format consistently
+    console.log("Full insert user data:", insertUser);
+    
     const [user] = await db.insert(users).values({
       username: insertUser.username.toLowerCase(),
       password: insertUser.password, // This should already be hashed when passed in
@@ -127,7 +129,11 @@ export class DatabaseStorage implements IStorage {
       email: insertUser.email,
       role: insertUser.role,
       organizationId: insertUser.organizationId,
+      first_name: insertUser.first_name,
+      last_name: insertUser.last_name,
     }).returning();
+    
+    console.log("User created with data:", user);
     return user;
   }
 

@@ -69,6 +69,7 @@ function ParentOnboardingPage() {
   // Use useEffect to update form values when user data is available
   React.useEffect(() => {
     if (user) {
+      console.log("User data in onboarding:", user);
       // This will update the form with user data once it's loaded
       form.reset({
         first_name: user.first_name || "",
