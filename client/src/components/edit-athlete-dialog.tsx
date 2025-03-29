@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { Child } from "@shared/schema";
 import { ExtendedChild } from "@shared/child-types";
+import { 
+  sportsList, 
+  sportsMap, 
+  sportsById, 
+  skillLevels, 
+  skillLevelNames,
+  getSportName,
+  jerseySizeNames 
+} from "@shared/sports-utils";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -20,48 +29,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation } from "@tanstack/react-query";
 import { Loader2, Plus, Trash } from "lucide-react";
 
-// Sport list and mapping data - should match parent-dashboard.tsx
-const sportsList = [
-  "Archery", "Badminton", "Baseball", "Basketball", "Biathlon", "Bocce", "Bowling", "Boxing",
-  "Canoeing", "Cheerleading", "Chess", "Cricket", "Croquet", "Cross Country", "Curling", "Cycling",
-  "Dance", "Diving", "Dodgeball", "Equestrian", "Fencing", "Field Hockey", "Figure Skating",
-  "Fishing", "Flag Football", "Football", "Frisbee", "Golf", "Gymnastics", "Handball", "Hiking",
-  "Hockey", "Horseback Riding", "Judo", "Karate", "Kayaking", "Kickball", "Lacrosse", "Martial Arts",
-  "Motocross", "Paintball", "Pickleball", "Ping Pong", "Quidditch", "Racquetball", "Rodeo",
-  "Roller Derby", "Roller Skating", "Rowing", "Rugby", "Running", "Sailing", "Skateboarding",
-  "Skiing", "Snowboarding", "Soccer", "Softball", "Speed Skating", "Squash", "Surfing", "Swimming",
-  "Table Tennis", "Taekwondo", "Tennis", "Track and Field", "Triathlon", "Ultimate Frisbee", 
-  "Volleyball", "Water Polo", "Weightlifting", "Wrestling", "Yoga", "Zumba",
-];
-
-// Create a map of sport names to IDs (matching server)
-const sportsMap: Record<string, number> = {
-  Archery: 1, Badminton: 2, Baseball: 3, Basketball: 4, Biathlon: 5, Bocce: 6, Bowling: 7, Boxing: 8,
-  Canoeing: 9, Cheerleading: 10, Chess: 11, Cricket: 12, Croquet: 13, "Cross Country": 14, Curling: 15,
-  Cycling: 16, Dance: 17, Diving: 18, Dodgeball: 19, Equestrian: 20, Fencing: 21, "Field Hockey": 22,
-  "Figure Skating": 23, Fishing: 24, "Flag Football": 25, Football: 26, Frisbee: 27, Golf: 28,
-  Gymnastics: 29, Handball: 30, Hiking: 31, Hockey: 32, "Horseback Riding": 33, Judo: 34, Karate: 35,
-  Kayaking: 36, Kickball: 37, Lacrosse: 38, "Martial Arts": 39, Motocross: 40, Paintball: 41,
-  Pickleball: 42, "Ping Pong": 43, Quidditch: 44, Racquetball: 45, Rodeo: 46, "Roller Derby": 47,
-  "Roller Skating": 48, Rowing: 49, Rugby: 50, Running: 51, Sailing: 52, Skateboarding: 53, Skiing: 54,
-  Snowboarding: 55, Soccer: 56, Softball: 57, "Speed Skating": 58, Squash: 59, Surfing: 60, Swimming: 61,
-  "Table Tennis": 62, Taekwondo: 63, Tennis: 64, "Track and Field": 65, Triathlon: 66, "Ultimate Frisbee": 67,
-  Volleyball: 68, "Water Polo": 69, Weightlifting: 70, Wrestling: 71, Yoga: 72, Zumba: 73,
-};
-
-// Skill level options that match the schema
-const skillLevels = [
-  "beginner", 
-  "intermediate", 
-  "advanced"
-];
-
-// Skill level display names
-const skillLevelNames: Record<string, string> = {
-  "beginner": "Beginner - Just starting out",
-  "intermediate": "Intermediate - Some experience",
-  "advanced": "Advanced - Significant experience"
-};
+// All sports-related constants now imported from shared/sports-utils.ts
 
 // Schema for editing a child athlete (same as adding)
 const editChildSchema = z.object({
