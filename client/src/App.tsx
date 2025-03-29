@@ -12,6 +12,7 @@ import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
 import ParentDashboard from "@/pages/parent-dashboard";
 import ParentOnboardingPage from "@/pages/parent-onboarding";
+import ParentSettingsPage from "@/pages/parent-settings-page";
 import ReportsPage from "@/pages/reports-page";
 import TeamPage from "@/pages/team-page";
 import SettingsPage from "@/pages/settings-page";
@@ -47,6 +48,8 @@ function ParentDashboardRouter() {
 }
 
 function Router() {
+  const { user } = useAuth();
+  
   return (
     <Switch>
       <Route path="/" component={() => <Redirect to="/dashboard" />} />
@@ -54,7 +57,10 @@ function Router() {
       <ProtectedRoute path="/dashboard" component={DashboardRouter} />
       <ProtectedRoute path="/dashboard/reports" component={ReportsPage} />
       <ProtectedRoute path="/dashboard/team" component={TeamPage} />
-      <ProtectedRoute path="/dashboard/settings" component={SettingsPage} />
+      <ProtectedRoute 
+        path="/dashboard/settings" 
+        component={user?.role === "parent" ? ParentSettingsPage : SettingsPage} 
+      />
       <ProtectedRoute path="/dashboard/camps/:id" component={CampViewPage} />
       <ProtectedRoute path="/custom-fields" component={CustomFieldsPage} />
       <ProtectedRoute path="/parent-dashboard" component={ParentDashboardRouter} />

@@ -116,7 +116,7 @@ export function ParentSidebar() {
               </div>
               <div onClick={() => setIsSheetOpen(false)}>
                 <SidebarLink to="/dashboard/settings" icon={<Settings size={20} />}>
-                  Settings
+                  Profile Settings
                 </SidebarLink>
               </div>
             </>
@@ -135,7 +135,7 @@ export function ParentSidebar() {
                 Available Camps
               </SidebarLink>
               <SidebarLink to="/dashboard/settings" icon={<Settings size={20} />}>
-                Settings
+                Profile Settings
               </SidebarLink>
             </>
           )}
