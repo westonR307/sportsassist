@@ -39,7 +39,28 @@ import { AddCampDialog } from "@/components/add-camp-dialog";
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useWouterLocation();
   const { user, logoutMutation } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = React.useState(true);
+  // Initialize sidebar closed by default (safer for mobile)
+  const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  
+  // Set sidebar state based on screen size on initial load
+  React.useEffect(() => {
+    const isDesktop = window.innerWidth >= 1024; // 1024px is the lg breakpoint in Tailwind
+    setSidebarOpen(isDesktop);
+    
+    // Also close sidebar when navigation happens (for mobile)
+    const handleRouteChange = () => {
+      if (window.innerWidth < 1024) {
+        setSidebarOpen(false);
+      }
+    };
+    
+    // Listen for location changes
+    window.addEventListener('popstate', handleRouteChange);
+    
+    return () => {
+      window.removeEventListener('popstate', handleRouteChange);
+    };
+  }, []);
   const wouterLocation = useWouterLocation()[0];
 
   if (!user?.organizationId) return null;
@@ -75,7 +96,11 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
         </div>
         <nav className="p-4 space-y-2">
           <button
-            onClick={() => navigate("/dashboard")}
+            onClick={() => {
+              navigate("/dashboard");
+              // Close sidebar on mobile after navigation
+              if (window.innerWidth < 1024) setSidebarOpen(false);
+            }}
             className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
               wouterLocation === "/dashboard" ? "bg-gray-100" : ""
             }`}
@@ -84,7 +109,11 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
             <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Camps</span>
           </button>
           <button
-            onClick={() => navigate("/dashboard/reports")}
+            onClick={() => {
+              navigate("/dashboard/reports");
+              // Close sidebar on mobile after navigation
+              if (window.innerWidth < 1024) setSidebarOpen(false);
+            }}
             className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
               wouterLocation === "/dashboard/reports" ? "bg-gray-100" : ""
             }`}
@@ -93,7 +122,11 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
             <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Reports</span>
           </button>
           <button
-            onClick={() => navigate("/dashboard/team")}
+            onClick={() => {
+              navigate("/dashboard/team");
+              // Close sidebar on mobile after navigation
+              if (window.innerWidth < 1024) setSidebarOpen(false);
+            }}
             className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
               wouterLocation === "/dashboard/team" ? "bg-gray-100" : ""
             }`}
@@ -102,7 +135,11 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
             <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Team</span>
           </button>
           <button
-            onClick={() => navigate("/dashboard/settings")}
+            onClick={() => {
+              navigate("/dashboard/settings");
+              // Close sidebar on mobile after navigation
+              if (window.innerWidth < 1024) setSidebarOpen(false);
+            }}
             className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
               wouterLocation === "/dashboard/settings" ? "bg-gray-100" : ""
             }`}
@@ -113,7 +150,11 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
           <Button
             variant="ghost"
             className="w-full justify-start whitespace-nowrap"
-            onClick={() => logoutMutation.mutate()}
+            onClick={() => {
+              logoutMutation.mutate();
+              // Close sidebar on mobile
+              if (window.innerWidth < 1024) setSidebarOpen(false);
+            }}
           >
             <LogOut className="h-5 w-5 mr-2 flex-shrink-0" />
             <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Logout</span>
