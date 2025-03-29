@@ -1383,6 +1383,88 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ message: "Failed to update custom field response" });
     }
   });
+  
+  // Camp registration endpoint
+  app.post("/api/camps/:id/register", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    
+    // Only allow parents to register
+    if (req.user.role !== "parent") {
+      return res.status(403).json({ message: "Only parents can register for camps" });
+    }
+    
+    const campId = parseInt(req.params.id);
+    
+    try {
+      // Verify camp exists
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if registration period is open
+      const now = new Date();
+      const startDate = new Date(camp.registrationStartDate);
+      const endDate = new Date(camp.registrationEndDate);
+      
+      if (now < startDate) {
+        return res.status(400).json({ 
+          message: "Registration for this camp has not started yet",
+          startsAt: startDate
+        });
+      }
+      
+      if (now > endDate) {
+        return res.status(400).json({ 
+          message: "Registration for this camp has ended",
+          endedAt: endDate
+        });
+      }
+      
+      // Check if camp is full and waitlist is enabled
+      const registrations = await storage.getRegistrationsByCamp(campId);
+      const isWaitlist = registrations.length >= camp.capacity;
+      
+      if (isWaitlist && !camp.waitlistEnabled) {
+        return res.status(400).json({ message: "Camp is full and waitlist is not available" });
+      }
+      
+      // Registration requires childId, but we'll make it optional in the API
+      // If not provided, we'll need to show a child selection UI on the frontend
+      const childId = req.body.childId;
+      
+      // Create a skeleton registration
+      const registration = await storage.createRegistration({
+        campId,
+        parentId: req.user.id,
+        childId: childId || null,
+        status: isWaitlist ? "waitlisted" : "pending",
+        registrationDate: new Date(),
+        paymentStatus: "unpaid",
+        paymentAmount: camp.price,
+        notes: req.body.notes || "",
+        emergencyContact: req.body.emergencyContact || "",
+        emergencyPhone: req.body.emergencyPhone || ""
+      });
+      
+      // Success response
+      res.status(201).json({
+        ...registration,
+        isWaitlisted: isWaitlist,
+        camp: {
+          id: camp.id,
+          name: camp.name,
+          startDate: camp.startDate,
+          endDate: camp.endDate
+        }
+      });
+    } catch (error) {
+      console.error("Error registering for camp:", error);
+      res.status(500).json({ message: "Failed to register for camp" });
+    }
+  });
 
   // Register parent-specific routes
   registerParentRoutes(app);

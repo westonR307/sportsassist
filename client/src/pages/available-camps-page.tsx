@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { ParentSidebar } from "@/components/parent-sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
   Calendar, User, ArrowRight, Clock, MapPin, Search, Filter, 
-  Laptop, Calendar as CalendarIcon, Banknote, Map, Calendar as CalIcon, Users
+  Laptop, Calendar as CalendarIcon, Banknote, Map, Calendar as CalIcon, 
+  Users, ChevronDown, ChevronUp, Plus, DollarSign
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Badge } from "@/components/ui/badge";
@@ -30,11 +31,19 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { 
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Camp as BaseCamp, CampSport } from "@shared/schema";
 import { skillLevelNames, getSportName } from "@shared/sports-utils";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 // Extended camp type with additional properties returned from API
 interface ExtendedCamp extends BaseCamp {
@@ -373,9 +382,9 @@ export default function AvailableCampsPage() {
               </div>
             </div>
           ) : filteredCamps.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="flex flex-col gap-3">
               {filteredCamps.map((camp) => (
-                <CampCard key={camp.id} camp={camp} />
+                <CompactCampCard key={camp.id} camp={camp} />
               ))}
             </div>
           ) : (
@@ -411,6 +420,224 @@ export default function AvailableCampsPage() {
 
 interface CampCardProps {
   camp: ExtendedCamp;
+}
+
+function CompactCampCard({ camp }: CampCardProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const { toast } = useToast();
+  const isVirtual = camp.type === "virtual";
+  const now = new Date();
+  const startDate = new Date(camp.startDate);
+  const daysUntilStart = Math.ceil((startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  const showStartingSoon = daysUntilStart <= 7 && daysUntilStart > 0;
+  
+  // Registration mutation
+  const registerMutation = useMutation({
+    mutationFn: async (campId: number) => {
+      const res = await apiRequest("POST", `/api/camps/${campId}/register`, {});
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Successfully registered",
+        description: "You have been registered for this camp",
+        variant: "default",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Registration failed",
+        description: error.message || "Failed to register for this camp",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Format dates
+  const formatDateRange = () => {
+    return `${format(new Date(camp.startDate), "MMM d")} - ${format(new Date(camp.endDate), "MMM d, yyyy")}`;
+  };
+  
+  // Format time
+  const formatTimeRange = () => {
+    if (!camp.defaultStartTime && !camp.defaultEndTime) return "Schedule varies";
+    
+    return `${camp.defaultStartTime 
+      ? format(new Date(`2000-01-01T${camp.defaultStartTime}`), "h:mm a") 
+      : "TBD"} - 
+    ${camp.defaultEndTime 
+      ? format(new Date(`2000-01-01T${camp.defaultEndTime}`), "h:mm a") 
+      : "TBD"}`;
+  };
+  
+  // Handle registration
+  const handleRegister = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    registerMutation.mutate(camp.id);
+  };
+  
+  return (
+    <Collapsible
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      className="w-full border rounded-md overflow-hidden bg-background shadow-sm hover:shadow transition-shadow"
+    >
+      <div className="p-4 cursor-pointer flex items-center" onClick={() => setIsOpen(!isOpen)}>
+        <div className="flex-1">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full gap-2">
+            <div className="flex-1">
+              <div className="flex items-start">
+                <h3 className="font-medium text-lg">{camp.name}</h3>
+                {showStartingSoon && (
+                  <Badge variant="destructive" className="ml-2 text-[10px] h-5">
+                    Starting Soon
+                  </Badge>
+                )}
+                {isVirtual && (
+                  <Badge variant="outline" className="ml-2 flex items-center gap-1 h-5">
+                    <Laptop className="h-3 w-3" />
+                    <span>Virtual</span>
+                  </Badge>
+                )}
+              </div>
+              
+              <div className="flex flex-wrap mt-1 gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center">
+                  <Calendar className="h-3.5 w-3.5 mr-1" />
+                  <span>{formatDateRange()}</span>
+                </div>
+                <div className="flex items-center">
+                  <DollarSign className="h-3.5 w-3.5 mr-1" />
+                  <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(camp.price)}</span>
+                </div>
+                {!isVirtual && camp.location && (
+                  <div className="flex items-center">
+                    <MapPin className="h-3.5 w-3.5 mr-1" />
+                    <span>{camp.city}, {camp.state}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2 ml-auto">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      size="sm" 
+                      onClick={handleRegister}
+                      disabled={registerMutation.isPending}
+                      className="flex items-center gap-1"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      {registerMutation.isPending ? 'Registering...' : 'Register'}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Register for this camp</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="icon" className="ml-auto">
+                  {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              </CollapsibleTrigger>
+            </div>
+          </div>
+          
+          {/* Sport badges - visible even when collapsed */}
+          {camp.campSports && camp.campSports.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {camp.campSports.map((sport: CampSport, index: number) => (
+                <Badge 
+                  key={index} 
+                  variant="secondary"
+                  className="text-xs"
+                >
+                  {sport.sportId ? getSportName(sport.sportId as number) : "Unknown"} ({skillLevelNames[sport.skillLevel]})
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+        
+      <CollapsibleContent>
+        <div className="px-4 pb-4 pt-2 border-t">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <h4 className="text-sm font-medium mb-2">Camp Details</h4>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-medium">Time</span>
+                    <span className="text-xs text-muted-foreground">{formatTimeRange()}</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-medium">Type</span>
+                    <span className="text-xs text-muted-foreground capitalize">
+                      {camp.type.replace(/_/g, " ")}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-medium">Age Range</span>
+                    <span className="text-xs text-muted-foreground">
+                      {camp.minAge} - {camp.maxAge} years old
+                    </span>
+                  </div>
+                </div>
+                
+                {!isVirtual && camp.location && (
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex flex-col">
+                      <span className="text-xs font-medium">Location</span>
+                      <span className="text-xs text-muted-foreground">{camp.location}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div>
+              {camp.description ? (
+                <>
+                  <h4 className="text-sm font-medium mb-2">Description</h4>
+                  <p className="text-xs text-muted-foreground">{camp.description}</p>
+                </>
+              ) : (
+                <div className="h-full flex items-center justify-center">
+                  <p className="text-xs text-muted-foreground italic">No additional information available</p>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="flex justify-end mt-4">
+            <Button variant="outline" size="sm" asChild>
+              <a href={`/dashboard/camps/${camp.id}`} className="flex items-center gap-1">
+                <span>View Details</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </a>
+            </Button>
+          </div>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
 }
 
 function CampCard({ camp }: CampCardProps) {  
