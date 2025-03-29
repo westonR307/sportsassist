@@ -23,6 +23,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertChildSchema } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
+import { ProfilePhotoUploader } from "@/components/profile-photo-uploader";
 
 // Sport list and mapping data
 const sportsList = [
@@ -286,7 +287,6 @@ function AddAthleteDialog({
 }) {
   const { toast } = useToast();
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string>("");
-  const [uploading, setUploading] = useState(false);
   
   const form = useForm<AddChildFormValues>({
     resolver: zodResolver(addChildSchema),
@@ -317,10 +317,7 @@ function AddAthleteDialog({
 
   const addChildMutation = useMutation({
     mutationFn: async (values: AddChildFormValues) => {
-      // Make sure profile photo URL from state is included
-      if (profilePhotoUrl) {
-        values.profilePhoto = profilePhotoUrl;
-      }
+      // The profile photo field will already be set by the ProfilePhotoUploader
       const res = await apiRequest("POST", "/api/parent/children", values);
       return await res.json();
     },
@@ -343,120 +340,13 @@ function AddAthleteDialog({
     },
   });
 
-  // Create a separate file upload mutation
-  const fileUploadMutation = useMutation({
-    mutationFn: async (file: File) => {
-      // We need to use a custom function for FormData
-      // as apiRequest doesn't handle it directly
-      const uploadFile = async (file: File) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        // Use XMLHttpRequest which won't trigger dialog close
-        return new Promise<any>((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhr.open('POST', '/api/upload/profile-photo', true);
-          
-          xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-              try {
-                const data = JSON.parse(xhr.responseText);
-                resolve(data);
-              } catch (e) {
-                reject(new Error('Invalid response format'));
-              }
-            } else {
-              reject(new Error('Upload failed'));
-            }
-          };
-          
-          xhr.onerror = () => {
-            reject(new Error('Network error'));
-          };
-          
-          xhr.send(formData);
-        });
-      };
-      
-      return await uploadFile(file);
-    },
-    onSuccess: (data) => {
-      setProfilePhotoUrl(data.url);
-      form.setValue('profilePhoto', data.url);
-      
-      toast({
-        title: "Upload Successful",
-        description: "Profile photo has been uploaded. Please complete the form to add the athlete.",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Upload Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-    onSettled: () => {
-      setUploading(false);
-    }
-  });
-
-  // Handle profile photo upload
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    event.preventDefault();
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // File size validation (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: "Profile photo must be less than 5MB",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // File type validation
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: "Invalid file type",
-        description: "Please upload an image file",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Prevent the dialog from closing
-    event.stopPropagation();
-    
-    setUploading(true);
-    fileUploadMutation.mutate(file);
-  };
-
   const onSubmit = (values: AddChildFormValues) => {
-    // The profile photo URL will be included in the mutationFn
     addChildMutation.mutate(values);
   };
 
-  // Customize onOpenChange to prevent dialog from closing during upload
-  const handleOpenChange = (newOpen: boolean) => {
-    // If we're trying to close the dialog and we're uploading, block it
-    if (!newOpen && uploading) {
-      toast({
-        title: "Please wait",
-        description: "Please wait for the upload to complete before closing.",
-      });
-      return;
-    }
-    
-    // Otherwise proceed with normal onOpenChange
-    onOpenChange(newOpen);
-  };
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[600px]" closeButtonDisabled={uploading}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Add an Athlete</DialogTitle>
           <DialogDescription>
@@ -466,55 +356,14 @@ function AddAthleteDialog({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Profile Photo Upload Section */}
-            <div className="mb-6">
-              <h3 className="text-md font-semibold mb-3">Profile Photo (Optional)</h3>
-              <div className="flex flex-col items-center sm:flex-row sm:items-start gap-4">
-                <div className="relative w-28 h-28 overflow-hidden rounded-full bg-muted flex-shrink-0 flex items-center justify-center">
-                  {profilePhotoUrl ? (
-                    <img
-                      src={profilePhotoUrl}
-                      alt="Profile"
-                      className="object-cover w-full h-full"
-                    />
-                  ) : (
-                    <User className="h-10 w-10 text-muted-foreground" />
-                  )}
-                </div>
-                <div className="space-y-4 flex-1">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Add a profile photo for this athlete
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        type="button"
-                        variant="outline" 
-                        onClick={() => document.getElementById('athlete-profile-photo')?.click()}
-                        disabled={uploading}
-                        className="relative"
-                      >
-                        {uploading ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        ) : (
-                          <Upload className="h-4 w-4 mr-2" />
-                        )}
-                        {uploading ? 'Uploading...' : 'Upload Photo'}
-                      </Button>
-                      <span className="text-xs text-muted-foreground">
-                        JPG, PNG or GIF (max 5MB)
-                      </span>
-                    </div>
-                    <input
-                      id="athlete-profile-photo"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
+            <ProfilePhotoUploader
+              currentPhotoUrl={profilePhotoUrl}
+              onPhotoUploaded={(url) => {
+                setProfilePhotoUrl(url);
+                form.setValue('profilePhoto', url);
+              }}
+              disabled={addChildMutation.isPending}
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
