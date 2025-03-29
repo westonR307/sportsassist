@@ -32,10 +32,20 @@ const addChildSchema = z.object({
     message: "Please enter a valid date",
   }),
   gender: z.enum(["male", "female", "other", "prefer_not_to_say"]),
+  currentGrade: z.string().optional(),
+  schoolName: z.string().optional(),
+  sportsHistory: z.string().optional(),
   emergencyContact: z.string().min(10, { message: "Emergency contact should be at least 10 characters" }),
   emergencyPhone: z.string().min(10, { message: "Phone number should be at least 10 digits" }),
   medicalInformation: z.string().optional(),
   specialNeeds: z.string().optional(),
+  jerseySize: z.string().optional(),
+  shoeSize: z.string().optional(),
+  height: z.string().optional(),
+  weight: z.string().optional(),
+  // Default values for required fields in DB schema
+  preferredContact: z.enum(["email", "sms", "app"]).default("email"),
+  communicationOptIn: z.boolean().default(true),
 });
 
 type AddChildFormValues = z.infer<typeof addChildSchema>;
@@ -156,11 +166,32 @@ function AthleteCard({ child }: { child: Child }) {
             {calculateAge(child.dateOfBirth)} years old
           </span>
         </div>
-        <CardDescription>
-          {new Date(child.dateOfBirth).toLocaleDateString()}
+        <CardDescription className="flex items-center gap-2">
+          <span>{new Date(child.dateOfBirth).toLocaleDateString()}</span>
+          {child.currentGrade && (
+            <span className="text-xs bg-muted px-2 py-1 rounded">
+              Grade: {child.currentGrade}
+            </span>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-2 flex-grow">
+        {child.schoolName && (
+          <div className="flex items-center gap-2 text-sm">
+            <User className="h-4 w-4 text-muted-foreground" />
+            <span>School: {child.schoolName}</span>
+          </div>
+        )}
+        {child.sportsHistory && (
+          <div className="flex items-center gap-2 text-sm">
+            <Medal className="h-4 w-4 text-muted-foreground" />
+            <span title={child.sportsHistory}>
+              Sports History: {child.sportsHistory.length > 30 
+                ? `${child.sportsHistory.substring(0, 30)}...` 
+                : child.sportsHistory}
+            </span>
+          </div>
+        )}
         <div className="flex items-center gap-2 text-sm">
           <CalendarDays className="h-4 w-4 text-muted-foreground" />
           <span>Upcoming Registrations: 0</span>
@@ -169,10 +200,12 @@ function AthleteCard({ child }: { child: Child }) {
           <ListChecks className="h-4 w-4 text-muted-foreground" />
           <span>Completed Camps: 0</span>
         </div>
-        <div className="flex items-center gap-2 text-sm">
-          <Medal className="h-4 w-4 text-muted-foreground" />
-          <span>Interests: Not set</span>
-        </div>
+        {child.jerseySize && (
+          <div className="flex items-center gap-2 text-sm">
+            <Info className="h-4 w-4 text-muted-foreground" />
+            <span>Jersey Size: {child.jerseySize}</span>
+          </div>
+        )}
       </CardContent>
       <CardFooter className="flex justify-between border-t pt-4">
         <Button variant="outline" size="sm">View Profile</Button>
@@ -196,10 +229,17 @@ function AddAthleteDialog({
       fullName: "",
       dateOfBirth: "",
       gender: "male",
+      currentGrade: "",
+      schoolName: "",
+      sportsHistory: "",
       emergencyContact: "",
       emergencyPhone: "",
       medicalInformation: "",
       specialNeeds: "",
+      jerseySize: "",
+      shoeSize: "",
+      height: "",
+      weight: "",
     },
   });
 
@@ -267,27 +307,42 @@ function AddAthleteDialog({
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="gender"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Gender</FormLabel>
-                  <FormControl>
-                    <select
-                      {...field}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                    >
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="other">Other</option>
-                      <option value="prefer_not_to_say">Prefer not to say</option>
-                    </select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="gender"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Gender</FormLabel>
+                    <FormControl>
+                      <select
+                        {...field}
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                      >
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                        <option value="prefer_not_to_say">Prefer not to say</option>
+                      </select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="currentGrade"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Current Grade</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="e.g. 8th Grade" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
@@ -311,6 +366,106 @@ function AddAthleteDialog({
                     <FormLabel>Emergency Phone</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="e.g. 123-456-7890" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="schoolName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>School Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Current school name" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="sportsHistory"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Sports History</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Brief sports background and experience" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="height"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Height</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="e.g. 5 feet 8 inches" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="weight"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Weight</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="e.g. 150 lbs" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="jerseySize"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Jersey Size</FormLabel>
+                    <FormControl>
+                      <select
+                        {...field}
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                      >
+                        <option value="">Select size</option>
+                        <option value="YS">Youth Small</option>
+                        <option value="YM">Youth Medium</option>
+                        <option value="YL">Youth Large</option>
+                        <option value="YXL">Youth XL</option>
+                        <option value="AS">Adult Small</option>
+                        <option value="AM">Adult Medium</option>
+                        <option value="AL">Adult Large</option>
+                        <option value="AXL">Adult XL</option>
+                        <option value="A2XL">Adult 2XL</option>
+                      </select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="shoeSize"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Shoe Size</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="e.g. 9.5" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

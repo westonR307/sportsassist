@@ -98,6 +98,10 @@ export const children = pgTable("children", {
   gender: text("gender").$type<Gender>().notNull(),
   profilePhoto: text("profile_photo"),
   parentId: integer("parent_id").references(() => users.id).notNull(),
+  currentGrade: text("current_grade"),
+  schoolName: text("school_name"),
+  sportsHistory: text("sports_history"),
+  achievements: text("achievements").array(),
   emergencyContact: text("emergency_contact"),
   emergencyPhone: text("emergency_phone"),
   emergencyRelation: text("emergency_relation"),
@@ -107,6 +111,10 @@ export const children = pgTable("children", {
   specialNeeds: text("special_needs"),
   preferredContact: text("preferred_contact").$type<ContactMethod>().notNull(),
   communicationOptIn: boolean("communication_opt_in").notNull(),
+  jerseySize: text("jersey_size"),
+  shoeSize: text("shoe_size"),
+  height: text("height"),
+  weight: text("weight"),
 });
 
 export const childSports = pgTable("child_sports", {

@@ -70,9 +70,17 @@ export const insertChildSchema = createInsertSchema(children)
       })
     ).optional(),
     dateOfBirth: z.string(),
+    currentGrade: z.string().optional(),
+    schoolName: z.string().optional(),
+    sportsHistory: z.string().optional(),
+    achievements: z.array(z.string()).optional().default([]),
     allergies: z.array(z.string()).optional().default([]),
     medicalConditions: z.array(z.string()).optional().default([]),
     medications: z.array(z.string()).optional().default([]),
+    jerseySize: z.string().optional(),
+    shoeSize: z.string().optional(),
+    height: z.string().optional(),
+    weight: z.string().optional(),
   });
 
 export const insertScheduleExceptionSchema = z.object({
