@@ -18,16 +18,13 @@ type AuthContextType = {
 };
 
 type LoginData = {
-  username: string;
+  email: string;
   password: string;
 };
 
 type RegisterData = {
-  username: string;
+  email: string;
   password: string;
-  first_name?: string;
-  last_name?: string;
-  email?: string;
   role?: string;
 };
 
@@ -52,13 +49,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Login successful",
-        description: `Welcome back, ${user.username}!`,
+        description: `Welcome back, ${user.first_name || user.email}!`,
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Login failed",
-        description: error.message || "Invalid username or password",
+        description: error.message || "Invalid email or password",
         variant: "destructive",
       });
     },
@@ -73,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Registration successful",
-        description: `Welcome to SportsAssist, ${user.username}!`,
+        description: `Welcome to SportsAssist, ${user.email}!`,
       });
     },
     onError: (error: Error) => {

@@ -56,30 +56,36 @@ export function setupAuth(app: Express) {
   });
 
   passport.use(
-    new LocalStrategy(async (username, password, done) => {
-      try {
-        console.log(`Login attempt for user: ${username}`);
-        const user = await storage.getUserByUsername(username);
+    new LocalStrategy(
+      {
+        usernameField: 'email',
+        passwordField: 'password'
+      }, 
+      async (email, password, done) => {
+        try {
+          console.log(`Login attempt for email: ${email}`);
+          const user = await storage.getUserByEmail(email);
 
-        if (!user) {
-          console.log(`No user found with username: ${username}`);
-          return done(null, false, { message: "Invalid username or password" });
+          if (!user) {
+            console.log(`No user found with email: ${email}`);
+            return done(null, false, { message: "Invalid email or password" });
+          }
+
+          const isValid = await comparePasswords(password, user.password);
+          console.log(`Password validation result for ${email}: ${isValid}`);
+
+          if (!isValid) {
+            return done(null, false, { message: "Invalid email or password" });
+          }
+
+          console.log(`Successful login for user: ${email}`);
+          return done(null, user);
+        } catch (err) {
+          console.error("Login error:", err);
+          return done(err);
         }
-
-        const isValid = await comparePasswords(password, user.password);
-        console.log(`Password validation result for ${username}: ${isValid}`);
-
-        if (!isValid) {
-          return done(null, false, { message: "Invalid username or password" });
-        }
-
-        console.log(`Successful login for user: ${username}`);
-        return done(null, user);
-      } catch (err) {
-        console.error("Login error:", err);
-        return done(err);
       }
-    }),
+    ),
   );
 
   passport.serializeUser((user, done) => {
@@ -117,7 +123,7 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    console.log("Login request received for:", req.body.username);
+    console.log("Login request received for:", req.body.email);
     passport.authenticate("local", (err, user, info) => {
       if (err) {
         console.error("Login error:", err);
@@ -132,7 +138,7 @@ export function setupAuth(app: Express) {
           console.error("Session creation error:", err);
           return next(err);
         }
-        console.log(`User ${user.username} logged in successfully`);
+        console.log(`User ${user.email} logged in successfully`);
         return res.status(200).json(user);
       });
     })(req, res, next);
@@ -189,19 +195,19 @@ export function setupAuth(app: Express) {
   });
   
   app.post("/api/register", async (req, res, next) => {
-    console.log("Registration request received:", req.body.username);
+    console.log("Registration request received for email:", req.body.email);
     console.log("Registration request body:", req.body);
     
     try {
-      // Check if username already exists
-      const existingUser = await storage.getUserByUsername(req.body.username);
+      // Check if email already exists
+      const existingUser = await storage.getUserByEmail(req.body.email);
       if (existingUser) {
-        console.log(`Username already exists: ${req.body.username}`);
-        return res.status(400).json({ message: "Username already exists" });
+        console.log(`Email already exists: ${req.body.email}`);
+        return res.status(400).json({ message: "Email already exists" });
       }
       
       // Get user data from request
-      const { username, password, role, ...otherFields } = req.body;
+      const { email, password, role, ...otherFields } = req.body;
       
       console.log("Other fields from registration:", otherFields);
       
@@ -213,8 +219,13 @@ export function setupAuth(app: Express) {
       
       // Create the user
       const hashedPassword = await hashPassword(password);
+      
+      // Generate a username from the email if it's not provided
+      const username = email.split('@')[0] + Math.floor(Math.random() * 10000);
+      
       const userData = {
-        username,
+        username, // Use generated username
+        email,
         password: hashedPassword,
         role: role || "parent",
         ...otherFields,
@@ -231,7 +242,7 @@ export function setupAuth(app: Express) {
           return next(err);
         }
         
-        console.log(`User ${user.username} registered and logged in successfully`);
+        console.log(`User ${user.email} registered and logged in successfully`);
         res.status(201).json(user);
       });
     } catch (error: any) {
