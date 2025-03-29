@@ -54,17 +54,40 @@ function ParentOnboardingPage() {
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      first_name: user?.first_name || "",
-      last_name: user?.last_name || "",
-      phone_number: user?.phone_number || "",
-      address: user?.address || "",
-      city: user?.city || "",
-      state: user?.state || "",
-      zip_code: user?.zip_code || "",
-      preferred_contact: user?.preferred_contact || "email",
-      profile_photo: user?.profile_photo || "",
+      first_name: "",
+      last_name: "",
+      phone_number: "",
+      address: "",
+      city: "",
+      state: "",
+      zip_code: "",
+      preferred_contact: "email",
+      profile_photo: "",
     },
   });
+
+  // Use useEffect to update form values when user data is available
+  React.useEffect(() => {
+    if (user) {
+      // This will update the form with user data once it's loaded
+      form.reset({
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+        phone_number: user.phone_number || "",
+        address: user.address || "",
+        city: user.city || "",
+        state: user.state || "",
+        zip_code: user.zip_code || "",
+        preferred_contact: user.preferred_contact || "email",
+        profile_photo: user.profile_photo || "",
+      });
+
+      // If the user has a profile photo, set it in the state
+      if (user.profile_photo) {
+        setProfilePhotoUrl(user.profile_photo);
+      }
+    }
+  }, [user, form]);
 
   const profileMutation = useMutation({
     mutationFn: async (profileData: ProfileFormValues) => {
