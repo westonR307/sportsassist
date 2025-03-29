@@ -109,26 +109,44 @@ export default function HomePage() {
       camp.description?.toLowerCase().includes(searchQuery.toLowerCase());
     
     // Sport filter
-    const hasSport = selectedSport === "" || 
+    const hasSport = selectedSport === "" || selectedSport === "any" || 
       (camp.campSports && camp.campSports.some(cs => cs.sportId && cs.sportId.toString() === selectedSport));
     
     // Skill level filter
-    const hasSkillLevel = selectedSkillLevel === "" || 
+    const hasSkillLevel = selectedSkillLevel === "" || selectedSkillLevel === "any" || 
       (camp.campSports && camp.campSports.some(cs => cs.skillLevel === selectedSkillLevel));
     
     // State filter
-    const matchesState = selectedState === "" || camp.state === selectedState;
+    const matchesState = selectedState === "" || selectedState === "any" || camp.state === selectedState;
     
     // City filter
-    const matchesCity = selectedCity === "" || camp.city.toLowerCase().includes(selectedCity.toLowerCase());
+    const matchesCity = selectedCity === "" || selectedCity === "any" || camp.city.toLowerCase().includes(selectedCity.toLowerCase());
     
     // Camp type filter
-    const matchesType = selectedType === "" || camp.type === selectedType;
+    const matchesType = selectedType === "" || selectedType === "any" || camp.type === selectedType;
+    
+    // Age range filter
+    const matchesAgeRange = selectedAgeRange === "" || selectedAgeRange === "any" || 
+      (camp.minAge && camp.maxAge && ((
+        // Handle different age bracket formats
+        selectedAgeRange.includes("-") ? 
+          // For ranges like "5-8"
+          (() => {
+            const [min, max] = selectedAgeRange.split("-").map(Number);
+            return (camp.minAge <= max && camp.maxAge >= min);
+          })() :
+          // For ranges like "16+" (16 and above)
+          (() => {
+            const min = parseInt(selectedAgeRange);
+            return !isNaN(min) && camp.minAge <= min;
+          })()
+      )));
     
     // Virtual only filter
     const matchesVirtual = !showVirtualOnly || camp.type === "virtual";
     
-    return matchesSearch && hasSport && hasSkillLevel && matchesState && matchesCity && matchesType && matchesVirtual;
+    return matchesSearch && hasSport && hasSkillLevel && matchesState && 
+           matchesCity && matchesType && matchesAgeRange && matchesVirtual;
   });
 
   // Sort the camps
@@ -245,7 +263,7 @@ export default function HomePage() {
                 <SelectValue placeholder="Sport" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Sports</SelectItem>
+                <SelectItem value="any">All Sports</SelectItem>
                 {availableSports.map(sportId => (
                   <SelectItem key={sportId} value={sportId.toString()}>
                     {sportId !== null ? getSportName(sportId) : "Unknown Sport"}
@@ -259,7 +277,7 @@ export default function HomePage() {
                 <SelectValue placeholder="State" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All States</SelectItem>
+                <SelectItem value="any">All States</SelectItem>
                 {availableStates.map(state => (
                   <SelectItem key={state} value={state}>
                     {state}
@@ -285,7 +303,7 @@ export default function HomePage() {
                         <SelectValue placeholder="Any Level" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Any Level</SelectItem>
+                        <SelectItem value="any">Any Level</SelectItem>
                         <SelectItem value="beginner">{skillLevelNames.beginner}</SelectItem>
                         <SelectItem value="intermediate">{skillLevelNames.intermediate}</SelectItem>
                         <SelectItem value="advanced">{skillLevelNames.advanced}</SelectItem>
@@ -301,7 +319,7 @@ export default function HomePage() {
                           <SelectValue placeholder="Any City" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Any City</SelectItem>
+                          <SelectItem value="any">Any City</SelectItem>
                           {availableCities.map(city => (
                             <SelectItem key={city} value={city}>
                               {city}
@@ -319,7 +337,7 @@ export default function HomePage() {
                         <SelectValue placeholder="Any Age" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Any Age</SelectItem>
+                        <SelectItem value="any">Any Age</SelectItem>
                         {ageBrackets.map(bracket => (
                           <SelectItem key={bracket.value} value={bracket.value}>
                             {bracket.label}
@@ -336,7 +354,7 @@ export default function HomePage() {
                         <SelectValue placeholder="Any Type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Any Type</SelectItem>
+                        <SelectItem value="any">Any Type</SelectItem>
                         <SelectItem value="one_on_one">One-on-One</SelectItem>
                         <SelectItem value="group">Group</SelectItem>
                         <SelectItem value="team">Team</SelectItem>
@@ -494,7 +512,7 @@ export default function HomePage() {
                                   <SelectValue placeholder="Any State" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="">Any State</SelectItem>
+                                  <SelectItem value="any">Any State</SelectItem>
                                   {availableStates.map(state => (
                                     <SelectItem key={state} value={state}>
                                       {state}
@@ -512,7 +530,7 @@ export default function HomePage() {
                                     <SelectValue placeholder="Any City" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="">Any City</SelectItem>
+                                    <SelectItem value="any">Any City</SelectItem>
                                     {availableCities.map(city => (
                                       <SelectItem key={city} value={city}>
                                         {city}
@@ -624,7 +642,7 @@ export default function HomePage() {
 
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sort" />
+                  <SelectValue placeholder="Sort by" defaultValue="startDate" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="startDate">Start Date</SelectItem>

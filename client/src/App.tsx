@@ -4,6 +4,7 @@ import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
+import { Loader2 } from "lucide-react";
 
 // Import pages
 import HomePage from "@/pages/home-page";
@@ -55,11 +56,22 @@ function ParentDashboardRouter() {
 }
 
 function Router() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   
   return (
     <Switch>
-      <Route path="/" component={() => <Redirect to="/dashboard" />} />
+      {/* Public route for homepage - show dashboard if logged in, home page if not */}
+      <Route path="/" component={() => {
+        if (isLoading) {
+          return (
+            <div className="flex items-center justify-center min-h-screen">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          );
+        }
+        return user ? <Redirect to="/dashboard" /> : <HomePage />;
+      }} />
+      
       <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/dashboard" component={DashboardRouter} />
       <ProtectedRoute path="/dashboard/my-athletes" component={MyAthletesPage} />
