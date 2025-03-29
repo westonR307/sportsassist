@@ -18,6 +18,9 @@ import TeamPage from "@/pages/team-page";
 import SettingsPage from "@/pages/settings-page";
 import CampViewPage from "@/pages/camp-view-page";
 import CustomFieldsPage from "@/pages/custom-fields-page";
+import MyAthletesPage from "@/pages/my-athletes-page";
+import RegistrationsPage from "@/pages/registrations-page";
+import AvailableCampsPage from "@/pages/available-camps-page";
 import { ProtectedRoute } from "./lib/protected-route";
 
 // Component to handle dashboard routing based on user role
@@ -59,13 +62,16 @@ function Router() {
       <Route path="/" component={() => <Redirect to="/dashboard" />} />
       <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/dashboard" component={DashboardRouter} />
+      <ProtectedRoute path="/dashboard/my-athletes" component={MyAthletesPage} />
+      <ProtectedRoute path="/dashboard/registrations" component={RegistrationsPage} />
+      <ProtectedRoute path="/dashboard/camps" component={AvailableCampsPage} />
+      <ProtectedRoute path="/dashboard/camps/:id" component={CampViewPage} />
       <ProtectedRoute path="/dashboard/reports" component={ReportsPage} />
       <ProtectedRoute path="/dashboard/team" component={TeamPage} />
       <ProtectedRoute 
         path="/dashboard/settings" 
         component={user?.role === "parent" ? ParentSettingsPage : SettingsPage} 
       />
-      <ProtectedRoute path="/dashboard/camps/:id" component={CampViewPage} />
       <ProtectedRoute path="/custom-fields" component={CustomFieldsPage} />
       <ProtectedRoute path="/parent-dashboard" component={ParentDashboardRouter} />
       <ProtectedRoute path="/parent-onboarding" component={ParentOnboardingPage} />
