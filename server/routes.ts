@@ -12,10 +12,12 @@ import { createServer } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertCampSchema, insertChildSchema, insertRegistrationSchema, insertOrganizationSchema, insertInvitationSchema, insertScheduleExceptionSchema, sports, children, childSports } from "@shared/schema";
+import { campSchedules } from "@shared/tables";
 import Stripe from "stripe";
 import { hashPassword } from "./utils";
 import { randomBytes } from "crypto";
 import { db } from "./db";
+import { eq } from "drizzle-orm";
 import passport from "passport";
 import { sendInvitationEmail } from "./utils/email";
 
@@ -587,6 +589,63 @@ export async function registerRoutes(app: Express) {
     } catch (error) {
       console.error("Error fetching camp schedules:", error);
       res.status(500).json({ message: "Failed to fetch camp schedules" });
+    }
+  });
+  
+  // Add route to update camp schedules
+  app.put("/api/camps/:id/schedules", async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      console.log("Updating schedules for camp ID:", campId);
+      
+      // Check if the camp exists
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check authorization
+      if (req.user.organizationId !== camp.organizationId) {
+        return res.status(403).json({ message: "Not authorized to edit this camp" });
+      }
+      
+      // Validate input
+      if (!req.body.schedules || !Array.isArray(req.body.schedules)) {
+        return res.status(400).json({ message: "Invalid schedules data" });
+      }
+      
+      // Delete existing schedules for this camp
+      await db.delete(campSchedules).where(eq(campSchedules.campId, campId));
+      
+      // Create new schedules
+      const newSchedules = req.body.schedules.map(schedule => ({
+        campId,
+        dayOfWeek: schedule.dayOfWeek,
+        startTime: schedule.startTime,
+        endTime: schedule.endTime
+      }));
+      
+      console.log("Creating new schedules:", JSON.stringify(newSchedules));
+      
+      if (newSchedules.length > 0) {
+        // Insert new schedules
+        const insertedSchedules = await db.insert(campSchedules).values(newSchedules).returning();
+        console.log("Inserted schedules:", JSON.stringify(insertedSchedules));
+        
+        res.json({ 
+          message: "Schedules updated successfully", 
+          schedules: insertedSchedules 
+        });
+      } else {
+        res.status(400).json({ message: "No valid schedules provided" });
+      }
+    } catch (error) {
+      console.error("Error updating camp schedules:", error);
+      res.status(500).json({ message: "Failed to update camp schedules" });
     }
   });
   
