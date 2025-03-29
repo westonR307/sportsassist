@@ -8,6 +8,9 @@ import {
   registrations,
   campSchedules,
   scheduleExceptions,
+  customFields,
+  campCustomFields,
+  customFieldResponses,
   type User,
   type InsertUser,
   type Organization,
@@ -21,6 +24,12 @@ import {
   type ScheduleException,
   type InsertScheduleException,
   type Camp,
+  type CustomField,
+  type InsertCustomField, 
+  type CampCustomField,
+  type InsertCampCustomField,
+  type CustomFieldResponse,
+  type InsertCustomFieldResponse,
   insertCampSchema,
   sports
 } from "@shared/schema";
@@ -62,6 +71,24 @@ export interface IStorage {
   createScheduleException(exception: InsertScheduleException): Promise<ScheduleException>;
   updateScheduleException(id: number, exception: Partial<Omit<ScheduleException, "id">>): Promise<ScheduleException>;
   getScheduleException(id: number): Promise<ScheduleException | undefined>;
+  
+  // Custom fields methods
+  createCustomField(field: InsertCustomField): Promise<CustomField>;
+  getCustomField(id: number): Promise<CustomField | undefined>;
+  listCustomFields(organizationId: number): Promise<CustomField[]>;
+  updateCustomField(id: number, field: Partial<Omit<CustomField, "id" | "organizationId">>): Promise<CustomField>;
+  deleteCustomField(id: number): Promise<void>;
+  
+  // Camp custom fields methods
+  addCustomFieldToCamp(campField: InsertCampCustomField): Promise<CampCustomField>;
+  getCampCustomFields(campId: number): Promise<(CampCustomField & { field: CustomField })[]>;
+  updateCampCustomField(id: number, campField: Partial<Omit<CampCustomField, "id">>): Promise<CampCustomField>;
+  removeCampCustomField(id: number): Promise<void>;
+  
+  // Custom field responses methods
+  createCustomFieldResponse(response: InsertCustomFieldResponse): Promise<CustomFieldResponse>;
+  getCustomFieldResponses(registrationId: number): Promise<(CustomFieldResponse & { field: CustomField })[]>;
+  updateCustomFieldResponse(id: number, response: Partial<Omit<CustomFieldResponse, "id">>): Promise<CustomFieldResponse>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -472,6 +499,209 @@ export class DatabaseStorage implements IStorage {
       return exception;
     } catch (error) {
       console.error("Error getting schedule exception:", error);
+      throw error;
+    }
+  }
+
+  // Custom fields methods
+  async createCustomField(field: InsertCustomField): Promise<CustomField> {
+    try {
+      const [newField] = await db.insert(customFields).values({
+        name: field.name,
+        label: field.label,
+        description: field.description,
+        fieldType: field.fieldType,
+        required: field.required ?? false,
+        organizationId: field.organizationId,
+        validationType: field.validationType || "none",
+        options: field.options,
+      }).returning();
+      
+      return newField;
+    } catch (error) {
+      console.error("Error creating custom field:", error);
+      throw error;
+    }
+  }
+
+  async getCustomField(id: number): Promise<CustomField | undefined> {
+    try {
+      const [field] = await db.select()
+        .from(customFields)
+        .where(eq(customFields.id, id));
+      
+      return field;
+    } catch (error) {
+      console.error("Error getting custom field:", error);
+      throw error;
+    }
+  }
+
+  async listCustomFields(organizationId: number): Promise<CustomField[]> {
+    try {
+      return await db.select()
+        .from(customFields)
+        .where(eq(customFields.organizationId, organizationId))
+        .orderBy(customFields.name);
+    } catch (error) {
+      console.error("Error listing custom fields:", error);
+      return [];
+    }
+  }
+
+  async updateCustomField(id: number, field: Partial<Omit<CustomField, "id" | "organizationId">>): Promise<CustomField> {
+    try {
+      const [updatedField] = await db.update(customFields)
+        .set({
+          ...(field.name !== undefined && { name: field.name }),
+          ...(field.label !== undefined && { label: field.label }),
+          ...(field.description !== undefined && { description: field.description }),
+          ...(field.fieldType !== undefined && { fieldType: field.fieldType }),
+          ...(field.required !== undefined && { required: field.required }),
+          ...(field.validationType !== undefined && { validationType: field.validationType }),
+          ...(field.options !== undefined && { options: field.options }),
+          updatedAt: new Date(),
+        })
+        .where(eq(customFields.id, id))
+        .returning();
+      
+      return updatedField;
+    } catch (error) {
+      console.error("Error updating custom field:", error);
+      throw error;
+    }
+  }
+
+  async deleteCustomField(id: number): Promise<void> {
+    try {
+      await db.delete(customFields)
+        .where(eq(customFields.id, id));
+    } catch (error) {
+      console.error("Error deleting custom field:", error);
+      throw error;
+    }
+  }
+
+  // Camp custom fields methods
+  async addCustomFieldToCamp(campField: InsertCampCustomField): Promise<CampCustomField> {
+    try {
+      const [newCampField] = await db.insert(campCustomFields).values({
+        campId: campField.campId,
+        customFieldId: campField.customFieldId,
+        order: campField.order || 0,
+        required: campField.required,
+      }).returning();
+      
+      return newCampField;
+    } catch (error) {
+      console.error("Error adding custom field to camp:", error);
+      throw error;
+    }
+  }
+
+  async getCampCustomFields(campId: number): Promise<(CampCustomField & { field: CustomField })[]> {
+    try {
+      const results = await db.select({
+        id: campCustomFields.id,
+        campId: campCustomFields.campId,
+        customFieldId: campCustomFields.customFieldId,
+        order: campCustomFields.order,
+        required: campCustomFields.required,
+        field: customFields
+      })
+      .from(campCustomFields)
+      .innerJoin(customFields, eq(campCustomFields.customFieldId, customFields.id))
+      .where(eq(campCustomFields.campId, campId))
+      .orderBy(campCustomFields.order);
+      
+      return results;
+    } catch (error) {
+      console.error("Error getting camp custom fields:", error);
+      return [];
+    }
+  }
+
+  async updateCampCustomField(id: number, campField: Partial<Omit<CampCustomField, "id">>): Promise<CampCustomField> {
+    try {
+      const [updatedCampField] = await db.update(campCustomFields)
+        .set({
+          ...(campField.order !== undefined && { order: campField.order }),
+          ...(campField.required !== undefined && { required: campField.required }),
+        })
+        .where(eq(campCustomFields.id, id))
+        .returning();
+      
+      return updatedCampField;
+    } catch (error) {
+      console.error("Error updating camp custom field:", error);
+      throw error;
+    }
+  }
+
+  async removeCampCustomField(id: number): Promise<void> {
+    try {
+      await db.delete(campCustomFields)
+        .where(eq(campCustomFields.id, id));
+    } catch (error) {
+      console.error("Error removing camp custom field:", error);
+      throw error;
+    }
+  }
+
+  // Custom field responses methods
+  async createCustomFieldResponse(response: InsertCustomFieldResponse): Promise<CustomFieldResponse> {
+    try {
+      const [newResponse] = await db.insert(customFieldResponses).values({
+        registrationId: response.registrationId,
+        customFieldId: response.customFieldId,
+        response: response.response,
+        responseArray: response.responseArray,
+      }).returning();
+      
+      return newResponse;
+    } catch (error) {
+      console.error("Error creating custom field response:", error);
+      throw error;
+    }
+  }
+
+  async getCustomFieldResponses(registrationId: number): Promise<(CustomFieldResponse & { field: CustomField })[]> {
+    try {
+      const results = await db.select({
+        id: customFieldResponses.id,
+        registrationId: customFieldResponses.registrationId,
+        customFieldId: customFieldResponses.customFieldId,
+        response: customFieldResponses.response,
+        responseArray: customFieldResponses.responseArray,
+        createdAt: customFieldResponses.createdAt,
+        updatedAt: customFieldResponses.updatedAt,
+        field: customFields
+      })
+      .from(customFieldResponses)
+      .innerJoin(customFields, eq(customFieldResponses.customFieldId, customFields.id))
+      .where(eq(customFieldResponses.registrationId, registrationId));
+      
+      return results;
+    } catch (error) {
+      console.error("Error getting custom field responses:", error);
+      return [];
+    }
+  }
+
+  async updateCustomFieldResponse(id: number, response: Partial<Omit<CustomFieldResponse, "id">>): Promise<CustomFieldResponse> {
+    try {
+      const [updatedResponse] = await db.update(customFieldResponses)
+        .set({
+          ...(response.response !== undefined && { response: response.response }),
+          ...(response.responseArray !== undefined && { responseArray: response.responseArray }),
+          updatedAt: new Date(),
+        })
+        .where(eq(customFieldResponses.id, id))
+        .returning();
+      
+      return updatedResponse;
+    } catch (error) {
+      console.error("Error updating custom field response:", error);
       throw error;
     }
   }

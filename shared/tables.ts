@@ -1,8 +1,9 @@
-import { pgTable, text, serial, integer, boolean, timestamp, time } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, time, json } from "drizzle-orm/pg-core";
 import { 
   type CampType, type CampVisibility, type RepeatType, 
   type Role, type Gender, type ContactMethod, 
-  type SportLevel, type StaffRole 
+  type SportLevel, type StaffRole,
+  type FieldType, type ValidationType
 } from "./types";
 
 export const camps = pgTable("camps", {
@@ -140,4 +141,39 @@ export const registrations = pgTable("registrations", {
   stripePaymentId: text("stripe_payment_id"),
   waitlisted: boolean("waitlisted").notNull().default(false),
   registeredAt: timestamp("registered_at").notNull().defaultNow(),
+});
+
+// Custom form field definitions that can be reused across camps
+export const customFields = pgTable("custom_fields", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  label: text("label").notNull(),
+  description: text("description"),
+  fieldType: text("field_type").$type<FieldType>().notNull(),
+  required: boolean("required").notNull().default(false),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
+  validationType: text("validation_type").$type<ValidationType>().notNull().default("none"),
+  options: json("options").$type<string[]>(), // For dropdown, single-select, and multi-select fields
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Association between camps and the custom fields used in their registration forms
+export const campCustomFields = pgTable("camp_custom_fields", {
+  id: serial("id").primaryKey(),
+  campId: integer("camp_id").references(() => camps.id).notNull(),
+  customFieldId: integer("custom_field_id").references(() => customFields.id).notNull(),
+  order: integer("order").notNull().default(0), // Order to display fields in the form
+  required: boolean("required"), // Override the default required setting if needed
+});
+
+// Responses to custom fields, linked to a registration
+export const customFieldResponses = pgTable("custom_field_responses", {
+  id: serial("id").primaryKey(),
+  registrationId: integer("registration_id").references(() => registrations.id).notNull(),
+  customFieldId: integer("custom_field_id").references(() => customFields.id).notNull(),
+  response: text("response"), // String response for short_text, long_text
+  responseArray: json("response_array").$type<string[]>(), // For multi-select fields
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

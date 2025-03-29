@@ -12,7 +12,10 @@ import {
   registrations,
   campSchedules,
   campSports,
-  scheduleExceptions
+  scheduleExceptions,
+  customFields,
+  campCustomFields,
+  customFieldResponses
 } from "./tables";
 
 // Import types
@@ -24,7 +27,9 @@ import {
   CampType,
   CampVisibility,
   RepeatType,
-  StaffRole
+  StaffRole,
+  FieldType,
+  ValidationType
 } from "./types";
 
 export const publicRoles = ["camp_creator", "parent", "athlete"] as const;
@@ -134,6 +139,30 @@ export const insertOrganizationSchema = createInsertSchema(organizations).omit({
   createdAt: true,
 });
 
+// Custom fields schemas for registration forms
+export const insertCustomFieldSchema = createInsertSchema(customFields).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  fieldType: z.enum(["short_text", "long_text", "dropdown", "single_select", "multi_select"]),
+  validationType: z.enum(["required", "email", "phone", "number", "date", "none"]).default("none"),
+  options: z.array(z.string()).optional(),
+});
+
+export const insertCampCustomFieldSchema = createInsertSchema(campCustomFields).omit({
+  id: true,
+});
+
+export const insertCustomFieldResponseSchema = createInsertSchema(customFieldResponses).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  response: z.string().optional(),
+  responseArray: z.array(z.string()).optional(),
+});
+
 // Export types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -153,6 +182,14 @@ export type InsertScheduleException = z.infer<typeof insertScheduleExceptionSche
 //export type InsertCampSchedule = z.infer<typeof insertCampScheduleSchema>;
 export type CampSport = typeof campSports.$inferSelect;
 
+// Custom fields types
+export type CustomField = typeof customFields.$inferSelect;
+export type CampCustomField = typeof campCustomFields.$inferSelect; 
+export type CustomFieldResponse = typeof customFieldResponses.$inferSelect;
+export type InsertCustomField = z.infer<typeof insertCustomFieldSchema>;
+export type InsertCampCustomField = z.infer<typeof insertCampCustomFieldSchema>;
+export type InsertCustomFieldResponse = z.infer<typeof insertCustomFieldResponseSchema>;
+
 // Re-export tables
 export {
   organizations,
@@ -166,7 +203,10 @@ export {
   registrations,
   campSports,
   campSchedules,
-  scheduleExceptions
+  scheduleExceptions,
+  customFields,
+  campCustomFields,
+  customFieldResponses
 };
 
 export const predefinedSports = [

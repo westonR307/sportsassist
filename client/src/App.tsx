@@ -14,6 +14,7 @@ import ReportsPage from "@/pages/reports-page";
 import TeamPage from "@/pages/team-page";
 import SettingsPage from "@/pages/settings-page";
 import CampViewPage from "@/pages/camp-view-page";
+import CustomFieldsPage from "@/pages/custom-fields-page";
 import { ProtectedRoute } from "./lib/protected-route";
 
 function Router() {
@@ -26,6 +27,7 @@ function Router() {
       <ProtectedRoute path="/dashboard/team" component={TeamPage} />
       <ProtectedRoute path="/dashboard/settings" component={SettingsPage} />
       <ProtectedRoute path="/dashboard/camps/:id" component={CampViewPage} />
+      <ProtectedRoute path="/custom-fields" component={CustomFieldsPage} />
       <Route component={NotFound} />
     </Switch>
   );
