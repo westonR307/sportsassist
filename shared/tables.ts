@@ -73,6 +73,14 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   first_name: text("first_name"),
   last_name: text("last_name"),
+  profile_photo: text("profile_photo"),
+  phone_number: text("phone_number"),
+  address: text("address"),
+  city: text("city"),
+  state: text("state"),
+  zip_code: text("zip_code"),
+  onboarding_completed: boolean("onboarding_completed").default(false),
+  preferred_contact: text("preferred_contact").$type<ContactMethod>(),
 });
 
 export const invitations = pgTable("invitations", {

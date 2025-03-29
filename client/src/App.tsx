@@ -11,6 +11,7 @@ import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
 import ParentDashboard from "@/pages/parent-dashboard";
+import ParentOnboardingPage from "@/pages/parent-onboarding";
 import ReportsPage from "@/pages/reports-page";
 import TeamPage from "@/pages/team-page";
 import SettingsPage from "@/pages/settings-page";
@@ -22,11 +23,27 @@ import { ProtectedRoute } from "./lib/protected-route";
 function DashboardRouter() {
   const { user } = useAuth();
   
+  // Check if user is a parent who needs to complete onboarding
+  if (user?.role === "parent" && user?.onboarding_completed === false) {
+    return <Redirect to="/parent-onboarding" />;
+  }
+  
   if (user?.role === "parent") {
     return <ParentDashboard />;
   }
   
   return <Dashboard />;
+}
+
+// Component to handle parent dashboard with check for onboarding completion
+function ParentDashboardRouter() {
+  const { user } = useAuth();
+  
+  if (user?.onboarding_completed === false) {
+    return <Redirect to="/parent-onboarding" />;
+  }
+  
+  return <ParentDashboard />;
 }
 
 function Router() {
@@ -40,6 +57,8 @@ function Router() {
       <ProtectedRoute path="/dashboard/settings" component={SettingsPage} />
       <ProtectedRoute path="/dashboard/camps/:id" component={CampViewPage} />
       <ProtectedRoute path="/custom-fields" component={CustomFieldsPage} />
+      <ProtectedRoute path="/parent-dashboard" component={ParentDashboardRouter} />
+      <ProtectedRoute path="/parent-onboarding" component={ParentOnboardingPage} />
       <Route component={NotFound} />
     </Switch>
   );

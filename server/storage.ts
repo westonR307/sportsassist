@@ -48,6 +48,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser & { organizationId?: number }): Promise<User>;
   updateUserRole(userId: number, newRole: Role): Promise<User>;
+  updateUserProfile(userId: number, profileData: Partial<Omit<User, "id" | "password" | "passwordHash" | "role" | "createdAt" | "updatedAt">>): Promise<User>;
   getOrganizationStaff(orgId: number): Promise<User[]>;
   createCamp(camp: Omit<Camp, "id"> & { schedules?: CampSchedule[] }): Promise<Camp>;
   updateCamp(id: number, campData: Partial<Omit<Camp, "id" | "organizationId">>): Promise<Camp>;
@@ -136,6 +137,32 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId))
       .returning();
     return user;
+  }
+
+  async updateUserProfile(userId: number, profileData: Partial<Omit<User, "id" | "password" | "passwordHash" | "role" | "createdAt" | "updatedAt">>): Promise<User> {
+    try {
+      console.log(`Updating user profile for user ID ${userId}:`, profileData);
+      
+      const [updatedUser] = await db.update(users)
+        .set({
+          ...profileData,
+          updatedAt: new Date() // Always update the updatedAt timestamp
+        })
+        .where(eq(users.id, userId))
+        .returning();
+      
+      console.log(`Updated user profile for user ID ${userId}`);
+      return updatedUser;
+    } catch (error: any) {
+      console.error(`Error updating user profile for user ID ${userId}:`, {
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        constraint: error.constraint,
+        stack: error.stack
+      });
+      throw new Error(`Failed to update user profile: ${error.message}`);
+    }
   }
 
   async getOrganizationStaff(orgId: number): Promise<User[]> {

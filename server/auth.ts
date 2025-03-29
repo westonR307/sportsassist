@@ -4,7 +4,7 @@ import { Express } from "express";
 import session from "express-session";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
-import { comparePasswords } from "./utils";
+import { comparePasswords, hashPassword } from "./utils";
 
 declare global {
   namespace Express {
@@ -178,5 +178,87 @@ export function setupAuth(app: Express) {
       organizationId: req.user?.organizationId
     });
     res.json(req.user);
+  });
+  
+  app.post("/api/register", async (req, res, next) => {
+    console.log("Registration request received:", req.body.username);
+    
+    try {
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(req.body.username);
+      if (existingUser) {
+        console.log(`Username already exists: ${req.body.username}`);
+        return res.status(400).json({ message: "Username already exists" });
+      }
+      
+      // Get user data from request
+      const { username, password, role, ...otherFields } = req.body;
+      
+      // Check if the role is valid
+      if (role && !["camp_creator", "parent", "athlete"].includes(role)) {
+        console.log(`Invalid role requested: ${role}`);
+        return res.status(400).json({ message: "Invalid role" });
+      }
+      
+      // Create the user
+      const hashedPassword = await hashPassword(password);
+      const userData = {
+        username,
+        password: hashedPassword,
+        role: role || "parent",
+        ...otherFields,
+      };
+      
+      console.log(`Creating user with role: ${userData.role}`);
+      const user = await storage.createUser(userData);
+      
+      // Log the user in
+      req.login(user, (err) => {
+        if (err) {
+          console.error("Error logging in new user:", err);
+          return next(err);
+        }
+        
+        console.log(`User ${user.username} registered and logged in successfully`);
+        res.status(201).json(user);
+      });
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      res.status(500).json({ message: `Registration failed: ${error.message}` });
+    }
+  });
+
+  app.put("/api/user/profile", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+    
+    try {
+      const userId = req.user?.id;
+      const profileData = req.body;
+      
+      // Basic validation
+      if (!userId) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+      
+      // Don't allow changing sensitive fields through this endpoint
+      delete profileData.password;
+      delete profileData.passwordHash;
+      delete profileData.role;
+      delete profileData.organizationId;
+      
+      console.log(`Updating profile for user ${userId}:`, profileData);
+      
+      const updatedUser = await storage.updateUserProfile(userId, profileData);
+      
+      // Update the session user data
+      req.session.passport.user = updatedUser.id;
+      
+      res.json(updatedUser);
+    } catch (error: any) {
+      console.error("Error updating user profile:", error);
+      res.status(500).json({ error: "Failed to update profile: " + error.message });
+    }
   });
 }
