@@ -11,7 +11,8 @@ import { type Camp } from "@shared/schema";
 import { apiRequest } from "@/lib/api";
 import { EditCampDialog } from "@/components/edit-camp-dialog";
 import { CampScheduleDisplay } from "@/components/camp-schedule";
-import { ScheduleEditorDialog } from "@/components/schedule-editor-dialog";
+// Using the fixed schedule editor dialog
+import { ScheduleEditorDialog } from "@/components/schedule-editor-dialog-fixed";
 
 // Extended camp type to include permissions from the server
 interface CampWithPermissions extends Camp {
