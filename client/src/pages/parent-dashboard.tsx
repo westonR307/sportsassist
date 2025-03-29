@@ -343,8 +343,67 @@ function AddAthleteDialog({
     },
   });
 
+  // Create a separate file upload mutation
+  const fileUploadMutation = useMutation({
+    mutationFn: async (file: File) => {
+      // We need to use a custom function for FormData
+      // as apiRequest doesn't handle it directly
+      const uploadFile = async (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        // Use XMLHttpRequest which won't trigger dialog close
+        return new Promise<any>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', '/api/upload/profile-photo', true);
+          
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              try {
+                const data = JSON.parse(xhr.responseText);
+                resolve(data);
+              } catch (e) {
+                reject(new Error('Invalid response format'));
+              }
+            } else {
+              reject(new Error('Upload failed'));
+            }
+          };
+          
+          xhr.onerror = () => {
+            reject(new Error('Network error'));
+          };
+          
+          xhr.send(formData);
+        });
+      };
+      
+      return await uploadFile(file);
+    },
+    onSuccess: (data) => {
+      setProfilePhotoUrl(data.url);
+      form.setValue('profilePhoto', data.url);
+      
+      toast({
+        title: "Upload Successful",
+        description: "Profile photo has been uploaded. Please complete the form to add the athlete.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Upload Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setUploading(false);
+    }
+  });
+
   // Handle profile photo upload
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.preventDefault();
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -368,38 +427,11 @@ function AddAthleteDialog({
       return;
     }
 
+    // Prevent the dialog from closing
+    event.stopPropagation();
+    
     setUploading(true);
-
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch('/api/upload/profile-photo', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to upload profile photo');
-      }
-
-      const data = await response.json();
-      setProfilePhotoUrl(data.url);
-      form.setValue('profilePhoto', data.url);
-
-      toast({
-        title: "Upload Successful",
-        description: "Profile photo has been uploaded. Please complete the form to add the athlete.",
-      });
-    } catch (error) {
-      toast({
-        title: "Upload Failed",
-        description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive",
-      });
-    } finally {
-      setUploading(false);
-    }
+    fileUploadMutation.mutate(file);
   };
 
   const onSubmit = (values: AddChildFormValues) => {
@@ -407,9 +439,24 @@ function AddAthleteDialog({
     addChildMutation.mutate(values);
   };
 
+  // Customize onOpenChange to prevent dialog from closing during upload
+  const handleOpenChange = (newOpen: boolean) => {
+    // If we're trying to close the dialog and we're uploading, block it
+    if (!newOpen && uploading) {
+      toast({
+        title: "Please wait",
+        description: "Please wait for the upload to complete before closing.",
+      });
+      return;
+    }
+    
+    // Otherwise proceed with normal onOpenChange
+    onOpenChange(newOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-[600px]" closeButtonDisabled={uploading}>
         <DialogHeader>
           <DialogTitle>Add an Athlete</DialogTitle>
           <DialogDescription>
