@@ -69,7 +69,7 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [currentTab, setCurrentTab] = React.useState("details");
+  const [currentTab, setCurrentTab] = React.useState<"details" | "schedule" | "location" | "pricing">("details");
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -233,7 +233,20 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Camp</DialogTitle>
+          <DialogTitle className="flex justify-between items-center">
+            Edit Camp
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setCurrentTab("schedule")}
+                type="button"
+              >
+                <Clock className="h-4 w-4 mr-1" />
+                View Schedule
+              </Button>
+            </div>
+          </DialogTitle>
           <DialogDescription>
             Update the information for your camp.
           </DialogDescription>
@@ -244,7 +257,7 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
             <Tabs
               defaultValue="details"
               value={currentTab}
-              onValueChange={setCurrentTab}
+              onValueChange={(value) => setCurrentTab(value as "details" | "schedule" | "location" | "pricing")}
               className="w-full"
             >
               <TabsList className="grid w-full grid-cols-4">
