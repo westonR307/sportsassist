@@ -87,6 +87,8 @@ function AuthPage() {
       setLocation("/parent-onboarding");
     } else if (user.role === "parent") {
       setLocation("/parent-dashboard");
+    } else if (user.role === "athlete") {
+      setLocation("/athlete-dashboard"); // Will create this route later
     } else {
       setLocation("/");
     }
@@ -258,7 +260,7 @@ function AuthPage() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>I am a</FormLabel>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-3 gap-3">
                               <Button
                                 type="button"
                                 variant={field.value === "parent" ? "default" : "outline"}
@@ -274,6 +276,14 @@ function AuthPage() {
                                 onClick={() => registerForm.setValue("role", "camp_creator")}
                               >
                                 Camp Organizer
+                              </Button>
+                              <Button
+                                type="button"
+                                variant={field.value === "athlete" ? "default" : "outline"}
+                                className="w-full"
+                                onClick={() => registerForm.setValue("role", "athlete")}
+                              >
+                                Athlete (16+)
                               </Button>
                             </div>
                             <FormMessage />

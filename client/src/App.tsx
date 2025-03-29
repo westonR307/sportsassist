@@ -32,6 +32,10 @@ function DashboardRouter() {
   if (user?.role === "parent") {
     return <ParentDashboard />;
   }
+
+  if (user?.role === "athlete") {
+    return <Redirect to="/athlete-dashboard" />;
+  }
   
   return <Dashboard />;
 }
@@ -65,6 +69,10 @@ function Router() {
       <ProtectedRoute path="/custom-fields" component={CustomFieldsPage} />
       <ProtectedRoute path="/parent-dashboard" component={ParentDashboardRouter} />
       <ProtectedRoute path="/parent-onboarding" component={ParentOnboardingPage} />
+      <ProtectedRoute 
+        path="/athlete-dashboard" 
+        component={Dashboard} // Temporarily use the regular dashboard - we'll create a dedicated page later
+      />
       <Route component={NotFound} />
     </Switch>
   );
