@@ -344,45 +344,129 @@ function AddAthleteDialog({
     addChildMutation.mutate(values);
   };
 
-  // Create a wrapper function for the dialog's onOpenChange
-  // that prevents closing when a form is being submitted
-  const handleDialogOpenChange = (open: boolean) => {
-    if (!open && addChildMutation.isPending) {
+  // Handle file upload directly - outside of any form context
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // File size validation (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
       toast({
-        title: "Please wait",
-        description: "Please wait for the form submission to complete.",
+        title: "File too large",
+        description: "Profile photo must be less than 5MB",
+        variant: "destructive",
       });
       return;
     }
-    
-    onOpenChange(open);
+
+    // File type validation
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload an image file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/upload/profile-photo', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload profile photo');
+      }
+
+      const data = await response.json();
+      setProfilePhotoUrl(data.url);
+      form.setValue('profilePhoto', data.url);
+
+      toast({
+        title: "Upload Successful",
+        description: "Your profile photo has been uploaded",
+      });
+    } catch (error) {
+      toast({
+        title: "Upload Failed",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
-      <DialogContent className="sm:max-w-[600px]" onPointerDownOutside={(e) => {
-        // Prevent dialog from closing when clicking outside during form submission
-        if (addChildMutation.isPending) {
-          e.preventDefault();
-        }
-      }}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Add an Athlete</DialogTitle>
           <DialogDescription>
             Create a profile for your athlete to register for camps.
           </DialogDescription>
         </DialogHeader>
+        
+        {/* Photo upload section - completely separate from the form */}
+        <div className="mb-6 border-b pb-4">
+          <h3 className="text-md font-semibold mb-3">Profile Photo (Optional)</h3>
+          <div className="flex flex-col items-center sm:flex-row sm:items-start gap-4">
+            <div className="relative w-28 h-28 overflow-hidden rounded-full bg-muted flex-shrink-0 flex items-center justify-center">
+              {profilePhotoUrl ? (
+                <img
+                  src={profilePhotoUrl}
+                  alt="Profile"
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <User className="h-10 w-10 text-muted-foreground" />
+              )}
+            </div>
+            <div className="space-y-4 flex-1">
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Add a profile photo for this athlete
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    onClick={() => document.getElementById('athlete-profile-photo')?.click()}
+                    disabled={uploading}
+                    className="relative"
+                  >
+                    {uploading ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Upload className="h-4 w-4 mr-2" />
+                    )}
+                    {uploading ? 'Uploading...' : 'Upload Photo'}
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    JPG, PNG or GIF (max 5MB)
+                  </span>
+                </div>
+                <input
+                  id="athlete-profile-photo"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Form section - separate from photo upload */}
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" onClick={(e) => e.stopPropagation()}>
-            {/* Profile Photo Upload Section */}
-            <ProfilePhotoUploader
-              currentPhotoUrl={profilePhotoUrl}
-              onPhotoUploaded={(url) => {
-                setProfilePhotoUrl(url);
-                form.setValue('profilePhoto', url);
-              }}
-              disabled={addChildMutation.isPending}
-            />
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
