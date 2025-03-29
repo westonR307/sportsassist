@@ -317,6 +317,10 @@ function AddAthleteDialog({
 
   const addChildMutation = useMutation({
     mutationFn: async (values: AddChildFormValues) => {
+      // Make sure profile photo URL from state is included
+      if (profilePhotoUrl) {
+        values.profilePhoto = profilePhotoUrl;
+      }
       const res = await apiRequest("POST", "/api/parent/children", values);
       return await res.json();
     },
@@ -324,6 +328,7 @@ function AddAthleteDialog({
       queryClient.invalidateQueries({ queryKey: ["/api/parent/children"] });
       onOpenChange(false);
       form.reset();
+      setProfilePhotoUrl(""); // Clear the profile photo URL state
       toast({
         title: "Athlete added",
         description: "Your athlete has been added successfully.",
@@ -384,7 +389,7 @@ function AddAthleteDialog({
 
       toast({
         title: "Upload Successful",
-        description: "Profile photo has been uploaded",
+        description: "Profile photo has been uploaded. Please complete the form to add the athlete.",
       });
     } catch (error) {
       toast({
@@ -398,10 +403,7 @@ function AddAthleteDialog({
   };
 
   const onSubmit = (values: AddChildFormValues) => {
-    // Make sure the profile photo URL is included
-    if (profilePhotoUrl) {
-      values.profilePhoto = profilePhotoUrl;
-    }
+    // The profile photo URL will be included in the mutationFn
     addChildMutation.mutate(values);
   };
 
