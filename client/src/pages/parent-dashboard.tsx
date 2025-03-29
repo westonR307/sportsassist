@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Loader2, Plus, User, CalendarDays, ListChecks, Medal, Award, Info } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { DashboardLayout } from "./dashboard";
+import { ParentSidebar } from "@/components/parent-sidebar";
 import { Child } from "@shared/schema";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +40,20 @@ const addChildSchema = z.object({
 
 type AddChildFormValues = z.infer<typeof addChildSchema>;
 
+// Parent Dashboard Layout component
+interface ParentDashboardLayoutProps {
+  children: React.ReactNode;
+}
+
+function ParentDashboardLayout({ children }: ParentDashboardLayoutProps) {
+  return (
+    <div className="flex min-h-screen">
+      <ParentSidebar />
+      <div className="flex-1 p-6 md:p-8">{children}</div>
+    </div>
+  );
+}
+
 export default function ParentDashboard() {
   const { user } = useAuth();
   const [addChildDialogOpen, setAddChildDialogOpen] = React.useState(false);
@@ -55,7 +69,7 @@ export default function ParentDashboard() {
   });
 
   return (
-    <DashboardLayout>
+    <ParentDashboardLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">My Athletes</h1>
@@ -101,7 +115,7 @@ export default function ParentDashboard() {
         open={addChildDialogOpen} 
         onOpenChange={setAddChildDialogOpen} 
       />
-    </DashboardLayout>
+    </ParentDashboardLayout>
   );
 }
 

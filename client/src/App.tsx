@@ -3,13 +3,14 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { AuthProvider } from "@/hooks/use-auth";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
 
 // Import pages
 import HomePage from "@/pages/home-page";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
+import ParentDashboard from "@/pages/parent-dashboard";
 import ReportsPage from "@/pages/reports-page";
 import TeamPage from "@/pages/team-page";
 import SettingsPage from "@/pages/settings-page";
@@ -17,12 +18,23 @@ import CampViewPage from "@/pages/camp-view-page";
 import CustomFieldsPage from "@/pages/custom-fields-page";
 import { ProtectedRoute } from "./lib/protected-route";
 
+// Component to handle dashboard routing based on user role
+function DashboardRouter() {
+  const { user } = useAuth();
+  
+  if (user?.role === "parent") {
+    return <ParentDashboard />;
+  }
+  
+  return <Dashboard />;
+}
+
 function Router() {
   return (
     <Switch>
       <Route path="/" component={() => <Redirect to="/dashboard" />} />
       <Route path="/auth" component={AuthPage} />
-      <ProtectedRoute path="/dashboard" component={Dashboard} />
+      <ProtectedRoute path="/dashboard" component={DashboardRouter} />
       <ProtectedRoute path="/dashboard/reports" component={ReportsPage} />
       <ProtectedRoute path="/dashboard/team" component={TeamPage} />
       <ProtectedRoute path="/dashboard/settings" component={SettingsPage} />
