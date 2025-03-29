@@ -404,9 +404,37 @@ function AddAthleteDialog({
     }
   };
 
+  // Custom handler for dialog open/close to prevent closing during upload
+  const handleOpenChange = (newOpenState: boolean) => {
+    // Prevent dialog from closing if we're currently uploading
+    if (!newOpenState && uploading) {
+      toast({
+        title: "Please wait",
+        description: "Please wait until the photo upload is complete.",
+        variant: "destructive"
+      });
+      return;
+    }
+    onOpenChange(newOpenState);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent 
+        className="sm:max-w-[600px]"
+        onInteractOutside={(e) => {
+          // Prevent closing when clicking outside if we're uploading
+          if (uploading) {
+            e.preventDefault();
+          }
+        }}
+        onEscapeKeyDown={(e) => {
+          // Prevent closing when pressing escape if we're uploading
+          if (uploading) {
+            e.preventDefault();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Add an Athlete</DialogTitle>
           <DialogDescription>
