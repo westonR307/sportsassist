@@ -34,23 +34,21 @@ function SidebarLink({ to, icon, children, className }: SidebarLinkProps) {
   const active = location === to;
 
   return (
-    <SheetClose asChild>
-      <Link href={to}>
-        <a
-          className={cn(
-            "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
-            active
-              ? "bg-accent text-accent-foreground"
-              : "hover:bg-accent hover:text-accent-foreground",
-            className
-          )}
-        >
-          {icon}
-          <span>{children}</span>
-          {active && <ChevronRight size={16} className="ml-auto" />}
-        </a>
-      </Link>
-    </SheetClose>
+    <Link href={to}>
+      <a
+        className={cn(
+          "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+          active
+            ? "bg-accent text-accent-foreground"
+            : "hover:bg-accent hover:text-accent-foreground",
+          className
+        )}
+      >
+        {icon}
+        <span>{children}</span>
+        {active && <ChevronRight size={16} className="ml-auto" />}
+      </a>
+    </Link>
   );
 }
 
@@ -94,21 +92,53 @@ export function ParentSidebar() {
       </div>
       <div className="flex-1 overflow-auto">
         <nav className="grid items-start px-2 text-sm font-medium">
-          <SidebarLink to="/dashboard" icon={<Home size={20} />}>
-            Dashboard
-          </SidebarLink>
-          <SidebarLink to="/dashboard/my-athletes" icon={<UserPlus size={20} />}>
-            My Athletes
-          </SidebarLink>
-          <SidebarLink to="/dashboard/registrations" icon={<Calendar size={20} />}>
-            Registrations
-          </SidebarLink>
-          <SidebarLink to="/dashboard/camps" icon={<Archive size={20} />}>
-            Available Camps
-          </SidebarLink>
-          <SidebarLink to="/dashboard/settings" icon={<Settings size={20} />}>
-            Settings
-          </SidebarLink>
+          {isMobile ? (
+            <>
+              <div onClick={() => setIsSheetOpen(false)}>
+                <SidebarLink to="/dashboard" icon={<Home size={20} />}>
+                  Dashboard
+                </SidebarLink>
+              </div>
+              <div onClick={() => setIsSheetOpen(false)}>
+                <SidebarLink to="/dashboard/my-athletes" icon={<UserPlus size={20} />}>
+                  My Athletes
+                </SidebarLink>
+              </div>
+              <div onClick={() => setIsSheetOpen(false)}>
+                <SidebarLink to="/dashboard/registrations" icon={<Calendar size={20} />}>
+                  Registrations
+                </SidebarLink>
+              </div>
+              <div onClick={() => setIsSheetOpen(false)}>
+                <SidebarLink to="/dashboard/camps" icon={<Archive size={20} />}>
+                  Available Camps
+                </SidebarLink>
+              </div>
+              <div onClick={() => setIsSheetOpen(false)}>
+                <SidebarLink to="/dashboard/settings" icon={<Settings size={20} />}>
+                  Settings
+                </SidebarLink>
+              </div>
+            </>
+          ) : (
+            <>
+              <SidebarLink to="/dashboard" icon={<Home size={20} />}>
+                Dashboard
+              </SidebarLink>
+              <SidebarLink to="/dashboard/my-athletes" icon={<UserPlus size={20} />}>
+                My Athletes
+              </SidebarLink>
+              <SidebarLink to="/dashboard/registrations" icon={<Calendar size={20} />}>
+                Registrations
+              </SidebarLink>
+              <SidebarLink to="/dashboard/camps" icon={<Archive size={20} />}>
+                Available Camps
+              </SidebarLink>
+              <SidebarLink to="/dashboard/settings" icon={<Settings size={20} />}>
+                Settings
+              </SidebarLink>
+            </>
+          )}
         </nav>
       </div>
       <div className="mt-auto p-2">
@@ -124,17 +154,15 @@ export function ParentSidebar() {
               </p>
             </div>
           </div>
-          <SheetClose asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLogout}
-              disabled={logoutMutation.isPending}
-            >
-              <LogOut size={20} />
-              <span className="sr-only">Log out</span>
-            </Button>
-          </SheetClose>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleLogout}
+            disabled={logoutMutation.isPending}
+          >
+            <LogOut size={20} />
+            <span className="sr-only">Log out</span>
+          </Button>
         </div>
       </div>
     </div>

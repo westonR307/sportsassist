@@ -2,7 +2,7 @@ import React from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Loader2, Plus, User, CalendarDays, ListChecks, Medal, Award, Info } from "lucide-react";
+import { Loader2, Plus, User, CalendarDays, ListChecks, Medal, Award, Info, LogOut } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ParentSidebar } from "@/components/parent-sidebar";
 import { Child } from "@shared/schema";
@@ -55,7 +55,7 @@ function ParentDashboardLayout({ children }: ParentDashboardLayoutProps) {
 }
 
 export default function ParentDashboard() {
-  const { user } = useAuth();
+  const { user, logoutMutation } = useAuth();
   const [addChildDialogOpen, setAddChildDialogOpen] = React.useState(false);
   
   // Query to fetch children data for this parent
@@ -67,16 +67,30 @@ export default function ParentDashboard() {
     queryKey: ["/api/parent/children"],
     enabled: !!user && user.role === "parent",
   });
+  
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
 
   return (
     <ParentDashboardLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">My Athletes</h1>
-          <Button onClick={() => setAddChildDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Athlete
-          </Button>
+          <div className="flex space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={handleLogout}
+              className="hidden md:flex"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+            <Button onClick={() => setAddChildDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Athlete
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (
