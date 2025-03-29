@@ -34,6 +34,8 @@ import { db } from "./db";
 import { eq } from "drizzle-orm";
 import passport from "passport";
 import { sendInvitationEmail } from "./utils/email";
+import { uploadConfig, getFileUrl } from "./utils/file-upload";
+import path from 'path';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2025-02-24.acacia",
@@ -50,12 +52,50 @@ export async function registerRoutes(app: Express) {
     next();
   });
 
+  // Serve uploaded files from the uploads directory
+  app.use('/uploads', (req, res, next) => {
+    // Add proper Cache-Control for static files
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day cache
+    next();
+  }, (req, res, next) => {
+    const filePath = path.join('./uploads', req.url);
+    res.sendFile(filePath, { root: '.' });
+  });
+
   // Add health check endpoint
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
   });
 
   setupAuth(app);
+  
+  // File upload endpoints
+  app.post('/api/upload/profile-photo', (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      console.log("Upload attempt without authentication");
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    next();
+  }, uploadConfig.profilePhoto.single('file'), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+      
+      // Return the file URL that can be used to access the file
+      const fileUrl = getFileUrl(req.file.filename);
+      console.log(`Profile photo uploaded: ${fileUrl} by user ${req.user?.id}`);
+      
+      res.json({
+        url: fileUrl,
+        originalName: req.file.originalname,
+        size: req.file.size
+      });
+    } catch (error) {
+      console.error("Error handling file upload:", error);
+      res.status(500).json({ message: "File upload failed" });
+    }
+  });
   
   // User profile update endpoint
   app.put("/api/user/profile", async (req, res) => {
