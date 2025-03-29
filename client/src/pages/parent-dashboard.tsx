@@ -6,7 +6,7 @@ import { Loader2, Plus, User, CalendarDays, ListChecks, Medal, Award, Info, LogO
 import { useQuery } from "@tanstack/react-query";
 import { ParentSidebar } from "@/components/parent-sidebar";
 import { Child } from "@shared/schema";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
   Form,
