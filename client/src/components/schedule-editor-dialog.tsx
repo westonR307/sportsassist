@@ -30,15 +30,20 @@ export function ScheduleEditorDialog({ open, onOpenChange, camp }: ScheduleEdito
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch the camp's schedules
-  const { data: scheduleData, refetch } = useQuery({
+  const { data: scheduleData, refetch, isLoading: isQueryLoading } = useQuery({
     queryKey: ['/api/camps', camp.id, 'schedules'],
     enabled: open,
+    refetchOnWindowFocus: false,
+    staleTime: 0, // Always get fresh data when refetching
     queryFn: async () => {
+      console.log(`Fetching schedules for camp ${camp.id}`);
       const res = await fetch(`/api/camps/${camp.id}/schedules`);
       if (!res.ok) {
         throw new Error('Failed to fetch schedules');
       }
-      return res.json();
+      const data = await res.json();
+      console.log("Schedule data fetched:", data);
+      return data;
     }
   });
 
@@ -46,7 +51,14 @@ export function ScheduleEditorDialog({ open, onOpenChange, camp }: ScheduleEdito
   useEffect(() => {
     if (open) {
       setIsLoading(true);
-      refetch();
+      refetch().catch(error => {
+        console.error("Failed to fetch schedules:", error);
+        setIsLoading(false);
+      });
+    } else {
+      // Reset state when dialog closes
+      setIsLoading(true);
+      setSchedules([]);
     }
   }, [open, refetch]);
   
