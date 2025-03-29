@@ -30,7 +30,7 @@ export function ScheduleEditorDialog({ open, onOpenChange, camp }: ScheduleEdito
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch the camp's schedules
-  const { data: scheduleData } = useQuery({
+  const { data: scheduleData, refetch } = useQuery({
     queryKey: ['/api/camps', camp.id, 'schedules'],
     enabled: open,
     queryFn: async () => {
@@ -42,6 +42,14 @@ export function ScheduleEditorDialog({ open, onOpenChange, camp }: ScheduleEdito
     }
   });
 
+  // Refetch schedules when dialog is opened
+  useEffect(() => {
+    if (open) {
+      setIsLoading(true);
+      refetch();
+    }
+  }, [open, refetch]);
+  
   // Initialize schedules state when data is loaded
   useEffect(() => {
     if (scheduleData && scheduleData.schedules) {
