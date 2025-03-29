@@ -4,6 +4,7 @@ import {
   organizations,
   invitations,
   children,
+  childSports,
   campSports,
   registrations,
   campSchedules,
@@ -435,15 +436,62 @@ export class DatabaseStorage implements IStorage {
       .where(eq(invitations.organizationId, organizationId));
   }
   async getChildrenByParent(parentId: number): Promise<Child[]> {
-    return await db.select()
+    // First get all children
+    const childrenData = await db.select()
       .from(children)
       .where(eq(children.parentId, parentId));
+    
+    // For each child, get their sports interests
+    const extendedChildren = await Promise.all(childrenData.map(async (child) => {
+      const childSportsData = await db.select()
+        .from(childSports)
+        .where(eq(childSports.childId, child.id));
+      
+      // Add sportsInterests property if there are any
+      if (childSportsData.length > 0) {
+        return {
+          ...child,
+          sportsInterests: childSportsData.map(sport => ({
+            sportId: sport.sportId,
+            skillLevel: sport.skillLevel,
+            preferredPositions: sport.preferredPositions,
+            currentTeam: sport.currentTeam
+          }))
+        };
+      }
+      
+      return child;
+    }));
+    
+    return extendedChildren;
   }
 
   async getChild(childId: number): Promise<Child | undefined> {
+    // Get the child
     const [child] = await db.select()
       .from(children)
       .where(eq(children.id, childId));
+    
+    if (!child) return undefined;
+    
+    // Get sports interests
+    const childSportsData = await db.select()
+      .from(childSports)
+      .where(eq(childSports.childId, childId));
+    
+    // Add sportsInterests property if there are any
+    if (childSportsData.length > 0) {
+      return {
+        ...child,
+        sportsInterests: childSportsData.map(sport => ({
+          sportId: sport.sportId,
+          skillLevel: sport.skillLevel,
+          preferredPositions: sport.preferredPositions,
+          currentTeam: sport.currentTeam
+        }))
+      };
+    }
+    
     return child;
   }
   

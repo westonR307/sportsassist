@@ -1,14 +1,8 @@
-import React, { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Loader2, Plus, User, CalendarDays, ListChecks, Medal, Award, Info, LogOut, Trash, Upload } from "lucide-react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { ParentSidebar } from "@/components/parent-sidebar";
+import React, { useState, useEffect } from "react";
 import { Child } from "@shared/schema";
 import { ExtendedChild } from "@shared/child-types";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -18,53 +12,44 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertChildSchema } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Badge } from "@/components/ui/badge";
-import { ViewAthleteDialog } from "@/components/view-athlete-dialog";
-import { EditAthleteDialog } from "@/components/edit-athlete-dialog";
-import { ProfilePhotoUploader } from "@/components/profile-photo-uploader";
+import { useMutation } from "@tanstack/react-query";
+import { Loader2, Plus, Trash } from "lucide-react";
 
-// Sport list and mapping data
+// Sport list and mapping data - should match parent-dashboard.tsx
 const sportsList = [
-  "Archery", "Badminton", "Baseball", "Basketball", "Biathlon",
-  "Billiards", "Bobsleigh", "Bodybuilding", "Bowling", "Boxing",
-  "Canoeing", "Cheerleading", "Chess", "Climbing", "Cricket",
-  "CrossFit", "Curling", "Cycling", "Darts", "Equestrian",
-  "Fencing", "Field Hockey", "Figure Skating", "Fishing", "Football (American)",
-  "Frisbee (Ultimate)", "Golf", "Gymnastics", "Handball", "Hockey (Ice)",
-  "Hockey (Roller)", "Judo", "Karate", "Kayaking", "Kickboxing",
-  "Lacrosse", "Mixed Martial Arts (MMA)", "Motocross", "Netball", "Paddleboarding",
-  "Paintball", "Parkour", "Pickleball", "Powerlifting", "Racquetball",
-  "Rock Climbing", "Rowing", "Rugby", "Running", "Sailing",
-  "Skateboarding", "Skiing", "Snowboarding", "Soccer", "Softball",
-  "Speed Skating", "Squash", "Surfing", "Swimming", "Table Tennis",
-  "Taekwondo", "Tennis", "Track and Field", "Triathlon", "Volleyball",
-  "Water Polo", "Weightlifting", "Wrestling", "Yoga", "Zumba"
-].sort();
+  "Archery", "Badminton", "Baseball", "Basketball", "Biathlon", "Bocce", "Bowling", "Boxing",
+  "Canoeing", "Cheerleading", "Chess", "Cricket", "Croquet", "Cross Country", "Curling", "Cycling",
+  "Dance", "Diving", "Dodgeball", "Equestrian", "Fencing", "Field Hockey", "Figure Skating",
+  "Fishing", "Flag Football", "Football", "Frisbee", "Golf", "Gymnastics", "Handball", "Hiking",
+  "Hockey", "Horseback Riding", "Judo", "Karate", "Kayaking", "Kickball", "Lacrosse", "Martial Arts",
+  "Motocross", "Paintball", "Pickleball", "Ping Pong", "Quidditch", "Racquetball", "Rodeo",
+  "Roller Derby", "Roller Skating", "Rowing", "Rugby", "Running", "Sailing", "Skateboarding",
+  "Skiing", "Snowboarding", "Soccer", "Softball", "Speed Skating", "Squash", "Surfing", "Swimming",
+  "Table Tennis", "Taekwondo", "Tennis", "Track and Field", "Triathlon", "Ultimate Frisbee", 
+  "Volleyball", "Water Polo", "Weightlifting", "Wrestling", "Yoga", "Zumba",
+];
 
-// Mapping sport names to IDs based on the database
+// Create a map of sport names to IDs (matching server)
 const sportsMap: Record<string, number> = {
-  Archery: 1, Badminton: 2, Baseball: 3, Basketball: 4, Biathlon: 5,
-  Billiards: 6, Bobsleigh: 7, Bodybuilding: 8, Bowling: 9, Boxing: 10,
-  Canoeing: 11, Cheerleading: 12, Chess: 13, Climbing: 14, Cricket: 15,
-  CrossFit: 16, Curling: 17, Cycling: 18, Darts: 19, Equestrian: 20,
-  "Field Hockey": 22, "Figure Skating": 23, Fishing: 24, "Football (American)": 25,
-  "Frisbee (Ultimate)": 26, Golf: 27, Gymnastics: 28, Handball: 29, "Hockey (Ice)": 30,
-  "Hockey (Roller)": 31, Judo: 32, Karate: 33, Kayaking: 34, Kickboxing: 35,
-  Lacrosse: 36, "Mixed Martial Arts (MMA)": 37, Motocross: 38, Netball: 39, Paddleboarding: 40,
-  Paintball: 41, Parkour: 42, Pickleball: 43, Powerlifting: 44, Racquetball: 45,
-  "Rock Climbing": 46, Rowing: 47, Rugby: 48, Running: 49, Sailing: 50,
-  Skateboarding: 51, Skiing: 52, Snowboarding: 53, Soccer: 54, Softball: 55,
-  "Speed Skating": 56, Squash: 57, Surfing: 58, Swimming: 59, "Table Tennis": 60,
-  Taekwondo: 61, Tennis: 62, "Track and Field": 63, Triathlon: 64, Volleyball: 65,
-  "Water Polo": 66, Weightlifting: 67, Wrestling: 68, Yoga: 69, Zumba: 70,
+  Archery: 1, Badminton: 2, Baseball: 3, Basketball: 4, Biathlon: 5, Bocce: 6, Bowling: 7, Boxing: 8,
+  Canoeing: 9, Cheerleading: 10, Chess: 11, Cricket: 12, Croquet: 13, "Cross Country": 14, Curling: 15,
+  Cycling: 16, Dance: 17, Diving: 18, Dodgeball: 19, Equestrian: 20, Fencing: 21, "Field Hockey": 22,
+  "Figure Skating": 23, Fishing: 24, "Flag Football": 25, Football: 26, Frisbee: 27, Golf: 28,
+  Gymnastics: 29, Handball: 30, Hiking: 31, Hockey: 32, "Horseback Riding": 33, Judo: 34, Karate: 35,
+  Kayaking: 36, Kickball: 37, Lacrosse: 38, "Martial Arts": 39, Motocross: 40, Paintball: 41,
+  Pickleball: 42, "Ping Pong": 43, Quidditch: 44, Racquetball: 45, Rodeo: 46, "Roller Derby": 47,
+  "Roller Skating": 48, Rowing: 49, Rugby: 50, Running: 51, Sailing: 52, Skateboarding: 53, Skiing: 54,
+  Snowboarding: 55, Soccer: 56, Softball: 57, "Speed Skating": 58, Squash: 59, Surfing: 60, Swimming: 61,
+  "Table Tennis": 62, Taekwondo: 63, Tennis: 64, "Track and Field": 65, Triathlon: 66, "Ultimate Frisbee": 67,
+  Volleyball: 68, "Water Polo": 69, Weightlifting: 70, Wrestling: 71, Yoga: 72, Zumba: 73,
 };
 
-// Skill level options with expanded choices
+// Skill level options that match the schema
 const skillLevels = [
   "beginner", 
   "intermediate", 
@@ -78,8 +63,8 @@ const skillLevelNames: Record<string, string> = {
   "advanced": "Advanced - Significant experience"
 };
 
-// Schema for adding a child athlete
-const addChildSchema = z.object({
+// Schema for editing a child athlete (same as adding)
+const editChildSchema = z.object({
   fullName: z.string().min(2, { message: "Name must be at least 2 characters" }),
   dateOfBirth: z.string().refine(date => !isNaN(Date.parse(date)), {
     message: "Please enter a valid date",
@@ -95,7 +80,7 @@ const addChildSchema = z.object({
   jerseySize: z.string().optional(),
   height: z.string().optional(),
   weight: z.string().optional(),
-  profilePhoto: z.string().optional(), // Add profile photo field
+  profilePhoto: z.string().optional(),
   // Sports interests
   sportsInterests: z.array(z.object({
     sportId: z.number(),
@@ -108,383 +93,23 @@ const addChildSchema = z.object({
   communicationOptIn: z.boolean().default(true),
 });
 
-type AddChildFormValues = z.infer<typeof addChildSchema>;
+type EditChildFormValues = z.infer<typeof editChildSchema>;
 
-// Parent Dashboard Layout component
-interface ParentDashboardLayoutProps {
-  children: React.ReactNode;
+interface EditAthleteDialogProps {
+  athlete: ExtendedChild | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-function ParentDashboardLayout({ children }: ParentDashboardLayoutProps) {
-  return (
-    <div className="flex min-h-screen">
-      <ParentSidebar />
-      <div className="flex-1 p-6 md:p-8">{children}</div>
-    </div>
-  );
-}
-
-export default function ParentDashboard() {
-  const { user, logoutMutation } = useAuth();
-  const [addChildDialogOpen, setAddChildDialogOpen] = useState(false);
-  const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [selectedAthlete, setSelectedAthlete] = useState<ExtendedChild | null>(null);
-  
-  // Query to fetch children data for this parent
-  const {
-    data: children,
-    isLoading,
-    error,
-  } = useQuery<ExtendedChild[]>({
-    queryKey: ["/api/parent/children"],
-    enabled: !!user && user.role === "parent",
-  });
-  
-  const handleLogout = () => {
-    logoutMutation.mutate();
-  };
-
-  return (
-    <ParentDashboardLayout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">My Athletes</h1>
-          <div className="flex space-x-2">
-            <Button 
-              variant="outline" 
-              onClick={handleLogout}
-              className="hidden md:flex"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
-            <Button onClick={() => setAddChildDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Athlete
-            </Button>
-          </div>
-        </div>
-
-        {isLoading ? (
-          <div className="flex justify-center p-8">
-            <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-        ) : error ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-8">
-              <Info className="h-10 w-10 text-muted-foreground mb-2" />
-              <p className="text-muted-foreground">Failed to load your athletes.</p>
-              <p className="text-sm text-muted-foreground">Please try again later.</p>
-            </CardContent>
-          </Card>
-        ) : !children || children.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-8">
-              <p className="text-muted-foreground mb-4">No athletes added yet</p>
-              <Button onClick={() => setAddChildDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add your first athlete
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {children.map((child) => (
-              <AthleteCard 
-                key={child.id} 
-                child={child} 
-                onView={(athlete) => {
-                  setSelectedAthlete(athlete);
-                  setViewDialogOpen(true);
-                }}
-                onEdit={(athlete) => {
-                  setSelectedAthlete(athlete);
-                  setEditDialogOpen(true);
-                }}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Add Athlete Dialog */}
-      <AddAthleteDialog 
-        open={addChildDialogOpen} 
-        onOpenChange={setAddChildDialogOpen} 
-      />
-
-      {/* View Athlete Dialog */}
-      {selectedAthlete && (
-        <ViewAthleteDialog
-          athlete={selectedAthlete}
-          open={viewDialogOpen}
-          onOpenChange={setViewDialogOpen}
-          onEdit={() => {
-            setViewDialogOpen(false);
-            setEditDialogOpen(true);
-          }}
-        />
-      )}
-
-      {/* Edit Athlete Dialog */}
-      {selectedAthlete && (
-        <EditAthleteDialog
-          athlete={selectedAthlete}
-          open={editDialogOpen}
-          onOpenChange={setEditDialogOpen}
-        />
-      )}
-    </ParentDashboardLayout>
-  );
-}
-
-function AthleteCard({ 
-  child,
-  onView,
-  onEdit
-}: { 
-  child: ExtendedChild;
-  onView: (athlete: ExtendedChild) => void;
-  onEdit: (athlete: ExtendedChild) => void;
-}) {
-  const { toast } = useToast();
-  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string>(child.profilePhoto || "");
-  const [uploading, setUploading] = useState(false);
-
-  // Calculate age based on date of birth
-  const calculateAge = (birthDate: Date) => {
-    const today = new Date();
-    const birthDateObj = new Date(birthDate);
-    let age = today.getFullYear() - birthDateObj.getFullYear();
-    const m = today.getMonth() - birthDateObj.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDateObj.getDate())) {
-      age--;
-    }
-    return age;
-  };
-  
-  // Mutation to update athlete profile photo
-  const updateProfilePhotoMutation = useMutation({
-    mutationFn: async (photoUrl: string) => {
-      const res = await apiRequest("PUT", `/api/parent/children/${child.id}`, {
-        profilePhoto: photoUrl
-      });
-      return await res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/parent/children"] });
-      toast({
-        title: "Profile photo updated",
-        description: "The athlete's profile photo has been updated successfully.",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to update profile photo",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Photo upload handler
-  const handleProfilePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // File size validation (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: "Profile photo must be less than 5MB",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // File type validation
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: "Invalid file type",
-        description: "Please upload an image file",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setUploading(true);
-
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch('/api/upload/profile-photo', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to upload profile photo');
-      }
-
-      const data = await response.json();
-      setProfilePhotoUrl(data.url);
-      
-      // After successful upload, update the athlete profile
-      updateProfilePhotoMutation.mutate(data.url);
-      
-    } catch (error) {
-      toast({
-        title: "Upload Failed",
-        description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive",
-      });
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  return (
-    <Card className="overflow-hidden flex flex-col">
-      <div className="h-2 bg-primary w-full" />
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <div className="flex items-center gap-3">
-            {/* Profile photo with upload capability */}
-            <div className="relative group">
-              <div className="h-12 w-12 rounded-full overflow-hidden bg-muted flex items-center justify-center">
-                {profilePhotoUrl ? (
-                  <img
-                    src={profilePhotoUrl}
-                    alt={child.fullName}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <User className="h-6 w-6 text-muted-foreground" />
-                )}
-              </div>
-              
-              {/* Upload overlay */}
-              <div 
-                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                onClick={() => document.getElementById(`athlete-photo-${child.id}`)?.click()}
-              >
-                <div className="bg-primary/70 rounded-full p-1">
-                  {uploading ? (
-                    <Loader2 className="h-4 w-4 text-white animate-spin" />
-                  ) : (
-                    <Upload className="h-4 w-4 text-white" />
-                  )}
-                </div>
-              </div>
-              <input
-                id={`athlete-photo-${child.id}`}
-                type="file"
-                accept="image/*"
-                onChange={handleProfilePhotoChange}
-                className="hidden"
-              />
-            </div>
-            
-            <CardTitle className="text-lg">{child.fullName}</CardTitle>
-          </div>
-          
-          <span className="text-xs bg-muted px-2 py-1 rounded">
-            {calculateAge(child.dateOfBirth)} years old
-          </span>
-        </div>
-        <CardDescription className="flex items-center gap-2">
-          <span>{new Date(child.dateOfBirth).toLocaleDateString()}</span>
-          {child.currentGrade && (
-            <span className="text-xs bg-muted px-2 py-1 rounded">
-              Grade: {child.currentGrade}
-            </span>
-          )}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-2 flex-grow">
-        {child.schoolName && (
-          <div className="flex items-center gap-2 text-sm">
-            <User className="h-4 w-4 text-muted-foreground" />
-            <span>School: {child.schoolName}</span>
-          </div>
-        )}
-        {child.sportsHistory && (
-          <div className="flex items-center gap-2 text-sm">
-            <Medal className="h-4 w-4 text-muted-foreground" />
-            <span title={child.sportsHistory}>
-              Sports History: {child.sportsHistory.length > 30 
-                ? `${child.sportsHistory.substring(0, 30)}...` 
-                : child.sportsHistory}
-            </span>
-          </div>
-        )}
-        {child.sportsInterests && child.sportsInterests.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {child.sportsInterests.map((sport, index) => {
-              // Get sport name from ID
-              const sportName = Object.keys(sportsMap).find(
-                name => sportsMap[name] === sport.sportId
-              ) || 'Unknown Sport';
-              
-              return (
-                <Badge key={index} variant="outline" className="flex items-center gap-1">
-                  <Award className="h-3 w-3" />
-                  {sportName} ({sport.skillLevel})
-                </Badge>
-              );
-            })}
-          </div>
-        )}
-        <div className="flex items-center gap-2 text-sm">
-          <CalendarDays className="h-4 w-4 text-muted-foreground" />
-          <span>Upcoming Registrations: 0</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm">
-          <ListChecks className="h-4 w-4 text-muted-foreground" />
-          <span>Completed Camps: 0</span>
-        </div>
-        {child.jerseySize && (
-          <div className="flex items-center gap-2 text-sm">
-            <Info className="h-4 w-4 text-muted-foreground" />
-            <span>Jersey/T-Shirt Size: {child.jerseySize}</span>
-          </div>
-        )}
-      </CardContent>
-      <CardFooter className="flex justify-between border-t pt-4">
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => onView(child)}
-        >
-          View Profile
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => onEdit(child)}
-        >
-          Edit Profile
-        </Button>
-      </CardFooter>
-    </Card>
-  );
-}
-
-function AddAthleteDialog({ 
+export function EditAthleteDialog({ 
+  athlete,
   open, 
   onOpenChange 
-}: { 
-  open: boolean; 
-  onOpenChange: (open: boolean) => void;
-}) {
+}: EditAthleteDialogProps) {
   const { toast } = useToast();
-  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string>("");
-  const [uploading, setUploading] = useState(false);
   
-  const form = useForm<AddChildFormValues>({
-    resolver: zodResolver(addChildSchema),
+  const form = useForm<EditChildFormValues>({
+    resolver: zodResolver(editChildSchema),
     defaultValues: {
       fullName: "",
       dateOfBirth: "",
@@ -500,7 +125,7 @@ function AddAthleteDialog({
       height: "",
       weight: "",
       profilePhoto: "",
-      sportsInterests: [], // Initialize empty sports interests array
+      sportsInterests: [], 
     },
   });
   
@@ -510,49 +135,77 @@ function AddAthleteDialog({
     control: form.control,
   });
 
-  const addChildMutation = useMutation({
-    mutationFn: async (values: AddChildFormValues) => {
-      // The profile photo field will already be set by the ProfilePhotoUploader
-      const res = await apiRequest("POST", "/api/parent/children", values);
+  // Set form values when athlete data changes
+  useEffect(() => {
+    if (athlete) {
+      // Format date of birth from ISO to YYYY-MM-DD for input[type="date"]
+      const dob = athlete.dateOfBirth 
+        ? new Date(athlete.dateOfBirth).toISOString().split('T')[0] 
+        : "";
+
+      form.reset({
+        fullName: athlete.fullName || "",
+        dateOfBirth: dob,
+        gender: athlete.gender || "male",
+        currentGrade: athlete.currentGrade || "",
+        schoolName: athlete.schoolName || "",
+        sportsHistory: athlete.sportsHistory || "",
+        emergencyContact: athlete.emergencyContact || "",
+        emergencyPhone: athlete.emergencyPhone || "",
+        medicalInformation: athlete.medicalInformation || "",
+        specialNeeds: athlete.specialNeeds || "",
+        jerseySize: athlete.jerseySize || "",
+        height: athlete.height || "",
+        weight: athlete.weight || "",
+        profilePhoto: athlete.profilePhoto || "",
+        sportsInterests: athlete.sportsInterests || [],
+        preferredContact: athlete.preferredContact || "email",
+        communicationOptIn: athlete.communicationOptIn === false ? false : true,
+      });
+    }
+  }, [athlete, form]);
+
+  const updateChildMutation = useMutation({
+    mutationFn: async (values: EditChildFormValues) => {
+      if (!athlete?.id) throw new Error("No athlete ID provided");
+      const res = await apiRequest("PUT", `/api/parent/children/${athlete.id}`, values);
       return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/parent/children"] });
       onOpenChange(false);
-      form.reset();
-      setProfilePhotoUrl(""); // Clear the profile photo URL state
       toast({
-        title: "Athlete added",
-        description: "Your athlete has been added successfully.",
+        title: "Athlete updated",
+        description: "Your athlete's profile has been updated successfully.",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to add athlete",
+        title: "Failed to update athlete",
         description: error.message,
         variant: "destructive",
       });
     },
   });
 
-  const onSubmit = (values: AddChildFormValues) => {
-    addChildMutation.mutate(values);
+  const onSubmit = (values: EditChildFormValues) => {
+    updateChildMutation.mutate(values);
   };
+
+  if (!athlete) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add an Athlete</DialogTitle>
+          <DialogTitle>Edit Athlete</DialogTitle>
           <DialogDescription>
-            Create a profile for your athlete to register for camps.
+            Update {athlete.fullName}'s profile information.
           </DialogDescription>
         </DialogHeader>
         
-        {/* Form section - separate from photo upload */}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -882,12 +535,12 @@ function AddAthleteDialog({
               </Button>
               <Button 
                 type="submit" 
-                disabled={addChildMutation.isPending}
+                disabled={updateChildMutation.isPending}
               >
-                {addChildMutation.isPending && (
+                {updateChildMutation.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Add Athlete
+                Save Changes
               </Button>
             </div>
           </form>
