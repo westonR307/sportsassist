@@ -108,21 +108,31 @@ export default function ParentDashboard() {
   return (
     <ParentDashboardLayout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">My Athletes</h1>
-          <div className="flex space-x-2">
-            <Button 
-              variant="outline" 
-              onClick={handleLogout}
-              className="hidden md:flex"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
-            <Button onClick={() => setAddChildDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Athlete
-            </Button>
+        <div className="bg-gradient-to-r from-primary-900/10 via-primary-800/5 to-background rounded-xl p-6 mb-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h1 className="text-3xl font-bold mb-1">My Athletes</h1>
+              <p className="text-muted-foreground">
+                Manage your athletes' profiles and registrations in one place
+              </p>
+            </div>
+            <div className="flex gap-3 self-end md:self-auto">
+              <Button 
+                variant="outline" 
+                onClick={handleLogout}
+                className="hidden md:flex"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+              <Button 
+                onClick={() => setAddChildDialogOpen(true)}
+                className="bg-primary hover:bg-primary/90"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Athlete
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -139,15 +149,86 @@ export default function ParentDashboard() {
             </CardContent>
           </Card>
         ) : !children || children.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-8">
-              <p className="text-muted-foreground mb-4">No athletes added yet</p>
-              <Button onClick={() => setAddChildDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add your first athlete
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl overflow-hidden">
+              <div className="px-6 py-12 md:py-16 md:px-10 flex flex-col md:flex-row items-center justify-between">
+                <div className="space-y-4 text-center md:text-left mb-6 md:mb-0">
+                  <h2 className="text-2xl font-bold">Welcome to Your Parent Dashboard!</h2>
+                  <p className="text-muted-foreground max-w-md">
+                    Get started by adding your athlete's profile. This will help us personalize 
+                    their sports camp experience and make registration easier.
+                  </p>
+                  <Button size="lg" onClick={() => setAddChildDialogOpen(true)} className="mt-2">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Your First Athlete
+                  </Button>
+                </div>
+                <div className="flex items-center justify-center">
+                  <div className="rounded-lg p-1 bg-white/20 backdrop-blur-sm">
+                    <div className="w-64 h-64 flex items-center justify-center overflow-hidden">
+                      <svg viewBox="0 0 100 100" className="w-full h-full text-primary opacity-90">
+                        <circle cx="50" cy="30" r="20" className="fill-current opacity-80" />
+                        <rect x="30" y="50" width="40" height="40" rx="5" className="fill-current opacity-60" />
+                        <circle cx="30" cy="65" r="8" className="fill-background" />
+                        <circle cx="70" cy="65" r="8" className="fill-background" />
+                        <path d="M 40 80 Q 50 85 60 80" className="stroke-background stroke-2 fill-none" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="overflow-hidden">
+                <div className="h-2 bg-blue-500 w-full" />
+                <CardHeader>
+                  <div className="mb-2 flex items-center justify-center bg-blue-100 w-12 h-12 rounded-full">
+                    <User className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <CardTitle>Create Profiles</CardTitle>
+                  <CardDescription>Add complete profiles for each of your athletes</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Build detailed athlete profiles with sports interests, experience levels, and important information.
+                  </p>
+                </CardContent>
+              </Card>
+              
+              <Card className="overflow-hidden">
+                <div className="h-2 bg-green-500 w-full" />
+                <CardHeader>
+                  <div className="mb-2 flex items-center justify-center bg-green-100 w-12 h-12 rounded-full">
+                    <CalendarDays className="h-6 w-6 text-green-600" />
+                  </div>
+                  <CardTitle>Register for Camps</CardTitle>
+                  <CardDescription>Find and register for upcoming sports camps</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Browse through upcoming camps, register your athletes, and manage their schedules all in one place.
+                  </p>
+                </CardContent>
+              </Card>
+              
+              <Card className="overflow-hidden">
+                <div className="h-2 bg-amber-500 w-full" />
+                <CardHeader>
+                  <div className="mb-2 flex items-center justify-center bg-amber-100 w-12 h-12 rounded-full">
+                    <Medal className="h-6 w-6 text-amber-600" />
+                  </div>
+                  <CardTitle>Track Progress</CardTitle>
+                  <CardDescription>Monitor your athletes' activities and achievements</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Keep track of completed camps, sports development, and skill progress over time.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {children.map((child) => (
@@ -306,126 +387,145 @@ function AthleteCard({
   };
 
   return (
-    <Card className="overflow-hidden flex flex-col">
-      <div className="h-2 bg-primary w-full" />
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <div className="flex items-center gap-3">
-            {/* Profile photo with upload capability */}
-            <div className="relative group">
-              <div className="h-12 w-12 rounded-full overflow-hidden bg-muted flex items-center justify-center">
-                {profilePhotoUrl ? (
-                  <img
-                    src={profilePhotoUrl}
-                    alt={child.fullName}
-                    className="h-full w-full object-cover"
-                  />
+    <Card className="overflow-hidden flex flex-col hover:shadow-lg transition-shadow duration-300">
+      <div className="h-2 bg-gradient-to-r from-primary to-primary/70 w-full" />
+      <div className="px-6 pt-6 pb-4">
+        <div className="flex items-start gap-4">
+          {/* Profile photo with upload capability */}
+          <div className="relative group">
+            <div className="h-16 w-16 rounded-full overflow-hidden bg-muted flex items-center justify-center shadow-sm border-2 border-background">
+              {profilePhotoUrl ? (
+                <img
+                  src={profilePhotoUrl}
+                  alt={child.fullName}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <User className="h-8 w-8 text-muted-foreground" />
+              )}
+            </div>
+            
+            {/* Upload overlay */}
+            <div 
+              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              onClick={() => document.getElementById(`athlete-photo-${child.id}`)?.click()}
+            >
+              <div className="bg-primary/80 rounded-full p-1.5 shadow-md">
+                {uploading ? (
+                  <Loader2 className="h-6 w-6 text-white animate-spin" />
                 ) : (
-                  <User className="h-6 w-6 text-muted-foreground" />
+                  <Upload className="h-5 w-5 text-white" />
                 )}
               </div>
-              
-              {/* Upload overlay */}
-              <div 
-                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                onClick={() => document.getElementById(`athlete-photo-${child.id}`)?.click()}
-              >
-                <div className="bg-primary/70 rounded-full p-1">
-                  {uploading ? (
-                    <Loader2 className="h-4 w-4 text-white animate-spin" />
-                  ) : (
-                    <Upload className="h-4 w-4 text-white" />
+            </div>
+            <input
+              id={`athlete-photo-${child.id}`}
+              type="file"
+              accept="image/*"
+              onChange={handleProfilePhotoChange}
+              className="hidden"
+            />
+          </div>
+          
+          <div className="flex-1">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="font-semibold text-lg tracking-tight">{child.fullName}</h3>
+                <div className="flex flex-wrap items-center gap-2 mt-1">
+                  <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                    {calculateAge(child.dateOfBirth)} years old
+                  </span>
+                  {child.currentGrade && (
+                    <span className="text-xs bg-muted/80 px-2 py-0.5 rounded-full">
+                      Grade: {child.currentGrade}
+                    </span>
                   )}
                 </div>
               </div>
-              <input
-                id={`athlete-photo-${child.id}`}
-                type="file"
-                accept="image/*"
-                onChange={handleProfilePhotoChange}
-                className="hidden"
-              />
             </div>
-            
-            <CardTitle className="text-lg">{child.fullName}</CardTitle>
           </div>
-          
-          <span className="text-xs bg-muted px-2 py-1 rounded">
-            {calculateAge(child.dateOfBirth)} years old
-          </span>
         </div>
-        <CardDescription className="flex items-center gap-2">
-          <span>{new Date(child.dateOfBirth).toLocaleDateString()}</span>
-          {child.currentGrade && (
-            <span className="text-xs bg-muted px-2 py-1 rounded">
-              Grade: {child.currentGrade}
-            </span>
-          )}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-2 flex-grow">
-        {child.schoolName && (
-          <div className="flex items-center gap-2 text-sm">
-            <User className="h-4 w-4 text-muted-foreground" />
-            <span>School: {child.schoolName}</span>
-          </div>
-        )}
-        {child.sportsHistory && (
-          <div className="flex items-center gap-2 text-sm">
-            <Medal className="h-4 w-4 text-muted-foreground" />
-            <span title={child.sportsHistory}>
-              Sports History: {child.sportsHistory.length > 30 
-                ? `${child.sportsHistory.substring(0, 30)}...` 
-                : child.sportsHistory}
-            </span>
-          </div>
-        )}
+        
+        {/* Sports interests badges */}
         {child.sportsInterests && child.sportsInterests.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
+          <div className="flex flex-wrap gap-1.5 mt-4">
             {child.sportsInterests.map((sport, index) => {
-              // Get sport name from ID using the shared utility
               const sportName = getSportName(sport.sportId);
+              const colors = {
+                beginner: "bg-blue-50 text-blue-600 border-blue-200",
+                intermediate: "bg-green-50 text-green-600 border-green-200",
+                advanced: "bg-amber-50 text-amber-600 border-amber-200"
+              };
+              const colorClass = colors[sport.skillLevel] || "bg-gray-50 text-gray-600 border-gray-200";
               
               return (
-                <Badge key={index} variant="outline" className="flex items-center gap-1">
-                  <Award className="h-3 w-3" />
-                  {sportName} ({sport.skillLevel})
+                <Badge 
+                  key={index} 
+                  variant="outline" 
+                  className={`flex items-center gap-1 py-1 border ${colorClass}`}
+                >
+                  <Award className="h-3.5 w-3.5" />
+                  {sportName} ({skillLevelNames[sport.skillLevel]})
                 </Badge>
               );
             })}
           </div>
         )}
+      </div>
+      
+      <div className="px-6 py-4 bg-muted/10 flex-grow space-y-2.5">
+        {child.schoolName && (
+          <div className="flex items-center gap-2 text-sm">
+            <User className="h-4 w-4 text-primary/70" />
+            <span>School: {child.schoolName}</span>
+          </div>
+        )}
+        {child.sportsHistory && (
+          <div className="flex items-start gap-2 text-sm">
+            <Medal className="h-4 w-4 text-primary/70 mt-0.5" />
+            <div>
+              <span className="font-medium">Sports History:</span>
+              <p className="text-muted-foreground">
+                {child.sportsHistory.length > 60 
+                  ? `${child.sportsHistory.substring(0, 60)}...` 
+                  : child.sportsHistory}
+              </p>
+            </div>
+          </div>
+        )}
         <div className="flex items-center gap-2 text-sm">
-          <CalendarDays className="h-4 w-4 text-muted-foreground" />
-          <span>Upcoming Registrations: 0</span>
+          <CalendarDays className="h-4 w-4 text-primary/70" />
+          <span>Upcoming Registrations: <span className="font-medium">0</span></span>
         </div>
         <div className="flex items-center gap-2 text-sm">
-          <ListChecks className="h-4 w-4 text-muted-foreground" />
-          <span>Completed Camps: 0</span>
+          <ListChecks className="h-4 w-4 text-primary/70" />
+          <span>Completed Camps: <span className="font-medium">0</span></span>
         </div>
         {child.jerseySize && (
           <div className="flex items-center gap-2 text-sm">
-            <Info className="h-4 w-4 text-muted-foreground" />
-            <span>Jersey/T-Shirt Size: {child.jerseySize}</span>
+            <Info className="h-4 w-4 text-primary/70" />
+            <span>Jersey/T-Shirt Size: <span className="font-medium">{child.jerseySize}</span></span>
           </div>
         )}
-      </CardContent>
-      <CardFooter className="flex justify-between border-t pt-4">
+      </div>
+      
+      <div className="px-6 py-4 border-t flex justify-between gap-3">
         <Button 
           variant="outline" 
           size="sm"
+          className="flex-1"
           onClick={() => onView(child)}
         >
           View Profile
         </Button>
         <Button 
-          variant="outline" 
           size="sm"
+          className="flex-1 bg-primary hover:bg-primary/90"
           onClick={() => onEdit(child)}
         >
           Edit Profile
         </Button>
-      </CardFooter>
+      </div>
     </Card>
   );
 }
