@@ -522,28 +522,59 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async updateChild(childId: number, childData: Partial<Omit<Child, "id">>): Promise<Child> {
+  async updateChild(childId: number, childData: Partial<Omit<Child, "id">> & { sportsInterests?: Array<{ sportId: number, skillLevel: SportLevel }> }): Promise<Child> {
     try {
-      const [updatedChild] = await db.update(children)
-        .set({
-          ...(childData.fullName !== undefined && { fullName: childData.fullName }),
-          ...(childData.dateOfBirth !== undefined && { dateOfBirth: childData.dateOfBirth }),
-          ...(childData.gender !== undefined && { gender: childData.gender }),
-          ...(childData.profilePhoto !== undefined && { profilePhoto: childData.profilePhoto }),
-          ...(childData.emergencyContact !== undefined && { emergencyContact: childData.emergencyContact }),
-          ...(childData.emergencyPhone !== undefined && { emergencyPhone: childData.emergencyPhone }),
-          ...(childData.emergencyRelation !== undefined && { emergencyRelation: childData.emergencyRelation }),
-          ...(childData.allergies !== undefined && { allergies: childData.allergies }),
-          ...(childData.medicalConditions !== undefined && { medicalConditions: childData.medicalConditions }),
-          ...(childData.medications !== undefined && { medications: childData.medications }),
-          ...(childData.specialNeeds !== undefined && { specialNeeds: childData.specialNeeds }),
-          ...(childData.preferredContact !== undefined && { preferredContact: childData.preferredContact }),
-          ...(childData.communicationOptIn !== undefined && { communicationOptIn: childData.communicationOptIn }),
-        })
-        .where(eq(children.id, childId))
-        .returning();
+      console.log("Updating child with data:", JSON.stringify(childData, null, 2));
       
-      return updatedChild;
+      // Use a transaction to ensure all updates happen together
+      return await db.transaction(async (trx) => {
+        // 1. Update the child record first
+        const [updatedChild] = await trx.update(children)
+          .set({
+            ...(childData.fullName !== undefined && { fullName: childData.fullName }),
+            ...(childData.dateOfBirth !== undefined && { dateOfBirth: childData.dateOfBirth }),
+            ...(childData.gender !== undefined && { gender: childData.gender }),
+            ...(childData.profilePhoto !== undefined && { profilePhoto: childData.profilePhoto }),
+            ...(childData.emergencyContact !== undefined && { emergencyContact: childData.emergencyContact }),
+            ...(childData.emergencyPhone !== undefined && { emergencyPhone: childData.emergencyPhone }),
+            ...(childData.emergencyRelation !== undefined && { emergencyRelation: childData.emergencyRelation }),
+            ...(childData.allergies !== undefined && { allergies: childData.allergies }),
+            ...(childData.medicalConditions !== undefined && { medicalConditions: childData.medicalConditions }),
+            ...(childData.medications !== undefined && { medications: childData.medications }),
+            ...(childData.specialNeeds !== undefined && { specialNeeds: childData.specialNeeds }),
+            ...(childData.preferredContact !== undefined && { preferredContact: childData.preferredContact }),
+            ...(childData.communicationOptIn !== undefined && { communicationOptIn: childData.communicationOptIn }),
+            ...(childData.currentGrade !== undefined && { currentGrade: childData.currentGrade }),
+            ...(childData.schoolName !== undefined && { schoolName: childData.schoolName }),
+            ...(childData.sportsHistory !== undefined && { sportsHistory: childData.sportsHistory }),
+            ...(childData.jerseySize !== undefined && { jerseySize: childData.jerseySize }),
+            ...(childData.height !== undefined && { height: childData.height }),
+            ...(childData.weight !== undefined && { weight: childData.weight }),
+          })
+          .where(eq(children.id, childId))
+          .returning();
+
+        // 2. If sportsInterests is included, update the child_sports records
+        if (childData.sportsInterests && childData.sportsInterests.length > 0) {
+          // First, delete any existing child_sports records
+          await trx.delete(childSports).where(eq(childSports.childId, childId));
+          
+          // Then insert the new ones
+          for (const sport of childData.sportsInterests) {
+            if (sport.sportId > 0) { // Only insert sports with valid IDs
+              await trx.insert(childSports).values({
+                childId: childId,
+                sportId: sport.sportId,
+                skillLevel: sport.skillLevel
+              });
+            }
+          }
+          
+          console.log(`Updated ${childData.sportsInterests.length} sports interests for child ${childId}`);
+        }
+        
+        return updatedChild;
+      });
     } catch (error) {
       console.error("Error updating child:", error);
       throw new Error("Failed to update child");
