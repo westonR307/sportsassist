@@ -64,21 +64,15 @@ const sportsMap: Record<string, number> = {
 // Skill level options with expanded choices
 const skillLevels = [
   "beginner", 
-  "beginner_intermediate",
   "intermediate", 
-  "intermediate_advanced",
-  "advanced", 
-  "elite"
+  "advanced"
 ];
 
 // Skill level display names
 const skillLevelNames: Record<string, string> = {
   "beginner": "Beginner - Just starting out",
-  "beginner_intermediate": "Beginner to Intermediate",
   "intermediate": "Intermediate - Some experience",
-  "intermediate_advanced": "Intermediate to Advanced",
-  "advanced": "Advanced - Significant experience",
-  "elite": "Elite - Competitive level"
+  "advanced": "Advanced - Significant experience"
 };
 
 // Schema for adding a child athlete
@@ -102,7 +96,7 @@ const addChildSchema = z.object({
   // Sports interests
   sportsInterests: z.array(z.object({
     sportId: z.number(),
-    skillLevel: z.enum(["beginner", "beginner_intermediate", "intermediate", "intermediate_advanced", "advanced", "elite"]),
+    skillLevel: z.enum(["beginner", "intermediate", "advanced"]),
     preferredPositions: z.array(z.string()).optional(),
     currentTeam: z.string().optional(),
   })).optional(),
