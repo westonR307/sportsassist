@@ -249,12 +249,12 @@ function ParentOnboardingPage() {
 
                   <div className="pt-4">
                     <h3 className="mb-4 text-lg font-medium">Address Information (Optional)</h3>
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div className="space-y-6">
                       <FormField
                         control={form.control}
                         name="address"
                         render={({ field }) => (
-                          <FormItem className="col-span-2">
+                          <FormItem>
                             <FormLabel>Street Address</FormLabel>
                             <FormControl>
                               <Input placeholder="123 Main St" {...field} />
@@ -263,6 +263,9 @@ function ParentOnboardingPage() {
                           </FormItem>
                         )}
                       />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
                       <FormField
                         control={form.control}
                         name="city"
@@ -276,34 +279,32 @@ function ParentOnboardingPage() {
                           </FormItem>
                         )}
                       />
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="state"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>State</FormLabel>
-                              <FormControl>
-                                <Input placeholder="CA" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="zip_code"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>ZIP Code</FormLabel>
-                              <FormControl>
-                                <Input placeholder="12345" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                      <FormField
+                        control={form.control}
+                        name="state"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>State</FormLabel>
+                            <FormControl>
+                              <Input placeholder="CA" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="zip_code"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>ZIP Code</FormLabel>
+                            <FormControl>
+                              <Input placeholder="12345" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
                   </div>
 
