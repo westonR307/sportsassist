@@ -50,13 +50,13 @@ import {
   children, 
   childSports 
 } from "@shared/schema";
-import { campSchedules } from "@shared/tables";
+import { campSchedules, campSports } from "@shared/tables";
+import { eq } from "drizzle-orm";
 import Stripe from "stripe";
 import { hashPassword } from "./utils";
 import { registerParentRoutes } from "./parent-routes";
 import { randomBytes } from "crypto";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
 import passport from "passport";
 import { sendInvitationEmail } from "./utils/email";
 import { uploadConfig, getFileUrl } from "./utils/file-upload";
@@ -654,6 +654,116 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ 
         message: "Failed to update camp",
         error: error.message
+      });
+    }
+  });
+  
+  // Route to get camp sports
+  app.get("/api/camps/:id/sports", async (req, res) => {
+    try {
+      const campId = parseInt(req.params.id);
+      if (isNaN(campId)) {
+        return res.status(400).json({ message: "Invalid camp ID" });
+      }
+      
+      // Get the camp
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Get camp sports from database
+      const sports = await db.select()
+        .from(campSports)
+        .where(eq(campSports.campId, campId));
+      
+      res.json(sports);
+    } catch (error) {
+      console.error("Error fetching camp sports:", error);
+      res.status(500).json({ message: "Failed to fetch camp sports" });
+    }
+  });
+  
+  // Route to update camp sports
+  app.post("/api/camps/:id/sports", async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "You must be logged in to update camp sports" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      if (isNaN(campId)) {
+        return res.status(400).json({ message: "Invalid camp ID" });
+      }
+      
+      // Get the camp to check permissions
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if user has permission to update this camp
+      if (req.user.organizationId !== camp.organizationId) {
+        return res.status(403).json({ 
+          message: "You don't have permission to update this camp's sports" 
+        });
+      }
+      
+      // Create or update camp sport
+      const campSport = await storage.createCampSport({
+        campId: campId,
+        sportId: req.body.sportId,
+        skillLevel: req.body.skillLevel
+      });
+      
+      res.json(campSport);
+    } catch (error) {
+      console.error("Error updating camp sports:", error);
+      res.status(500).json({ 
+        message: "Failed to update camp sports",
+        error: error.message 
+      });
+    }
+  });
+
+  // Route to delete a camp sport
+  app.delete("/api/camps/:id/sports/:sportId", async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "You must be logged in to remove camp sports" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      const sportId = parseInt(req.params.sportId);
+      
+      if (isNaN(campId) || isNaN(sportId)) {
+        return res.status(400).json({ message: "Invalid camp ID or sport ID" });
+      }
+      
+      // Get the camp to check permissions
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if user has permission to update this camp
+      if (req.user.organizationId !== camp.organizationId) {
+        return res.status(403).json({ 
+          message: "You don't have permission to update this camp's sports" 
+        });
+      }
+      
+      // Delete the camp sport
+      await db.delete(campSports)
+        .where(eq(campSports.id, sportId))
+        .where(eq(campSports.campId, campId));
+      
+      res.json({ success: true, message: "Sport removed from camp" });
+    } catch (error) {
+      console.error("Error removing camp sport:", error);
+      res.status(500).json({ 
+        message: "Failed to remove sport from camp",
+        error: error.message 
       });
     }
   });

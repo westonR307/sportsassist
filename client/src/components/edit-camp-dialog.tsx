@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -25,11 +25,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, Calendar, MapPin, DollarSign } from "lucide-react";
+import { Loader2, Calendar, MapPin, DollarSign, Dumbbell, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { Camp } from "@shared/schema";
+import { sportsMap, sportsList, skillLevelNames } from "@shared/sports-utils";
 
 // Define the form schema for editing a camp
 const editCampSchema = z.object({
@@ -62,6 +63,16 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = React.useState("basic");
+  
+  // For sport and skill level management
+  const [selectedSport, setSelectedSport] = useState("");
+  const [skillLevel, setSkillLevel] = useState<string>("beginner");
+  
+  // Fetch camp sports data
+  const { data: campSports } = useQuery({
+    queryKey: [`/api/camps/${camp.id}/sports`],
+    enabled: open, // Only fetch when dialog is open
+  });
 
   // Format date string to YYYY-MM-DD for input[type=date]
   const formatDateForInput = (dateString: string) => {
@@ -164,7 +175,7 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <Tabs value={activeTab} onValueChange={handleTabChange}>
-              <TabsList className="grid grid-cols-3 mb-4">
+              <TabsList className="grid grid-cols-4 mb-4">
                 <TabsTrigger value="basic">
                   <Calendar className="h-4 w-4 mr-2" />
                   Basic Info
@@ -176,6 +187,10 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
                 <TabsTrigger value="details">
                   <DollarSign className="h-4 w-4 mr-2" />
                   Details
+                </TabsTrigger>
+                <TabsTrigger value="sports">
+                  <Dumbbell className="h-4 w-4 mr-2" />
+                  Sports
                 </TabsTrigger>
               </TabsList>
 
@@ -406,6 +421,171 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
                       </FormItem>
                     )}
                   />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="sports" className="space-y-4">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Camp Sports</h3>
+                  
+                  {/* Current sports list */}
+                  <div className="border rounded-md p-4 bg-muted/30 space-y-2">
+                    <h4 className="text-sm font-medium mb-2">Current Sports</h4>
+                    {campSports?.length ? (
+                      <div className="space-y-2">
+                        {campSports.map((sport) => (
+                          <div key={sport.id} className="flex items-center justify-between bg-card p-2 rounded-md">
+                            <div>
+                              <span className="font-semibold">{sportsList.find(s => s.id === sport.sportId)?.name}</span>
+                              <span className="text-muted-foreground ml-2">({skillLevelNames[sport.skillLevel]})</span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                              onClick={async () => {
+                                try {
+                                  await apiRequest(
+                                    "DELETE", 
+                                    `/api/camps/${camp.id}/sports/${sport.id}`
+                                  );
+                                  
+                                  // Show success message
+                                  toast({
+                                    title: "Sport removed",
+                                    description: "The sport has been removed from this camp",
+                                  });
+                                  
+                                  // Refresh camp sports data
+                                  queryClient.invalidateQueries({ 
+                                    queryKey: [`/api/camps/${camp.id}/sports`]
+                                  });
+                                  
+                                  // Refresh camps list to update the UI
+                                  queryClient.invalidateQueries({ 
+                                    queryKey: ["/api/camps"] 
+                                  });
+                                } catch (error) {
+                                  toast({
+                                    title: "Failed to remove sport",
+                                    description: "There was an error removing the sport from this camp",
+                                    variant: "destructive",
+                                  });
+                                  console.error("Error removing sport:", error);
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-sm">No sports added yet</p>
+                    )}
+                  </div>
+                  
+                  {/* Add new sport form */}
+                  <div className="border rounded-md p-4 space-y-3">
+                    <h4 className="text-sm font-medium">Add Sport</h4>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Sport selection */}
+                      <div className="space-y-1">
+                        <Label htmlFor="sport-select">Sport</Label>
+                        <select
+                          id="sport-select"
+                          value={selectedSport}
+                          onChange={(e) => setSelectedSport(e.target.value)}
+                          className={cn(
+                            "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          )}
+                        >
+                          <option value="">Select a sport</option>
+                          {sportsList.map((sport) => (
+                            <option key={sport.id} value={sport.id}>
+                              {sport.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      {/* Skill level selection */}
+                      <div className="space-y-1">
+                        <Label htmlFor="skill-level-select">Skill Level</Label>
+                        <select
+                          id="skill-level-select"
+                          value={skillLevel}
+                          onChange={(e) => setSkillLevel(e.target.value)}
+                          className={cn(
+                            "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          )}
+                        >
+                          <option value="beginner">Beginner</option>
+                          <option value="intermediate">Intermediate</option>
+                          <option value="advanced">Advanced</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    {/* Add button */}
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={async () => {
+                        if (!selectedSport) {
+                          toast({
+                            title: "Sport selection required",
+                            description: "Please select a sport to add",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                        
+                        try {
+                          const response = await apiRequest(
+                            "POST", 
+                            `/api/camps/${camp.id}/sports`,
+                            {
+                              sportId: parseInt(selectedSport),
+                              skillLevel
+                            }
+                          );
+                          
+                          // Show success message
+                          toast({
+                            title: "Sport added",
+                            description: "The sport has been added to this camp",
+                          });
+                          
+                          // Reset form
+                          setSelectedSport("");
+                          
+                          // Refresh camp sports data
+                          queryClient.invalidateQueries({ 
+                            queryKey: [`/api/camps/${camp.id}/sports`]
+                          });
+                          
+                          // Refresh camps list to update the UI
+                          queryClient.invalidateQueries({ 
+                            queryKey: ["/api/camps"] 
+                          });
+                        } catch (error) {
+                          toast({
+                            title: "Failed to add sport",
+                            description: "There was an error adding the sport to this camp",
+                            variant: "destructive",
+                          });
+                          console.error("Error adding sport:", error);
+                        }
+                      }}
+                      disabled={!selectedSport}
+                      className="w-full"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Sport
+                    </Button>
+                  </div>
                 </div>
               </TabsContent>
             </Tabs>
