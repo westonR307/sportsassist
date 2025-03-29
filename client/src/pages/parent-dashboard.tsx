@@ -344,6 +344,9 @@ function AddAthleteDialog({
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Add an Athlete</DialogTitle>
+          <DialogDescription>
+            Create a profile for your athlete to register for camps.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

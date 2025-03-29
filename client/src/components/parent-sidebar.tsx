@@ -35,7 +35,7 @@ function SidebarLink({ to, icon, children, className }: SidebarLinkProps) {
 
   return (
     <Link href={to}>
-      <a
+      <div
         className={cn(
           "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
           active
@@ -47,7 +47,7 @@ function SidebarLink({ to, icon, children, className }: SidebarLinkProps) {
         {icon}
         <span>{children}</span>
         {active && <ChevronRight size={16} className="ml-auto" />}
-      </a>
+      </div>
     </Link>
   );
 }
