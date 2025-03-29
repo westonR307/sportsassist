@@ -30,9 +30,9 @@ import { getSportName } from "@shared/sports-utils";
 export default function AvailableCampsPage() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedSport, setSelectedSport] = useState<string>("");
-  const [selectedSkillLevel, setSelectedSkillLevel] = useState<string>("");
-  const [selectedType, setSelectedType] = useState<string>("");
+  const [selectedSport, setSelectedSport] = useState<string>("all_sports");
+  const [selectedSkillLevel, setSelectedSkillLevel] = useState<string>("any_level");
+  const [selectedType, setSelectedType] = useState<string>("any_type");
   const [showVirtualOnly, setShowVirtualOnly] = useState(false);
 
   const { data: camps = [], isLoading } = useQuery<Camp[]>({
@@ -57,15 +57,15 @@ export default function AvailableCampsPage() {
       camp.description?.toLowerCase().includes(searchQuery.toLowerCase());
     
     // Sport filter
-    const hasSport = selectedSport === "" || 
+    const hasSport = selectedSport === "" || selectedSport === "all_sports" || 
       (camp.campSports && camp.campSports.some(cs => cs.sportId.toString() === selectedSport));
     
     // Skill level filter
-    const hasSkillLevel = selectedSkillLevel === "" || 
+    const hasSkillLevel = selectedSkillLevel === "" || selectedSkillLevel === "any_level" || 
       (camp.campSports && camp.campSports.some(cs => cs.skillLevel === selectedSkillLevel));
     
     // Camp type filter
-    const matchesType = selectedType === "" || camp.type === selectedType;
+    const matchesType = selectedType === "" || selectedType === "any_type" || camp.type === selectedType;
     
     // Virtual only filter
     const matchesVirtual = !showVirtualOnly || camp.type === "virtual";
@@ -114,7 +114,7 @@ export default function AvailableCampsPage() {
                   <SelectValue placeholder="Sport" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Sports</SelectItem>
+                  <SelectItem value="all_sports">All Sports</SelectItem>
                   {availableSports.map(sportId => (
                     <SelectItem key={sportId} value={sportId.toString()}>
                       {getSportName(sportId)}
@@ -128,7 +128,7 @@ export default function AvailableCampsPage() {
                   <SelectValue placeholder="Skill Level" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Any Level</SelectItem>
+                  <SelectItem value="any_level">Any Level</SelectItem>
                   <SelectItem value="beginner">{skillLevelNames.beginner}</SelectItem>
                   <SelectItem value="intermediate">{skillLevelNames.intermediate}</SelectItem>
                   <SelectItem value="advanced">{skillLevelNames.advanced}</SelectItem>
@@ -151,7 +151,7 @@ export default function AvailableCampsPage() {
                           <SelectValue placeholder="Any Type" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Any Type</SelectItem>
+                          <SelectItem value="any_type">Any Type</SelectItem>
                           <SelectItem value="one_on_one">One-on-One</SelectItem>
                           <SelectItem value="group">Group</SelectItem>
                           <SelectItem value="team">Team</SelectItem>
@@ -195,18 +195,18 @@ export default function AvailableCampsPage() {
               <CalendarIcon size={48} className="text-muted-foreground mb-4" />
               <h3 className="text-xl font-semibold mb-2">No matching camps found</h3>
               <p className="text-muted-foreground text-center max-w-md mb-6">
-                {searchQuery || selectedSport || selectedSkillLevel || selectedType || showVirtualOnly
+                {searchQuery || selectedSport !== "all_sports" || selectedSkillLevel !== "any_level" || selectedType !== "any_type" || showVirtualOnly
                   ? "Try adjusting your filters to find more camps."
                   : "There are no upcoming camps available at this time. Check back later for new opportunities."}
               </p>
-              {(searchQuery || selectedSport || selectedSkillLevel || selectedType || showVirtualOnly) && (
+              {(searchQuery || selectedSport !== "all_sports" || selectedSkillLevel !== "any_level" || selectedType !== "any_type" || showVirtualOnly) && (
                 <Button 
                   variant="outline"
                   onClick={() => {
                     setSearchQuery("");
-                    setSelectedSport("");
-                    setSelectedSkillLevel("");
-                    setSelectedType("");
+                    setSelectedSport("all_sports");
+                    setSelectedSkillLevel("any_level");
+                    setSelectedType("any_type");
                     setShowVirtualOnly(false);
                   }}
                 >
