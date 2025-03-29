@@ -287,6 +287,7 @@ function AddAthleteDialog({
 }) {
   const { toast } = useToast();
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string>("");
+  const [uploading, setUploading] = useState(false);
   
   const form = useForm<AddChildFormValues>({
     resolver: zodResolver(addChildSchema),
