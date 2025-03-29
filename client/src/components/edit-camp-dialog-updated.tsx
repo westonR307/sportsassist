@@ -31,6 +31,7 @@ import { apiRequest } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { Camp, CampSchedule } from "@shared/schema";
 import { DAYS_OF_WEEK } from "@/pages/constants";
+import { ScheduleCalendar } from "./schedule-calendar";
 
 interface Schedule {
   dayOfWeek: number;
@@ -390,78 +391,111 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center mb-4">
                       <h3 className="text-lg font-medium">Camp Schedule</h3>
-                      <Button type="button" onClick={addSchedule} size="sm">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Schedule
-                      </Button>
                     </div>
+                    
+                    {/* Calendar-based schedule interface */}
+                    <ScheduleCalendar
+                      startDate={new Date(form.getValues().startDate)}
+                      endDate={new Date(form.getValues().endDate)}
+                      schedules={schedules.map(s => ({
+                        id: Math.floor(Math.random() * 1000000), // Temporary ID for display purposes
+                        campId: camp.id,
+                        dayOfWeek: s.dayOfWeek,
+                        startTime: s.startTime + ':00',
+                        endTime: s.endTime + ':00'
+                      }))}
+                      onSchedulesChange={(newSchedules) => {
+                        setSchedules(newSchedules.map(s => ({
+                          dayOfWeek: s.dayOfWeek,
+                          startTime: s.startTime.substring(0, 5),
+                          endTime: s.endTime.substring(0, 5)
+                        })));
+                      }}
+                      campId={camp.id}
+                    />
 
-                    {schedules.map((schedule, index) => (
-                      <div
-                        key={index}
-                        className="flex items-start space-x-4 p-4 border rounded-lg relative"
-                      >
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute top-2 right-2"
-                          onClick={() => removeSchedule(index)}
-                        >
-                          <X className="h-4 w-4" />
+                    {/* Legacy schedule interface (as backup) */}
+                    <div className="mt-6 pt-6 border-t">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-medium">Manual Schedule Entry</h3>
+                        <Button type="button" onClick={addSchedule} size="sm">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Schedule
                         </Button>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        You can also manually add schedule items below. Changes here will be reflected in the calendar above.
+                      </p>
 
-                        <div className="flex-1 space-y-4">
-                          <div>
-                            <Label>Day of Week</Label>
-                            <select
-                              value={schedule.dayOfWeek}
-                              onChange={(e) =>
-                                updateSchedule(index, "dayOfWeek", parseInt(e.target.value))
-                              }
-                              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                            >
-                              {DAYS_OF_WEEK.map((day, i) => (
-                                <option key={i} value={i}>
-                                  {day}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <Label>Start Time</Label>
-                              <Input
-                                type="time"
-                                value={schedule.startTime}
-                                onChange={(e) =>
-                                  updateSchedule(index, "startTime", e.target.value)
-                                }
-                              />
-                            </div>
-                            <div>
-                              <Label>End Time</Label>
-                              <Input
-                                type="time"
-                                value={schedule.endTime}
-                                onChange={(e) =>
-                                  updateSchedule(index, "endTime", e.target.value)
-                                }
-                              />
-                            </div>
-                          </div>
+                      {schedules.length === 0 ? (
+                        <div className="text-center py-8 border rounded-lg text-muted-foreground">
+                          No schedules added yet. Add one using the button above or the calendar.
                         </div>
-                      </div>
-                    ))}
+                      ) : (
+                        <div className="space-y-3">
+                          {schedules.map((schedule, index) => (
+                            <div
+                              key={index}
+                              className="flex items-start space-x-4 p-4 border rounded-lg relative"
+                            >
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="absolute top-2 right-2"
+                                onClick={() => removeSchedule(index)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
 
-                    {schedules.length === 0 && (
-                      <div className="text-center py-8 text-muted-foreground">
-                        No schedules added. Click "Add Schedule" to create camp schedules.
-                      </div>
-                    )}
+                              <div className="flex-1 space-y-4">
+                                <div>
+                                  <Label>Day of Week</Label>
+                                  <select
+                                    value={schedule.dayOfWeek}
+                                    onChange={(e) =>
+                                      updateSchedule(index, "dayOfWeek", parseInt(e.target.value))
+                                    }
+                                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                                  >
+                                    {DAYS_OF_WEEK.map((day, i) => (
+                                      <option key={i} value={i + 1}>
+                                        {day}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <Label>Start Time</Label>
+                                    <Input
+                                      type="time"
+                                      value={schedule.startTime}
+                                      onChange={(e) =>
+                                        updateSchedule(index, "startTime", e.target.value)
+                                      }
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label>End Time</Label>
+                                    <Input
+                                      type="time"
+                                      value={schedule.endTime}
+                                      onChange={(e) =>
+                                        updateSchedule(index, "endTime", e.target.value)
+                                      }
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </TabsContent>
