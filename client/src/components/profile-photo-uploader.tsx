@@ -18,53 +18,34 @@ export const ProfilePhotoUploader: FC<ProfilePhotoUploaderProps> = ({
   const { toast } = useToast();
   const inputId = `profile-photo-upload-${Math.random().toString(36).substring(2, 9)}`;
 
-  // Function to upload profile photo - completely separate from Dialog events
+  // Function to upload profile photo - using standard fetch API like in parent settings
   const uploadProfilePhoto = async (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      // File size validation (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        reject(new Error("Profile photo must be less than 5MB"));
-        return;
-      }
+    // File size validation (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      throw new Error("Profile photo must be less than 5MB");
+    }
 
-      // File type validation
-      if (!file.type.startsWith('image/')) {
-        reject(new Error("Please upload an image file"));
-        return;
-      }
+    // File type validation
+    if (!file.type.startsWith('image/')) {
+      throw new Error("Please upload an image file");
+    }
 
-      // Create form data
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      // Use a completely separate fetch call outside of React's event system
-      try {
-        const xhr = new XMLHttpRequest();
-        
-        xhr.open('POST', '/api/upload/profile-photo', true);
-        
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            try {
-              const response = JSON.parse(xhr.responseText);
-              resolve(response.url);
-            } catch (e) {
-              reject(new Error("Invalid response format"));
-            }
-          } else {
-            reject(new Error("Upload failed"));
-          }
-        };
-        
-        xhr.onerror = () => {
-          reject(new Error("Network error"));
-        };
-        
-        xhr.send(formData);
-      } catch (error) {
-        reject(new Error("Upload request failed"));
-      }
+    // Create form data
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // Use the standard fetch API like in parent settings
+    const response = await fetch('/api/upload/profile-photo', {
+      method: 'POST',
+      body: formData,
     });
+
+    if (!response.ok) {
+      throw new Error('Failed to upload profile photo');
+    }
+
+    const data = await response.json();
+    return data.url;
   };
 
   // Handle file selection

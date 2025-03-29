@@ -344,9 +344,28 @@ function AddAthleteDialog({
     addChildMutation.mutate(values);
   };
 
+  // Create a wrapper function for the dialog's onOpenChange
+  // that prevents closing when a form is being submitted
+  const handleDialogOpenChange = (open: boolean) => {
+    if (!open && addChildMutation.isPending) {
+      toast({
+        title: "Please wait",
+        description: "Please wait for the form submission to complete.",
+      });
+      return;
+    }
+    
+    onOpenChange(open);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
+      <DialogContent className="sm:max-w-[600px]" onPointerDownOutside={(e) => {
+        // Prevent dialog from closing when clicking outside during form submission
+        if (addChildMutation.isPending) {
+          e.preventDefault();
+        }
+      }}>
         <DialogHeader>
           <DialogTitle>Add an Athlete</DialogTitle>
           <DialogDescription>
@@ -354,7 +373,7 @@ function AddAthleteDialog({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" onClick={(e) => e.stopPropagation()}>
             {/* Profile Photo Upload Section */}
             <ProfilePhotoUploader
               currentPhotoUrl={profilePhotoUrl}
