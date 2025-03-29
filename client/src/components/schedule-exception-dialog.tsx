@@ -98,14 +98,24 @@ export function ScheduleExceptionDialog({
   
   // When selecting a regular schedule, populate the form with its values
   const handleScheduleSelection = (scheduleId: string) => {
+    if (scheduleId === "none") {
+      // Reset to default values
+      const date = new Date(form.getValues().exceptionDate);
+      form.setValue("originalScheduleId", undefined);
+      form.setValue("dayOfWeek", date.getDay());
+      form.setValue("startTime", "09:00");
+      form.setValue("endTime", "17:00");
+      return;
+    }
+    
     if (scheduleId) {
       const id = parseInt(scheduleId);
       const schedule = regularSchedules.find(s => s.id === id);
       if (schedule) {
         form.setValue("originalScheduleId", schedule.id);
         form.setValue("dayOfWeek", schedule.dayOfWeek);
-        form.setValue("startTime", schedule.startTime);
-        form.setValue("endTime", schedule.endTime);
+        form.setValue("startTime", schedule.startTime.substring(0, 5));
+        form.setValue("endTime", schedule.endTime.substring(0, 5));
       }
     }
   };
@@ -129,13 +139,13 @@ export function ScheduleExceptionDialog({
               </label>
               <Select 
                 onValueChange={handleScheduleSelection}
-                defaultValue=""
+                defaultValue="none"
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a regular schedule" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None (Create from scratch)</SelectItem>
+                  <SelectItem value="none">None (Create from scratch)</SelectItem>
                   {regularSchedules.map((schedule) => (
                     <SelectItem key={schedule.id} value={schedule.id.toString()}>
                       {DAYS_OF_WEEK[schedule.dayOfWeek]} ({schedule.startTime} - {schedule.endTime})
