@@ -207,6 +207,10 @@ export default function ParentDashboard() {
 }
 
 function AthleteCard({ child }: { child: Child }) {
+  const { toast } = useToast();
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string>(child.profilePhoto || "");
+  const [uploading, setUploading] = useState(false);
+
   // Calculate age based on date of birth
   const calculateAge = (birthDate: Date) => {
     const today = new Date();
@@ -218,13 +222,133 @@ function AthleteCard({ child }: { child: Child }) {
     }
     return age;
   };
+  
+  // Mutation to update athlete profile photo
+  const updateProfilePhotoMutation = useMutation({
+    mutationFn: async (photoUrl: string) => {
+      const res = await apiRequest("PUT", `/api/parent/children/${child.id}`, {
+        profilePhoto: photoUrl
+      });
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/parent/children"] });
+      toast({
+        title: "Profile photo updated",
+        description: "The athlete's profile photo has been updated successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update profile photo",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Photo upload handler
+  const handleProfilePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // File size validation (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Profile photo must be less than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // File type validation
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload an image file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/upload/profile-photo', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload profile photo');
+      }
+
+      const data = await response.json();
+      setProfilePhotoUrl(data.url);
+      
+      // After successful upload, update the athlete profile
+      updateProfilePhotoMutation.mutate(data.url);
+      
+    } catch (error) {
+      toast({
+        title: "Upload Failed",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <Card className="overflow-hidden flex flex-col">
       <div className="h-2 bg-primary w-full" />
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
-          <CardTitle className="text-lg">{child.fullName}</CardTitle>
+          <div className="flex items-center gap-3">
+            {/* Profile photo with upload capability */}
+            <div className="relative group">
+              <div className="h-12 w-12 rounded-full overflow-hidden bg-muted flex items-center justify-center">
+                {profilePhotoUrl ? (
+                  <img
+                    src={profilePhotoUrl}
+                    alt={child.fullName}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <User className="h-6 w-6 text-muted-foreground" />
+                )}
+              </div>
+              
+              {/* Upload overlay */}
+              <div 
+                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                onClick={() => document.getElementById(`athlete-photo-${child.id}`)?.click()}
+              >
+                <div className="bg-primary/70 rounded-full p-1">
+                  {uploading ? (
+                    <Loader2 className="h-4 w-4 text-white animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4 text-white" />
+                  )}
+                </div>
+              </div>
+              <input
+                id={`athlete-photo-${child.id}`}
+                type="file"
+                accept="image/*"
+                onChange={handleProfilePhotoChange}
+                className="hidden"
+              />
+            </div>
+            
+            <CardTitle className="text-lg">{child.fullName}</CardTitle>
+          </div>
+          
           <span className="text-xs bg-muted px-2 py-1 rounded">
             {calculateAge(child.dateOfBirth)} years old
           </span>
@@ -345,153 +469,15 @@ function AddAthleteDialog({
     addChildMutation.mutate(values);
   };
 
-  // Handle file upload directly - outside of any form context
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // File size validation (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: "Profile photo must be less than 5MB",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // File type validation
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: "Invalid file type",
-        description: "Please upload an image file",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setUploading(true);
-
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch('/api/upload/profile-photo', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to upload profile photo');
-      }
-
-      const data = await response.json();
-      setProfilePhotoUrl(data.url);
-      form.setValue('profilePhoto', data.url);
-
-      toast({
-        title: "Upload Successful",
-        description: "Your profile photo has been uploaded",
-      });
-    } catch (error) {
-      toast({
-        title: "Upload Failed",
-        description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive",
-      });
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  // Custom handler for dialog open/close to prevent closing during upload
-  const handleOpenChange = (newOpenState: boolean) => {
-    // Prevent dialog from closing if we're currently uploading
-    if (!newOpenState && uploading) {
-      toast({
-        title: "Please wait",
-        description: "Please wait until the photo upload is complete.",
-        variant: "destructive"
-      });
-      return;
-    }
-    onOpenChange(newOpenState);
-  };
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent 
-        className="sm:max-w-[600px]"
-        onInteractOutside={(e) => {
-          // Prevent closing when clicking outside if we're uploading
-          if (uploading) {
-            e.preventDefault();
-          }
-        }}
-        onEscapeKeyDown={(e) => {
-          // Prevent closing when pressing escape if we're uploading
-          if (uploading) {
-            e.preventDefault();
-          }
-        }}
-      >
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Add an Athlete</DialogTitle>
           <DialogDescription>
             Create a profile for your athlete to register for camps.
           </DialogDescription>
         </DialogHeader>
-        
-        {/* Photo upload section - completely separate from the form */}
-        <div className="mb-6 border-b pb-4">
-          <h3 className="text-md font-semibold mb-3">Profile Photo (Optional)</h3>
-          <div className="flex flex-col items-center sm:flex-row sm:items-start gap-4">
-            <div className="relative w-28 h-28 overflow-hidden rounded-full bg-muted flex-shrink-0 flex items-center justify-center">
-              {profilePhotoUrl ? (
-                <img
-                  src={profilePhotoUrl}
-                  alt="Profile"
-                  className="object-cover w-full h-full"
-                />
-              ) : (
-                <User className="h-10 w-10 text-muted-foreground" />
-              )}
-            </div>
-            <div className="space-y-4 flex-1">
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Add a profile photo for this athlete
-                </p>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    type="button"
-                    variant="outline" 
-                    onClick={() => document.getElementById('athlete-profile-photo')?.click()}
-                    disabled={uploading}
-                    className="relative"
-                  >
-                    {uploading ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : (
-                      <Upload className="h-4 w-4 mr-2" />
-                    )}
-                    {uploading ? 'Uploading...' : 'Upload Photo'}
-                  </Button>
-                  <span className="text-xs text-muted-foreground">
-                    JPG, PNG or GIF (max 5MB)
-                  </span>
-                </div>
-                <input
-                  id="athlete-profile-photo"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
         
         {/* Form section - separate from photo upload */}
         <Form {...form}>
