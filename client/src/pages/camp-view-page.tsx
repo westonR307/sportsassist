@@ -436,32 +436,32 @@ function CampViewPage(props: { id?: string }) {
     }
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 pt-4">
         {/* Header */}
-        <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center mb-6">
+        <div className="flex flex-col md:flex-row gap-4 justify-center items-center mb-8 mt-2">
           {/* Camp Title Area */}
-          <div className="flex flex-col">
+          <div className="flex flex-col items-center">
             {isParent && (
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={() => navigate('/find-camps')}
-                className="mb-2 w-fit"
+                className="mb-2 self-start"
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 Back
               </Button>
             )}
-            <h1 className="text-2xl md:text-3xl font-bold leading-tight break-words max-w-[95%] md:max-w-[600px]">
+            <h1 className="text-2xl md:text-3xl font-bold leading-tight break-words text-center max-w-full md:max-w-[600px]">
               {camp.name}
             </h1>
           </div>
           
           {/* Action Buttons Area */}
-          <div className="flex flex-wrap gap-2 justify-end">
+          <div className="flex flex-wrap gap-2 justify-center items-center">
             {canManage ? (
               // Only show management buttons if user has permission
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 items-center justify-center">
                 {/* Primary management buttons */}
                 <div className="flex gap-2">
                   <Button onClick={() => setEditDialogOpen(true)}>
@@ -472,31 +472,28 @@ function CampViewPage(props: { id?: string }) {
                     <MessageSquare className="h-4 w-4 mr-2" />
                     Message
                   </Button>
-                </div>
                 
-                {/* Destructive actions (separate row on mobile) */}
-                <div className="flex gap-2 mt-2 md:mt-0">
-                  {registrationStatus === 'not_open' ? (
-                    <Button 
-                      variant="destructive" 
-                      onClick={() => setShowDeleteDialog(true)}
-                      size="sm"
-                      className="ml-auto"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </Button>
-                  ) : (
-                    <Button 
-                      variant="outline" 
-                      className="text-amber-600 border-amber-200 hover:bg-amber-50 ml-auto"
-                      onClick={() => setShowCancelDialog(true)}
-                      size="sm"
-                    >
-                      <AlertTriangle className="h-4 w-4 mr-2" />
-                      Cancel
-                    </Button>
-                  )}
+                {/* Destructive actions */}
+                {registrationStatus === 'not_open' ? (
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => setShowDeleteDialog(true)}
+                    size="sm"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                    onClick={() => setShowCancelDialog(true)}
+                    size="sm"
+                  >
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Cancel
+                  </Button>
+                )}
                 </div>
               </div>
             ) : isParent ? (
