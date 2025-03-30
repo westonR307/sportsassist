@@ -66,6 +66,7 @@ import { CampScheduleDisplay } from "@/components/camp-schedule";
 // Using the fixed schedule editor dialog
 import { ScheduleEditorDialog } from "@/components/schedule-editor-dialog-fixed";
 import { EditCampCustomFields } from "@/components/edit-camp-custom-fields";
+import { ExportParticipantsDialog } from "@/components/export-participants-dialog";
 import {
   Table,
   TableBody,
@@ -229,6 +230,8 @@ function CampViewPage(props: { id?: string }) {
 
   const [selectedChildId, setSelectedChildId] = useState<number | null>(null);
   const [showChildSelectionDialog, setShowChildSelectionDialog] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [exportFormat, setExportFormat] = useState<"pdf" | "csv">("pdf");
 
   // Dialog to select a child for registration
   const ChildSelectionDialog = () => {
@@ -846,48 +849,30 @@ function CampViewPage(props: { id?: string }) {
                         }
                       }}
                     />
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => {
-                        // Create CSV content
-                        const csvHeader = ["ID", "Child Name", "Date", "Status", "Notes"];
-                        const csvRows = registrations.map((registration: any) => [
-                          registration.id,
-                          registration.childName || `Child #${registration.childId}`,
-                          new Date().toLocaleDateString(),
-                          "Present", // Default status - in a real app, use actual status
-                          ""  // Notes would come from the database
-                        ]);
-                        
-                        // Combine header and rows
-                        const csvContent = [
-                          csvHeader.join(","),
-                          ...csvRows.map(row => row.join(","))
-                        ].join("\n");
-                        
-                        // Create a Blob and download link
-                        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                        const url = URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.setAttribute('href', url);
-                        link.setAttribute('download', `attendance_camp_${id}_${new Date().toISOString().split('T')[0]}.csv`);
-                        document.body.appendChild(link);
-                        
-                        // Trigger download and cleanup
-                        link.click();
-                        document.body.removeChild(link);
-                        
-                        toast({
-                          title: "Exporting Attendance Records",
-                          description: "Attendance records exported successfully.",
-                          variant: "default"
-                        });
-                      }}
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Export
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          setExportFormat("pdf");
+                          setShowExportDialog(true);
+                        }}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Export to PDF
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          setExportFormat("csv");
+                          setShowExportDialog(true);
+                        }}
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Export to CSV
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -1149,6 +1134,18 @@ function CampViewPage(props: { id?: string }) {
               </AlertDialogContent>
             </AlertDialog>
           </>
+        )}
+        
+        {/* Export Participants Dialog */}
+        {camp && (
+          <ExportParticipantsDialog
+            open={showExportDialog}
+            onOpenChange={setShowExportDialog}
+            campId={parseInt(id)}
+            campName={camp.name}
+            registrations={registrations || []}
+            exportFormat={exportFormat}
+          />
         )}
       </div>
     );
