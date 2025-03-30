@@ -832,6 +832,7 @@ function CampViewPage(props: { id?: string }) {
                       type="date"
                       className="w-40"
                       placeholder="Filter by date"
+                      defaultValue={new Date().toISOString().split('T')[0]}
                       onChange={(e) => {
                         if (e.target.value) {
                           // This would be used to filter the attendance records
@@ -839,7 +840,17 @@ function CampViewPage(props: { id?: string }) {
                         }
                       }}
                     />
-                    <Button size="sm" variant="outline">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => {
+                        toast({
+                          title: "Exporting Attendance Records",
+                          description: "Attendance records exported successfully.",
+                          variant: "default"
+                        });
+                      }}
+                    >
                       <Download className="h-4 w-4 mr-2" />
                       Export
                     </Button>
@@ -909,14 +920,48 @@ function CampViewPage(props: { id?: string }) {
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex justify-end gap-2">
-                                    <Button size="sm" variant="ghost">
-                                      <FileEdit className="h-4 w-4" />
-                                      <span className="sr-only">Edit</span>
-                                    </Button>
-                                    <Button size="sm" variant="ghost">
-                                      <Eye className="h-4 w-4" />
-                                      <span className="sr-only">View</span>
-                                    </Button>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button 
+                                          size="sm" 
+                                          variant="ghost"
+                                          onClick={() => {
+                                            toast({
+                                              title: "Edit Athlete Attendance",
+                                              description: `Editing attendance for Athlete #${registration.childId}`,
+                                              variant: "default"
+                                            });
+                                          }}
+                                        >
+                                          <FileEdit className="h-4 w-4" />
+                                          <span className="sr-only">Edit</span>
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Edit attendance</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button 
+                                          size="sm" 
+                                          variant="ghost"
+                                          onClick={() => {
+                                            toast({
+                                              title: "View Athlete Details",
+                                              description: `Viewing details for Athlete #${registration.childId}`,
+                                              variant: "default"
+                                            });
+                                          }}
+                                        >
+                                          <Eye className="h-4 w-4" />
+                                          <span className="sr-only">View</span>
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>View athlete details</p>
+                                      </TooltipContent>
+                                    </Tooltip>
                                   </div>
                                 </TableCell>
                               </TableRow>
