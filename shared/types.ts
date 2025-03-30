@@ -6,6 +6,7 @@ export type CampType = "one_on_one" | "group" | "team" | "virtual";
 export type CampVisibility = "public" | "private";
 export type RepeatType = "none" | "weekly" | "monthly";
 export type StaffRole = "manager" | "coach" | "volunteer";
+export type CampStatus = "active" | "cancelled" | "deleted";
 
 // Custom registration field types
 export type FieldType = "short_text" | "long_text" | "dropdown" | "single_select" | "multi_select";

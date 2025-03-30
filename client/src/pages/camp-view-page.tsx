@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { 
+  AlertTriangle,
   Loader2, 
   Edit, 
   MessageSquare, 
@@ -29,8 +30,21 @@ import {
   ClipboardList,
   Ban,
   ListChecks,
-  User
+  User,
+  Trash2
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { type Camp, type Child } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { EditCampDialog } from "@/components/edit-camp-dialog";
@@ -72,6 +86,9 @@ function CampViewPage(props: { id?: string }) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [scheduleEditorOpen, setScheduleEditorOpen] = useState(false);
   const [registering, setRegistering] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
 
   // Check if user is a parent
   const isParent = user?.role === 'parent';
@@ -306,6 +323,81 @@ function CampViewPage(props: { id?: string }) {
       });
     }
   });
+  
+  // Delete camp mutation (soft delete)
+  const deleteCampMutation = useMutation({
+    mutationFn: async () => {
+      try {
+        // Call the soft delete endpoint
+        const response = await apiRequest('POST', `/api/camps/${id}/delete`, {});
+        return await response.json();
+      } catch (error) {
+        console.error("Error deleting camp:", error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      toast({
+        title: "Camp deleted",
+        description: "The camp has been successfully deleted.",
+      });
+      
+      // Redirect to camps list
+      navigate('/dashboard');
+    },
+    onError: (error: any) => {
+      console.error("Delete camp error:", error);
+      
+      // Check if the error is because registration has started
+      if (error.message && error.message.includes("registration has started")) {
+        toast({
+          title: "Cannot delete camp",
+          description: "This camp cannot be deleted because registration has already started. Please use the cancel option instead.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Delete failed",
+          description: error.message || "There was an error deleting the camp.",
+          variant: "destructive"
+        });
+      }
+    }
+  });
+  
+  // Cancel camp mutation
+  const cancelCampMutation = useMutation({
+    mutationFn: async () => {
+      try {
+        // Call the cancel endpoint with reason
+        const response = await apiRequest('POST', `/api/camps/${id}/cancel`, {
+          reason: cancelReason
+        });
+        return await response.json();
+      } catch (error) {
+        console.error("Error cancelling camp:", error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      toast({
+        title: "Camp cancelled",
+        description: "The camp has been cancelled and all registered participants will be notified.",
+      });
+      
+      // Refresh camp data
+      queryClient.invalidateQueries({ queryKey: ['camp', id] });
+      setShowCancelDialog(false);
+      setCancelReason("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Cancel failed",
+        description: error.message || "There was an error cancelling the camp.",
+        variant: "destructive"
+      });
+    }
+  });
 
   // Render appropriate content for parent vs organization user
   const renderContent = () => {
@@ -376,6 +468,26 @@ function CampViewPage(props: { id?: string }) {
                   <Edit className="h-4 w-4 mr-2" />
                   Edit Camp
                 </Button>
+                {registrationStatus === 'not_open' ? (
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => setShowDeleteDialog(true)}
+                    size="sm"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Camp
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                    onClick={() => setShowCancelDialog(true)}
+                    size="sm"
+                  >
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Cancel Camp
+                  </Button>
+                )}
               </>
             ) : isParent ? (
               // For parents show the appropriate registration button based on status
@@ -699,6 +811,74 @@ function CampViewPage(props: { id?: string }) {
                 <ChildSelectionDialog />
               </DialogContent>
             </Dialog>
+            
+            {/* Delete Camp Alert Dialog */}
+            <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Camp</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this camp? This action cannot be undone.
+                    <br />
+                    <br />
+                    <strong>Note:</strong> Deleting a camp is only possible before registration has started.
+                    Once registration has begun, you should cancel the camp instead.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={() => deleteCampMutation.mutate()}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    disabled={deleteCampMutation.isPending}
+                  >
+                    {deleteCampMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4 mr-2" />
+                    )}
+                    Delete Camp
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            
+            {/* Cancel Camp Alert Dialog */}
+            <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Cancel Camp</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to cancel this camp? The camp will remain visible but marked as cancelled.
+                    <br /><br />
+                    Please provide a reason for cancellation. This information will be shared with registered participants.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="py-4">
+                  <Textarea
+                    placeholder="Reason for cancellation (required)"
+                    value={cancelReason}
+                    onChange={(e) => setCancelReason(e.target.value)}
+                    className="min-h-[100px]"
+                  />
+                </div>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={() => cancelCampMutation.mutate()}
+                    className="bg-amber-600 text-white hover:bg-amber-700"
+                    disabled={cancelCampMutation.isPending || !cancelReason.trim()}
+                  >
+                    {cancelCampMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <AlertTriangle className="h-4 w-4 mr-2" />
+                    )}
+                    Cancel Camp
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </>
         )}
       </div>

@@ -96,6 +96,10 @@ export interface IStorage {
   createCustomFieldResponse(response: InsertCustomFieldResponse): Promise<CustomFieldResponse>;
   getCustomFieldResponses(registrationId: number): Promise<(CustomFieldResponse & { field: CustomField })[]>;
   updateCustomFieldResponse(id: number, response: Partial<Omit<CustomFieldResponse, "id">>): Promise<CustomFieldResponse>;
+  
+  // Camp soft delete and cancellation methods
+  softDeleteCamp(campId: number): Promise<Camp>;
+  cancelCamp(campId: number, reason?: string): Promise<Camp>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -285,14 +289,33 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-  async listCamps(organizationId?: number): Promise<(Camp & { campSports?: any[] })[]> {
+  async listCamps(organizationId?: number, includeDeleted = false): Promise<(Camp & { campSports?: any[] })[]> {
     try {
       console.log(organizationId ? `Fetching camps for organization ${organizationId}` : "Fetching all camps");
+      console.log(`Including deleted camps: ${includeDeleted}`);
       
       // First, get all camps
       let query = db.select().from(camps);
+      
+      // Apply filters
+      const conditions = [];
+      
       if (organizationId) {
-        query = query.where(eq(camps.organizationId, organizationId));
+        conditions.push(eq(camps.organizationId, organizationId));
+      }
+      
+      // Don't include soft-deleted camps by default
+      if (!includeDeleted) {
+        conditions.push(eq(camps.isDeleted, false));
+      }
+      
+      // Apply all conditions if any exist
+      if (conditions.length > 0) {
+        if (conditions.length === 1) {
+          query = query.where(conditions[0]);
+        } else {
+          query = query.where(and(...conditions));
+        }
       }
       
       const allCamps = await query;
@@ -978,6 +1001,99 @@ export class DatabaseStorage implements IStorage {
       return updatedResponse;
     } catch (error) {
       console.error("Error updating custom field response:", error);
+      throw error;
+    }
+  }
+  
+  // Camp soft delete method - only allowed before registration start date
+  async softDeleteCamp(campId: number): Promise<Camp> {
+    try {
+      console.log(`Soft deleting camp ID: ${campId}`);
+      
+      // First get the camp to check if it's before registration start date
+      const camp = await this.getCamp(campId);
+      if (!camp) {
+        throw new Error(`Camp with ID ${campId} not found`);
+      }
+      
+      // Check if registration has already started
+      const now = new Date();
+      if (now >= camp.registrationStartDate) {
+        throw new Error("Cannot delete a camp after registration has started. Use cancelCamp instead.");
+      }
+      
+      // Update the camp to mark it as deleted
+      const [updatedCamp] = await db.update(camps)
+        .set({
+          isDeleted: true,
+          deletedAt: new Date()
+        })
+        .where(eq(camps.id, campId))
+        .returning();
+      
+      console.log(`Camp ID: ${campId} has been soft deleted`);
+      return updatedCamp;
+    } catch (error: any) {
+      console.error(`Error soft deleting camp ID: ${campId}:`, {
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        constraint: error.constraint,
+        stack: error.stack
+      });
+      throw new Error(`Failed to soft delete camp: ${error.message}`);
+    }
+  }
+  
+  // Camp cancellation method - can be used after registration start date
+  async cancelCamp(campId: number, reason?: string): Promise<Camp> {
+    try {
+      console.log(`Cancelling camp ID: ${campId}`);
+      
+      // First get the camp to check if it exists
+      const camp = await this.getCamp(campId);
+      if (!camp) {
+        throw new Error(`Camp with ID ${campId} not found`);
+      }
+      
+      // Update the camp to mark it as cancelled
+      const [updatedCamp] = await db.update(camps)
+        .set({
+          isCancelled: true,
+          cancelledAt: new Date(),
+          cancelReason: reason || null
+        })
+        .where(eq(camps.id, campId))
+        .returning();
+      
+      console.log(`Camp ID: ${campId} has been cancelled`);
+      return updatedCamp;
+    } catch (error: any) {
+      console.error(`Error cancelling camp ID: ${campId}:`, {
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        constraint: error.constraint,
+        stack: error.stack
+      });
+      throw new Error(`Failed to cancel camp: ${error.message}`);
+    }
+  }
+
+  async getCampCustomFields(campId: number): Promise<(CampCustomField & { field: CustomField })[]> {
+    try {
+      const fields = await db
+        .select()
+        .from(campCustomFields)
+        .where(eq(campCustomFields.campId, campId))
+        .leftJoin(customFields, eq(campCustomFields.customFieldId, customFields.id));
+      
+      return fields.map(({ camp_custom_fields, custom_fields }) => ({
+        ...camp_custom_fields,
+        field: custom_fields
+      }));
+    } catch (error) {
+      console.error(`Error retrieving custom fields for camp ID ${campId}:`, error);
       throw error;
     }
   }

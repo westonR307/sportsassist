@@ -699,6 +699,119 @@ export async function registerRoutes(app: Express) {
       });
     }
   });
+
+  // Endpoint to soft delete a camp - only allowed if registration hasn't started yet
+  app.post("/api/camps/:id/delete", async (req, res) => {
+    try {
+      // Check if user is authenticated
+      if (!req.user) {
+        return res.status(401).json({ message: "You must be logged in to delete a camp" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      if (isNaN(campId)) {
+        return res.status(400).json({ message: "Invalid camp ID format" });
+      }
+      
+      // Get the camp to check permissions and registration start date
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if user has permission to delete this camp
+      if (req.user.organizationId !== camp.organizationId) {
+        return res.status(403).json({ 
+          message: "You don't have permission to delete this camp" 
+        });
+      }
+      
+      // Check if registration has already started
+      const now = new Date();
+      const registrationStartDate = new Date(camp.registrationStartDate);
+      
+      if (now >= registrationStartDate) {
+        return res.status(400).json({ 
+          message: "Cannot delete camp after registration has started. Consider cancelling it instead." 
+        });
+      }
+      
+      // Perform the soft delete
+      const deletedCamp = await storage.softDeleteCamp(campId);
+      
+      res.json({
+        ...deletedCamp,
+        message: "Camp successfully deleted",
+        permissions: {
+          canManage: true
+        }
+      });
+    } catch (error) {
+      console.error("Error deleting camp:", {
+        id: req.params.id,
+        message: error.message,
+        stack: error.stack
+      });
+      res.status(500).json({ 
+        message: "Failed to delete camp",
+        error: error.message
+      });
+    }
+  });
+
+  // Endpoint to cancel a camp - can be done at any time, even after registration starts
+  app.post("/api/camps/:id/cancel", async (req, res) => {
+    try {
+      // Check if user is authenticated
+      if (!req.user) {
+        return res.status(401).json({ message: "You must be logged in to cancel a camp" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      if (isNaN(campId)) {
+        return res.status(400).json({ message: "Invalid camp ID format" });
+      }
+      
+      // Get the camp to check permissions
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if user has permission to cancel this camp
+      if (req.user.organizationId !== camp.organizationId) {
+        return res.status(403).json({ 
+          message: "You don't have permission to cancel this camp" 
+        });
+      }
+      
+      // Get the cancellation reason from the request body
+      const reason = req.body.reason || null;
+      
+      // Perform the cancellation
+      const cancelledCamp = await storage.cancelCamp(campId, reason);
+      
+      res.json({
+        ...cancelledCamp,
+        message: "Camp successfully cancelled",
+        permissions: {
+          canManage: true
+        }
+      });
+    } catch (error) {
+      console.error("Error cancelling camp:", {
+        id: req.params.id,
+        message: error.message,
+        stack: error.stack
+      });
+      res.status(500).json({ 
+        message: "Failed to cancel camp",
+        error: error.message
+      });
+    }
+  });
+
+
   
   // Route to get camp sports
   app.get("/api/camps/:id/sports", async (req, res) => {

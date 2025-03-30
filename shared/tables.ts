@@ -3,7 +3,8 @@ import {
   type CampType, type CampVisibility, type RepeatType, 
   type Role, type Gender, type ContactMethod, 
   type SportLevel, type StaffRole,
-  type FieldType, type ValidationType
+  type FieldType, type ValidationType,
+  type CampStatus
 } from "./types";
 
 export const camps = pgTable("camps", {
@@ -28,6 +29,11 @@ export const camps = pgTable("camps", {
   minAge: integer("min_age").notNull(),
   maxAge: integer("max_age").notNull(),
   repeatType: text("repeat_type").$type<RepeatType>().notNull().default("none"),
+  isDeleted: boolean("is_deleted").notNull().default(false),
+  isCancelled: boolean("is_cancelled").notNull().default(false),
+  deletedAt: timestamp("deleted_at"),
+  cancelledAt: timestamp("cancelled_at"),
+  cancelReason: text("cancel_reason"),
   repeatCount: integer("repeat_count").notNull().default(0),
 });
 
