@@ -2,6 +2,9 @@ import { Router, Request, Response, NextFunction, Express } from "express";
 import { insertChildSchema } from "@shared/schema";
 import { storage } from "./storage";
 import { Gender, ContactMethod } from "@shared/types";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
+import { children, registrations, camps } from "@shared/tables";
 
 // Helper function to check if user is authenticated and is a parent
 function ensureParent(req: Request, res: Response, next: NextFunction) {
@@ -28,7 +31,15 @@ export function registerParentRoutes(app: Express) {
       if (!req.user) {
         return res.status(401).json({ message: "Authentication required" });
       }
+      
+      console.log(`Getting children for parent ID: ${req.user.id}`);
       const children = await storage.getChildrenByParent(req.user.id);
+      console.log(`Found ${children.length} children for parent ID: ${req.user.id}`);
+      
+      if (children.length > 0) {
+        console.log(`Sample child: Parent ID: ${children[0].parentId}, Child ID: ${children[0].id}, Name: ${children[0].fullName}`);
+      }
+      
       res.json(children);
     } catch (error: any) {
       console.error("Error fetching children:", error);
@@ -144,6 +155,64 @@ export function registerParentRoutes(app: Express) {
     }
   });
   
+  // Get all registrations for the parent's children
+  router.get("/registrations", async (req: Request, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      console.log(`Getting registrations for parent ID: ${req.user.id}`);
+      
+      // First get all of this parent's children
+      const children = await storage.getChildrenByParent(req.user.id);
+      
+      console.log(`Found ${children.length} children for parent ID: ${req.user.id}`);
+      
+      if (children.length === 0) {
+        // If there are no children, return an empty list
+        return res.json([]);
+      }
+      
+      // Create an array to hold all of our results
+      const result = [];
+      
+      // For each child, we'll get all of their registrations
+      for (const child of children) {
+        // Get registrations for this child
+        const childRegistrations = await db
+          .select()
+          .from(registrations)
+          .where(eq(registrations.childId, child.id));
+        
+        // For each registration, get the camp and format the response
+        for (const registration of childRegistrations) {
+          // Get the camp details
+          const camp = await storage.getCamp(registration.campId);
+          
+          if (camp) {
+            // Add this registration with camp and child details to the results
+            result.push({
+              ...registration,
+              camp,
+              child: {
+                id: child.id,
+                fullName: child.fullName,
+                profilePhoto: child.profilePhoto
+              }
+            });
+          }
+        }
+      }
+      
+      console.log(`Found ${result.length} total registrations for parent's children`);
+      return res.json(result);
+    } catch (error: any) {
+      console.error("Error fetching registrations:", error);
+      res.status(500).json({ message: "Failed to fetch registrations" });
+    }
+  });
+
   // Mount the parent routes with the /api/parent prefix
   app.use('/api/parent', router);
 }

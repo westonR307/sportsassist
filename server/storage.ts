@@ -465,10 +465,15 @@ export class DatabaseStorage implements IStorage {
       .where(eq(invitations.organizationId, organizationId));
   }
   async getChildrenByParent(parentId: number): Promise<Child[]> {
+    console.log(`[Storage] Getting children for parent ID: ${parentId}`);
+    
     // First get all children
     const childrenData = await db.select()
       .from(children)
       .where(eq(children.parentId, parentId));
+    
+    console.log(`[Storage] Raw SQL query: SELECT * FROM children WHERE parent_id = ${parentId}`);
+    console.log(`[Storage] Found ${childrenData.length} children for parent ID: ${parentId}`);
     
     // For each child, get their sports interests
     const extendedChildren = await Promise.all(childrenData.map(async (child) => {
