@@ -127,7 +127,7 @@ export function AddCampDialog({
           throw new Error("Sport selection is required");
         }
 
-        const sportId = sportsMap[selectedSport] || 1;
+        const sportId = parseInt(selectedSport) || 1;
         const mappedSkillLevel = skillLevelMap[skillLevel] || "beginner";
 
         const requestData = {
@@ -315,7 +315,7 @@ export function AddCampDialog({
     console.log("Submitting form with data:", { 
       ...data, 
       schedules,
-      sportId: sportsMap[selectedSport],
+      sportId: parseInt(selectedSport) || 1,
       skillLevel: skillLevelMap[skillLevel] 
     });
 
@@ -396,14 +396,14 @@ export function AddCampDialog({
                           Select a sport...
                         </option>
                         {sportsList.map((sport) => (
-                          <option key={sport} value={sport}>
-                            {sport}
+                          <option key={sport.id} value={sport.id}>
+                            {sport.name}
                           </option>
                         ))}
                       </select>
                       {selectedSport && (
                         <div className="mt-1 text-sm text-green-600">
-                          Selected: {selectedSport}
+                          Selected: {sportsList.find(s => s.id === parseInt(selectedSport))?.name}
                         </div>
                       )}
                     </FormItem>
