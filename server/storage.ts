@@ -304,9 +304,10 @@ export class DatabaseStorage implements IStorage {
         conditions.push(eq(camps.organizationId, organizationId));
       }
       
-      // Don't include soft-deleted camps by default
+      // Don't include deleted or cancelled camps by default
       if (!includeDeleted) {
-        conditions.push(eq(camps.isDeleted, false));
+        // Using column names directly since Drizzle's mapping seems to be inconsistent
+        conditions.push(sql`${camps.id} IS NOT NULL AND "is_deleted" = false`);
       }
       
       // Apply all conditions if any exist
@@ -1022,14 +1023,14 @@ export class DatabaseStorage implements IStorage {
         throw new Error("Cannot delete a camp after registration has started. Use cancelCamp instead.");
       }
       
-      // Update the camp to mark it as deleted
-      const [updatedCamp] = await db.update(camps)
-        .set({
-          isDeleted: true,
-          deletedAt: new Date()
-        })
-        .where(eq(camps.id, campId))
-        .returning();
+      // Update the camp to mark it as deleted (using raw column names)
+      const { rows } = await db.execute(
+        sql`UPDATE camps 
+            SET is_deleted = true, deleted_at = ${new Date()}
+            WHERE id = ${campId}
+            RETURNING *`
+      );
+      const updatedCamp = rows[0];
       
       console.log(`Camp ID: ${campId} has been soft deleted`);
       return updatedCamp;
@@ -1056,15 +1057,14 @@ export class DatabaseStorage implements IStorage {
         throw new Error(`Camp with ID ${campId} not found`);
       }
       
-      // Update the camp to mark it as cancelled
-      const [updatedCamp] = await db.update(camps)
-        .set({
-          isCancelled: true,
-          cancelledAt: new Date(),
-          cancelReason: reason || null
-        })
-        .where(eq(camps.id, campId))
-        .returning();
+      // Update the camp to mark it as cancelled (using raw column names)
+      const { rows } = await db.execute(
+        sql`UPDATE camps 
+            SET is_cancelled = true, cancelled_at = ${new Date()}, cancel_reason = ${reason || null}
+            WHERE id = ${campId}
+            RETURNING *`
+      );
+      const updatedCamp = rows[0];
       
       console.log(`Camp ID: ${campId} has been cancelled`);
       return updatedCamp;
