@@ -16,6 +16,14 @@ import {
   TooltipTrigger, 
   TooltipProvider 
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 import { 
   AlertTriangle,
   Loader2, 
@@ -44,7 +52,9 @@ import {
   Eye,
   FileEdit,
   Save,
-  UsersRound
+  UsersRound,
+  ChevronDown,
+  Table as TableIcon
 } from "lucide-react";
 import {
   AlertDialog,
@@ -858,29 +868,33 @@ function CampViewPage(props: { id?: string }) {
                         }
                       }}
                     />
-                    <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => {
-                          setExportFormat("pdf");
-                          setShowExportDialog(true);
-                        }}
-                      >
-                        <FileText className="h-4 w-4 mr-2" />
-                        Export to PDF
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => {
-                          setExportFormat("csv");
-                          setShowExportDialog(true);
-                        }}
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Export to CSV
-                      </Button>
+                    <div className="flex">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" variant="outline">
+                            <Download className="h-4 w-4 mr-2" />
+                            Export <ChevronDown className="h-4 w-4 ml-1"/>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => {
+                            setExportFormat("pdf");
+                            setShowExportDialog(true);
+                          }}>
+                            <FileText className="h-4 w-4 mr-2" />
+                            <span>PDF Format</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setExportFormat("csv");
+                            setShowExportDialog(true);
+                          }}>
+                            <TableIcon className="h-4 w-4 mr-2" />
+                            <span>CSV Format</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 </CardHeader>
