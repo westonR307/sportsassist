@@ -378,8 +378,8 @@ export function EditAthleteDialog({
                                 >
                                   <option value="">Select a sport</option>
                                   {sportsList.map((sport) => (
-                                    <option key={sport} value={sportsMap[sport] || 0}>
-                                      {sport}
+                                    <option key={sport.id} value={sport.id}>
+                                      {sport.name}
                                     </option>
                                   ))}
                                 </select>
