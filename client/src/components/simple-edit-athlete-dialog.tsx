@@ -63,25 +63,21 @@ export function SimpleEditAthleteDialog({ athlete, open, onOpenChange }: SimpleE
     try {
       console.log("Submitting data:", formData);
       
-      // Create a complete payload with all required fields
+      // Create a basic payload with just the fields we're editing
+      // Use the athlete's existing values for other fields
       const payload = {
         fullName: formData.fullName,
         dateOfBirth: formData.dateOfBirth,
         gender: formData.gender || "male",
-        communicationOptIn: true,
-        preferredContact: "email",
-        // Include any other fields
-        schoolName: formData.schoolName,
-        // Add placeholders for other required fields to prevent type errors
-        emergencyContact: "",
-        emergencyPhone: "",
-        medicalInformation: "",
-        specialNeeds: ""
+        schoolName: formData.schoolName || "",
+        // Keep the existing values for required fields
+        preferredContact: athlete.preferredContact || "email", 
+        communicationOptIn: athlete.communicationOptIn !== undefined ? athlete.communicationOptIn : true
       };
       
       console.log("Full payload:", JSON.stringify(payload, null, 2));
       
-      // Use direct fetch instead of the utility function
+      // Use direct fetch with explicit path
       const response = await fetch(`/api/parent/children/${athlete.id}`, {
         method: "PUT",
         headers: {
@@ -91,10 +87,11 @@ export function SimpleEditAthleteDialog({ athlete, open, onOpenChange }: SimpleE
         credentials: "include" // Important: include credentials for auth
       });
       
+      // Check for response errors and log them
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`Server error: ${response.status}`, errorText);
-        throw new Error(`Failed to update: ${response.status} ${errorText}`);
+        throw new Error(`Failed to update athlete: ${errorText || response.statusText}`);
       }
       
       const data = await response.json();
@@ -108,7 +105,7 @@ export function SimpleEditAthleteDialog({ athlete, open, onOpenChange }: SimpleE
       
       toast({
         title: "Athlete updated",
-        description: "Your athlete's profile has been updated successfully.",
+        description: "Profile has been updated successfully",
       });
     } catch (error) {
       console.error("Update failed:", error);
