@@ -67,9 +67,17 @@ function CampViewPage() {
   const isParent = user?.role === 'parent';
 
   // Updated to use the extended type with permissions
-  const { data: camp, isLoading } = useQuery<CampWithPermissions>({
+  const { data: camp, isLoading, error: campError } = useQuery<CampWithPermissions>({
     queryKey: [`/api/camps/${id}`],
     enabled: !!id,
+    onError: (error) => {
+      console.error("Error fetching camp details:", error);
+      toast({
+        title: "Error loading camp details",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive"
+      });
+    }
   });
 
   // Updated to use the response type that includes permissions
@@ -265,12 +273,28 @@ function CampViewPage() {
     }
 
     if (!camp) {
+      // Add more detailed debugging information for when camp is null
+      console.log("Camp data is null or undefined", {
+        id,
+        isLoading,
+        campError,
+        routeParams: useParams()
+      });
+      
       return <div className="flex items-center justify-center h-full">
         <Card className="w-[400px]">
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">
-              Camp not found
+          <CardHeader>
+            <CardTitle className="text-center">Camp Not Found</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <p className="text-center text-muted-foreground mb-4">
+              We couldn't find the camp you're looking for.
             </p>
+            <div className="flex justify-center">
+              <Button onClick={() => queryClient.invalidateQueries({ queryKey: [`/api/camps/${id}`] })}>
+                Retry
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>;

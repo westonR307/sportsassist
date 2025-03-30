@@ -54,4 +54,11 @@ export const queryClient = new QueryClient({
       retry: false,
     },
   },
+  logger: {
+    log: console.log,
+    warn: console.warn,
+    error: (error) => {
+      console.error("React Query Error:", error);
+    }
+  }
 });
