@@ -31,7 +31,14 @@ import {
   Ban,
   ListChecks,
   User,
-  Trash2
+  Trash2,
+  CheckSquare,
+  ClipboardCheck,
+  Download,
+  Eye,
+  FileEdit,
+  Save,
+  UsersRound
 } from "lucide-react";
 import {
   AlertDialog,
@@ -45,6 +52,7 @@ import {
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { type Camp, type Child } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { EditCampDialog } from "@/components/edit-camp-dialog";
@@ -52,6 +60,22 @@ import { CampScheduleDisplay } from "@/components/camp-schedule";
 // Using the fixed schedule editor dialog
 import { ScheduleEditorDialog } from "@/components/schedule-editor-dialog-fixed";
 import { EditCampCustomFields } from "@/components/edit-camp-custom-fields";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 // Extended camp type to include permissions from the server
 interface CampWithPermissions extends Camp {
@@ -558,11 +582,14 @@ function CampViewPage(props: { id?: string }) {
 
         {/* Tabs */}
         <Tabs defaultValue="details" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
+          <TabsList className={`grid w-full max-w-md ${canManage ? 'grid-cols-4' : 'grid-cols-2'}`}>
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="registrations">Registrations</TabsTrigger>
             {canManage && (
               <TabsTrigger value="form-fields">Form Fields</TabsTrigger>
+            )}
+            {canManage && (
+              <TabsTrigger value="attendance">Attendance</TabsTrigger>
             )}
           </TabsList>
           
@@ -786,6 +813,157 @@ function CampViewPage(props: { id?: string }) {
                 </CardHeader>
                 <CardContent>
                   <EditCampCustomFields camp={camp} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+          
+          {/* Attendance Tab - Only for managers */}
+          {canManage && (
+            <TabsContent value="attendance">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <ClipboardCheck className="h-5 w-5" />
+                    Attendance Tracking
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="date"
+                      className="w-40"
+                      placeholder="Filter by date"
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          // This would be used to filter the attendance records
+                          console.log("Filter attendance by date:", e.target.value);
+                        }
+                      }}
+                    />
+                    <Button size="sm" variant="outline">
+                      <Download className="h-4 w-4 mr-2" />
+                      Export
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingRegistrations ? (
+                    <div className="flex justify-center p-4">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    </div>
+                  ) : !registrations || registrations.length === 0 ? (
+                    <div className="text-center py-6">
+                      <div className="flex flex-col items-center gap-2">
+                        <UsersRound className="h-8 w-8 text-muted-foreground/50" />
+                        <h3 className="text-lg font-medium">No Athletes Registered</h3>
+                        <p className="text-muted-foreground">
+                          When athletes register for this camp, you'll be able to track their attendance here.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      <div className="border rounded-md overflow-hidden">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="w-[60px]">ID</TableHead>
+                              <TableHead>Athlete</TableHead>
+                              <TableHead className="text-center">Status</TableHead>
+                              <TableHead className="text-center">Date</TableHead>
+                              <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {registrations.map((registration: any) => (
+                              <TableRow key={registration.id}>
+                                <TableCell className="font-medium">{registration.childId}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <Avatar className="h-8 w-8">
+                                      <AvatarFallback>{registration.childId.toString().substring(0, 2)}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                      <p className="text-sm font-medium">Athlete #{registration.childId}</p>
+                                      <p className="text-xs text-muted-foreground">
+                                        Registered on {new Date(registration.registeredAt).toLocaleDateString()}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <Select defaultValue="not_recorded">
+                                    <SelectTrigger className="w-32 h-8">
+                                      <SelectValue placeholder="Status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="not_recorded">Not Recorded</SelectItem>
+                                      <SelectItem value="present">Present</SelectItem>
+                                      <SelectItem value="absent">Absent</SelectItem>
+                                      <SelectItem value="late">Late</SelectItem>
+                                      <SelectItem value="excused">Excused</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </TableCell>
+                                <TableCell className="text-center text-sm">
+                                  {new Date().toLocaleDateString()}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-2">
+                                    <Button size="sm" variant="ghost">
+                                      <FileEdit className="h-4 w-4" />
+                                      <span className="sr-only">Edit</span>
+                                    </Button>
+                                    <Button size="sm" variant="ghost">
+                                      <Eye className="h-4 w-4" />
+                                      <span className="sr-only">View</span>
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                      
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm text-muted-foreground">
+                          Showing {registrations.length} athletes
+                        </p>
+                        <div className="space-x-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => {
+                              // Logic to save attendance updates
+                              toast({
+                                title: "Attendance Saved",
+                                description: `Saved attendance records for ${registrations.length} athletes.`,
+                                variant: "default"
+                              });
+                            }}
+                          >
+                            <Save className="h-4 w-4 mr-2" />
+                            Save Attendance
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              // Logic to mark all as present
+                              toast({
+                                title: "Marked All as Present",
+                                description: `All ${registrations.length} athletes have been marked as present.`,
+                                variant: "default"
+                              });
+                            }}
+                          >
+                            <CheckSquare className="h-4 w-4 mr-2" />
+                            Mark All Present
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

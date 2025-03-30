@@ -1621,6 +1621,145 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  // Attendance tracking routes
+  
+  // Get attendance records for a camp
+  app.get("/api/camps/:id/attendance", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "You must be logged in to view attendance records" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      if (isNaN(campId)) {
+        return res.status(400).json({ message: "Invalid camp ID" });
+      }
+      
+      // Get the camp to check permissions
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if user has permission to view this camp's attendance
+      // For now, only camp creators of the same organization can view attendance
+      if (req.user.role !== "camp_creator" || req.user.organizationId !== camp.organizationId) {
+        return res.status(403).json({ 
+          message: "You don't have permission to view this camp's attendance records" 
+        });
+      }
+      
+      // Get optional date filter
+      let date: Date | undefined = undefined;
+      if (req.query.date) {
+        date = new Date(req.query.date as string);
+      }
+      
+      const attendanceRecords = await storage.getAttendanceRecords(campId, date);
+      res.json(attendanceRecords);
+    } catch (error) {
+      console.error("Error fetching attendance records:", error);
+      res.status(500).json({ message: "Failed to fetch attendance records" });
+    }
+  });
+  
+  // Create attendance record
+  app.post("/api/camps/:id/attendance", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "You must be logged in to record attendance" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      if (isNaN(campId)) {
+        return res.status(400).json({ message: "Invalid camp ID" });
+      }
+      
+      // Get the camp to check permissions
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if user has permission to record attendance for this camp
+      if (req.user.role !== "camp_creator" || req.user.organizationId !== camp.organizationId) {
+        return res.status(403).json({ 
+          message: "You don't have permission to record attendance for this camp" 
+        });
+      }
+      
+      // Validate required fields
+      if (!req.body.registrationId || !req.body.childId || !req.body.date || !req.body.status) {
+        return res.status(400).json({ 
+          message: "Missing required fields (registrationId, childId, date, status)" 
+        });
+      }
+      
+      // Create attendance record
+      const record = await storage.createAttendanceRecord({
+        registrationId: req.body.registrationId,
+        campId: campId,
+        childId: req.body.childId,
+        date: new Date(req.body.date),
+        status: req.body.status,
+        notes: req.body.notes || null,
+        recordedBy: req.user.id
+      });
+      
+      res.status(201).json(record);
+    } catch (error) {
+      console.error("Error creating attendance record:", error);
+      res.status(500).json({ message: "Failed to create attendance record" });
+    }
+  });
+  
+  // Update attendance record
+  app.put("/api/attendance/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "You must be logged in to update attendance" });
+      }
+      
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid attendance record ID" });
+      }
+      
+      // Get the attendance record
+      const records = await storage.getAttendanceRecords(req.body.campId);
+      const record = records.find(r => r.id === id);
+      
+      if (!record) {
+        return res.status(404).json({ message: "Attendance record not found" });
+      }
+      
+      // Get the camp to check permissions
+      const camp = await storage.getCamp(record.campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Associated camp not found" });
+      }
+      
+      // Check if user has permission to update attendance for this camp
+      if (req.user.role !== "camp_creator" || req.user.organizationId !== camp.organizationId) {
+        return res.status(403).json({ 
+          message: "You don't have permission to update attendance for this camp" 
+        });
+      }
+      
+      // Update attendance record
+      const updatedRecord = await storage.updateAttendanceRecord(id, {
+        status: req.body.status,
+        notes: req.body.notes,
+        // Don't allow changing campId, registrationId, childId or date
+      });
+      
+      res.json(updatedRecord);
+    } catch (error) {
+      console.error("Error updating attendance record:", error);
+      res.status(500).json({ message: "Failed to update attendance record" });
+    }
+  });
+  
   // Register parent-specific routes
   registerParentRoutes(app);
   
