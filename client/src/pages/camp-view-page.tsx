@@ -71,13 +71,19 @@ function CampViewPage() {
     queryKey: ['camp', id],
     queryFn: async () => {
       if (!id) throw new Error('No camp ID provided');
+      console.log("Fetching camp with ID:", id);
       const response = await fetch(`/api/camps/${id}`);
       if (!response.ok) {
-        throw new Error('Failed to fetch camp');
+        const error = await response.text();
+        console.error("Failed to fetch camp:", error);
+        throw new Error(error || 'Failed to fetch camp');
       }
-      return response.json();
+      const data = await response.json();
+      console.log("Received camp data:", data);
+      return data;
     },
-    enabled: !!id,
+    enabled: !!id && id !== 'undefined',
+    retry: 1,
     onError: (error) => {
       console.error("Error fetching camp details:", error);
       toast({
