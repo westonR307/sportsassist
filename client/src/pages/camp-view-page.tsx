@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { DashboardLayout } from "./dashboard";
 import { ParentSidebar } from "@/components/parent-sidebar";
@@ -6,8 +6,9 @@ import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { 
   Loader2, 
   Edit, 
@@ -18,10 +19,18 @@ import {
   Calendar, 
   FileText, 
   CheckCircle,
-  ArrowLeft 
+  ArrowLeft,
+  Clock,
+  DollarSign,
+  Users2,
+  AlertCircle,
+  XCircle,
+  ClipboardList,
+  Ban,
+  ListChecks
 } from "lucide-react";
 import { type Camp } from "@shared/schema";
-import { apiRequest } from "@/lib/api";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { EditCampDialog } from "@/components/edit-camp-dialog";
 import { CampScheduleDisplay } from "@/components/camp-schedule";
 // Using the fixed schedule editor dialog
@@ -50,6 +59,7 @@ function CampViewPage() {
   const [location, navigate] = useLocation();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [scheduleEditorOpen, setScheduleEditorOpen] = useState(false);
+  const [registering, setRegistering] = useState(false);
 
   // Check if user is a parent
   const isParent = user?.role === 'parent';
@@ -71,6 +81,80 @@ function CampViewPage() {
   
   // Check if the user has permission to manage this camp
   const canManage = camp?.permissions?.canManage || false;
+
+  // Calculate registration status
+  const getRegistrationStatus = () => {
+    if (!camp) return 'unknown';
+    
+    const now = new Date();
+    const regStartDate = new Date(camp.registrationStartDate);
+    const regEndDate = new Date(camp.registrationEndDate);
+    const campStartDate = new Date(camp.startDate);
+    
+    // Check if registration period has ended
+    if (now > regEndDate) return 'closed';
+    
+    // Check if camp has already started
+    if (now > campStartDate) return 'in_progress';
+    
+    // Check if registration hasn't opened yet
+    if (now < regStartDate) return 'not_open';
+    
+    // Check if camp is at capacity
+    const registeredCount = registrations.length;
+    if (registeredCount >= camp.capacity) {
+      return camp.waitlistEnabled ? 'waitlist' : 'full';
+    }
+    
+    // Default case: Registration is open
+    return 'open';
+  };
+  
+  const registrationStatus = camp ? getRegistrationStatus() : 'unknown';
+  
+  // Check if the current user's child is already registered
+  const isUserRegistered = () => {
+    if (!user || !registrations || !isParent) return false;
+    
+    // In a real app, we would check if any of the parent's children are registered
+    // For now, we'll use a simplified version
+    return registrations.some((reg: any) => reg.parentId === user.id);
+  };
+  
+  // Registration mutation
+  const registerMutation = useMutation({
+    mutationFn: async () => {
+      setRegistering(true);
+      try {
+        // In a real implementation, we would need to select which child to register
+        // and may need to collect custom field data
+        const response = await apiRequest('POST', `/api/camps/${id}/register`, {
+          campId: parseInt(id),
+          // We'd need to add childId in a real implementation
+        });
+        
+        return await response.json();
+      } finally {
+        setRegistering(false);
+      }
+    },
+    onSuccess: () => {
+      toast({
+        title: "Registration successful",
+        description: "You have successfully registered for this camp.",
+      });
+      
+      // Refresh registration data
+      queryClient.invalidateQueries({ queryKey: [`/api/camps/${id}/registrations`] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Registration failed",
+        description: error.message || "There was an error processing your registration.",
+        variant: "destructive"
+      });
+    }
+  });
 
   // Render appropriate content for parent vs organization user
   const renderContent = () => {
@@ -127,10 +211,55 @@ function CampViewPage() {
                 </Button>
               </>
             ) : isParent ? (
-              // For parents show register button
-              <Button>
-                Register
-              </Button>
+              // For parents show the appropriate registration button based on status
+              isUserRegistered() ? (
+                <Button variant="outline" disabled>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Already Registered
+                </Button>
+              ) : registrationStatus === 'open' ? (
+                <Button 
+                  onClick={() => registerMutation.mutate()}
+                  disabled={registerMutation.isPending}
+                >
+                  {registerMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                  )}
+                  Register Now
+                </Button>
+              ) : registrationStatus === 'waitlist' ? (
+                <Button variant="secondary">
+                  <ClipboardList className="h-4 w-4 mr-2" />
+                  Join Waitlist
+                </Button>
+              ) : registrationStatus === 'closed' ? (
+                <Button variant="outline" disabled>
+                  <Ban className="h-4 w-4 mr-2" />
+                  Registration Closed
+                </Button>
+              ) : registrationStatus === 'full' ? (
+                <Button variant="outline" disabled>
+                  <Users2 className="h-4 w-4 mr-2" />
+                  Camp Full
+                </Button>
+              ) : registrationStatus === 'not_open' ? (
+                <Button variant="outline" disabled>
+                  <Clock className="h-4 w-4 mr-2" />
+                  Registration Opens {new Date(camp.registrationStartDate).toLocaleDateString()}
+                </Button>
+              ) : registrationStatus === 'in_progress' ? (
+                <Button variant="outline" disabled>
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  Camp In Progress
+                </Button>
+              ) : (
+                <Button variant="outline" disabled>
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Registration Unavailable
+                </Button>
+              )
             ) : (
               // Show a message for other non-organizers
               <div className="flex items-center text-muted-foreground">
@@ -157,7 +286,60 @@ function CampViewPage() {
               <div className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Camp Information</CardTitle>
+                    <div className="flex justify-between items-center">
+                      <CardTitle>Camp Information</CardTitle>
+                      {/* Registration status badge */}
+                      {registrationStatus === 'open' && (
+                        <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Registration Open
+                        </Badge>
+                      )}
+                      {registrationStatus === 'not_open' && (
+                        <Badge variant="outline" className="text-amber-600 border-amber-300">
+                          <Clock className="h-3 w-3 mr-1" />
+                          Opens Soon
+                        </Badge>
+                      )}
+                      {registrationStatus === 'closed' && (
+                        <Badge variant="outline" className="text-muted-foreground">
+                          <Ban className="h-3 w-3 mr-1" />
+                          Closed
+                        </Badge>
+                      )}
+                      {registrationStatus === 'full' && (
+                        <Badge variant="outline" className="text-orange-600 border-orange-300">
+                          <Users2 className="h-3 w-3 mr-1" />
+                          Full
+                        </Badge>
+                      )}
+                      {registrationStatus === 'waitlist' && (
+                        <Badge variant="secondary">
+                          <ClipboardList className="h-3 w-3 mr-1" />
+                          Waitlist Available
+                        </Badge>
+                      )}
+                      {registrationStatus === 'in_progress' && (
+                        <Badge variant="outline" className="text-blue-600 border-blue-300">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          In Progress
+                        </Badge>
+                      )}
+                    </div>
+                    <CardDescription>
+                      {registrationStatus === 'open' && (
+                        <span className="text-green-600 flex items-center">
+                          <span className="inline-block h-2 w-2 rounded-full bg-green-600 mr-2"></span>
+                          {camp.capacity - registrations.length} spots remaining
+                        </span>
+                      )}
+                      {registrationStatus === 'waitlist' && (
+                        <span className="text-amber-600 flex items-center">
+                          <span className="inline-block h-2 w-2 rounded-full bg-amber-600 mr-2"></span>
+                          At capacity • Waitlist available
+                        </span>
+                      )}
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
