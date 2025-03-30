@@ -1,0 +1,46 @@
+CampViewPage - id from params: 7
+CampViewPage - final id being used: 7
+CampViewPage - id from props: 7
+CampViewPage - id from params: 7
+CampViewPage - final id being used: 7
+Tooltip is not defined
+CampViewPage - id from props: 7
+CampViewPage - id from params: 7
+CampViewPage - final id being used: 7
+CampViewPage - id from props: 7
+CampViewPage - id from params: 7
+CampViewPage - final id being used: 7
+Tooltip is not defined
+The above error occurred in the <CampViewPage> component:
+
+    at CampViewPage (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/pages/camp-view-page.tsx:93:18)
+    at Route (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=87f56863:280:16)
+    at ProtectedRoute (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/lib/protected-route.tsx:22:3)
+    at Switch (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=87f56863:336:17)
+    at Router (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/App.tsx?v=ltcfyuZtDWTApvtSzaizM:98:31)
+    at AuthProvider (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/hooks/use-auth.tsx:26:32)
+    at QueryClientProvider (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=87f56863:2805:3)
+    at ErrorBoundary (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/components/error-boundary.tsx:7:5)
+    at App
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.
+
+at CampViewPage (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/pages/camp-view-page.tsx:93:18)
+at Route (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=87f56863:280:16)
+at ProtectedRoute (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/lib/protected-route.tsx:22:3)
+at Switch (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=87f56863:336:17)
+at Router (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/App.tsx?v=ltcfyuZtDWTApvtSzaizM:98:31)
+at AuthProvider (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/hooks/use-auth.tsx:26:32)
+at QueryClientProvider (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=87f56863:2805:3)
+at ErrorBoundary (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/components/error-boundary.tsx:7:5)
+at App
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.
+at t.value (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+React Error Boundary caught an error: 
+ReferenceError {}
+ 
+Object {componentStack: "↵    at CampViewPage…"}
