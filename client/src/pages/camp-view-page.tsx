@@ -438,57 +438,67 @@ function CampViewPage(props: { id?: string }) {
     return (
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
-          {isParent ? (
-            <div className="flex items-center">
+        <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center mb-6">
+          {/* Camp Title Area */}
+          <div className="flex flex-col">
+            {isParent && (
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={() => navigate('/find-camps')}
-                className="mr-2"
+                className="mb-2 w-fit"
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 Back
               </Button>
-              <h1 className="text-2xl font-bold">{camp.name}</h1>
-            </div>
-          ) : (
-            <h1 className="text-2xl font-bold">{camp.name}</h1>
-          )}
+            )}
+            <h1 className="text-2xl md:text-3xl font-bold leading-tight break-words max-w-[95%] md:max-w-[600px]">
+              {camp.name}
+            </h1>
+          </div>
           
-          <div className="flex gap-2">
+          {/* Action Buttons Area */}
+          <div className="flex flex-wrap gap-2 justify-end">
             {canManage ? (
               // Only show management buttons if user has permission
-              <>
-                <Button variant="outline">
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Message Athletes
-                </Button>
-                <Button onClick={() => setEditDialogOpen(true)}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Camp
-                </Button>
-                {registrationStatus === 'not_open' ? (
-                  <Button 
-                    variant="destructive" 
-                    onClick={() => setShowDeleteDialog(true)}
-                    size="sm"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete Camp
+              <div className="flex flex-wrap gap-2">
+                {/* Primary management buttons */}
+                <div className="flex gap-2">
+                  <Button onClick={() => setEditDialogOpen(true)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Camp
                   </Button>
-                ) : (
-                  <Button 
-                    variant="outline" 
-                    className="text-amber-600 border-amber-200 hover:bg-amber-50"
-                    onClick={() => setShowCancelDialog(true)}
-                    size="sm"
-                  >
-                    <AlertTriangle className="h-4 w-4 mr-2" />
-                    Cancel Camp
+                  <Button variant="outline">
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Message
                   </Button>
-                )}
-              </>
+                </div>
+                
+                {/* Destructive actions (separate row on mobile) */}
+                <div className="flex gap-2 mt-2 md:mt-0">
+                  {registrationStatus === 'not_open' ? (
+                    <Button 
+                      variant="destructive" 
+                      onClick={() => setShowDeleteDialog(true)}
+                      size="sm"
+                      className="ml-auto"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      className="text-amber-600 border-amber-200 hover:bg-amber-50 ml-auto"
+                      onClick={() => setShowCancelDialog(true)}
+                      size="sm"
+                    >
+                      <AlertTriangle className="h-4 w-4 mr-2" />
+                      Cancel
+                    </Button>
+                  )}
+                </div>
+              </div>
             ) : isParent ? (
               // For parents show the appropriate registration button based on status
               isUserRegistered() ? (
