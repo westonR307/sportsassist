@@ -72,15 +72,29 @@ function CampViewPage() {
     queryFn: async () => {
       if (!id) throw new Error('No camp ID provided');
       console.log("Fetching camp with ID:", id);
-      const response = await fetch(`/api/camps/${id}`);
-      if (!response.ok) {
-        const error = await response.text();
-        console.error("Failed to fetch camp:", error);
-        throw new Error(error || 'Failed to fetch camp');
+      
+      // Debugging URL formation
+      const url = `/api/camps/${id}`;
+      console.log("Full API URL:", url);
+      console.log("URL params check - id type:", typeof id, "value:", id);
+      
+      try {
+        const response = await fetch(url);
+        console.log("API Response status:", response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Failed to fetch camp:", errorText);
+          throw new Error(errorText || 'Failed to fetch camp');
+        }
+        
+        const data = await response.json();
+        console.log("Received camp data:", JSON.stringify(data, null, 2));
+        return data;
+      } catch (fetchError) {
+        console.error("Fetch error:", fetchError);
+        throw fetchError;
       }
-      const data = await response.json();
-      console.log("Received camp data:", data);
-      return data;
     },
     enabled: !!id && id !== 'undefined',
     retry: 1,
