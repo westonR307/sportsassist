@@ -39,7 +39,7 @@ import {
 } from "@shared/schema";
 import { type Role, type SportLevel } from "@shared/types";
 import { db } from "./db";
-import { eq, sql, and, or, gte, lte } from "drizzle-orm";
+import { eq, sql, and, or, gte, lte, inArray } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -1206,14 +1206,36 @@ export class DatabaseStorage implements IStorage {
   // Enhanced registration methods
   async getRegistrationsWithChildInfo(campId: number): Promise<(Registration & { child: Child })[]> {
     try {
-      const result = await db.query.registrations.findMany({
-        where: eq(registrations.campId, campId),
-        with: {
-          child: true
-        }
+      // Get all registrations for the camp
+      const regs = await db
+        .select()
+        .from(registrations)
+        .where(eq(registrations.campId, campId));
+      
+      // If no registrations, return empty array
+      if (!regs.length) {
+        return [];
+      }
+      
+      // Get all the children IDs from registrations
+      const childIds = regs.map(reg => reg.childId);
+      
+      // Get all the children data
+      const childrenData = await db
+        .select()
+        .from(children)
+        .where(inArray(children.id, childIds));
+      
+      // Map children data to registrations
+      const result = regs.map(reg => {
+        const childData = childrenData.find(child => child.id === reg.childId);
+        return {
+          ...reg,
+          child: childData
+        };
       });
       
-      return result;
+      return result as (Registration & { child: Child })[];
     } catch (error) {
       console.error("Error getting registrations with child info:", error);
       throw new Error("Failed to get registrations with child info");
