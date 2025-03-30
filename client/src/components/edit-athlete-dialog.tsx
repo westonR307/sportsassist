@@ -136,7 +136,16 @@ export function EditAthleteDialog({
   const updateChildMutation = useMutation({
     mutationFn: async (values: EditChildFormValues) => {
       if (!athlete?.id) throw new Error("No athlete ID provided");
-      const res = await apiRequest("PUT", `/api/parent/children/${athlete.id}`, values);
+      
+      // Ensure we have the required fields
+      const payload = {
+        ...values,
+        communicationOptIn: values.communicationOptIn === undefined ? true : values.communicationOptIn,
+        preferredContact: values.preferredContact || "email"
+      };
+      
+      console.log("Mutation payload:", payload);
+      const res = await apiRequest("PUT", `/api/parent/children/${athlete.id}`, payload);
       return await res.json();
     },
     onSuccess: () => {
@@ -157,6 +166,7 @@ export function EditAthleteDialog({
   });
 
   const onSubmit = (values: EditChildFormValues) => {
+    console.log("Submitting edited athlete data:", values);
     updateChildMutation.mutate(values);
   };
 
@@ -491,6 +501,50 @@ export function EditAthleteDialog({
                   <FormLabel>Special Needs (Optional)</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder="Any special needs or requirements" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="communicationOptIn"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <input
+                      type="checkbox"
+                      checked={field.value}
+                      onChange={field.onChange}
+                      className="h-4 w-4 mt-1"
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Communication Opt-In</FormLabel>
+                    <p className="text-sm text-muted-foreground">
+                      Allow this athlete to receive communications about camp updates
+                    </p>
+                  </div>
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="preferredContact"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Preferred Contact Method</FormLabel>
+                  <FormControl>
+                    <select
+                      {...field}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                    >
+                      <option value="email">Email</option>
+                      <option value="sms">SMS/Text</option>
+                      <option value="app">App Notification</option>
+                    </select>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

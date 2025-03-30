@@ -115,27 +115,39 @@ export function registerParentRoutes(app: Express) {
         return res.status(401).json({ message: "Authentication required" });
       }
       
+      console.log("PUT /children/:id request received");
+      console.log("Request body:", JSON.stringify(req.body, null, 2));
+      
       const childId = parseInt(req.params.id);
+      console.log("Child ID:", childId);
       const child = await storage.getChild(childId);
       
       if (!child) {
+        console.log("Child not found with ID:", childId);
         return res.status(404).json({ message: "Child not found" });
       }
       
+      console.log("Found child:", JSON.stringify(child, null, 2));
+      
       // Ensure the child belongs to the authenticated parent
       if (child.parentId !== req.user.id) {
+        console.log(`Access denied - Child's parent ID (${child.parentId}) does not match authenticated user ID (${req.user.id})`);
         return res.status(403).json({ message: "Access denied" });
       }
       
       // Validate the update data
+      console.log("Validating update data...");
       const parsedData = insertChildSchema.partial().safeParse({
         ...req.body,
         parentId: req.user.id,
       });
       
       if (!parsedData.success) {
+        console.log("Validation failed:", parsedData.error.format());
         return res.status(400).json({ message: "Invalid child data", errors: parsedData.error.format() });
       }
+      
+      console.log("Validation successful");
       
       // Format dates if provided and handle type conversions
       const data = {
@@ -147,7 +159,10 @@ export function registerParentRoutes(app: Express) {
         ...(parsedData.data.preferredContact && { preferredContact: parsedData.data.preferredContact as ContactMethod }),
       };
       
+      console.log("Formatted data for update:", JSON.stringify(data, null, 2));
+      
       const updatedChild = await storage.updateChild(childId, data);
+      console.log("Child updated successfully:", JSON.stringify(updatedChild, null, 2));
       res.json(updatedChild);
     } catch (error: any) {
       console.error("Error updating child:", error);
