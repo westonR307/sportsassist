@@ -1468,6 +1468,29 @@ export async function registerRoutes(app: Express) {
 
   // Register parent-specific routes
   registerParentRoutes(app);
+  
+  // Catchall route for /api/children to properly filter by parent
+  app.get("/api/children", async (req, res) => {
+    // User must be authenticated
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    // User must be a parent
+    if (req.user?.role !== "parent") {
+      return res.status(403).json({ message: "Access denied. Only parents can access children data." });
+    }
+    
+    try {
+      // Get children for the authenticated parent
+      const children = await storage.getChildrenByParent(req.user.id);
+      console.log(`API /api/children route: Found ${children.length} children for parent ID: ${req.user.id}`);
+      res.json(children);
+    } catch (error) {
+      console.error("Error fetching children:", error);
+      res.status(500).json({ message: "Failed to fetch children" });
+    }
+  });
 
   return createServer(app);
 }
