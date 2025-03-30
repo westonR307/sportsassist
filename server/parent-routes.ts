@@ -177,31 +177,50 @@ export function registerParentRoutes(app: Express) {
       // Create an array to hold all of our results
       const result = [];
       
-      // For each child, we'll get all of their registrations
-      for (const child of children) {
-        // Get registrations for this child
-        const childRegistrations = await db
-          .select()
-          .from(registrations)
-          .where(eq(registrations.childId, child.id));
+      // Get the IDs of this parent's children to use in the database query
+      const childIds = children.map(child => child.id);
+      console.log(`Child IDs for parent ${req.user.id}: ${childIds.join(', ')}`);
+      
+      // If no child IDs, return empty array
+      if (childIds.length === 0) {
+        return res.json([]);
+      }
+      
+      // Use an "in" clause to get all registrations for all of this parent's children in one query
+      const childRegistrations = await db
+        .select()
+        .from(registrations)
+        .where(
+          // Only get registrations for children that belong to this parent
+          registrations.childId.in(childIds)
+        );
+      
+      console.log(`Found ${childRegistrations.length} registrations for children of parent ${req.user.id}`);
+      
+      // For each registration, get the camp and format the response
+      for (const registration of childRegistrations) {
+        // Find the child this registration belongs to
+        const child = children.find(c => c.id === registration.childId);
         
-        // For each registration, get the camp and format the response
-        for (const registration of childRegistrations) {
-          // Get the camp details
-          const camp = await storage.getCamp(registration.campId);
-          
-          if (camp) {
-            // Add this registration with camp and child details to the results
-            result.push({
-              ...registration,
-              camp,
-              child: {
-                id: child.id,
-                fullName: child.fullName,
-                profilePhoto: child.profilePhoto
-              }
-            });
-          }
+        if (!child) {
+          console.warn(`Could not find child with ID ${registration.childId} for registration ${registration.id}`);
+          continue;
+        }
+        
+        // Get the camp details
+        const camp = await storage.getCamp(registration.campId);
+        
+        if (camp) {
+          // Add this registration with camp and child details to the results
+          result.push({
+            ...registration,
+            camp,
+            child: {
+              id: child.id,
+              fullName: child.fullName,
+              profilePhoto: child.profilePhoto
+            }
+          });
         }
       }
       

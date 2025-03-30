@@ -36,10 +36,14 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-const registerSchema = z.object({
-  email: z.string().email("Valid email address is required"),
+import { insertUserSchema, InsertUser } from "@shared/schema";
+
+const registerSchema = insertUserSchema.pick({
+  email: true,
+  password: true,
+  role: true
+}).extend({
   password: z.string().min(8, "Password must be at least 8 characters"),
-  role: z.enum(["camp_creator", "parent", "athlete"]).default("parent"),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
