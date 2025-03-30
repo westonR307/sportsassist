@@ -142,29 +142,50 @@ export function registerParentRoutes(app: Express) {
         return res.status(403).json({ message: "Access denied" });
       }
       
-      // Create a sanitized update object with only the fields we explicitly want to update
+      // Create a simplified update object with only the fields we explicitly want to update
+      // Remove height, weight, and make communication fields optional
       const updateData = {
         parentId: req.user.id, // Keep parent ID unchanged
         fullName: req.body.fullName,
         gender: req.body.gender,
         dateOfBirth: req.body.dateOfBirth ? new Date(req.body.dateOfBirth) : undefined,
-        communicationOptIn: typeof req.body.communicationOptIn === 'boolean' ? req.body.communicationOptIn : true,
-        preferredContact: req.body.preferredContact || 'email',
         
-        // Optional fields
-        emergencyContact: req.body.emergencyContact,
-        emergencyPhone: req.body.emergencyPhone,
-        schoolName: req.body.schoolName,
-        currentGrade: req.body.currentGrade,
-        sportsHistory: req.body.sportsHistory,
-        jerseySize: req.body.jerseySize,
-        height: req.body.height,
-        weight: req.body.weight,
-        medicalInformation: req.body.medicalInformation,
-        specialNeeds: req.body.specialNeeds,
+        // Optional fields - only include if they're provided
+        ...(req.body.communicationOptIn !== undefined && { 
+          communicationOptIn: req.body.communicationOptIn 
+        }),
+        ...(req.body.preferredContact && { 
+          preferredContact: req.body.preferredContact 
+        }),
+        ...(req.body.emergencyContact && { 
+          emergencyContact: req.body.emergencyContact 
+        }),
+        ...(req.body.emergencyPhone && { 
+          emergencyPhone: req.body.emergencyPhone 
+        }),
+        ...(req.body.schoolName && { 
+          schoolName: req.body.schoolName 
+        }),
+        ...(req.body.currentGrade && { 
+          currentGrade: req.body.currentGrade 
+        }),
+        ...(req.body.sportsHistory && { 
+          sportsHistory: req.body.sportsHistory 
+        }),
+        ...(req.body.jerseySize && { 
+          jerseySize: req.body.jerseySize 
+        }),
+        ...(req.body.medicalInformation && { 
+          medicalInformation: req.body.medicalInformation 
+        }),
+        ...(req.body.specialNeeds && { 
+          specialNeeds: req.body.specialNeeds 
+        }),
         
         // Only include sportsInterests if it's provided in the request
-        ...(req.body.sportsInterests && { sportsInterests: req.body.sportsInterests }),
+        ...(req.body.sportsInterests && { 
+          sportsInterests: req.body.sportsInterests 
+        }),
       };
       
       console.log("Prepared update data:", JSON.stringify(updateData, null, 2));

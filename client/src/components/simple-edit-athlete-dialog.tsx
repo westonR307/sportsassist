@@ -63,16 +63,13 @@ export function SimpleEditAthleteDialog({ athlete, open, onOpenChange }: SimpleE
     try {
       console.log("Submitting data:", formData);
       
-      // Create a basic payload with just the fields we're editing
-      // Use the athlete's existing values for other fields
+      // Create a minimal payload with just the fields we're editing
+      // We removed the communication fields and height/weight since they were removed from schema
       const payload = {
         fullName: formData.fullName,
         dateOfBirth: formData.dateOfBirth,
         gender: formData.gender || "male",
-        schoolName: formData.schoolName || "",
-        // Keep the existing values for required fields
-        preferredContact: athlete.preferredContact || "email", 
-        communicationOptIn: athlete.communicationOptIn !== undefined ? athlete.communicationOptIn : true
+        schoolName: formData.schoolName || ""
       };
       
       console.log("Full payload:", JSON.stringify(payload, null, 2));

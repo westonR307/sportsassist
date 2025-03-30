@@ -117,12 +117,11 @@ export const children = pgTable("children", {
   medicalConditions: text("medical_conditions").array(),
   medications: text("medications").array(),
   specialNeeds: text("special_needs"),
-  preferredContact: text("preferred_contact").$type<ContactMethod>().notNull(),
-  communicationOptIn: boolean("communication_opt_in").notNull(),
+  preferredContact: text("preferred_contact").$type<ContactMethod>(),
+  communicationOptIn: boolean("communication_opt_in"),
   jerseySize: text("jersey_size"),
   shoeSize: text("shoe_size"),
-  height: text("height"),
-  weight: text("weight"),
+  // height and weight fields have been removed from the database
 });
 
 export const childSports = pgTable("child_sports", {
