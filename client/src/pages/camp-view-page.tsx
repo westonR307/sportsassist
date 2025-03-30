@@ -68,7 +68,15 @@ function CampViewPage() {
 
   // Updated to use the extended type with permissions
   const { data: camp, isLoading, error: campError } = useQuery<CampWithPermissions>({
-    queryKey: [`/api/camps/${id}`],
+    queryKey: ['camp', id],
+    queryFn: async () => {
+      if (!id) throw new Error('No camp ID provided');
+      const response = await fetch(`/api/camps/${id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch camp');
+      }
+      return response.json();
+    },
     enabled: !!id,
     onError: (error) => {
       console.error("Error fetching camp details:", error);
