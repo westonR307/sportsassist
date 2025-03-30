@@ -784,11 +784,20 @@ function CampViewPage(props: { id?: string }) {
                           key={registration.id} 
                           className="p-3 border rounded-md flex justify-between items-center"
                         >
-                          <div>
-                            <p className="font-medium">Athlete ID: {registration.childId}</p>
-                            <p className="text-sm text-muted-foreground">
-                              Registered: {new Date(registration.registeredAt).toLocaleDateString()}
-                            </p>
+                          <div className="flex items-center space-x-3">
+                            <Avatar>
+                              <AvatarFallback>
+                                {registration.child?.fullName ? registration.child.fullName.charAt(0) : '?'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">
+                                {registration.child?.fullName || `Athlete ID: ${registration.childId}`}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Registered: {new Date(registration.registeredAt).toLocaleDateString()}
+                              </p>
+                            </div>
                           </div>
                           <div className="flex items-center">
                             <span className={`px-2 py-1 rounded-full text-xs ${registration.paid ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
@@ -910,10 +919,14 @@ function CampViewPage(props: { id?: string }) {
                                 <TableCell>
                                   <div className="flex items-center gap-2">
                                     <Avatar className="h-8 w-8">
-                                      <AvatarFallback>{registration.childId.toString().substring(0, 2)}</AvatarFallback>
+                                      <AvatarFallback>
+                                        {registration.child?.fullName ? registration.child.fullName.charAt(0) : '?'}
+                                      </AvatarFallback>
                                     </Avatar>
                                     <div>
-                                      <p className="text-sm font-medium">Athlete #{registration.childId}</p>
+                                      <p className="text-sm font-medium">
+                                        {registration.child?.fullName || `Athlete #${registration.childId}`}
+                                      </p>
                                       <p className="text-xs text-muted-foreground">
                                         Registered on {new Date(registration.registeredAt).toLocaleDateString()}
                                       </p>
