@@ -592,8 +592,26 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log("Updating child with data:", JSON.stringify(childData, null, 2));
       
+      // Deal with boolean conversion explicitly
+      if (typeof childData.communicationOptIn === 'string') {
+        childData.communicationOptIn = childData.communicationOptIn === 'true';
+        console.log("Converted communicationOptIn to boolean:", childData.communicationOptIn);
+      }
+      
       // Use a transaction to ensure all updates happen together
       return await db.transaction(async (trx) => {
+        // Check if the child exists first
+        const existingChild = await db.query.children.findFirst({
+          where: eq(children.id, childId)
+        });
+        
+        if (!existingChild) {
+          console.error(`Child not found with ID: ${childId}`);
+          throw new Error(`Child not found with ID: ${childId}`);
+        }
+        
+        console.log("Found existing child:", existingChild);
+        
         // 1. Update the child record first
         const [updatedChild] = await trx.update(children)
           .set({

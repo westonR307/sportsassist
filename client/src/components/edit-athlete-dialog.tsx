@@ -167,7 +167,19 @@ export function EditAthleteDialog({
 
   const onSubmit = (values: EditChildFormValues) => {
     console.log("Submitting edited athlete data:", values);
-    updateChildMutation.mutate(values);
+    // Force the required fields
+    const formattedValues = {
+      ...values,
+      communicationOptIn: values.communicationOptIn ?? true,
+      preferredContact: values.preferredContact ?? "email",
+    };
+    console.log("Final submission data:", formattedValues);
+    
+    // Log the form state to see if there are any errors
+    console.log("Form state:", form.formState);
+    
+    // Try with the formatted values
+    updateChildMutation.mutate(formattedValues);
   };
 
   if (!athlete) return null;
