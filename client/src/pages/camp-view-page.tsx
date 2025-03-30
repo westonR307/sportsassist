@@ -54,8 +54,18 @@ interface RegistrationsResponse {
   }
 }
 
-function CampViewPage() {
-  const { id } = useParams<{ id: string }>();
+function CampViewPage(props: { id?: string }) {
+  // Get the id parameter either from props or from URL params
+  const params = useParams<{ id: string }>();
+  const idFromParams = params.id;
+  // Use the id from props if available, otherwise use the one from URL params
+  const id = props.id || idFromParams;
+  
+  // Log to help with debugging
+  console.log("CampViewPage - id from props:", props.id);
+  console.log("CampViewPage - id from params:", idFromParams);
+  console.log("CampViewPage - final id being used:", id);
+  
   const { user } = useAuth();
   const { toast } = useToast();
   const [location, navigate] = useLocation();

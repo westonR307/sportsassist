@@ -596,7 +596,7 @@ export async function registerRoutes(app: Express) {
       console.log(`Found camp: ${camp.name} (ID: ${camp.id})`);
       
       // Fetch associated camp sports information
-      const campSports = await db.query.campSports.findMany({
+      const campSportsData = await db.query.campSports.findMany({
         where: eq(campSports.campId, campId),
         with: {
           sport: true
@@ -617,7 +617,7 @@ export async function registerRoutes(app: Express) {
       res.json({
         ...camp,
         schedules: schedules,
-        campSportsDetail: campSports.map(cs => ({
+        campSportsDetail: campSportsData.map(cs => ({
           ...cs,
           sportName: cs.sport.name
         })),
