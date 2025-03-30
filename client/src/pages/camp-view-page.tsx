@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { DashboardLayout } from "./dashboard";
 import { ParentSidebar } from "@/components/parent-sidebar";
+import { BackButton } from "@/components/back-button";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -481,27 +482,28 @@ function CampViewPage(props: { id?: string }) {
     return (
       <div className="space-y-6 pt-4">
         {/* Header */}
-        <div className="flex flex-col md:flex-row gap-4 justify-center items-center mb-8 mt-2">
-          {/* Camp Title Area */}
-          <div className="flex flex-col items-center">
-            {isParent && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => navigate('/find-camps')}
-                className="mb-2 self-start"
-              >
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Back
-              </Button>
-            )}
-            <h1 className="text-2xl md:text-3xl font-bold leading-tight break-words text-center max-w-full md:max-w-[600px]">
-              {camp.name}
-            </h1>
+        <div className="flex flex-col w-full mb-6 mt-2">
+          {/* Navigation Area */}
+          <div className="flex w-full mb-3">
+            <BackButton 
+              to={isParent ? "/find-camps" : "/dashboard"}
+              label={isParent ? "Back to Camps" : "Back to Dashboard"}
+              className="self-start"
+            />
           </div>
           
-          {/* Action Buttons Area */}
-          <div className="flex flex-wrap gap-2 justify-center items-center">
+          {/* Camp Title Area */}
+          <div className="flex flex-col mb-4 w-full">
+            <h1 className="text-2xl md:text-3xl font-bold leading-tight break-words max-w-full">
+              {camp.name}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              {camp.type === "virtual" ? "Virtual Camp" : `${camp.city}, ${camp.state}`}
+            </p>
+          </div>
+          
+          {/* Action Buttons Area - More mobile friendly */}
+          <div className="flex flex-wrap gap-2 items-center">
             {canManage ? (
               // Only show management buttons if user has permission
               <div className="flex flex-wrap gap-2 items-center justify-center">
