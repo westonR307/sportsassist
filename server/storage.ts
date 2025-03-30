@@ -12,6 +12,7 @@ import {
   customFields,
   campCustomFields,
   customFieldResponses,
+  attendanceRecords,
   type User,
   type InsertUser,
   type Organization,
@@ -31,12 +32,14 @@ import {
   type InsertCampCustomField,
   type CustomFieldResponse,
   type InsertCustomFieldResponse,
+  type AttendanceRecord,
+  type InsertAttendanceRecord,
   insertCampSchema,
   sports
 } from "@shared/schema";
 import { type Role, type SportLevel } from "@shared/types";
 import { db } from "./db";
-import { eq, sql, and, or } from "drizzle-orm";
+import { eq, sql, and, or, gte, lte } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -100,6 +103,15 @@ export interface IStorage {
   // Camp soft delete and cancellation methods
   softDeleteCamp(campId: number): Promise<Camp>;
   cancelCamp(campId: number, reason?: string): Promise<Camp>;
+  
+  // Attendance tracking methods
+  createAttendanceRecord(record: InsertAttendanceRecord): Promise<AttendanceRecord>;
+  getAttendanceRecords(campId: number, date?: Date): Promise<AttendanceRecord[]>;
+  getAttendanceByRegistration(registrationId: number): Promise<AttendanceRecord[]>;
+  updateAttendanceRecord(id: number, data: Partial<Omit<AttendanceRecord, "id" | "recordedAt" | "updatedAt">>): Promise<AttendanceRecord>;
+  
+  // Enhanced registration methods
+  getRegistrationsWithChildInfo(campId: number): Promise<(Registration & { child: Child })[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1080,21 +1092,131 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getCampCustomFields(campId: number): Promise<(CampCustomField & { field: CustomField })[]> {
-    try {
-      const fields = await db
-        .select()
-        .from(campCustomFields)
-        .where(eq(campCustomFields.campId, campId))
-        .leftJoin(customFields, eq(campCustomFields.customFieldId, customFields.id));
+  // Attendance tracking methods
+  async createAttendanceRecord(record: InsertAttendanceRecord): Promise<AttendanceRecord> {
+    // Insert into the attendance_records table with the correct column names
+    const [newRecord] = await db.execute(
+      sql`INSERT INTO attendance_records 
+          (registration_id, camp_id, child_id, date, status, notes, recorded_by, recorded_at, updated_at) 
+          VALUES (
+            ${record.registrationId}, 
+            ${record.campId}, 
+            ${record.childId}, 
+            ${record.date}, 
+            ${record.status}, 
+            ${record.notes}, 
+            ${record.recordedBy}, 
+            ${new Date()}, 
+            ${new Date()}
+          ) 
+          RETURNING *`
+    ).then(result => result.rows);
+    
+    return newRecord as AttendanceRecord;
+  }
+  
+  async getAttendanceRecords(campId: number, date?: Date): Promise<AttendanceRecord[]> {
+    let sqlQuery;
+    
+    if (date) {
+      // Filter by the specific date (comparing only the date part)
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
       
-      return fields.map(({ camp_custom_fields, custom_fields }) => ({
-        ...camp_custom_fields,
-        field: custom_fields
-      }));
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      sqlQuery = sql`
+        SELECT * FROM attendance_records 
+        WHERE camp_id = ${campId}
+        AND date >= ${startOfDay} AND date <= ${endOfDay}
+        ORDER BY date
+      `;
+    } else {
+      sqlQuery = sql`
+        SELECT * FROM attendance_records 
+        WHERE camp_id = ${campId}
+        ORDER BY date
+      `;
+    }
+    
+    const result = await db.execute(sqlQuery);
+    return result.rows as AttendanceRecord[];
+  }
+  
+  async getAttendanceByRegistration(registrationId: number): Promise<AttendanceRecord[]> {
+    const result = await db.execute(
+      sql`SELECT * FROM attendance_records 
+          WHERE registration_id = ${registrationId}
+          ORDER BY date`
+    );
+    return result.rows as AttendanceRecord[];
+  }
+  
+  async updateAttendanceRecord(id: number, data: Partial<Omit<AttendanceRecord, "id" | "recordedAt" | "updatedAt">>): Promise<AttendanceRecord> {
+    // Create the template parts for our SQL query
+    const now = new Date();
+    let setClauseParts = [];
+    let sqlParams: any = { id, updated_at: now };
+    
+    // Add each property to be updated
+    if (data.status) {
+      setClauseParts.push(sql`status = ${data.status}`);
+    }
+    if (data.notes) {
+      setClauseParts.push(sql`notes = ${data.notes}`);
+    }
+    if (data.date) {
+      setClauseParts.push(sql`date = ${data.date}`);
+    }
+    if (data.registrationId) {
+      setClauseParts.push(sql`registration_id = ${data.registrationId}`);
+    }
+    if (data.campId) {
+      setClauseParts.push(sql`camp_id = ${data.campId}`);
+    }
+    if (data.childId) {
+      setClauseParts.push(sql`child_id = ${data.childId}`);
+    }
+    if (data.recordedBy) {
+      setClauseParts.push(sql`recorded_by = ${data.recordedBy}`);
+    }
+    
+    // Always update the updated_at timestamp
+    setClauseParts.push(sql`updated_at = ${now}`);
+    
+    // Join all the SET clauses
+    const setClauses = sql.join(setClauseParts, sql`, `);
+    
+    // Build and execute the full query
+    const result = await db.execute(sql`
+      UPDATE attendance_records 
+      SET ${setClauses}
+      WHERE id = ${id}
+      RETURNING *
+    `);
+    
+    if (result.rows.length === 0) {
+      throw new Error(`Attendance record with id ${id} not found`);
+    }
+    
+    return result.rows[0] as AttendanceRecord;
+  }
+  
+  // Enhanced registration methods
+  async getRegistrationsWithChildInfo(campId: number): Promise<(Registration & { child: Child })[]> {
+    try {
+      const result = await db.query.registrations.findMany({
+        where: eq(registrations.campId, campId),
+        with: {
+          child: true
+        }
+      });
+      
+      return result;
     } catch (error) {
-      console.error(`Error retrieving custom fields for camp ID ${campId}:`, error);
-      throw error;
+      console.error("Error getting registrations with child info:", error);
+      throw new Error("Failed to get registrations with child info");
     }
   }
 }

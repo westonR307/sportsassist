@@ -15,7 +15,8 @@ import {
   scheduleExceptions,
   customFields,
   campCustomFields,
-  customFieldResponses
+  customFieldResponses,
+  attendanceRecords
 } from "./tables";
 
 // Import types
@@ -210,6 +211,19 @@ export type CustomFieldResponse = typeof customFieldResponses.$inferSelect;
 export type InsertCustomField = z.infer<typeof insertCustomFieldSchema>;
 export type InsertCampCustomField = z.infer<typeof insertCampCustomFieldSchema>;
 export type InsertCustomFieldResponse = z.infer<typeof insertCustomFieldResponseSchema>;
+export type AttendanceRecord = typeof attendanceRecords.$inferSelect;
+
+// Type for attendance status
+export const AttendanceStatus = z.enum(['present', 'absent', 'late', 'excused']);
+export type AttendanceStatus = z.infer<typeof AttendanceStatus>;
+
+// Schema for inserting attendance records
+export const insertAttendanceRecordSchema = createInsertSchema(attendanceRecords).omit({
+  id: true,
+  recordedAt: true,
+  updatedAt: true
+});
+export type InsertAttendanceRecord = z.infer<typeof insertAttendanceRecordSchema>;
 
 // Re-export tables
 export {
@@ -227,7 +241,8 @@ export {
   scheduleExceptions,
   customFields,
   campCustomFields,
-  customFieldResponses
+  customFieldResponses,
+  attendanceRecords
 };
 
 export const predefinedSports = [

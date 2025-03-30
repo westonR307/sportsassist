@@ -198,3 +198,17 @@ export const customFieldResponses = pgTable("custom_field_responses", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
+
+// Attendance records for camp participants
+export const attendanceRecords = pgTable("attendance_records", {
+  id: serial("id").primaryKey(),
+  registrationId: integer("registration_id").references(() => registrations.id).notNull(),
+  campId: integer("camp_id").references(() => camps.id).notNull(),
+  childId: integer("child_id").references(() => children.id).notNull(),
+  date: timestamp("date").notNull(), // The date of attendance
+  status: text("status").$type<'present' | 'absent' | 'late' | 'excused'>().notNull().default('absent'),
+  notes: text("notes"), // Optional notes about the attendance (reason for absence, etc)
+  recordedBy: integer("recorded_by").references(() => users.id).notNull(), // Staff member who recorded this
+  recordedAt: timestamp("recorded_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
