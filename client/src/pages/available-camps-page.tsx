@@ -628,7 +628,7 @@ function CompactCampCard({ camp }: CampCardProps) {
           
           <div className="flex justify-end mt-4">
             <Button variant="outline" size="sm" asChild>
-              <a href={`/dashboard/camps/${camp.id}`} className="flex items-center gap-1">
+              <a href={`/dashboard/camps/${String(camp.id)}`} className="flex items-center gap-1">
                 <span>View Details</span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </a>
@@ -740,7 +740,7 @@ function CampCard({ camp }: CampCardProps) {
       
       <CardFooter>
         <Button variant="default" className="w-full flex items-center gap-2" asChild>
-          <a href={`/dashboard/camps/${camp.id}`}>
+          <a href={`/dashboard/camps/${String(camp.id)}`}>
             <span>View Details</span>
             <ArrowRight className="h-4 w-4" />
           </a>

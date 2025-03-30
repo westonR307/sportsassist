@@ -73,6 +73,11 @@ function CampViewPage() {
       if (!id) throw new Error('No camp ID provided');
       console.log("Fetching camp with ID:", id);
       
+      // Make sure ID is properly handled - we might get "undefined" as a string
+      if (id === 'undefined' || id === 'null') {
+        throw new Error('Invalid camp ID: ' + id);
+      }
+      
       // Debugging URL formation
       const url = `/api/camps/${id}`;
       console.log("Full API URL:", url);
@@ -96,7 +101,7 @@ function CampViewPage() {
         throw fetchError;
       }
     },
-    enabled: !!id && id !== 'undefined',
+    enabled: !!id && id !== 'undefined' && id !== 'null',
     retry: 1,
     onError: (error) => {
       console.error("Error fetching camp details:", error);

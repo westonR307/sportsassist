@@ -216,12 +216,16 @@ export default function FindCampsPage() {
   };
 
   const handleRegisterClick = (campId: number) => {
+    // Ensure campId is converted to string
+    const campIdString = String(campId);
+    console.log("Navigating to camp details with ID:", campIdString);
+    
     if (!user) {
       // Redirect to auth page with return URL
-      setLocation(`/auth?returnTo=/dashboard/camps/${campId}`);
+      setLocation(`/auth?returnTo=/dashboard/camps/${campIdString}`);
     } else {
       // Directly go to camp details
-      setLocation(`/dashboard/camps/${campId}`);
+      setLocation(`/dashboard/camps/${campIdString}`);
     }
   };
 
