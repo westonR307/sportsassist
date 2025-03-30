@@ -37,6 +37,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return await res.json();
     },
     onSuccess: (user: SelectUser) => {
+      // Clear all cached queries first to prevent data leakage between users
+      queryClient.clear();
+      // Then set the user data
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Login successful",
@@ -58,6 +61,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return await res.json();
     },
     onSuccess: (user: SelectUser) => {
+      // Clear all cached queries first to prevent data leakage between users
+      queryClient.clear();
+      // Then set the user data
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Registration successful",
@@ -78,6 +84,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await apiRequest("POST", "/api/logout");
     },
     onSuccess: () => {
+      // Clear all cached queries first to prevent data leakage between users
+      queryClient.clear();
+      // Then set the user data to null
       queryClient.setQueryData(["/api/user"], null);
       toast({
         title: "Logged out",
