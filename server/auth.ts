@@ -71,15 +71,32 @@ export function setupAuth(app: Express) {
             return done(null, false, { message: "Invalid email or password" });
           }
 
-          const isValid = await comparePasswords(password, user.password);
-          console.log(`Password validation result for ${email}: ${isValid}`);
+          // Enhanced password validation with better error handling
+          try {
+            if (!user.password) {
+              console.log(`User ${email} has no password hash`);
+              return done(null, false, { message: "Invalid email or password" });
+            }
+            
+            // Check if the password has the expected format (hash.salt)
+            if (!user.password.includes('.')) {
+              console.log(`User ${email} has incorrectly formatted password hash`);
+              return done(null, false, { message: "Invalid account configuration" });
+            }
+            
+            const isValid = await comparePasswords(password, user.password);
+            console.log(`Password validation result for ${email}: ${isValid}`);
 
-          if (!isValid) {
-            return done(null, false, { message: "Invalid email or password" });
+            if (!isValid) {
+              return done(null, false, { message: "Invalid email or password" });
+            }
+            
+            console.log(`Successful login for user: ${email}`);
+            return done(null, user);
+          } catch (passwordError) {
+            console.error(`Password validation error for ${email}:`, passwordError);
+            return done(null, false, { message: "Authentication error" });
           }
-
-          console.log(`Successful login for user: ${email}`);
-          return done(null, user);
         } catch (err) {
           console.error("Login error:", err);
           return done(err);

@@ -323,10 +323,38 @@ export class DatabaseStorage implements IStorage {
 
   async getCamp(id: number): Promise<Camp | undefined> {
     try {
+      console.log(`Fetching camp details for ID: ${id}`);
+      
+      // First get the basic camp information
       const [camp] = await db.select().from(camps).where(eq(camps.id, id));
-      return camp;
+      
+      if (!camp) {
+        console.log(`No camp found with ID: ${id}`);
+        return undefined;
+      }
+      
+      // Get the camp sports information
+      const campSportsList = await db.select()
+        .from(campSports)
+        .where(eq(campSports.campId, id));
+      
+      if (campSportsList.length > 0) {
+        console.log(`Found ${campSportsList.length} sports for camp ID: ${id}`);
+      } else {
+        console.log(`No sports found for camp ID: ${id}`);
+      }
+      
+      // Attach the sports information to the camp object
+      const result = {
+        ...camp,
+        campSports: campSportsList,
+        defaultStartTime: await this.getDefaultStartTimeForCamp(id),
+        defaultEndTime: await this.getDefaultEndTimeForCamp(id)
+      };
+      
+      return result;
     } catch (error) {
-      console.error("Error getting camp:", error);
+      console.error("Error getting camp details:", error);
       throw error;
     }
   }

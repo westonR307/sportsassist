@@ -1,4 +1,10 @@
 import { publicRoles } from "@shared/schema";
+import { Express, Request, Response, NextFunction } from "express";
+import { createServer, type Server } from "http";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
+import { campSports, scheduleExceptions, campSchedules, insertScheduleExceptionSchema } from "@shared/schema";
+
 function logError(location: string, error: any) {
   console.error(`Error in ${location}:`, {
     message: error.message,
@@ -571,15 +577,34 @@ export async function registerRoutes(app: Express) {
   // Route to get a camp by ID (detailed version with better error handling and authorization)
   app.get("/api/camps/:id", async (req, res) => {
     try {
+      console.log(`Fetching details for camp ID: ${req.params.id}`);
+      
       const campId = parseInt(req.params.id);
       if (isNaN(campId)) {
+        console.log(`Invalid camp ID format: ${req.params.id}`);
         return res.status(400).json({ message: "Invalid camp ID format" });
       }
       
+      // Get the camp with its sports and schedule information
       const camp = await storage.getCamp(campId);
+      
       if (!camp) {
+        console.log(`Camp not found with ID: ${campId}`);
         return res.status(404).json({ message: "Camp not found" });
       }
+      
+      console.log(`Found camp: ${camp.name} (ID: ${camp.id})`);
+      
+      // Fetch associated camp sports information
+      const campSports = await db.query.campSports.findMany({
+        where: eq(campSports.campId, campId),
+        with: {
+          sport: true
+        }
+      });
+      
+      // Fetch schedule information
+      const schedules = await storage.getCampSchedules(campId);
       
       // Check if user is authorized to perform management operations for the camp
       let canManage = false;
@@ -591,6 +616,11 @@ export async function registerRoutes(app: Express) {
       // Add management permissions to the response
       res.json({
         ...camp,
+        schedules: schedules,
+        campSportsDetail: campSports.map(cs => ({
+          ...cs,
+          sportName: cs.sport.name
+        })),
         // Include permissions for the frontend to know what actions to show
         permissions: {
           canManage: canManage
