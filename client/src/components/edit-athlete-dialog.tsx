@@ -137,16 +137,42 @@ export function EditAthleteDialog({
     mutationFn: async (values: EditChildFormValues) => {
       if (!athlete?.id) throw new Error("No athlete ID provided");
       
-      // Ensure we have the required fields
+      // Create a direct payload with all required fields
       const payload = {
-        ...values,
-        communicationOptIn: values.communicationOptIn === undefined ? true : values.communicationOptIn,
-        preferredContact: values.preferredContact || "email"
+        fullName: values.fullName,
+        dateOfBirth: values.dateOfBirth,
+        gender: values.gender || 'male',
+        communicationOptIn: true, // Set this explicitly
+        preferredContact: "email", // Set this explicitly
+        // Optional fields that might be filled
+        emergencyContact: values.emergencyContact || "",
+        emergencyPhone: values.emergencyPhone || "",
+        sportsInterests: values.sportsInterests || [],
+        currentGrade: values.currentGrade,
+        schoolName: values.schoolName,
+        jerseySize: values.jerseySize,
+        medicalInformation: values.medicalInformation,
+        specialNeeds: values.specialNeeds,
+        height: values.height,
+        weight: values.weight,
+        sportsHistory: values.sportsHistory,
       };
       
-      console.log("Mutation payload:", payload);
-      const res = await apiRequest("PUT", `/api/parent/children/${athlete.id}`, payload);
-      return await res.json();
+      console.log("Mutation payload:", JSON.stringify(payload, null, 2));
+      
+      try {
+        const res = await apiRequest("PUT", `/api/parent/children/${athlete.id}`, payload);
+        if (!res.ok) {
+          console.error("Update failed with status:", res.status);
+          const errorText = await res.text();
+          console.error("Error response:", errorText);
+          throw new Error(`Failed to update: ${res.status} ${errorText}`);
+        }
+        return await res.json();
+      } catch (error) {
+        console.error("Update request failed:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/parent/children"] });

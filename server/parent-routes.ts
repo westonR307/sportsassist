@@ -112,6 +112,7 @@ export function registerParentRoutes(app: Express) {
   router.put("/children/:id", async (req: Request, res: Response) => {
     try {
       if (!req.user) {
+        console.log("Authentication required but user not authenticated");
         return res.status(401).json({ message: "Authentication required" });
       }
       
@@ -120,6 +121,12 @@ export function registerParentRoutes(app: Express) {
       
       const childId = parseInt(req.params.id);
       console.log("Child ID:", childId);
+      
+      if (isNaN(childId)) {
+        console.error("Invalid child ID:", req.params.id);
+        return res.status(400).json({ message: "Invalid child ID" });
+      }
+      
       const child = await storage.getChild(childId);
       
       if (!child) {
@@ -135,35 +142,41 @@ export function registerParentRoutes(app: Express) {
         return res.status(403).json({ message: "Access denied" });
       }
       
-      // Validate the update data
-      console.log("Validating update data...");
-      const parsedData = insertChildSchema.partial().safeParse({
-        ...req.body,
-        parentId: req.user.id,
-      });
-      
-      if (!parsedData.success) {
-        console.log("Validation failed:", parsedData.error.format());
-        return res.status(400).json({ message: "Invalid child data", errors: parsedData.error.format() });
-      }
-      
-      console.log("Validation successful");
-      
-      // Format dates if provided and handle type conversions
-      const data = {
-        ...parsedData.data,
-        dateOfBirth: parsedData.data.dateOfBirth ? new Date(parsedData.data.dateOfBirth) : undefined,
-        // Type cast for gender if it exists
-        ...(parsedData.data.gender && { gender: parsedData.data.gender as Gender }),
-        // Type cast for preferredContact if it exists
-        ...(parsedData.data.preferredContact && { preferredContact: parsedData.data.preferredContact as ContactMethod }),
+      // Create a sanitized update object with only the fields we explicitly want to update
+      const updateData = {
+        parentId: req.user.id, // Keep parent ID unchanged
+        fullName: req.body.fullName,
+        gender: req.body.gender,
+        dateOfBirth: req.body.dateOfBirth ? new Date(req.body.dateOfBirth) : undefined,
+        communicationOptIn: typeof req.body.communicationOptIn === 'boolean' ? req.body.communicationOptIn : true,
+        preferredContact: req.body.preferredContact || 'email',
+        
+        // Optional fields
+        emergencyContact: req.body.emergencyContact,
+        emergencyPhone: req.body.emergencyPhone,
+        schoolName: req.body.schoolName,
+        currentGrade: req.body.currentGrade,
+        sportsHistory: req.body.sportsHistory,
+        jerseySize: req.body.jerseySize,
+        height: req.body.height,
+        weight: req.body.weight,
+        medicalInformation: req.body.medicalInformation,
+        specialNeeds: req.body.specialNeeds,
+        
+        // Only include sportsInterests if it's provided in the request
+        ...(req.body.sportsInterests && { sportsInterests: req.body.sportsInterests }),
       };
       
-      console.log("Formatted data for update:", JSON.stringify(data, null, 2));
+      console.log("Prepared update data:", JSON.stringify(updateData, null, 2));
       
-      const updatedChild = await storage.updateChild(childId, data);
-      console.log("Child updated successfully:", JSON.stringify(updatedChild, null, 2));
-      res.json(updatedChild);
+      try {
+        const updatedChild = await storage.updateChild(childId, updateData);
+        console.log("Child updated successfully:", JSON.stringify(updatedChild, null, 2));
+        return res.json(updatedChild);
+      } catch (updateError) {
+        console.error("Error in storage.updateChild:", updateError);
+        return res.status(500).json({ message: "Failed to update child record", error: updateError.message });
+      }
     } catch (error: any) {
       console.error("Error updating child:", error);
       res.status(500).json({ message: "Failed to update child" });
