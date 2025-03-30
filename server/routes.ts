@@ -2,8 +2,8 @@ import { publicRoles } from "@shared/schema";
 import { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
-import { campSports, scheduleExceptions, campSchedules, insertScheduleExceptionSchema } from "@shared/schema";
+import { eq, inArray } from "drizzle-orm";
+import { campSports, scheduleExceptions, campSchedules, insertScheduleExceptionSchema, sports } from "@shared/schema";
 
 function logError(location: string, error: any) {
   console.error(`Error in ${location}:`, {
@@ -596,11 +596,23 @@ export async function registerRoutes(app: Express) {
       console.log(`Found camp: ${camp.name} (ID: ${camp.id})`);
       
       // Fetch associated camp sports information
-      const campSportsData = await db.query.campSports.findMany({
-        where: eq(campSports.campId, campId),
-        with: {
-          sport: true
-        }
+      // Use a simpler query to avoid relationship issues
+      const campSportsData = await db.select().from(campSports)
+        .where(eq(campSports.campId, campId));
+      
+      // Get sports info separately if needed
+      const sportIds = campSportsData.map(cs => cs.sportId);
+      const sportsData = sportIds.length > 0 
+        ? await db.select().from(sports).where(inArray(sports.id, sportIds))
+        : [];
+        
+      // Manually join the data
+      const campSportsWithDetails = campSportsData.map(cs => {
+        const sportInfo = sportsData.find(s => s.id === cs.sportId) || null;
+        return {
+          ...cs,
+          sport: sportInfo
+        };
       });
       
       // Fetch schedule information
@@ -617,9 +629,9 @@ export async function registerRoutes(app: Express) {
       res.json({
         ...camp,
         schedules: schedules,
-        campSportsDetail: campSportsData.map(cs => ({
+        campSportsDetail: campSportsWithDetails.map(cs => ({
           ...cs,
-          sportName: cs.sport.name
+          sportName: cs.sport?.name || "Unknown Sport"
         })),
         // Include permissions for the frontend to know what actions to show
         permissions: {
