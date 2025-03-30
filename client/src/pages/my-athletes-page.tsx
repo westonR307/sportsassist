@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, Edit, Trash2, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EditAthleteDialog } from "@/components/edit-athlete-dialog";
+import { SimpleEditAthleteDialog } from "@/components/simple-edit-athlete-dialog";
 import { ViewAthleteDialog } from "@/components/view-athlete-dialog";
 import { AddAthleteDialog } from "@/components/add-athlete-dialog";
 import { Card, CardContent } from "@/components/ui/card";
@@ -223,7 +224,7 @@ export default function MyAthletesPage() {
 
       {/* Edit Athlete Dialog */}
       {selectedChild && (
-        <EditAthleteDialog
+        <SimpleEditAthleteDialog
           open={isEditDialogOpen}
           onOpenChange={setIsEditDialogOpen}
           athlete={selectedChild}
