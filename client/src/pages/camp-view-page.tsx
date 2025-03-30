@@ -23,7 +23,11 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal
 } from "@/components/ui/dropdown-menu";
 import { 
   AlertTriangle,
@@ -53,6 +57,7 @@ import {
   Eye,
   FileEdit,
   Save,
+  Settings,
   UsersRound,
   ChevronDown,
   Table as TableIcon
@@ -78,6 +83,7 @@ import { CampScheduleDisplay } from "@/components/camp-schedule";
 import { ScheduleEditorDialog } from "@/components/schedule-editor-dialog-fixed";
 import { EditCampCustomFields } from "@/components/edit-camp-custom-fields";
 import { ExportParticipantsDialog } from "@/components/export-participants-dialog";
+import { CampFormFieldsDialog } from "@/components/camp-form-fields-dialog";
 import {
   Table,
   TableBody,
@@ -243,6 +249,7 @@ function CampViewPage(props: { id?: string }) {
   const [showChildSelectionDialog, setShowChildSelectionDialog] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [exportFormat, setExportFormat] = useState<"pdf" | "csv">("pdf");
+  const [showFormFieldsDialog, setShowFormFieldsDialog] = useState(false);
 
   // Dialog to select a child for registration
   const ChildSelectionDialog = () => {
@@ -517,6 +524,28 @@ function CampViewPage(props: { id?: string }) {
                     <MessageSquare className="h-4 w-4 mr-2" />
                     Message
                   </Button>
+                  
+                  {/* Settings Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline">
+                        <Settings className="h-4 w-4 mr-2" />
+                        Settings <ChevronDown className="h-4 w-4 ml-1"/>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Camp Settings</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setShowFormFieldsDialog(true)}>
+                        <FileText className="h-4 w-4 mr-2" />
+                        <span>Registration Form Fields</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setScheduleEditorOpen(true)}>
+                        <Calendar className="h-4 w-4 mr-2" />
+                        <span>Schedule Management</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 
                 {/* Destructive actions */}
                 {registrationStatus === 'not_open' ? (
@@ -603,12 +632,9 @@ function CampViewPage(props: { id?: string }) {
 
         {/* Tabs */}
         <Tabs defaultValue="details" className="space-y-6">
-          <TabsList className={`grid w-full max-w-md ${canManage ? 'grid-cols-4' : 'grid-cols-2'}`}>
+          <TabsList className={`grid w-full max-w-md ${canManage ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="registrations">Registrations</TabsTrigger>
-            {canManage && (
-              <TabsTrigger value="form-fields">Form Fields</TabsTrigger>
-            )}
             {canManage && (
               <TabsTrigger value="attendance">Attendance</TabsTrigger>
             )}
@@ -750,10 +776,44 @@ function CampViewPage(props: { id?: string }) {
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   {canManage && (
-                    <Button variant="outline" size="sm" className="h-8">
-                      <Users className="h-4 w-4 mr-2" />
-                      Manage Athletes
-                    </Button>
+                    <>
+                      <Button variant="outline" size="sm" className="h-8">
+                        <Users className="h-4 w-4 mr-2" />
+                        Manage Athletes
+                      </Button>
+                      
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="icon" variant="ghost" className="h-8 w-8">
+                            <Settings className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Registration Settings</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setShowFormFieldsDialog(true)}>
+                            <FileText className="h-4 w-4 mr-2" />
+                            Form Fields & Custom Fields
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => {
+                            setExportFormat("pdf");
+                            setShowExportDialog(true);
+                          }}>
+                            <FileText className="h-4 w-4 mr-2" />
+                            Export as PDF
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setExportFormat("csv");
+                            setShowExportDialog(true);
+                          }}>
+                            <TableIcon className="h-4 w-4 mr-2" />
+                            Export as CSV
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </>
                   )}
                   <Users className="h-5 w-5 text-muted-foreground" />
                 </div>
@@ -831,22 +891,7 @@ function CampViewPage(props: { id?: string }) {
             </Card>
           </TabsContent>
           
-          {/* Custom Form Fields Tab - Only for managers */}
-          {canManage && (
-            <TabsContent value="form-fields">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Registration Form Fields
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <EditCampCustomFields camp={camp} />
-                </CardContent>
-              </Card>
-            </TabsContent>
-          )}
+
           
           {/* Attendance Tab - Only for managers */}
           {canManage && (
@@ -1165,6 +1210,26 @@ function CampViewPage(props: { id?: string }) {
           </>
         )}
         
+        {/* Form Fields Dialog in a modal */}
+        {camp && (
+          <Dialog open={showFormFieldsDialog} onOpenChange={setShowFormFieldsDialog}>
+            <DialogContent className="max-w-3xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Registration Form Fields
+                </DialogTitle>
+                <DialogDescription>
+                  Customize the registration form fields for this camp.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="max-h-[70vh] overflow-y-auto">
+                <EditCampCustomFields camp={camp} />
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+        
         {/* Export Participants Dialog */}
         {camp && (
           <ExportParticipantsDialog
@@ -1174,6 +1239,15 @@ function CampViewPage(props: { id?: string }) {
             campName={camp.name}
             registrations={registrations || []}
             exportFormat={exportFormat}
+          />
+        )}
+        
+        {/* Form Fields Dialog */}
+        {camp && (
+          <CampFormFieldsDialog 
+            camp={camp}
+            open={showFormFieldsDialog}
+            onOpenChange={setShowFormFieldsDialog}
           />
         )}
       </div>
