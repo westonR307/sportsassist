@@ -129,7 +129,12 @@ export function ExportParticipantsDialog({
   // Export to PDF
   const exportToPdf = () => {
     try {
-      const doc = new jsPDF();
+      // Create PDF in landscape orientation
+      const doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
       
       // Add title
       doc.setFontSize(18);
@@ -204,15 +209,43 @@ export function ExportParticipantsDialog({
           });
       });
       
-      // Generate table
+      // Generate table with optimized column widths
       autoTable(doc, {
         head: [headers],
         body: rows,
         startY: 40,
-        styles: { overflow: 'linebreak', cellWidth: 'wrap' },
-        columnStyles: { 
-          0: { cellWidth: 30 } // make the name column wider
+        styles: { 
+          overflow: 'linebreak', 
+          cellWidth: 'auto',
+          cellPadding: 2,
+          fontSize: 9 // Slightly smaller font size for more content
         },
+        // Dynamically calculate column styles based on field types
+        columnStyles: selectedFields.reduce((styles, fieldId, index) => {
+          switch (fieldId) {
+            case 'name':
+              styles[index] = { cellWidth: 30 }; // Name column wider
+              break;
+            case 'id':
+            case 'age':
+            case 'gender':
+              styles[index] = { cellWidth: 15 }; // Small columns for simple data
+              break;
+            case 'dob':
+            case 'registrationDate':
+              styles[index] = { cellWidth: 20 }; // Medium width for dates
+              break;
+            case 'allergies':
+            case 'medicalConditions':
+            case 'medications':
+            case 'sportsInterests':
+              styles[index] = { cellWidth: 40 }; // Extra wide for potentially long text
+              break;
+            default:
+              styles[index] = { cellWidth: 'auto' }; // Default auto sizing
+          }
+          return styles;
+        }, {}),
         didDrawPage: (data) => {
           // Add page number at the bottom
           doc.setFontSize(8);
@@ -221,7 +254,11 @@ export function ExportParticipantsDialog({
             data.settings.margin.left, 
             doc.internal.pageSize.height - 10
           );
-        }
+        },
+        tableWidth: 'auto',
+        margin: { top: 40, right: 10, bottom: 20, left: 10 }, // Use more of the page width
+        horizontalPageBreak: true, // Enable horizontal page breaks if needed
+        horizontalPageBreakRepeat: 0 // Repeat the first column (usually name) on new pages
       });
       
       // Download the PDF

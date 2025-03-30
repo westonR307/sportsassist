@@ -1139,15 +1139,15 @@ export async function registerRoutes(app: Express) {
                           ['camp_creator', 'manager', 'coach', 'volunteer'].includes(req.user.role);
         
         if (isOrgStaff) {
-          // Organization staff can see all registrations
-          const registrations = await storage.getRegistrationsByCamp(campId);
+          // Organization staff can see all registrations with complete athlete info
+          const registrations = await storage.getRegistrationsWithChildInfo(campId);
           return res.json({
             registrations,
             permissions: { canManage: true }
           });
         } else if (req.user.role === 'parent') {
-          // Parents can only see their own children's registrations
-          const registrations = await storage.getRegistrationsByCamp(campId);
+          // Parents can only see their own children's registrations, but with full child info
+          const registrations = await storage.getRegistrationsWithChildInfo(campId);
           const children = await storage.getChildrenByParent(req.user.id);
           const childIds = children.map(child => child.id);
           
