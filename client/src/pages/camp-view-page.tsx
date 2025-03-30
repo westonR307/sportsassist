@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { 
   Loader2, 
   Edit, 
@@ -27,9 +28,10 @@ import {
   XCircle,
   ClipboardList,
   Ban,
-  ListChecks
+  ListChecks,
+  User
 } from "lucide-react";
-import { type Camp } from "@shared/schema";
+import { type Camp, type Child } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { EditCampDialog } from "@/components/edit-camp-dialog";
 import { CampScheduleDisplay } from "@/components/camp-schedule";
@@ -121,16 +123,114 @@ function CampViewPage() {
     return registrations.some((reg: any) => reg.parentId === user.id);
   };
   
+  // Get parent's children
+  const { data: children = [], isLoading: isLoadingChildren } = useQuery<Child[]>({
+    queryKey: ['/api/parent/children'],
+    enabled: isParent && !!user,
+  });
+
+  const [selectedChildId, setSelectedChildId] = useState<number | null>(null);
+  const [showChildSelectionDialog, setShowChildSelectionDialog] = useState(false);
+
+  // Dialog to select a child for registration
+  const ChildSelectionDialog = () => {
+    if (isLoadingChildren) {
+      return (
+        <div className="flex justify-center py-4">
+          <Loader2 className="h-6 w-6 animate-spin" />
+        </div>
+      );
+    }
+
+    if (!children.length) {
+      return (
+        <div className="text-center py-4">
+          <p className="text-muted-foreground mb-2">You don't have any athletes registered yet.</p>
+          <p className="text-sm text-muted-foreground">
+            Please add an athlete profile before registering for a camp.
+          </p>
+          <Button 
+            variant="outline" 
+            className="mt-4"
+            onClick={() => {
+              setShowChildSelectionDialog(false);
+              navigate('/parent-dashboard');
+            }}
+          >
+            Go to Dashboard
+          </Button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Please select which athlete you would like to register for this camp:
+        </p>
+        <div className="grid gap-3">
+          {children.map((child) => (
+            <Card 
+              key={child.id}
+              className={`cursor-pointer transition-colors ${selectedChildId === child.id ? 'border-primary' : 'hover:border-primary/50'}`}
+              onClick={() => setSelectedChildId(child.id)}
+            >
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-muted rounded-full h-10 w-10 flex items-center justify-center">
+                    <User className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-medium">{child.fullName}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(child.dateOfBirth).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                {selectedChildId === child.id && (
+                  <CheckCircle className="h-5 w-5 text-primary" />
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="flex justify-end gap-2 mt-4">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowChildSelectionDialog(false)}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={() => {
+              if (selectedChildId) {
+                registerMutation.mutate();
+                setShowChildSelectionDialog(false);
+              }
+            }}
+            disabled={!selectedChildId || registerMutation.isPending}
+          >
+            {registerMutation.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <CheckCircle className="h-4 w-4 mr-2" />
+            )}
+            Confirm Registration
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   // Registration mutation
   const registerMutation = useMutation({
     mutationFn: async () => {
       setRegistering(true);
       try {
-        // In a real implementation, we would need to select which child to register
-        // and may need to collect custom field data
+        // Use the selected child ID for registration
         const response = await apiRequest('POST', `/api/camps/${id}/register`, {
           campId: parseInt(id),
-          // We'd need to add childId in a real implementation
+          childId: selectedChildId,
         });
         
         return await response.json();
@@ -219,7 +319,7 @@ function CampViewPage() {
                 </Button>
               ) : registrationStatus === 'open' ? (
                 <Button 
-                  onClick={() => registerMutation.mutate()}
+                  onClick={() => setShowChildSelectionDialog(true)}
                   disabled={registerMutation.isPending}
                 >
                   {registerMutation.isPending ? (
@@ -519,6 +619,19 @@ function CampViewPage() {
               onOpenChange={setScheduleEditorOpen}
               camp={camp}
             />
+            
+            {/* Child Selection Dialog */}
+            <Dialog open={showChildSelectionDialog} onOpenChange={setShowChildSelectionDialog}>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Select Athlete to Register</DialogTitle>
+                  <DialogDescription>
+                    Choose which athlete you would like to register for {camp.name}.
+                  </DialogDescription>
+                </DialogHeader>
+                <ChildSelectionDialog />
+              </DialogContent>
+            </Dialog>
           </>
         )}
       </div>
