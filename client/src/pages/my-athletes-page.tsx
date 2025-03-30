@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Child } from "@shared/schema";
+import { ExtendedChild } from "@shared/child-types";
 import { useAuth } from "@/hooks/use-auth";
 import { ParentSidebar } from "@/components/parent-sidebar";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { PlusCircle, Edit, Trash2, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EditAthleteDialog } from "@/components/edit-athlete-dialog";
 import { ViewAthleteDialog } from "@/components/view-athlete-dialog";
+import { AddAthleteDialog } from "@/components/add-athlete-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   AlertDialog,
@@ -27,11 +29,12 @@ import { getSportName } from "@shared/sports-utils";
 export default function MyAthletesPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [selectedChild, setSelectedChild] = useState<Child | null>(null);
+  const [selectedChild, setSelectedChild] = useState<ExtendedChild | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-  const { data: children = [], isLoading } = useQuery<Child[]>({
+  const { data: children = [], isLoading } = useQuery<ExtendedChild[]>({
     queryKey: ["/api/parent/children"],
     enabled: !!user,
   });
@@ -68,10 +71,7 @@ export default function MyAthletesPage() {
               </p>
             </div>
             <Button
-              onClick={() => {
-                setSelectedChild(null);
-                setIsEditDialogOpen(true);
-              }}
+              onClick={() => setIsAddDialogOpen(true)}
               className="flex items-center gap-2"
             >
               <PlusCircle size={18} />
@@ -125,13 +125,13 @@ export default function MyAthletesPage() {
                             {new Date().getFullYear() - new Date(child.dateOfBirth).getFullYear()} years
                           </p>
                         </div>
-                        {child.childSports && child.childSports.length > 0 && (
+                        {child.sportsInterests && child.sportsInterests.length > 0 && (
                           <div>
                             <p className="text-sm font-medium">Sports</p>
                             <div className="flex flex-wrap gap-1 mt-1">
-                              {child.childSports.map((sport) => (
+                              {child.sportsInterests.map((sport, index) => (
                                 <div
-                                  key={sport.id}
+                                  key={index}
                                   className="text-xs px-2 py-1 rounded-full bg-muted"
                                 >
                                   {getSportName(sport.sportId)} ({sport.skillLevel})
@@ -209,10 +209,7 @@ export default function MyAthletesPage() {
                 You haven't added any athletes yet. Create an athlete profile to register for sports camps.
               </p>
               <Button
-                onClick={() => {
-                  setSelectedChild(null);
-                  setIsEditDialogOpen(true);
-                }}
+                onClick={() => setIsAddDialogOpen(true)}
                 size="lg"
                 className="flex items-center gap-2"
               >
@@ -245,6 +242,12 @@ export default function MyAthletesPage() {
           }}
         />
       )}
+
+      {/* Add Athlete Dialog */}
+      <AddAthleteDialog 
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+      />
     </div>
   );
 }
