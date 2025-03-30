@@ -225,11 +225,13 @@ export default function MyAthletesPage() {
       </main>
 
       {/* Edit Athlete Dialog */}
-      <EditAthleteDialog
-        open={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
-        athlete={selectedChild}
-      />
+      {selectedChild && (
+        <EditAthleteDialog
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          athlete={selectedChild}
+        />
+      )}
 
       {/* View Athlete Dialog */}
       {selectedChild && (

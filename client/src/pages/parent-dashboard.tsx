@@ -126,7 +126,18 @@ export default function ParentDashboard() {
                 Logout
               </Button>
               <Button 
-                onClick={() => setAddChildDialogOpen(true)}
+                onClick={() => {
+                  console.log("Add Athlete button clicked");
+                  // Try to manually click the Dialog trigger first
+                  const dialogTrigger = document.getElementById('add-athlete-dialog-trigger');
+                  if (dialogTrigger) {
+                    console.log("Dialog trigger found, clicking it");
+                    dialogTrigger.click();
+                  } else {
+                    console.log("Dialog trigger not found, using state");
+                    setAddChildDialogOpen(true);
+                  }
+                }}
                 className="bg-primary hover:bg-primary/90"
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -158,7 +169,22 @@ export default function ParentDashboard() {
                     Get started by adding your athlete's profile. This will help us personalize 
                     their sports camp experience and make registration easier.
                   </p>
-                  <Button size="lg" onClick={() => setAddChildDialogOpen(true)} className="mt-2">
+                  <Button 
+                    size="lg" 
+                    onClick={() => {
+                      console.log("Add First Athlete button clicked");
+                      // Try to manually click the Dialog trigger first
+                      const dialogTrigger = document.getElementById('add-athlete-dialog-trigger');
+                      if (dialogTrigger) {
+                        console.log("Dialog trigger found, clicking it");
+                        dialogTrigger.click();
+                      } else {
+                        console.log("Dialog trigger not found, using state");
+                        setAddChildDialogOpen(true);
+                      }
+                    }} 
+                    className="mt-2"
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Your First Athlete
                   </Button>
@@ -250,10 +276,21 @@ export default function ParentDashboard() {
       </div>
 
       {/* Add Athlete Dialog */}
-      <AddAthleteDialog 
-        open={addChildDialogOpen} 
-        onOpenChange={setAddChildDialogOpen} 
-      />
+      <Dialog open={addChildDialogOpen} onOpenChange={setAddChildDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]" aria-describedby="athlete-dialog-description">
+          <DialogHeader>
+            <DialogTitle>Add an Athlete</DialogTitle>
+            <DialogDescription id="athlete-dialog-description">
+              Create a profile for your athlete to register for camps.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {/* Form section - separate from photo upload */}
+          <AddAthleteForm 
+            onOpenChange={setAddChildDialogOpen} 
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* View Athlete Dialog */}
       {selectedAthlete && (
@@ -530,13 +567,13 @@ function AthleteCard({
   );
 }
 
-function AddAthleteDialog({ 
-  open, 
+function AddAthleteForm({ 
   onOpenChange 
 }: { 
-  open: boolean; 
   onOpenChange: (open: boolean) => void;
 }) {
+  console.log("AddAthleteForm rendering");
+  
   const { toast } = useToast();
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string>("");
   const [uploading, setUploading] = useState(false);
@@ -598,17 +635,7 @@ function AddAthleteDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>Add an Athlete</DialogTitle>
-          <DialogDescription>
-            Create a profile for your athlete to register for camps.
-          </DialogDescription>
-        </DialogHeader>
-        
-        {/* Form section - separate from photo upload */}
-        <Form {...form}>
+    <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -815,8 +842,8 @@ function AddAthleteDialog({
                                 >
                                   <option value="">Select a sport</option>
                                   {sportsList.map((sport) => (
-                                    <option key={sport} value={sportsMap[sport] || 0}>
-                                      {sport}
+                                    <option key={sport.id} value={sport.id}>
+                                      {sport.name}
                                     </option>
                                   ))}
                                 </select>
@@ -950,7 +977,5 @@ function AddAthleteDialog({
             </div>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
   );
 }
