@@ -35,33 +35,75 @@ export function SimpleEditAthleteDialog({ athlete, open, onOpenChange }: SimpleE
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!athlete?.id) return;
+    e.preventDefault(); // Prevent default form submission
+    
+    if (!athlete?.id) {
+      console.error("No athlete ID provided");
+      toast({
+        title: "Error",
+        description: "Could not identify athlete to update",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Validate required fields
+    if (!formData.fullName || !formData.dateOfBirth) {
+      toast({
+        title: "Missing required fields",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
     
     setLoading(true);
+    console.log("Starting athlete update process...");
     
     try {
       console.log("Submitting data:", formData);
       
-      // Create a payload with required fields
+      // Create a complete payload with all required fields
       const payload = {
-        ...formData,
+        fullName: formData.fullName,
+        dateOfBirth: formData.dateOfBirth,
+        gender: formData.gender || "male",
         communicationOptIn: true,
-        preferredContact: "email"
+        preferredContact: "email",
+        // Include any other fields
+        schoolName: formData.schoolName,
+        // Add placeholders for other required fields to prevent type errors
+        emergencyContact: "",
+        emergencyPhone: "",
+        medicalInformation: "",
+        specialNeeds: ""
       };
       
-      console.log("Full payload:", payload);
+      console.log("Full payload:", JSON.stringify(payload, null, 2));
       
-      const res = await apiRequest("PUT", `/api/parent/children/${athlete.id}`, payload);
+      // Use direct fetch instead of the utility function
+      const response = await fetch(`/api/parent/children/${athlete.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+        credentials: "include" // Important: include credentials for auth
+      });
       
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`Failed to update: ${res.status} ${errorText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Server error: ${response.status}`, errorText);
+        throw new Error(`Failed to update: ${response.status} ${errorText}`);
       }
       
-      await res.json();
+      const data = await response.json();
+      console.log("Update successful, received data:", data);
       
+      // Force refresh the children data
       queryClient.invalidateQueries({ queryKey: ["/api/parent/children"] });
+      
+      // Close the dialog
       onOpenChange(false);
       
       toast({
