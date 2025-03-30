@@ -38,8 +38,7 @@ const addChildSchema = z.object({
   medicalInformation: z.string().optional(),
   specialNeeds: z.string().optional(),
   jerseySize: z.string().optional(),
-  height: z.string().optional(),
-  weight: z.string().optional(),
+  // Height and weight fields removed as they were removed from the database schema
   profilePhoto: z.string().optional(),
   // Sports interests
   sportsInterests: z.array(z.object({
@@ -48,9 +47,9 @@ const addChildSchema = z.object({
     preferredPositions: z.array(z.string()).optional(),
     currentTeam: z.string().optional(),
   })).optional(),
-  // Default values for required fields in DB schema
-  preferredContact: z.enum(["email", "sms", "app"]).default("email"),
-  communicationOptIn: z.boolean().default(true),
+  // Make communication fields optional since they're now nullable in the database
+  preferredContact: z.enum(["email", "sms", "app"]).optional(),
+  communicationOptIn: z.boolean().optional(),
 });
 
 type AddChildFormValues = z.infer<typeof addChildSchema>;
@@ -82,8 +81,6 @@ export function AddAthleteDialog({
       medicalInformation: "",
       specialNeeds: "",
       jerseySize: "",
-      height: "",
-      weight: "",
       profilePhoto: "",
       sportsInterests: [], // Initialize empty sports interests array
     },
@@ -244,34 +241,7 @@ export function AddAthleteDialog({
               )}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="height"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Height</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="e.g. 5 feet 8 inches" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="weight"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Weight</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="e.g. 150 lbs" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            {/* Height and weight fields removed */}
 
             <div className="space-y-4">
               <div className="flex justify-between items-center">
