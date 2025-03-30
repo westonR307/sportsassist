@@ -1,0 +1,178 @@
+[vite] connecting...
+[vite] connected.
+Protected route params: 
+Object {}
+Protected route params: 
+Object {}
+Protected route params: 
+Object {0: "7", id: "7"}
+Protected route params: 
+Object {0: "7", id: "7"}
+CampViewPage - id from props: 7
+CampViewPage - id from params: 7
+CampViewPage - final id being used: 7
+CampViewPage - id from props: 7
+CampViewPage - id from params: 7
+CampViewPage - final id being used: 7
+Fetching camp with ID: 7
+Full API URL: /api/camps/7
+URL params check - id type: string value: 7
+CampViewPage - id from props: 7
+CampViewPage - id from params: 7
+CampViewPage - final id being used: 7
+CampViewPage - id from props: 7
+CampViewPage - id from params: 7
+CampViewPage - final id being used: 7
+API Response status: 200
+Received camp data: {
+  "id": 7,
+  "name": "Baseball Hitting Camp",
+  "description": "Baseball Hitting Camp Ages 15-18",
+  "streetAddress": "5605 Marlin Ct",
+  "city": "Gillette",
+  "state": "WY",
+  "zipCode": "82718",
+  "additionalLocationDetails": null,
+  "startDate": "2025-04-28T00:00:00.000Z",
+  "endDate": "2025-05-05T00:00:00.000Z",
+  "registrationStartDate": "2025-03-28T00:00:00.000Z",
+  "registrationEndDate": "2025-04-27T00:00:00.000Z",
+  "price": 250,
+  "capacity": 20,
+  "organizationId": 1,
+  "waitlistEnabled": true,
+  "type": "group",
+  "visibility": "public",
+  "minAge": 15,
+  "maxAge": 18,
+  "repeatType": "none",
+  "isDeleted": false,
+  "isCancelled": false,
+  "deletedAt": null,
+  "cancelledAt": null,
+  "cancelReason": null,
+  "repeatCount": 0,
+  "campSports": [],
+  "defaultStartTime": "09:00:00",
+  "defaultEndTime": "17:00:00",
+  "schedules": [
+    {
+      "id": 5,
+      "campId": 7,
+      "dayOfWeek": 0,
+      "startTime": "09:00:00",
+      "endTime": "17:00:00"
+    },
+    {
+      "id": 4,
+      "campId": 7,
+      "dayOfWeek": 1,
+      "startTime": "09:00:00",
+      "endTime": "17:00:00"
+    }
+  ],
+  "campSportsDetail": [],
+  "permissions": {
+    "canManage": true
+  }
+}
+CampViewPage - id from props: 7
+CampViewPage - id from params: 7
+CampViewPage - final id being used: 7
+CampViewPage - id from props: 7
+CampViewPage - id from params: 7
+CampViewPage - final id being used: 7
+Camp ID: 7
+Schedule Data: undefined
+Exceptions Data: undefined
+Schedule Errors: null
+Exception Errors: null
+Camp ID: 7
+Schedule Data: undefined
+Exceptions Data: undefined
+Schedule Errors: null
+Exception Errors: null
+Edit Camp Dialog - Camp Sports Data: undefined
+Edit Camp Dialog - Is Loading Sports: false
+Edit Camp Dialog - Sports Error: null
+Edit Camp Dialog - Sports List: 
+(70) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+Edit Camp Dialog - Camp Sports Data: undefined
+Edit Camp Dialog - Is Loading Sports: false
+Edit Camp Dialog - Sports Error: null
+Edit Camp Dialog - Sports List: 
+(70) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+Camp ID: 7
+Schedule Data: 
+Object {schedules: Array(2), permissions: {…}}
+Exceptions Data: undefined
+Schedule Errors: null
+Exception Errors: null
+Camp ID: 7
+Schedule Data: 
+Object {schedules: Array(2), permissions: {…}}
+Exceptions Data: undefined
+Schedule Errors: null
+Exception Errors: null
+Camp ID: 7
+Schedule Data: 
+Object {schedules: Array(2), permissions: {…}}
+Exceptions Data: 
+Object {exceptions: Array(0), permissions: {…}}
+Schedule Errors: null
+Exception Errors: null
+Camp ID: 7
+Schedule Data: 
+Object {schedules: Array(2), permissions: {…}}
+Exceptions Data: 
+Object {exceptions: Array(0), permissions: {…}}
+Schedule Errors: null
+Exception Errors: null
+`Tooltip` must be used within `TooltipProvider`
+`Tooltip` must be used within `TooltipProvider`
+`Tooltip` must be used within `TooltipProvider`
+`Tooltip` must be used within `TooltipProvider`
+The above error occurred in the <Tooltip> component:
+
+    at Tooltip (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=87f56863:105:5)
+    at div
+    at td
+    at _c13 (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/components/ui/table.tsx:152:13)
+    at tr
+    at _c9 (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/components/ui/table.tsx:102:12)
+    at tbody
+    at _c5 (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/components/ui/table.tsx:55:12)
+    at table
+    at div
+    at _c (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/components/ui/table.tsx:20:11)
+    at div
+    at div
+    at div
+    at _c9 (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/components/ui/card.tsx:20:11)
+    at div
+    at https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-CPFL7ZFD.js?v=87f56863:41:13
+    at Presence (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-AZCBCMZO.js?v=87f56863:24:11)
+    at https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=87f56863:173:13
+    at _c5 (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/components/ui/tabs.tsx:72:12)
+    at div
+    at https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-CPFL7ZFD.js?v=87f56863:41:13
+    at Provider (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-LSQNWB54.js?v=87f56863:38:15)
+    at https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=87f56863:51:7
+    at div
+    at main
+    at div
+    at div
+    at DashboardLayout (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/pages/dashboard.tsx:46:28)
+    at CampViewPage (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/pages/camp-view-page.tsx:94:18)
+    at Route (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=87f56863:280:16)
+    at ProtectedRoute (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/lib/protected-route.tsx:22:3)
+    at Switch (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=87f56863:336:17)
+    at Router (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/App.tsx?v=wUDOVe7IVRHJXU0YKc0W9:98:31)
+    at AuthProvider (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/hooks/use-auth.tsx:26:32)
+    at QueryClientProvider (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=87f56863:2805:3)
+    at ErrorBoundary (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/components/error-boundary.tsx:7:5)
+    at App
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.

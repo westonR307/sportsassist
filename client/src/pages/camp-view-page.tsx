@@ -10,7 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipTrigger, 
+  TooltipProvider 
+} from "@/components/ui/tooltip";
 import { 
   AlertTriangle,
   Loader2, 
@@ -921,48 +926,53 @@ function CampViewPage(props: { id?: string }) {
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex justify-end gap-2">
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button 
-                                          size="sm" 
-                                          variant="ghost"
-                                          onClick={() => {
-                                            toast({
-                                              title: "Edit Athlete Attendance",
-                                              description: `Editing attendance for Athlete #${registration.childId}`,
-                                              variant: "default"
-                                            });
-                                          }}
-                                        >
-                                          <FileEdit className="h-4 w-4" />
-                                          <span className="sr-only">Edit</span>
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p>Edit attendance</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button 
-                                          size="sm" 
-                                          variant="ghost"
-                                          onClick={() => {
-                                            toast({
-                                              title: "View Athlete Details",
-                                              description: `Viewing details for Athlete #${registration.childId}`,
-                                              variant: "default"
-                                            });
-                                          }}
-                                        >
-                                          <Eye className="h-4 w-4" />
-                                          <span className="sr-only">View</span>
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p>View athlete details</p>
-                                      </TooltipContent>
-                                    </Tooltip>
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button 
+                                            size="sm" 
+                                            variant="ghost"
+                                            onClick={() => {
+                                              toast({
+                                                title: "Edit Athlete Attendance",
+                                                description: `Editing attendance for Athlete #${registration.childId}`,
+                                                variant: "default"
+                                              });
+                                            }}
+                                          >
+                                            <FileEdit className="h-4 w-4" />
+                                            <span className="sr-only">Edit</span>
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Edit attendance</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                    
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button 
+                                            size="sm" 
+                                            variant="ghost"
+                                            onClick={() => {
+                                              toast({
+                                                title: "View Athlete Details",
+                                                description: `Viewing details for Athlete #${registration.childId}`,
+                                                variant: "default"
+                                              });
+                                            }}
+                                          >
+                                            <Eye className="h-4 w-4" />
+                                            <span className="sr-only">View</span>
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>View athlete details</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
                                   </div>
                                 </TableCell>
                               </TableRow>
