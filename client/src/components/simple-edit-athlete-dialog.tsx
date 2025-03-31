@@ -120,9 +120,16 @@ export function SimpleEditAthleteDialog({ athlete, open, onOpenChange }: SimpleE
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent 
+        className="sm:max-w-[500px]"
+        aria-labelledby="simple-edit-athlete-title"
+        aria-describedby="simple-edit-athlete-description"
+      >
         <DialogHeader>
-          <DialogTitle>Edit Athlete - Basic Information</DialogTitle>
+          <DialogTitle id="simple-edit-athlete-title">Edit Athlete - Basic Information</DialogTitle>
+          <p id="simple-edit-athlete-description" className="text-sm text-muted-foreground">
+            Update {athlete.fullName}'s basic information.
+          </p>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">

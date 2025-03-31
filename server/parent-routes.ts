@@ -143,67 +143,84 @@ export function registerParentRoutes(app: Express) {
       }
       
       // Create a simplified update object with only the fields we explicitly want to update
+      // IMPORTANT: Maintain all required fields by using current values as fallbacks
       const updateData = {
         parentId: req.user.id, // Keep parent ID unchanged
-        fullName: req.body.fullName,
-        gender: req.body.gender,
-        dateOfBirth: req.body.dateOfBirth ? new Date(req.body.dateOfBirth) : undefined,
         
-        // Handle communication preferences specially
-        ...(req.body.communicationOptIn !== undefined && { 
-          communicationOptIn: req.body.communicationOptIn 
-        }),
-        ...(req.body.preferredContact !== undefined && { 
-          preferredContact: req.body.preferredContact 
-        }),
+        // Core required fields - always have a value
+        fullName: req.body.fullName || child.fullName,
+        gender: req.body.gender || child.gender || 'male',
+        dateOfBirth: req.body.dateOfBirth ? new Date(req.body.dateOfBirth) : child.dateOfBirth,
         
-        // Handle empty strings for optional fields by using explicit checks
-        ...(req.body.emergencyContact !== undefined && { 
-          emergencyContact: req.body.emergencyContact 
-        }),
-        ...(req.body.emergencyPhone !== undefined && { 
-          emergencyPhone: req.body.emergencyPhone 
-        }),
-        ...(req.body.schoolName !== undefined && { 
-          schoolName: req.body.schoolName 
-        }),
-        ...(req.body.currentGrade !== undefined && { 
-          currentGrade: req.body.currentGrade 
-        }),
-        ...(req.body.sportsHistory !== undefined && { 
-          sportsHistory: req.body.sportsHistory 
-        }),
-        ...(req.body.jerseySize !== undefined && { 
-          jerseySize: req.body.jerseySize 
-        }),
-        ...(req.body.medicalInformation !== undefined && { 
-          medicalInformation: req.body.medicalInformation 
-        }),
-        ...(req.body.specialNeeds !== undefined && { 
-          specialNeeds: req.body.specialNeeds 
-        }),
+        // Handle communication preferences with proper defaults
+        communicationOptIn: req.body.communicationOptIn !== undefined 
+          ? Boolean(req.body.communicationOptIn) 
+          : (child.communicationOptIn !== undefined ? child.communicationOptIn : true),
         
-        // Only include sportsInterests if it's provided in the request
-        ...(req.body.sportsInterests && Array.isArray(req.body.sportsInterests) && { 
-          sportsInterests: req.body.sportsInterests 
-        }),
+        preferredContact: req.body.preferredContact || child.preferredContact || 'email',
+        
+        // Handle optional fields - maintain existing values when not present in request
+        emergencyContact: req.body.emergencyContact !== undefined 
+          ? req.body.emergencyContact 
+          : child.emergencyContact,
+        
+        emergencyPhone: req.body.emergencyPhone !== undefined 
+          ? req.body.emergencyPhone 
+          : child.emergencyPhone,
+        
+        schoolName: req.body.schoolName !== undefined 
+          ? req.body.schoolName 
+          : child.schoolName,
+        
+        currentGrade: req.body.currentGrade !== undefined 
+          ? req.body.currentGrade 
+          : child.currentGrade,
+        
+        sportsHistory: req.body.sportsHistory !== undefined 
+          ? req.body.sportsHistory 
+          : child.sportsHistory,
+        
+        jerseySize: req.body.jerseySize !== undefined 
+          ? req.body.jerseySize 
+          : child.jerseySize,
+        
+        medicalInformation: req.body.medicalInformation !== undefined 
+          ? req.body.medicalInformation 
+          : child.medicalInformation,
+        
+        specialNeeds: req.body.specialNeeds !== undefined 
+          ? req.body.specialNeeds 
+          : child.specialNeeds,
+        
+        // Sports interests - either use the provided array or keep existing
+        sportsInterests: req.body.sportsInterests && Array.isArray(req.body.sportsInterests)
+          ? req.body.sportsInterests
+          : (child.sportsInterests || [])
       };
       
       console.log("Prepared update data:", JSON.stringify(updateData, null, 2));
       
       try {
+        // Add explicit logs before update attempt
+        console.log("DIAGNOSIS - About to call storage.updateChild with data:", JSON.stringify(updateData, null, 2));
+        
         // Update the child in the database
         const updatedChild = await storage.updateChild(childId, updateData);
-        console.log("Child updated successfully:", JSON.stringify(updatedChild, null, 2));
+        console.log("DIAGNOSIS - Child updated successfully:", JSON.stringify(updatedChild, null, 2));
         
         // After successful update, fetch the complete child record to return
         const refreshedChild = await storage.getChild(childId);
-        console.log("Returning complete updated child data");
+        console.log("DIAGNOSIS - Returning complete updated child data:", JSON.stringify(refreshedChild, null, 2));
         
         return res.json(refreshedChild);
-      } catch (updateError) {
-        console.error("Error in storage.updateChild:", updateError);
-        return res.status(500).json({ message: "Failed to update child record", error: updateError.message });
+      } catch (updateError: any) {
+        console.error("DIAGNOSIS - Error in storage.updateChild:", updateError);
+        // Add more detailed error message with the actual error
+        return res.status(500).json({ 
+          message: "Failed to update child record", 
+          error: updateError?.message || "Unknown database error",
+          details: updateError?.toString() || "No details available"
+        });
       }
     } catch (error: any) {
       console.error("Error updating child:", error);

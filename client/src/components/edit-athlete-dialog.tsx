@@ -134,6 +134,9 @@ export function EditAthleteDialog({
     mutationFn: async (values: EditChildFormValues) => {
       if (!athlete?.id) throw new Error("No athlete ID provided");
       
+      console.log("DIAGNOSIS - Edit athlete mutation function called with athlete ID:", athlete.id);
+      console.log("DIAGNOSIS - Mutation values:", values);
+      
       // Create a comprehensive payload with all fields
       const payload = {
         fullName: values.fullName,
@@ -154,10 +157,14 @@ export function EditAthleteDialog({
         sportsHistory: values.sportsHistory,
       };
       
-      console.log("Comprehensive edit mutation payload:", JSON.stringify(payload, null, 2));
+      console.log("DIAGNOSIS - Comprehensive edit mutation payload:", JSON.stringify(payload, null, 2));
+      
+      // Use a safe window alert to show what we're submitting (for debugging only)
+      alert(`DEBUG - Submitting data for athlete ID ${athlete.id}: ${JSON.stringify(payload)}`);
       
       // Use fetch directly for more control over the request
       try {
+        console.log(`DIAGNOSIS - Making fetch request to /api/parent/children/${athlete.id}`);
         const response = await fetch(`/api/parent/children/${athlete.id}`, {
           method: "PUT",
           headers: {
@@ -167,17 +174,22 @@ export function EditAthleteDialog({
           credentials: "include" // Important: include credentials for auth
         });
         
+        console.log("DIAGNOSIS - Fetch response status:", response.status);
+        
         if (!response.ok) {
           const errorText = await response.text();
-          console.error(`Server error: ${response.status}`, errorText);
+          console.error(`DIAGNOSIS - Server error: ${response.status}`, errorText);
+          alert(`DEBUG ERROR - Server responded with ${response.status}: ${errorText}`);
           throw new Error(`Failed to update athlete: ${errorText || response.statusText}`);
         }
         
         const data = await response.json();
-        console.log("Edit athlete - update successful, received data:", data);
+        console.log("DIAGNOSIS - Edit athlete - update successful, received data:", data);
+        alert(`DEBUG SUCCESS - Server responded with data: ${JSON.stringify(data)}`);
         return data;
       } catch (error) {
-        console.error("Edit athlete - update request failed:", error);
+        console.error("DIAGNOSIS - Edit athlete - update request failed:", error);
+        alert(`DEBUG CATCH ERROR: ${error.message}`);
         throw error;
       }
     },
@@ -229,10 +241,14 @@ export function EditAthleteDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent 
+        className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto"
+        aria-labelledby="edit-athlete-dialog-title"
+        aria-describedby="edit-athlete-dialog-description"
+      >
         <DialogHeader>
-          <DialogTitle>Edit Athlete</DialogTitle>
-          <DialogDescription>
+          <DialogTitle id="edit-athlete-dialog-title">Edit Athlete Profile</DialogTitle>
+          <DialogDescription id="edit-athlete-dialog-description">
             Update {athlete.fullName}'s profile information.
           </DialogDescription>
         </DialogHeader>
