@@ -180,26 +180,10 @@ function CampViewPage(props: { id?: string }) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    // Check if URL contains schedule-editor hash and open dialog if it does
-    if (window.location.hash === '#schedule-editor') {
-      console.log("Schedule editor hash detected, opening dialog");
+    if (location.includes('#schedule-editor')) {
       setScheduleEditorOpen(true);
     }
-    
-    // Add event listener for hash changes
-    const handleHashChange = () => {
-      if (window.location.hash === '#schedule-editor') {
-        console.log("Hash change detected to #schedule-editor");
-        setScheduleEditorOpen(true);
-      }
-    };
-    
-    window.addEventListener('hashchange', handleHashChange);
-    
-    return () => {
-      window.removeEventListener('hashchange', handleHashChange);
-    };
-  }, []);
+  }, [location]);
 
   const isParent = user?.role === 'parent';
   const { isLoading, camp, campError } = useCampData(id);
@@ -1190,20 +1174,6 @@ function CampViewPage(props: { id?: string }) {
             camp={camp}
             open={showFormFieldsDialog}
             onOpenChange={setShowFormFieldsDialog}
-          />
-        )}
-
-        {camp && (
-          <ScheduleEditorDialog
-            campId={parseInt(id)}
-            open={scheduleEditorOpen}
-            onOpenChange={(open) => {
-              setScheduleEditorOpen(open);
-              // Clear the hash when closing
-              if (!open) {
-                navigate(window.location.pathname);
-              }
-            }}
           />
         )}
       </div>

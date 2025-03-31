@@ -19,10 +19,10 @@ interface Schedule {
 interface ScheduleEditorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  campId: number;
+  camp: any; // Using any to avoid type issues
 }
 
-export function ScheduleEditorDialog({ open, onOpenChange, campId }: ScheduleEditorDialogProps) {
+export function ScheduleEditorDialog({ open, onOpenChange, camp }: ScheduleEditorDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -30,8 +30,8 @@ export function ScheduleEditorDialog({ open, onOpenChange, campId }: ScheduleEdi
 
   // Simplified query with better options
   const { data, isLoading } = useQuery({
-    queryKey: ['/api/camps', campId, 'schedules'],
-    enabled: open && !!campId,
+    queryKey: ['/api/camps', camp.id, 'schedules'],
+    enabled: open,
     refetchOnMount: true,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -89,10 +89,10 @@ export function ScheduleEditorDialog({ open, onOpenChange, campId }: ScheduleEdi
 
   const saveSchedulesMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("PUT", `/api/camps/${campId}/schedules`, {
+      const response = await apiRequest("PUT", `/api/camps/${camp.id}/schedules`, {
         schedules: schedules.map(schedule => ({
           ...schedule,
-          campId: campId
+          campId: camp.id
         }))
       });
       return response.json();
@@ -104,8 +104,8 @@ export function ScheduleEditorDialog({ open, onOpenChange, campId }: ScheduleEdi
       });
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/camps", campId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/camps", campId, "schedules"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/camps", camp.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/camps", camp.id, "schedules"] });
       onOpenChange(false);
     },
     onError: (error: Error) => {

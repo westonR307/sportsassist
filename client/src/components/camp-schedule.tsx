@@ -266,7 +266,7 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
         <TabsList className="mx-4 mb-2">
           <TabsTrigger value="enhanced">
             <Calendar className="h-4 w-4 mr-1" />
-            Camp Sessions
+            Calendar Schedule
           </TabsTrigger>
           <TabsTrigger value="exceptions" className="relative">
             Session Changes
@@ -282,7 +282,34 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
           <CardContent>
             {patterns.length > 0 || sessions.length > 0 ? (
               <div className="space-y-6">
-                {/* Recurrence patterns section removed as requested */}
+                {patterns.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-medium mb-3">Recurrence Patterns</h3>
+                    <div className="space-y-4">
+                      {patterns.map((pattern) => (
+                        <div key={pattern.id} className="border rounded-md p-3">
+                          <h4 className="font-medium">{pattern.name}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {formatDate(pattern.startDate, 'MMM d, yyyy')} - {formatDate(pattern.endDate, 'MMM d, yyyy')}
+                          </p>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            <Badge variant="outline" className="bg-primary/10">
+                              {formatTime(pattern.startTime)} - {formatTime(pattern.endTime)}
+                            </Badge>
+                            <Badge variant="outline">
+                              {pattern.repeatType.charAt(0).toUpperCase() + pattern.repeatType.slice(1)}
+                            </Badge>
+                            {pattern.daysOfWeek && (
+                              <Badge variant="outline" className="bg-muted/50">
+                                {pattern.daysOfWeek.map(day => DAYS_OF_WEEK[day].substring(0, 3)).join(', ')}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 
                 {sessions.length > 0 && (
                   <div>
@@ -362,7 +389,7 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
               </div>
             ) : (
               <div className="text-center py-6 text-muted-foreground">
-                <p>No camp sessions scheduled yet.</p>
+                <p>No enhanced scheduling data available.</p>
                 {canManage && (
                   <Button
                     variant="outline"
@@ -376,7 +403,7 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
                     }}
                   >
                     <Calendar className="h-3 w-3 mr-1" />
-                    Schedule Sessions
+                    Set Up Schedule
                   </Button>
                 )}
               </div>
@@ -495,9 +522,21 @@ export function CampScheduleSummary({
   sessions?: CampSession[]
 }) {
   // If we have enhanced scheduling data, prefer to show that
-  if ((sessions && sessions.length > 0)) {
-    // We are no longer showing recurrence patterns as requested
-    // Sessions-based scheduling is now the primary method
+  if ((patterns && patterns.length > 0) || (sessions && sessions.length > 0)) {
+    // Show the recurrence pattern types if available
+    if (patterns && patterns.length > 0) {
+      const patternTypes = Array.from(new Set(patterns.map(p => p.repeatType)));
+      const patternSummary = patternTypes.map(type => 
+        type.charAt(0).toUpperCase() + type.slice(1)
+      ).join(', ');
+      
+      return (
+        <span className="flex items-center">
+          <Calendar className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+          <span>{patternSummary} Schedule</span>
+        </span>
+      );
+    }
     
     // If no patterns but there are sessions, show session count
     if (sessions && sessions.length > 0) {
