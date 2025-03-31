@@ -134,54 +134,73 @@ export function EditAthleteDialog({
     mutationFn: async (values: EditChildFormValues) => {
       if (!athlete?.id) throw new Error("No athlete ID provided");
       
-      // Create a direct payload with all required fields
+      // Create a comprehensive payload with all fields
       const payload = {
         fullName: values.fullName,
         dateOfBirth: values.dateOfBirth,
         gender: values.gender || 'male',
-        communicationOptIn: values.communicationOptIn ?? true, // Use the form value or default to true
-        preferredContact: values.preferredContact ?? "email", // Use the form value or default to email
-        // Optional fields that might be filled
-        emergencyContact: values.emergencyContact || "",
-        emergencyPhone: values.emergencyPhone || "",
+        communicationOptIn: values.communicationOptIn ?? true,
+        preferredContact: values.preferredContact ?? "email",
+        
+        // Include all optional fields (even empty ones)
+        emergencyContact: values.emergencyContact,
+        emergencyPhone: values.emergencyPhone,
         sportsInterests: values.sportsInterests || [],
-        currentGrade: values.currentGrade || "",
-        schoolName: values.schoolName || "",
-        jerseySize: values.jerseySize || "",
-        medicalInformation: values.medicalInformation || "",
-        specialNeeds: values.specialNeeds || "",
-        // Height and weight fields removed
-        sportsHistory: values.sportsHistory || "",
+        currentGrade: values.currentGrade,
+        schoolName: values.schoolName,
+        jerseySize: values.jerseySize,
+        medicalInformation: values.medicalInformation,
+        specialNeeds: values.specialNeeds,
+        sportsHistory: values.sportsHistory,
       };
       
-      console.log("Mutation payload:", JSON.stringify(payload, null, 2));
+      console.log("Comprehensive edit mutation payload:", JSON.stringify(payload, null, 2));
       
+      // Use fetch directly for more control over the request
       try {
-        const res = await apiRequest("PUT", `/api/parent/children/${athlete.id}`, payload);
-        if (!res.ok) {
-          console.error("Update failed with status:", res.status);
-          const errorText = await res.text();
-          console.error("Error response:", errorText);
-          throw new Error(`Failed to update: ${res.status} ${errorText}`);
+        const response = await fetch(`/api/parent/children/${athlete.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+          credentials: "include" // Important: include credentials for auth
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Server error: ${response.status}`, errorText);
+          throw new Error(`Failed to update athlete: ${errorText || response.statusText}`);
         }
-        return await res.json();
+        
+        const data = await response.json();
+        console.log("Edit athlete - update successful, received data:", data);
+        return data;
       } catch (error) {
-        console.error("Update request failed:", error);
+        console.error("Edit athlete - update request failed:", error);
         throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Edit athlete - mutation success callback with data:", data);
+      // Invalidate the query to refresh the athlete data
       queryClient.invalidateQueries({ queryKey: ["/api/parent/children"] });
+      
+      // Close the dialog
       onOpenChange(false);
+      
+      // Show success notification
       toast({
-        title: "Athlete updated",
+        title: "Athlete Profile Updated",
         description: "Your athlete's profile has been updated successfully.",
+        variant: "default",
       });
     },
     onError: (error: Error) => {
+      console.error("Edit athlete - mutation error callback:", error);
       toast({
-        title: "Failed to update athlete",
-        description: error.message,
+        title: "Failed to Update Athlete",
+        description: error.message || "There was an error updating the athlete profile.",
         variant: "destructive",
       });
     },
@@ -202,30 +221,8 @@ export function EditAthleteDialog({
     // Create a more visible log of the payload
     console.log("Full payload:", JSON.stringify(formattedValues, null, 2));
     
-    // Try with the formatted values
-    updateChildMutation.mutate(formattedValues, {
-      onSuccess: (data) => {
-        console.log("Update successful, received data:", data);
-        // Show a toast notification
-        toast({
-          title: "Athlete Profile Updated",
-          description: `${values.fullName}'s information has been successfully updated.`,
-          variant: "default",
-        });
-        // Close the dialog
-        onOpenChange(false);
-        // Invalidate the query to refresh the data
-        queryClient.invalidateQueries({ queryKey: ["/api/parent/children"] });
-      },
-      onError: (error: Error) => {
-        console.error("Update failed:", error);
-        toast({
-          title: "Update Failed",
-          description: error.message || "There was an error updating the athlete profile.",
-          variant: "destructive",
-        });
-      }
-    });
+    // Try with the formatted values - use the mutation's built in callbacks
+    updateChildMutation.mutate(formattedValues);
   };
 
   if (!athlete) return null;
