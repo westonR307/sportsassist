@@ -505,7 +505,8 @@ export class DatabaseStorage implements IStorage {
         .set({
           ...(orgData.name && { name: orgData.name }),
           ...(orgData.description !== undefined && { description: orgData.description }),
-          ...(orgData.stripeAccountId !== undefined && { stripeAccountId: orgData.stripeAccountId })
+          ...(orgData.stripeAccountId !== undefined && { stripeAccountId: orgData.stripeAccountId }),
+          ...(orgData.logoUrl !== undefined && { logoUrl: orgData.logoUrl })
         })
         .where(eq(organizations.id, id))
         .returning();

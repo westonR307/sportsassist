@@ -180,10 +180,14 @@ function SettingsPage() {
       const data = await response.json();
       
       // Update the organization with the new logo URL
-      await apiRequest(
+      const updateResult = await apiRequest(
         "PATCH",
         `/api/organizations/${user.organizationId}`,
-        { logoUrl: data.url }
+        { 
+          name: organization?.name, 
+          description: organization?.description,
+          logoUrl: data.url 
+        }
       );
       
       return data;
