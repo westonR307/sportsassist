@@ -301,43 +301,41 @@ function AuthPage() {
                         )}
                       />
                       
-                      {/* Show organization fields only for camp creators */}
-                      {registerForm.watch("role") === "camp_creator" && (
-                        <div className="space-y-4 border p-4 rounded-md border-primary/20 bg-primary/5">
-                          <h3 className="text-md font-medium">Organization Information</h3>
-                          <FormField
-                            control={registerForm.control}
-                            name="organizationName"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Organization Name</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Enter your organization name" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          
-                          <FormField
-                            control={registerForm.control}
-                            name="organizationDescription"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Organization Description</FormLabel>
-                                <FormControl>
-                                  <textarea 
-                                    {...field}
-                                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background min-h-[100px]"
-                                    placeholder="Tell us about your organization"
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      )}
+                      {/* Organization fields are always rendered but conditionally displayed */}
+                      <div className={`space-y-4 border p-4 rounded-md border-primary/20 bg-primary/5 ${registerForm.watch("role") === "camp_creator" ? "block" : "hidden"}`}>
+                        <h3 className="text-md font-medium">Organization Information</h3>
+                        <FormField
+                          control={registerForm.control}
+                          name="organizationName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Organization Name</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter your organization name" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={registerForm.control}
+                          name="organizationDescription"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Organization Description</FormLabel>
+                              <FormControl>
+                                <textarea 
+                                  {...field}
+                                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background min-h-[100px]"
+                                  placeholder="Tell us about your organization"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                       
                       <Button 
                         type="submit" 
