@@ -415,22 +415,7 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
             ) : (
               <div className="text-center py-6 text-muted-foreground">
                 <p>No enhanced scheduling data available.</p>
-                {canManage && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-4 text-xs"
-                    onClick={() => {
-                      // Use proper fragment navigation with Wouter
-                      // Make sure this hash matches the one used in camp-view-page.tsx
-                      // Get the current path and append the hash
-                      navigate(`${window.location.pathname}#schedule-editor`);
-                    }}
-                  >
-                    <Calendar className="h-3 w-3 mr-1" />
-                    Set Up Schedule
-                  </Button>
-                )}
+                {/* "Set Up Schedule" button removed as requested */}
               </div>
             )}
           </CardContent>
