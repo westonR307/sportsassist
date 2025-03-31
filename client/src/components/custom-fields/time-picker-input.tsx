@@ -105,12 +105,15 @@ export function TimePickerInput({
 }: TimePickerInputProps) {
   const [hasError, setHasError] = useState(false);
   const [inputValue, setInputValue] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
   const displayValue = value ? formatTo12Hour(value) : "";
 
-  // Initialize input value when the component receives a new value
+  // Initialize input value when the component receives a new value and not in editing mode
   useEffect(() => {
-    setInputValue(displayValue);
-  }, [value]);
+    if (!isEditing) {
+      setInputValue(displayValue);
+    }
+  }, [value, isEditing]);
 
   // Check if display value shows NaN which indicates an error
   useEffect(() => {
@@ -121,16 +124,35 @@ export function TimePickerInput({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setInputValue(newValue);
+    setIsEditing(true);
     
     // Reset error state when user types
     if (hasError) {
       setHasError(false);
     }
+  };
+
+  // Handle focus out - format and save the time
+  const handleBlur = () => {
+    setIsEditing(false);
     
-    // Only save non-empty values
-    if (newValue.trim() !== "") {
-      const timeValue = formatTo24Hour(newValue);
+    // Save the value only if it's not empty
+    if (inputValue.trim() !== "") {
+      const timeValue = formatTo24Hour(inputValue);
       onChange(timeValue);
+      
+      // Update the input value with the formatted version
+      setInputValue(formatTo12Hour(timeValue));
+    } else {
+      onChange("");
+    }
+  };
+
+  // Handle keypress for Enter key
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      const inputElement = e.target as HTMLInputElement;
+      inputElement.blur(); // Trigger blur to format and save
     }
   };
 
@@ -139,6 +161,7 @@ export function TimePickerInput({
     setInputValue("");
     onChange("");
     setHasError(false);
+    setIsEditing(false);
   };
 
   // Handle resetting the time to a default value
@@ -218,10 +241,12 @@ export function TimePickerInput({
           type="text"
           value={inputValue}
           onChange={handleChange}
+          onBlur={handleBlur}
+          onKeyPress={handleKeyPress}
           onWheel={handleScroll}
           placeholder="e.g. 5:30 PM"
           disabled={disabled}
-          className={cn("w-full time-input pr-20", hasError && "border-red-500")}
+          className={cn("w-full time-input pr-20", hasError && "border-red-500", isEditing && "border-blue-400")}
         />
         <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1">
           {inputValue && !disabled && (
@@ -253,6 +278,10 @@ export function TimePickerInput({
       {hasError ? (
         <p className="text-xs text-red-500 mt-1">
           Invalid time format. Click the reset button or enter a valid time.
+        </p>
+      ) : isEditing ? (
+        <p className="text-xs text-blue-500 mt-1">
+          Type your complete time, then press Enter or click outside to save
         </p>
       ) : (
         <p className="text-xs text-muted-foreground mt-1">
