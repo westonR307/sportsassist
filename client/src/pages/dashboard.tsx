@@ -468,10 +468,10 @@ function CampsDashboard() {
                     </div>
                     <div className="ml-5 text-xs">
                       <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">
-                          {/* We'll fetch this data on camp view page */}
-                          View detailed schedule in camp page
-                        </span>
+                        {/* Using our newly enhanced component - we don't have enhanced schedule data here, so it falls back to default */}
+                        <CampScheduleSummary 
+                          schedules={camp.schedules || []} 
+                        />
                       </div>
                     </div>
                   </div>

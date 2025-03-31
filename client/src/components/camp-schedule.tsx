@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { CampSchedule, ScheduleException } from '@shared/schema';
-import { Loader2, Clock, CalendarPlus, AlertTriangle, Pencil } from 'lucide-react';
+import { CampSchedule, ScheduleException, CampSession, RecurrencePattern } from '@shared/schema';
+import { Loader2, Clock, CalendarPlus, AlertTriangle, Pencil, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { ScheduleExceptionDialog } from './schedule-exception-dialog';
-import { format } from 'date-fns';
+import { format, parseISO, isSameDay } from 'date-fns';
 
 import { DAYS_OF_WEEK } from "@/pages/constants";
 
@@ -81,20 +81,68 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
     }
   });
 
+  // Query enhanced scheduling recurrence patterns
+  const {
+    data: patternsData,
+    isLoading: patternsLoading,
+    error: patternsError
+  } = useQuery({
+    queryKey: ['/api/camps', campId, 'recurrence-patterns'],
+    refetchOnWindowFocus: false,
+    queryFn: async () => {
+      try {
+        const res = await fetch(`/api/camps/${campId}/recurrence-patterns`);
+        if (!res.ok) {
+          return { patterns: [] };
+        }
+        return res.json();
+      } catch (error) {
+        console.log("Error fetching recurrence patterns:", error);
+        return { patterns: [] };
+      }
+    }
+  });
+
+  // Query enhanced scheduling sessions
+  const {
+    data: sessionsData,
+    isLoading: sessionsLoading,
+    error: sessionsError
+  } = useQuery({
+    queryKey: ['/api/camps', campId, 'sessions'],
+    refetchOnWindowFocus: false,
+    queryFn: async () => {
+      try {
+        const res = await fetch(`/api/camps/${campId}/sessions`);
+        if (!res.ok) {
+          return { sessions: [] };
+        }
+        return res.json();
+      } catch (error) {
+        console.log("Error fetching camp sessions:", error);
+        return { sessions: [] };
+      }
+    }
+  });
+
   // Enhanced debug logs
   console.log("Camp ID:", campId);
   console.log("Schedule Data:", scheduleData);
   console.log("Exceptions Data:", exceptionsData);
+  console.log("Patterns Data:", patternsData);
+  console.log("Sessions Data:", sessionsData);
   console.log("Schedule Errors:", schedulesError);
   console.log("Exception Errors:", exceptionsError);
 
-  const isLoading = schedulesLoading || exceptionsLoading;
-  const error = schedulesError || exceptionsError;
+  const isLoading = schedulesLoading || exceptionsLoading || patternsLoading || sessionsLoading;
+  const error = schedulesError || exceptionsError || patternsError || sessionsError;
   
   // Fixed data extraction with strict type checks
   const canManage = scheduleData && scheduleData.permissions ? scheduleData.permissions.canManage : false;
   const schedules = scheduleData && Array.isArray(scheduleData.schedules) ? scheduleData.schedules : [];
   const exceptions = exceptionsData && Array.isArray(exceptionsData.exceptions) ? exceptionsData.exceptions : [];
+  const patterns = patternsData && Array.isArray(patternsData.patterns) ? patternsData.patterns : [];
+  const sessions = sessionsData && Array.isArray(sessionsData.sessions) ? sessionsData.sessions : [];
 
   if (isLoading) {
     return (
@@ -172,6 +220,12 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
               <span className="absolute -top-1 -right-1 h-2 w-2 bg-yellow-500 rounded-full" />
             )}
           </TabsTrigger>
+          {(patterns.length > 0 || sessions.length > 0) && (
+            <TabsTrigger value="enhanced">
+              <Calendar className="h-4 w-4 mr-1" />
+              Enhanced Calendar
+            </TabsTrigger>
+          )}
         </TabsList>
         
         <TabsContent value="regular" className="m-0">
@@ -192,6 +246,105 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
                 </div>
               ))}
             </div>
+          </CardContent>
+        </TabsContent>
+        
+        <TabsContent value="enhanced" className="m-0">
+          <CardContent>
+            {patterns.length > 0 || sessions.length > 0 ? (
+              <div className="space-y-6">
+                {patterns.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-medium mb-3">Recurrence Patterns</h3>
+                    <div className="space-y-4">
+                      {patterns.map((pattern) => (
+                        <div key={pattern.id} className="border rounded-md p-3">
+                          <h4 className="font-medium">{pattern.name}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {format(new Date(pattern.startDate), 'MMM d, yyyy')} - {format(new Date(pattern.endDate), 'MMM d, yyyy')}
+                          </p>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            <Badge variant="outline" className="bg-primary/10">
+                              {formatTime(pattern.startTime)} - {formatTime(pattern.endTime)}
+                            </Badge>
+                            <Badge variant="outline">
+                              {pattern.repeatType.charAt(0).toUpperCase() + pattern.repeatType.slice(1)}
+                            </Badge>
+                            {pattern.daysOfWeek && (
+                              <Badge variant="outline" className="bg-muted/50">
+                                {pattern.daysOfWeek.map(day => DAYS_OF_WEEK[day].substring(0, 3)).join(', ')}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {sessions.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-medium mb-3">Upcoming Sessions</h3>
+                    <div className="space-y-3">
+                      {sessions
+                        .filter(session => new Date(session.sessionDate) >= today)
+                        .sort((a, b) => new Date(a.sessionDate).getTime() - new Date(b.sessionDate).getTime())
+                        .slice(0, 5)
+                        .map((session) => (
+                          <div key={session.id} className="border rounded-md p-3">
+                            <h4 className="font-medium">{format(new Date(session.sessionDate), 'EEEE, MMMM d, yyyy')}</h4>
+                            <div className="flex justify-between items-center mt-1">
+                              <p className="text-sm">
+                                {formatTime(session.startTime)} - {formatTime(session.endTime)}
+                              </p>
+                              {session.status !== 'active' && (
+                                <Badge variant={session.status === 'cancelled' ? 'destructive' : 'outline'}>
+                                  {session.status.charAt(0).toUpperCase() + session.status.slice(1)}
+                                </Badge>
+                              )}
+                            </div>
+                            {session.notes && (
+                              <p className="text-sm text-muted-foreground mt-2">{session.notes}</p>
+                            )}
+                          </div>
+                        ))}
+                      {sessions.filter(session => new Date(session.sessionDate) >= today).length > 5 && (
+                        <p className="text-sm text-center text-muted-foreground">
+                          + {sessions.filter(session => new Date(session.sessionDate) >= today).length - 5} more sessions
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {canManage && (
+                  <div className="flex justify-end">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => window.location.href = `/camps/${campId}#schedule-editor`}
+                    >
+                      <Calendar className="h-4 w-4 mr-1" />
+                      Open Full Calendar
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-muted-foreground">
+                <p>No enhanced scheduling data available.</p>
+                {canManage && (
+                  <Button
+                    variant="outline"
+                    className="mt-4"
+                    onClick={() => window.location.href = `/camps/${campId}#schedule-editor`}
+                  >
+                    <Calendar className="h-4 w-4 mr-1" />
+                    Set Up Enhanced Schedule
+                  </Button>
+                )}
+              </div>
+            )}
           </CardContent>
         </TabsContent>
         
@@ -296,7 +449,45 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
   );
 }
 
-export function CampScheduleSummary({ schedules }: { schedules: CampSchedule[] }) {
+export function CampScheduleSummary({ 
+  schedules, 
+  patterns, 
+  sessions 
+}: { 
+  schedules: CampSchedule[],
+  patterns?: RecurrencePattern[],
+  sessions?: CampSession[]
+}) {
+  // If we have enhanced scheduling data, prefer to show that
+  if ((patterns && patterns.length > 0) || (sessions && sessions.length > 0)) {
+    // Show the recurrence pattern types if available
+    if (patterns && patterns.length > 0) {
+      const patternTypes = Array.from(new Set(patterns.map(p => p.repeatType)));
+      const patternSummary = patternTypes.map(type => 
+        type.charAt(0).toUpperCase() + type.slice(1)
+      ).join(', ');
+      
+      return (
+        <span className="flex items-center">
+          <Calendar className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+          <span>{patternSummary} Schedule</span>
+        </span>
+      );
+    }
+    
+    // If no patterns but there are sessions, show session count
+    if (sessions && sessions.length > 0) {
+      const upcomingSessions = sessions.filter(s => new Date(s.sessionDate) >= new Date());
+      return (
+        <span className="flex items-center">
+          <Calendar className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+          <span>{upcomingSessions.length} upcoming sessions</span>
+        </span>
+      );
+    }
+  }
+
+  // Fall back to traditional schedule display
   if (!schedules || schedules.length === 0) {
     return <span className="text-muted-foreground">No schedule information</span>;
   }
