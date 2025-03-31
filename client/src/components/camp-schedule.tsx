@@ -96,6 +96,7 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
   const [showExceptionDialog, setShowExceptionDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("enhanced");
   const [selectedException, setSelectedException] = useState<ScheduleException | undefined>(undefined);
+  const [showAllSessions, setShowAllSessions] = useState(false);
   const [, navigate] = useLocation();
 
   // Query regular schedules with explicit fetcher
@@ -315,55 +316,79 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
                   <div>
                     <h3 className="text-lg font-medium mb-3">Upcoming Sessions</h3>
                     <div className="space-y-3">
-                      {sessions
-                        .filter(session => parseDate(session.sessionDate) >= today)
-                        .sort((a, b) => parseDate(a.sessionDate).getTime() - parseDate(b.sessionDate).getTime())
-                        .slice(0, 5)
-                        .map((session) => (
-                          <div key={session.id} className="border rounded-md p-3">
-                            <h4 className="font-medium">{formatDate(session.sessionDate)}</h4>
-                            <div className="flex justify-between items-center mt-1">
-                              <p className="text-sm">
-                                {formatTime(session.startTime)} - {formatTime(session.endTime)}
-                              </p>
-                              {session.status !== 'active' && (
-                                <Badge variant={session.status === 'cancelled' ? 'destructive' : 'outline'}>
-                                  {session.status.charAt(0).toUpperCase() + session.status.slice(1)}
-                                </Badge>
-                              )}
-                            </div>
-                            {session.status === 'rescheduled' && (
-                              <div className="mt-2 border-t pt-2">
-                                <div className="flex justify-between items-center">
-                                  <p className="text-xs font-medium text-muted-foreground">
-                                    Rescheduled to:
+                      {(() => {
+                        // Get upcoming sessions
+                        const upcomingSessions = sessions
+                          .filter(session => parseDate(session.sessionDate) >= today)
+                          .sort((a, b) => parseDate(a.sessionDate).getTime() - parseDate(b.sessionDate).getTime());
+                          
+                        // Determine if we need to show the "show more" button
+                        const hasMoreSessions = upcomingSessions.length > 5;
+                        
+                        // Display either all sessions or just the first 5
+                        const displaySessions = showAllSessions 
+                          ? upcomingSessions 
+                          : upcomingSessions.slice(0, 5);
+                        
+                        return (
+                          <>
+                            {displaySessions.map((session) => (
+                              <div key={session.id} className="border rounded-md p-3">
+                                <h4 className="font-medium">{formatDate(session.sessionDate)}</h4>
+                                <div className="flex justify-between items-center mt-1">
+                                  <p className="text-sm">
+                                    {formatTime(session.startTime)} - {formatTime(session.endTime)}
                                   </p>
-                                  <Badge variant="secondary" className="text-xs">
-                                    {session.rescheduledStatus === 'confirmed' ? 'Confirmed' : 'TBD'}
-                                  </Badge>
+                                  {session.status !== 'active' && (
+                                    <Badge variant={session.status === 'cancelled' ? 'destructive' : 'outline'}>
+                                      {session.status.charAt(0).toUpperCase() + session.status.slice(1)}
+                                    </Badge>
+                                  )}
                                 </div>
-                                {session.rescheduledStatus === 'confirmed' && session.rescheduledDate && (
-                                  <>
-                                    <p className="text-sm font-medium mt-1">
-                                      {formatDate(session.rescheduledDate)}
-                                    </p>
-                                    <p className="text-sm">
-                                      {formatTime(session.rescheduledStartTime || '')} - {formatTime(session.rescheduledEndTime || '')}
-                                    </p>
-                                  </>
+                                {session.status === 'rescheduled' && (
+                                  <div className="mt-2 border-t pt-2">
+                                    <div className="flex justify-between items-center">
+                                      <p className="text-xs font-medium text-muted-foreground">
+                                        Rescheduled to:
+                                      </p>
+                                      <Badge variant="secondary" className="text-xs">
+                                        {session.rescheduledStatus === 'confirmed' ? 'Confirmed' : 'TBD'}
+                                      </Badge>
+                                    </div>
+                                    {session.rescheduledStatus === 'confirmed' && session.rescheduledDate && (
+                                      <>
+                                        <p className="text-sm font-medium mt-1">
+                                          {formatDate(session.rescheduledDate)}
+                                        </p>
+                                        <p className="text-sm">
+                                          {formatTime(session.rescheduledStartTime || '')} - {formatTime(session.rescheduledEndTime || '')}
+                                        </p>
+                                      </>
+                                    )}
+                                  </div>
+                                )}
+                                {session.notes && (
+                                  <p className="text-sm text-muted-foreground mt-2">{session.notes}</p>
                                 )}
                               </div>
+                            ))}
+                            
+                            {/* Show More / Show Less Button */}
+                            {hasMoreSessions && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="w-full mt-2 text-sm text-muted-foreground hover:text-primary"
+                                onClick={() => setShowAllSessions(!showAllSessions)}
+                              >
+                                {showAllSessions 
+                                  ? 'Show fewer sessions' 
+                                  : `+ Show ${upcomingSessions.length - 5} more sessions`}
+                              </Button>
                             )}
-                            {session.notes && (
-                              <p className="text-sm text-muted-foreground mt-2">{session.notes}</p>
-                            )}
-                          </div>
-                        ))}
-                      {sessions.filter(session => parseDate(session.sessionDate) >= today).length > 5 && (
-                        <p className="text-sm text-center text-muted-foreground">
-                          + {sessions.filter(session => parseDate(session.sessionDate) >= today).length - 5} more sessions
-                        </p>
-                      )}
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 )}
