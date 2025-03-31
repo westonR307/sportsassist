@@ -159,6 +159,7 @@ export const insertOrganizationSchema = createInsertSchema(organizations).omit({
   id: true,
   stripeAccountId: true,
   createdAt: true,
+  logoUrl: true,
 });
 
 // Custom fields schemas for registration forms

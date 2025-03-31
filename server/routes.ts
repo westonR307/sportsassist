@@ -59,7 +59,7 @@ import {
 import { campSchedules, campSports } from "@shared/tables";
 import { eq } from "drizzle-orm";
 import Stripe from "stripe";
-import { hashPassword } from "./utils";
+import { hashPassword, comparePasswords } from "./utils";
 import { registerParentRoutes } from "./parent-routes";
 import { randomBytes } from "crypto";
 import { db } from "./db";
@@ -132,6 +132,38 @@ export async function registerRoutes(app: Express) {
     }
   });
   
+  // Organization logo upload endpoint
+  app.post('/api/upload/organization-logo', (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    
+    if (req.user.role !== "camp_creator") {
+      return res.status(403).json({ message: "Only organization administrators can upload logos" });
+    }
+    
+    next();
+  }, uploadConfig.organizationLogo.single('file'), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+      
+      // Return the file URL that can be used to access the file
+      const fileUrl = getFileUrl(req.file.filename);
+      console.log(`Organization logo uploaded: ${fileUrl} by user ${req.user?.id}`);
+      
+      res.json({
+        url: fileUrl,
+        originalName: req.file.originalname,
+        size: req.file.size
+      });
+    } catch (error) {
+      console.error("Error handling organization logo upload:", error);
+      res.status(500).json({ message: "Logo upload failed" });
+    }
+  });
+  
   // User profile update endpoint
   app.put("/api/user/profile", async (req, res) => {
     if (!req.isAuthenticated()) {
@@ -147,6 +179,47 @@ export async function registerRoutes(app: Express) {
     } catch (error) {
       console.error("Error updating user profile:", error);
       res.status(500).json({ message: "Failed to update user profile" });
+    }
+  });
+  
+  app.post("/api/user/change-password", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const { currentPassword, newPassword } = req.body;
+      
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: "Current password and new password are required" });
+      }
+      
+      const userId = req.user!.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Verify current password
+      const isPasswordValid = await comparePasswords(currentPassword, user.passwordHash);
+      if (!isPasswordValid) {
+        return res.status(400).json({ message: "Current password is incorrect" });
+      }
+      
+      // Hash new password
+      const hashedPassword = await hashPassword(newPassword);
+      
+      // Update user's password
+      const updatedUser = await storage.updateUserProfile(userId, {
+        passwordHash: hashedPassword,
+        password: hashedPassword, // Update both fields for compatibility
+      });
+      
+      res.json({ message: "Password updated successfully" });
+    } catch (error) {
+      console.error("Password change error:", error);
+      res.status(500).json({ message: "Failed to change password" });
     }
   });
 
@@ -334,7 +407,8 @@ export async function registerRoutes(app: Express) {
       // Update the organization with the allowed fields
       const updatedOrganization = await storage.updateOrganization(orgId, {
         name: req.body.name,
-        description: req.body.description
+        description: req.body.description,
+        logoUrl: req.body.logoUrl
       });
       
       res.json(updatedOrganization);

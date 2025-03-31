@@ -65,6 +65,7 @@ export const organizations = pgTable("organizations", {
   description: text("description"),
   stripeAccountId: text("stripe_account_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  logoUrl: text("logo_url"),
 });
 
 export const users = pgTable("users", {
