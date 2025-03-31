@@ -233,51 +233,40 @@ export function AddCampDialog({
       return;
     }
 
-    if (schedules.length === 0) {
-      console.log("Error: No schedules added");
+    // Validate default start and end times for enhanced scheduling
+    if (!data.defaultStartTime || !data.defaultEndTime) {
+      console.log("Error: No default times set for scheduling");
       toast({
         title: "Error",
-        description: "Please add at least one schedule",
+        description: "Please set default start and end times for scheduling",
         variant: "destructive",
       });
-      setCurrentTab("settings");
+      setCurrentTab("schedule");
       return;
     }
 
-    // Enhanced schedule validation
-    for (const schedule of schedules) {
-      if (!schedule.startTime || !schedule.endTime) {
-        toast({
-          title: "Error",
-          description: "Schedule times cannot be empty",
-          variant: "destructive",
-        });
-        setCurrentTab("settings");
-        return;
-      }
+    // Validate default time format
+    const defaultStart = new Date(`1970-01-01T${data.defaultStartTime}`);
+    const defaultEnd = new Date(`1970-01-01T${data.defaultEndTime}`);
 
-      const start = new Date(`1970-01-01T${schedule.startTime}`);
-      const end = new Date(`1970-01-01T${schedule.endTime}`);
+    if (isNaN(defaultStart.getTime()) || isNaN(defaultEnd.getTime())) {
+      toast({
+        title: "Error",
+        description: "Invalid default time format",
+        variant: "destructive",
+      });
+      setCurrentTab("schedule");
+      return;
+    }
 
-      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-        toast({
-          title: "Error",
-          description: "Invalid time format",
-          variant: "destructive",
-        });
-        setCurrentTab("settings");
-        return;
-      }
-
-      if (end <= start) {
-        toast({
-          title: "Error",
-          description: "End time must be after start time",
-          variant: "destructive",
-        });
-        setCurrentTab("settings");
-        return;
-      }
+    if (defaultEnd <= defaultStart) {
+      toast({
+        title: "Error",
+        description: "Default end time must be after default start time",
+        variant: "destructive",
+      });
+      setCurrentTab("schedule");
+      return;
     }
 
     // Validate dates
@@ -325,16 +314,35 @@ export function AddCampDialog({
 
     console.log("Submitting form with data:", { 
       ...data, 
-      schedules,
+      schedules: [], // Using empty schedules with the enhanced scheduling approach
       sportId: parseInt(selectedSport) || 1,
       skillLevel: skillLevelMap[skillLevel] 
     });
 
-    console.log("About to call mutation with data", { ...data, schedules, sport: selectedSport, level: skillLevel });
+    console.log("About to call mutation with data", { ...data, schedules: [], sport: selectedSport, level: skillLevel });
     try {
       // Extract defaultStartTime and defaultEndTime fields, then pass the rest to the mutation
       const { defaultStartTime, defaultEndTime, ...campData } = data;
-      createCampMutation.mutate({ ...campData, schedules });
+      
+      // Format dates as ISO strings
+      const formattedData = {
+        ...campData,
+        registrationStartDate: campData.registrationStartDate instanceof Date 
+          ? campData.registrationStartDate.toISOString().split('T')[0] 
+          : campData.registrationStartDate,
+        registrationEndDate: campData.registrationEndDate instanceof Date 
+          ? campData.registrationEndDate.toISOString().split('T')[0] 
+          : campData.registrationEndDate,
+        startDate: campData.startDate instanceof Date 
+          ? campData.startDate.toISOString().split('T')[0] 
+          : campData.startDate,
+        endDate: campData.endDate instanceof Date 
+          ? campData.endDate.toISOString().split('T')[0] 
+          : campData.endDate,
+        schedules: [] // Using empty schedules since we're using enhanced scheduling
+      };
+      
+      createCampMutation.mutate(formattedData);
       console.log("Mutation called successfully");
     } catch (error) {
       console.error("Error calling mutation:", error);
@@ -623,10 +631,9 @@ export function AddCampDialog({
                       <h3 className="text-lg font-medium">Camp Schedule</h3>
                     </div>
 
-                    <Tabs defaultValue="legacy">
-                      <TabsList>
-                        <TabsTrigger value="enhanced">Enhanced Scheduling</TabsTrigger>
-                        <TabsTrigger value="legacy">Basic Scheduling</TabsTrigger>
+                    <Tabs defaultValue="enhanced">
+                      <TabsList className="hidden">
+                        <TabsTrigger value="enhanced">Calendar Scheduling</TabsTrigger>
                       </TabsList>
                       
                       <TabsContent value="enhanced" className="pt-4">
@@ -674,17 +681,19 @@ export function AddCampDialog({
                             
                             <div className="p-4 border rounded-md">
                               <div className="calendar-container">
-                                {/* We'll implement a simplified calendar view here */}
-                                <div className="grid grid-cols-7 gap-1 text-center mb-2">
-                                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                                    <div key={day} className="font-medium">{day}</div>
-                                  ))}
-                                </div>
-                                
-                                <div className="text-center py-4 text-muted-foreground">
-                                  <p>Initial camp schedule setup will be available when the camp is created.</p>
-                                  <p className="mt-2 text-sm">After creating your camp, you'll be able to add individual sessions and recurring patterns using a full calendar interface.</p>
-                                </div>
+                                {form.watch('startDate') && form.watch('endDate') ? (
+                                  <div className="text-center py-4">
+                                    <p>Your camp's sessions will be configured after you create the camp.</p>
+                                    <p className="mt-2 text-sm">
+                                      The default session time will be from {form.watch('defaultStartTime')} to {form.watch('defaultEndTime')} for days you select.
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <div className="text-center py-4 text-muted-foreground">
+                                    <p>Please set your camp's start and end dates first.</p>
+                                    <p className="mt-2 text-sm">Once dates are set, you'll be able to configure the camp schedule.</p>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -703,80 +712,7 @@ export function AddCampDialog({
                         )}
                       </TabsContent>
                       
-                      <TabsContent value="legacy" className="pt-4">
-                        <div className="flex justify-between items-center">
-                          <h3 className="text-md font-medium">Weekly Schedule</h3>
-                          <Button type="button" onClick={addSchedule} size="sm">
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Schedule
-                          </Button>
-                        </div>
-
-                        {schedules.map((schedule, index) => (
-                          <div
-                            key={index}
-                            className="flex items-start space-x-4 p-4 border rounded-lg relative mt-4"
-                          >
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="absolute top-2 right-2"
-                              onClick={() => removeSchedule(index)}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-
-                            <div className="flex-1 space-y-4">
-                              <div>
-                                <Label>Day of Week</Label>
-                                <select
-                                  value={schedule.dayOfWeek}
-                                  onChange={(e) =>
-                                    updateSchedule(index, "dayOfWeek", parseInt(e.target.value))
-                                  }
-                                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                                >
-                                  {daysOfWeek.map((day, i) => (
-                                    <option key={i} value={i}>
-                                      {day}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <Label>Start Time</Label>
-                                  <Input
-                                    type="time"
-                                    value={schedule.startTime}
-                                    onChange={(e) =>
-                                      updateSchedule(index, "startTime", e.target.value)
-                                    }
-                                  />
-                                </div>
-                                <div>
-                                  <Label>End Time</Label>
-                                  <Input
-                                    type="time"
-                                    value={schedule.endTime}
-                                    onChange={(e) =>
-                                      updateSchedule(index, "endTime", e.target.value)
-                                    }
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-
-                        {schedules.length === 0 && (
-                          <div className="text-center py-8 text-muted-foreground mt-4">
-                            No schedules added. Click "Add Schedule" to create camp schedules.
-                          </div>
-                        )}
-                      </TabsContent>
+                      {/* Legacy scheduling content removed */}
                     </Tabs>
                   </div>
 
@@ -791,15 +727,16 @@ export function AddCampDialog({
                     <Button
                       type="button"
                       onClick={() => {
-                        if (schedules.length > 0) {
-                          setCurrentTab("location");
-                        } else {
+                        // Enhanced scheduling validation
+                        if (!form.watch('defaultStartTime') || !form.watch('defaultEndTime')) {
                           toast({
                             title: "Warning",
-                            description: "Please add at least one schedule.",
+                            description: "Please set default start and end times.",
                             variant: "destructive",
                           });
+                          return;
                         }
+                        setCurrentTab("location");
                       }}
                     >
                       Next
@@ -1060,13 +997,14 @@ export function AddCampDialog({
                           return;
                         }
                         
-                        if (schedules.length === 0) {
-                          console.log("Please add at least one schedule");
+                        if (!form.watch('defaultStartTime') || !form.watch('defaultEndTime')) {
+                          console.log("Please set default start and end times");
                           toast({
                             title: "Error",
-                            description: "Please add at least one schedule",
+                            description: "Please set default start and end times for scheduling",
                             variant: "destructive",
                           });
+                          setCurrentTab("schedule");
                           return;
                         }
                         
@@ -1074,8 +1012,13 @@ export function AddCampDialog({
                         const data = form.getValues();
                         console.log("Form data:", data);
                         
-                        // Call mutation manually
-                        createCampMutation.mutate({ ...data, schedules });
+                        // Call mutation manually - using empty schedules array
+                        // This is just a placeholder since we're now using the enhanced scheduling
+                        // The camp creation API still expects a schedules array
+                        createCampMutation.mutate({ 
+                          ...data, 
+                          schedules: [] // We're not using regular schedules anymore
+                        });
                       }}
                       disabled={createCampMutation.isPending || submitting} // Disable button while submitting
                     >

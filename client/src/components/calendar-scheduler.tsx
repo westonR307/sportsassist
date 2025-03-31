@@ -92,25 +92,42 @@ export function CalendarScheduler({
     try {
       setIsLoading(true);
 
+      const sessionData = {
+        campId: campId,
+        sessionDate: format(selectedDate, 'yyyy-MM-dd'),
+        startTime,
+        endTime,
+        status: "active",
+      };
+
       const response = await fetch(`/api/camps/${campId}/sessions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          campId: campId,
-          sessionDate: format(selectedDate, 'yyyy-MM-dd'),
-          startTime,
-          endTime,
-          status: "active",
-        }),
+        body: JSON.stringify(sessionData),
       });
 
       if (!response.ok) {
         throw new Error("Failed to create session");
       }
 
-      // Invalidate the sessions query cache to trigger a refresh
+      const createdSession = await response.json();
+      
+      // Optimistically update the UI by adding the new session to our local state
+      // This gives immediate feedback without waiting for the query cache to refresh
+      const newSession: SimpleCampSession = {
+        ...createdSession,
+        sessionDate: selectedDate
+      };
+      
+      // Update the local sessions state to show the new session immediately
+      onSave(); // Call onSave to refresh the parent component
+      
+      // Also update the selected date sessions to show in the right panel immediately
+      setSelectedDateSessions(prev => [...prev, newSession]);
+
+      // Still invalidate the query cache for background refresh
       queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'sessions'] });
 
       toast({
@@ -143,7 +160,13 @@ export function CalendarScheduler({
         throw new Error("Failed to delete session");
       }
 
-      // Invalidate the sessions query cache to trigger a refresh
+      // Immediately update the UI by removing the deleted session from local state
+      setSelectedDateSessions(prev => prev.filter(session => session.id !== sessionId));
+      
+      // Notify parent component to refresh its data
+      onSave();
+
+      // Invalidate the sessions query cache to trigger a background refresh
       queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'sessions'] });
 
       toast({
