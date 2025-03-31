@@ -75,10 +75,12 @@ export function ScheduleExceptionDialog({
       };
     } else {
       // Default values for creating a new exception
+      // Calculate day of week at noon to avoid timezone issues
+      const dateAtNoon = new Date(`${formattedDate}T12:00:00`);
       return {
         campId,
         exceptionDate: formattedDate,
-        dayOfWeek: currentDate.getDay(), // 0-6, where 0 is Sunday
+        dayOfWeek: dateAtNoon.getDay(), // 0-6, where 0 is Sunday
         startTime: "09:00",
         endTime: "17:00",
         status: "active" as const,
@@ -190,15 +192,20 @@ export function ScheduleExceptionDialog({
   
   // Handle the day of week change when date is selected
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const date = new Date(e.target.value);
+    // Create a date at noon to avoid timezone issues
+    const dateString = e.target.value + "T12:00:00";
+    const date = new Date(dateString);
     form.setValue("dayOfWeek", date.getDay());
+    console.log(`Date selected: ${e.target.value}, day of week: ${date.getDay()}, date object:`, date);
   };
   
   // When selecting a regular schedule, populate the form with its values
   const handleScheduleSelection = (scheduleId: string) => {
     if (scheduleId === "none") {
       // Reset to default values
-      const date = new Date(form.getValues().exceptionDate);
+      // Create a date at noon to avoid timezone issues
+      const dateString = form.getValues().exceptionDate + "T12:00:00";
+      const date = new Date(dateString);
       form.setValue("originalScheduleId", undefined);
       form.setValue("dayOfWeek", date.getDay());
       form.setValue("startTime", "09:00");
