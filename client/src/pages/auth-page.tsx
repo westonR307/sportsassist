@@ -56,6 +56,26 @@ function AuthPage() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<string>("login");
   
+  // Initialize forms before any conditional returns
+  const loginForm = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const registerForm = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      role: "parent",
+      organizationName: "",
+      organizationDescription: "",
+    },
+  });
+  
   // Handle redirection in useEffect to avoid state updates during render
   useEffect(() => {
     if (user) {
@@ -84,25 +104,6 @@ function AuthPage() {
   if (user) {
     return null;
   }
-
-  const loginForm = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
-
-  const registerForm = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      role: "parent",
-      organizationName: "",
-      organizationDescription: "",
-    },
-  });
 
   const onLoginSubmit = (data: LoginFormValues) => {
     loginMutation.mutate(data);
