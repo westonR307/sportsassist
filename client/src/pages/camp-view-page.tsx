@@ -180,10 +180,11 @@ function CampViewPage(props: { id?: string }) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (location.includes('#schedule-editor')) {
+    // Check if URL contains schedule-editor hash and open dialog if it does
+    if (window.location.hash === '#schedule-editor') {
       setScheduleEditorOpen(true);
     }
-  }, [location]);
+  }, [location, window.location.hash]);
 
   const isParent = user?.role === 'parent';
   const { isLoading, camp, campError } = useCampData(id);
@@ -1174,6 +1175,20 @@ function CampViewPage(props: { id?: string }) {
             camp={camp}
             open={showFormFieldsDialog}
             onOpenChange={setShowFormFieldsDialog}
+          />
+        )}
+
+        {camp && (
+          <ScheduleEditorDialog
+            campId={parseInt(id)}
+            open={scheduleEditorOpen}
+            onOpenChange={(open) => {
+              setScheduleEditorOpen(open);
+              // Clear the hash when closing
+              if (!open) {
+                navigate(window.location.pathname);
+              }
+            }}
           />
         )}
       </div>
