@@ -351,11 +351,12 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
                         // Use proper fragment navigation with Wouter
                         // Make sure this hash matches the one used in camp-view-page.tsx
                         // Get the current path and append the hash
-                        navigate(`${window.location.pathname}#schedule-editor`);
+                        window.location.hash = 'schedule-editor';
+                        // This will be picked up by the useEffect hook that monitors hash changes
                       }}
                     >
                       <Calendar className="h-3 w-3 mr-1" />
-                      Full Calendar
+                      View All Sessions
                     </Button>
                   </div>
                 )}
@@ -369,14 +370,14 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
                     size="sm"
                     className="mt-4 text-xs"
                     onClick={() => {
-                      // Use proper fragment navigation with Wouter
+                      // Use proper fragment navigation
                       // Make sure this hash matches the one used in camp-view-page.tsx
-                      // Get the current path and append the hash
-                      navigate(`${window.location.pathname}#schedule-editor`);
+                      window.location.hash = 'schedule-editor';
+                      // This will be picked up by the useEffect hook that monitors hash changes
                     }}
                   >
                     <Calendar className="h-3 w-3 mr-1" />
-                    Schedule Sessions
+                    Add Camp Sessions
                   </Button>
                 )}
               </div>
