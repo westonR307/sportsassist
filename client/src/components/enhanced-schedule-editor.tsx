@@ -515,10 +515,17 @@ export function EnhancedScheduleEditor({
     if (!editingSession?.id) return;
     
     try {
+      // Prepare the payload with properly formatted dates
       const payload = {
         ...editingSession,
         sessionDate: format(editingSession.sessionDate as Date, 'yyyy-MM-dd'),
+        // Format rescheduled date if it exists
+        rescheduledDate: editingSession.rescheduledDate 
+          ? format(editingSession.rescheduledDate as Date, 'yyyy-MM-dd')
+          : editingSession.rescheduledDate
       };
+      
+      console.log("Updating session with payload:", payload);
       
       try {
         // Try the new API endpoint
@@ -846,10 +853,14 @@ export function EnhancedScheduleEditor({
                               variant="outline" 
                               size="sm"
                               onClick={() => {
-                                setEditingSession({
+                                // Convert date strings to Date objects
+                                const sessionObj = {
                                   ...session,
-                                  sessionDate: new Date(session.sessionDate)
-                                });
+                                  sessionDate: new Date(session.sessionDate),
+                                  // Also convert rescheduled date if it exists
+                                  rescheduledDate: session.rescheduledDate ? new Date(session.rescheduledDate) : session.rescheduledDate
+                                };
+                                setEditingSession(sessionObj);
                                 setEditSessionOpen(true);
                               }}
                             >
