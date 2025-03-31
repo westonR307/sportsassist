@@ -393,24 +393,7 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
                   </div>
                 )}
                 
-                {canManage && (
-                  <div className="flex justify-end">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="text-xs"
-                      onClick={() => {
-                        // Use proper fragment navigation with Wouter
-                        // Make sure this hash matches the one used in camp-view-page.tsx
-                        // Get the current path and append the hash
-                        navigate(`${window.location.pathname}#schedule-editor`);
-                      }}
-                    >
-                      <Calendar className="h-3 w-3 mr-1" />
-                      Full Calendar
-                    </Button>
-                  </div>
-                )}
+                {/* Full Calendar button completely removed as requested */}
               </div>
             ) : (
               <div className="text-center py-6 text-muted-foreground">
