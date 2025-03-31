@@ -152,6 +152,34 @@ export function ScheduleExceptionDialog({
     },
   });
   
+  // Mutation for deleting a schedule exception
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      if (!exception) throw new Error("No exception to delete");
+      
+      const res = await apiRequest(
+        "DELETE", 
+        `/api/camps/${campId}/schedule-exceptions/${exception.id}`
+      );
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Schedule exception deleted",
+        description: "The schedule exception has been deleted successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'schedule-exceptions'] });
+      onOpenChange(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to delete schedule exception",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
   const onSubmit = (values: FormValues) => {
     if (isEditMode) {
       updateMutation.mutate(values);
@@ -190,7 +218,13 @@ export function ScheduleExceptionDialog({
     }
   };
 
-  const isPending = createMutation.isPending || updateMutation.isPending;
+  const isPending = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
+  
+  const handleDelete = () => {
+    if (confirm("Are you sure you want to delete this schedule exception? This action cannot be undone.")) {
+      deleteMutation.mutate();
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -355,23 +389,37 @@ export function ScheduleExceptionDialog({
               )}
             />
             
-            <DialogFooter>
-              <Button 
-                variant="outline" 
-                type="button" 
-                onClick={() => onOpenChange(false)}
-                disabled={isPending}
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={isPending}
-              >
-                {isPending 
-                  ? (isEditMode ? "Updating..." : "Creating...") 
-                  : (isEditMode ? "Update Exception" : "Create Exception")}
-              </Button>
+            <DialogFooter className="flex justify-between">
+              {isEditMode ? (
+                <Button 
+                  variant="destructive" 
+                  type="button" 
+                  onClick={handleDelete}
+                  disabled={isPending}
+                >
+                  {deleteMutation.isPending ? "Deleting..." : "Delete Exception"}
+                </Button>
+              ) : (
+                <div></div>
+              )}
+              <div className="space-x-2">
+                <Button 
+                  variant="outline" 
+                  type="button" 
+                  onClick={() => onOpenChange(false)}
+                  disabled={isPending}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={isPending}
+                >
+                  {isPending && !deleteMutation.isPending
+                    ? (isEditMode ? "Updating..." : "Creating...") 
+                    : (isEditMode ? "Update Exception" : "Create Exception")}
+                </Button>
+              </div>
             </DialogFooter>
           </form>
         </Form>

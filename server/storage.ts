@@ -80,6 +80,7 @@ export interface IStorage {
   createScheduleException(exception: InsertScheduleException): Promise<ScheduleException>;
   updateScheduleException(id: number, exception: Partial<Omit<ScheduleException, "id">>): Promise<ScheduleException>;
   getScheduleException(id: number): Promise<ScheduleException | undefined>;
+  deleteScheduleException(id: number): Promise<void>;
   getDefaultStartTimeForCamp(campId: number): Promise<string | null>;
   getDefaultEndTimeForCamp(campId: number): Promise<string | null>;
   
@@ -829,6 +830,15 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error updating schedule exception:", error);
       throw error;
+    }
+  }
+  
+  async deleteScheduleException(id: number): Promise<void> {
+    try {
+      await db.delete(scheduleExceptions).where(eq(scheduleExceptions.id, id));
+    } catch (error) {
+      console.error("Error deleting schedule exception:", error);
+      throw new Error("Failed to delete schedule exception");
     }
   }
   

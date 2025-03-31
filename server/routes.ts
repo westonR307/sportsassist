@@ -1288,6 +1288,60 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  // Delete a schedule exception
+  app.delete("/api/camps/:campId/schedule-exceptions/:exceptionId", async (req, res) => {
+    try {
+      if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+      
+      const campId = parseInt(req.params.campId);
+      const exceptionId = parseInt(req.params.exceptionId);
+      
+      if (isNaN(campId) || isNaN(exceptionId)) {
+        return res.status(400).json({ message: "Invalid camp ID or exception ID" });
+      }
+      
+      // Get the exception to check if it exists and belongs to the camp
+      const existingException = await storage.getScheduleException(exceptionId);
+      if (!existingException) {
+        return res.status(404).json({ message: "Schedule exception not found" });
+      }
+      
+      // Make sure the exception belongs to the specified camp
+      if (existingException.campId !== campId) {
+        return res.status(400).json({ message: "Schedule exception does not belong to this camp" });
+      }
+      
+      // Check if the camp exists
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if the user has permission to manage this camp
+      const canManage = req.user.organizationId === camp.organizationId;
+      if (!canManage) {
+        return res.status(403).json({ message: "You don't have permission to manage this camp" });
+      }
+      
+      // Check if the exception date has already passed
+      const exceptionDate = new Date(existingException.exceptionDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (exceptionDate < today) {
+        return res.status(400).json({ message: "Cannot delete exceptions that have already passed" });
+      }
+      
+      // Delete the exception
+      await storage.deleteScheduleException(exceptionId);
+      
+      res.json({ success: true, message: "Schedule exception deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting schedule exception:", error);
+      res.status(500).json({ message: "Failed to delete schedule exception" });
+    }
+  });
+
   // Registration routes
   app.post("/api/registrations", async (req, res) => {
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
