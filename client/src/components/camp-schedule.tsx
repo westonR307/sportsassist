@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { ScheduleExceptionDialog } from './schedule-exception-dialog';
 import { format, parseISO, isSameDay } from 'date-fns';
+import { useLocation } from 'wouter';
 
 import { DAYS_OF_WEEK } from "@/pages/constants";
 
@@ -46,6 +47,7 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
   const [showExceptionDialog, setShowExceptionDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("regular");
   const [selectedException, setSelectedException] = useState<ScheduleException | undefined>(undefined);
+  const [, navigate] = useLocation();
 
   // Query regular schedules with explicit fetcher
   const { 
@@ -322,7 +324,7 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => window.location.href = `/camps/${campId}#schedule-editor`}
+                      onClick={() => navigate(`/dashboard/camps/${campId}#schedule-editor`)}
                     >
                       <Calendar className="h-4 w-4 mr-1" />
                       Open Full Calendar
@@ -337,7 +339,7 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
                   <Button
                     variant="outline"
                     className="mt-4"
-                    onClick={() => window.location.href = `/camps/${campId}#schedule-editor`}
+                    onClick={() => navigate(`/dashboard/camps/${campId}#schedule-editor`)}
                   >
                     <Calendar className="h-4 w-4 mr-1" />
                     Set Up Enhanced Schedule
