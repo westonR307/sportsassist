@@ -13,6 +13,8 @@ import {
   campCustomFields,
   customFieldResponses,
   attendanceRecords,
+  campSessions,
+  recurrencePatterns,
   type User,
   type InsertUser,
   type Organization,
@@ -34,6 +36,10 @@ import {
   type InsertCustomFieldResponse,
   type AttendanceRecord,
   type InsertAttendanceRecord,
+  type CampSession,
+  type InsertCampSession,
+  type RecurrencePattern,
+  type InsertRecurrencePattern,
   insertCampSchema,
   sports
 } from "@shared/schema";
@@ -83,6 +89,22 @@ export interface IStorage {
   deleteScheduleException(id: number): Promise<void>;
   getDefaultStartTimeForCamp(campId: number): Promise<string | null>;
   getDefaultEndTimeForCamp(campId: number): Promise<string | null>;
+  
+  // Enhanced Scheduling with Camp Sessions
+  createCampSession(session: InsertCampSession): Promise<CampSession>;
+  getCampSessions(campId: number): Promise<CampSession[]>;
+  updateCampSession(id: number, sessionData: Partial<Omit<CampSession, "id" | "createdAt" | "updatedAt">>): Promise<CampSession>;
+  deleteCampSession(id: number): Promise<void>;
+  
+  // Recurrence Pattern methods
+  createRecurrencePattern(pattern: InsertRecurrencePattern): Promise<RecurrencePattern>;
+  getRecurrencePatterns(campId: number): Promise<RecurrencePattern[]>;
+  getRecurrencePattern(id: number): Promise<RecurrencePattern | undefined>;
+  updateRecurrencePattern(id: number, patternData: Partial<Omit<RecurrencePattern, "id" | "createdAt" | "updatedAt">>): Promise<RecurrencePattern>;
+  deleteRecurrencePattern(id: number): Promise<void>;
+  
+  // Generate camp sessions from recurrence pattern
+  generateCampSessionsFromPattern(patternId: number): Promise<CampSession[]>;
   
   // Custom fields methods
   createCustomField(field: InsertCustomField): Promise<CustomField>;
@@ -680,6 +702,334 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error getting default end time:", error);
       return null;
+    }
+  }
+  
+  // Camp Sessions methods
+  async createCampSession(session: InsertCampSession): Promise<CampSession> {
+    try {
+      console.log(`Creating new camp session for camp ID ${session.campId}:`, session);
+      
+      const [createdSession] = await db.insert(campSessions).values({
+        ...session,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }).returning();
+      
+      console.log(`Successfully created camp session with ID ${createdSession.id}`);
+      return createdSession;
+    } catch (error: any) {
+      console.error(`Error creating camp session:`, {
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        stack: error.stack
+      });
+      throw new Error(`Failed to create camp session: ${error.message}`);
+    }
+  }
+
+  async getCampSessions(campId: number): Promise<CampSession[]> {
+    try {
+      console.log(`Fetching sessions for camp ID ${campId}`);
+      
+      const sessions = await db.select()
+        .from(campSessions)
+        .where(eq(campSessions.campId, campId))
+        .orderBy(campSessions.sessionDate, campSessions.startTime);
+      
+      console.log(`Retrieved ${sessions.length} sessions for camp ID ${campId}`);
+      return sessions;
+    } catch (error: any) {
+      console.error(`Error fetching camp sessions:`, {
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        stack: error.stack
+      });
+      throw new Error(`Failed to fetch camp sessions: ${error.message}`);
+    }
+  }
+
+  async updateCampSession(id: number, sessionData: Partial<Omit<CampSession, "id" | "createdAt" | "updatedAt">>): Promise<CampSession> {
+    try {
+      console.log(`Updating camp session with ID ${id}:`, sessionData);
+      
+      const [updatedSession] = await db.update(campSessions)
+        .set({
+          ...sessionData,
+          updatedAt: new Date()
+        })
+        .where(eq(campSessions.id, id))
+        .returning();
+      
+      if (!updatedSession) {
+        throw new Error(`Camp session with ID ${id} not found`);
+      }
+      
+      console.log(`Successfully updated camp session ID ${id}`);
+      return updatedSession;
+    } catch (error: any) {
+      console.error(`Error updating camp session with ID ${id}:`, {
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        stack: error.stack
+      });
+      throw new Error(`Failed to update camp session: ${error.message}`);
+    }
+  }
+
+  async deleteCampSession(id: number): Promise<void> {
+    try {
+      console.log(`Deleting camp session with ID ${id}`);
+      
+      // First verify the session exists
+      const [session] = await db.select()
+        .from(campSessions)
+        .where(eq(campSessions.id, id));
+      
+      if (!session) {
+        throw new Error(`Camp session with ID ${id} not found`);
+      }
+      
+      await db.delete(campSessions)
+        .where(eq(campSessions.id, id));
+      
+      console.log(`Successfully deleted camp session ID ${id}`);
+    } catch (error: any) {
+      console.error(`Error deleting camp session with ID ${id}:`, {
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        stack: error.stack
+      });
+      throw new Error(`Failed to delete camp session: ${error.message}`);
+    }
+  }
+
+  // Recurrence Pattern methods
+  async createRecurrencePattern(pattern: InsertRecurrencePattern): Promise<RecurrencePattern> {
+    try {
+      console.log(`Creating new recurrence pattern for camp ID ${pattern.campId}:`, pattern);
+      
+      const [createdPattern] = await db.insert(recurrencePatterns).values({
+        ...pattern,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }).returning();
+      
+      console.log(`Successfully created recurrence pattern with ID ${createdPattern.id}`);
+      return createdPattern;
+    } catch (error: any) {
+      console.error(`Error creating recurrence pattern:`, {
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        stack: error.stack
+      });
+      throw new Error(`Failed to create recurrence pattern: ${error.message}`);
+    }
+  }
+
+  async getRecurrencePatterns(campId: number): Promise<RecurrencePattern[]> {
+    try {
+      console.log(`Fetching recurrence patterns for camp ID ${campId}`);
+      
+      const patterns = await db.select()
+        .from(recurrencePatterns)
+        .where(eq(recurrencePatterns.campId, campId));
+      
+      console.log(`Retrieved ${patterns.length} recurrence patterns for camp ID ${campId}`);
+      return patterns;
+    } catch (error: any) {
+      console.error(`Error fetching recurrence patterns:`, {
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        stack: error.stack
+      });
+      throw new Error(`Failed to fetch recurrence patterns: ${error.message}`);
+    }
+  }
+
+  async getRecurrencePattern(id: number): Promise<RecurrencePattern | undefined> {
+    try {
+      console.log(`Fetching recurrence pattern with ID ${id}`);
+      
+      const [pattern] = await db.select()
+        .from(recurrencePatterns)
+        .where(eq(recurrencePatterns.id, id));
+      
+      return pattern;
+    } catch (error: any) {
+      console.error(`Error fetching recurrence pattern:`, {
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        stack: error.stack
+      });
+      throw new Error(`Failed to fetch recurrence pattern: ${error.message}`);
+    }
+  }
+
+  async updateRecurrencePattern(id: number, patternData: Partial<Omit<RecurrencePattern, "id" | "createdAt" | "updatedAt">>): Promise<RecurrencePattern> {
+    try {
+      console.log(`Updating recurrence pattern with ID ${id}:`, patternData);
+      
+      const [updatedPattern] = await db.update(recurrencePatterns)
+        .set({
+          ...patternData,
+          updatedAt: new Date()
+        })
+        .where(eq(recurrencePatterns.id, id))
+        .returning();
+      
+      if (!updatedPattern) {
+        throw new Error(`Recurrence pattern with ID ${id} not found`);
+      }
+      
+      console.log(`Successfully updated recurrence pattern ID ${id}`);
+      return updatedPattern;
+    } catch (error: any) {
+      console.error(`Error updating recurrence pattern with ID ${id}:`, {
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        stack: error.stack
+      });
+      throw new Error(`Failed to update recurrence pattern: ${error.message}`);
+    }
+  }
+
+  async deleteRecurrencePattern(id: number): Promise<void> {
+    try {
+      console.log(`Deleting recurrence pattern with ID ${id}`);
+      
+      // First verify the pattern exists
+      const [pattern] = await db.select()
+        .from(recurrencePatterns)
+        .where(eq(recurrencePatterns.id, id));
+      
+      if (!pattern) {
+        throw new Error(`Recurrence pattern with ID ${id} not found`);
+      }
+      
+      await db.delete(recurrencePatterns)
+        .where(eq(recurrencePatterns.id, id));
+      
+      console.log(`Successfully deleted recurrence pattern ID ${id}`);
+    } catch (error: any) {
+      console.error(`Error deleting recurrence pattern with ID ${id}:`, {
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        stack: error.stack
+      });
+      throw new Error(`Failed to delete recurrence pattern: ${error.message}`);
+    }
+  }
+
+  async generateCampSessionsFromPattern(patternId: number): Promise<CampSession[]> {
+    try {
+      console.log(`Generating camp sessions from recurrence pattern ID ${patternId}`);
+      
+      // Get the recurrence pattern
+      const pattern = await this.getRecurrencePattern(patternId);
+      if (!pattern) {
+        throw new Error(`Recurrence pattern with ID ${patternId} not found`);
+      }
+      
+      const { campId, startDate, endDate, days_of_week, start_time, end_time, pattern_type, repeat_type } = pattern;
+      
+      // Generate dates between start and end based on the recurrence pattern
+      const sessions: CampSession[] = [];
+      const currentDate = new Date(startDate);
+      const end = new Date(endDate);
+      
+      // Helper function to check if a date falls on one of the specified days of the week
+      const isOnSpecifiedDay = (date: Date, days: number[]) => {
+        const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        return days.includes(dayOfWeek);
+      };
+      
+      // Helper function to add days to a date
+      const addDays = (date: Date, days: number) => {
+        const result = new Date(date);
+        result.setDate(result.getDate() + days);
+        return result;
+      };
+      
+      // Helper function to get interval days based on repeat type
+      const getIntervalDays = (type: string) => {
+        switch (type) {
+          case 'daily': return 1;
+          case 'weekly': return 7;
+          case 'biweekly': return 14;
+          default: return 1; // Default to daily
+        }
+      };
+      
+      const intervalDays = getIntervalDays(repeat_type);
+      
+      while (currentDate <= end) {
+        if (pattern_type === 'specific_days') {
+          // Only create sessions on the specified days of the week
+          if (isOnSpecifiedDay(currentDate, days_of_week)) {
+            sessions.push({
+              id: 0, // Will be set by the database
+              campId,
+              session_date: new Date(currentDate),
+              start_time,
+              end_time,
+              status: 'active',
+              notes: null,
+              recurrence_group_id: patternId,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            });
+          }
+          currentDate.setDate(currentDate.getDate() + 1); // Move to next day
+        } else {
+          // For other pattern types, create a session and then jump by the interval
+          sessions.push({
+            id: 0, // Will be set by the database
+            campId,
+            session_date: new Date(currentDate),
+            start_time,
+            end_time,
+            status: 'active',
+            notes: null,
+            recurrence_group_id: patternId,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          });
+          currentDate.setDate(currentDate.getDate() + intervalDays);
+        }
+      }
+      
+      // Save all the generated sessions to the database
+      const createdSessions = await db.transaction(async (trx) => {
+        const results: CampSession[] = [];
+        
+        for (const session of sessions) {
+          const [createdSession] = await trx.insert(campSessions).values(session).returning();
+          results.push(createdSession);
+        }
+        
+        return results;
+      });
+      
+      console.log(`Successfully generated ${createdSessions.length} camp sessions from recurrence pattern ID ${patternId}`);
+      return createdSessions;
+    } catch (error: any) {
+      console.error(`Error generating camp sessions from recurrence pattern:`, {
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        stack: error.stack
+      });
+      throw new Error(`Failed to generate camp sessions: ${error.message}`);
     }
   }
   

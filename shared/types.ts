@@ -4,7 +4,8 @@ export type Gender = "male" | "female" | "other" | "prefer_not_to_say";
 export type ContactMethod = "email" | "sms" | "app";
 export type CampType = "one_on_one" | "group" | "team" | "virtual";
 export type CampVisibility = "public" | "private";
-export type RepeatType = "none" | "weekly" | "monthly";
+export type RepeatType = "none" | "daily" | "weekly" | "biweekly" | "monthly" | "custom";
+export type RecurrencePattern = "all_days" | "weekdays" | "weekends" | "specific_days" | "custom";
 export type StaffRole = "manager" | "coach" | "volunteer";
 export type CampStatus = "active" | "cancelled" | "deleted";
 

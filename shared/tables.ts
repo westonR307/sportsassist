@@ -4,8 +4,38 @@ import {
   type Role, type Gender, type ContactMethod, 
   type SportLevel, type StaffRole,
   type FieldType, type ValidationType,
-  type CampStatus
+  type CampStatus, type RecurrencePattern
 } from "./types";
+
+// Define the table structure for the new enhanced camp session scheduling
+export const campSessions = pgTable("camp_sessions", {
+  id: serial("id").primaryKey(),
+  campId: integer("camp_id").references(() => camps.id).notNull(),
+  sessionDate: timestamp("session_date").notNull(),
+  startTime: time("start_time").notNull(),
+  endTime: time("end_time").notNull(),
+  status: text("status").notNull().default("active"), // active, cancelled
+  notes: text("notes"),
+  recurrenceGroupId: integer("recurrence_group_id"), // To group sessions that were created together
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Store information about recurrence patterns for easily recreating them
+export const recurrencePatterns = pgTable("recurrence_patterns", {
+  id: serial("id").primaryKey(),
+  campId: integer("camp_id").references(() => camps.id).notNull(),
+  name: text("name").notNull(), // User-provided name like "Monday and Wednesday afternoons"
+  patternType: text("pattern_type").$type<RecurrencePattern>().notNull(),
+  repeatType: text("repeat_type").$type<RepeatType>().notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  daysOfWeek: integer("days_of_week").array(), // Array of days of week (0-6)
+  startTime: time("start_time").notNull(),
+  endTime: time("end_time").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
 
 export const camps = pgTable("camps", {
   id: serial("id").primaryKey(),

@@ -16,7 +16,9 @@ import {
   customFields,
   campCustomFields,
   customFieldResponses,
-  attendanceRecords
+  attendanceRecords,
+  campSessions,
+  recurrencePatterns
 } from "./tables";
 
 // Import types
@@ -91,6 +93,39 @@ export const insertChildSchema = createInsertSchema(children)
     height: z.string().optional(),
     weight: z.string().optional(),
   });
+
+// Schema for camp sessions
+export const insertCampSessionSchema = createInsertSchema(campSessions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+}).extend({
+  sessionDate: z.string().or(z.date()).transform(val => {
+    if (val instanceof Date) return val;
+    return new Date(val);
+  }),
+  startTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format"),
+  endTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format")
+});
+
+// Schema for recurrence patterns
+export const insertRecurrencePatternSchema = createInsertSchema(recurrencePatterns).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+}).extend({
+  startDate: z.string().or(z.date()).transform(val => {
+    if (val instanceof Date) return val;
+    return new Date(val);
+  }),
+  endDate: z.string().or(z.date()).transform(val => {
+    if (val instanceof Date) return val;
+    return new Date(val);
+  }),
+  daysOfWeek: z.array(z.number().min(0).max(6)),
+  startTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format"),
+  endTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format")
+});
 
 export const insertScheduleExceptionSchema = z.object({
   campId: z.number(),
@@ -205,6 +240,12 @@ export type InsertScheduleException = z.infer<typeof insertScheduleExceptionSche
 //export type InsertCampSchedule = z.infer<typeof insertCampScheduleSchema>;
 export type CampSport = typeof campSports.$inferSelect;
 
+// Enhanced scheduling types
+export type CampSession = typeof campSessions.$inferSelect;
+export type InsertCampSession = z.infer<typeof insertCampSessionSchema>;
+export type RecurrencePattern = typeof recurrencePatterns.$inferSelect;
+export type InsertRecurrencePattern = z.infer<typeof insertRecurrencePatternSchema>;
+
 // Custom fields types
 export type CustomField = typeof customFields.$inferSelect;
 export type CampCustomField = typeof campCustomFields.$inferSelect; 
@@ -243,7 +284,9 @@ export {
   customFields,
   campCustomFields,
   customFieldResponses,
-  attendanceRecords
+  attendanceRecords,
+  campSessions,
+  recurrencePatterns
 };
 
 export const predefinedSports = [
