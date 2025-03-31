@@ -22,6 +22,7 @@ export function SimpleEditAthleteDialog({ athlete, open, onOpenChange }: SimpleE
     gender: athlete?.gender || "male",
     dateOfBirth: athlete?.dateOfBirth ? new Date(athlete.dateOfBirth).toISOString().split('T')[0] : "",
     schoolName: athlete?.schoolName || "",
+    medicalInformation: athlete?.medicalInformation || "",
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,12 +65,15 @@ export function SimpleEditAthleteDialog({ athlete, open, onOpenChange }: SimpleE
       console.log("Submitting data:", formData);
       
       // Create a minimal payload with just the fields we're editing
-      // We removed the communication fields and height/weight since they were removed from schema
+      // Include medical information as it's expected by the server
       const payload = {
         fullName: formData.fullName,
         dateOfBirth: formData.dateOfBirth,
         gender: formData.gender || "male",
-        schoolName: formData.schoolName || ""
+        schoolName: formData.schoolName || "",
+        medicalInformation: formData.medicalInformation || "",
+        // Include an empty sportsInterests array to satisfy server expectations
+        sportsInterests: []
       };
       
       console.log("Full payload:", JSON.stringify(payload, null, 2));
@@ -182,6 +186,17 @@ export function SimpleEditAthleteDialog({ athlete, open, onOpenChange }: SimpleE
               value={formData.schoolName}
               onChange={handleInputChange}
               placeholder="School name"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="medicalInformation" className="text-sm font-medium">Medical Information</label>
+            <Input 
+              id="medicalInformation"
+              name="medicalInformation"
+              value={formData.medicalInformation}
+              onChange={handleInputChange}
+              placeholder="Any medical conditions or allergies"
             />
           </div>
           
