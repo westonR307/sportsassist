@@ -42,10 +42,12 @@ export function CalendarScheduler({
   campId, 
   startDate, 
   endDate, 
-  sessions = [], 
+  sessions: initialSessions = [], 
   onSave,
   canManage = true
 }: CalendarSchedulerProps) {
+  // Keep our own local state of sessions to avoid depending on parent refreshes
+  const [sessions, setSessions] = useState<SimpleCampSession[]>(initialSessions);
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [startTime, setStartTime] = useState("09:00");
@@ -56,6 +58,11 @@ export function CalendarScheduler({
   // Format dates properly
   const campStartDate = startDate instanceof Date ? startDate : new Date(startDate);
   const campEndDate = endDate instanceof Date ? endDate : new Date(endDate);
+  
+  // Sync with initialSessions when they change (from parent)
+  useEffect(() => {
+    setSessions(initialSessions);
+  }, [initialSessions]);
 
   // Update selected date sessions when date or sessions change
   useEffect(() => {
@@ -121,14 +128,18 @@ export function CalendarScheduler({
         sessionDate: selectedDate
       };
       
-      // Update the local sessions state to show the new session immediately
-      onSave(); // Call onSave to refresh the parent component
+      // Update the local sessions list to include the new session
+      const updatedSessions = [...sessions, newSession];
+      setSessions(updatedSessions);
       
       // Also update the selected date sessions to show in the right panel immediately
       setSelectedDateSessions(prev => [...prev, newSession]);
 
       // Still invalidate the query cache for background refresh
       queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'sessions'] });
+      
+      // Call onSave to refresh the parent component AFTER we've updated our local state
+      onSave(); 
 
       toast({
         title: "Session added",
@@ -162,6 +173,9 @@ export function CalendarScheduler({
 
       // Immediately update the UI by removing the deleted session from local state
       setSelectedDateSessions(prev => prev.filter(session => session.id !== sessionId));
+      
+      // Also update the full sessions list
+      setSessions(prev => prev.filter(session => session.id !== sessionId));
       
       // Notify parent component to refresh its data
       onSave();

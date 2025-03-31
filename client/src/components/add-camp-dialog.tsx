@@ -679,14 +679,37 @@ export function AddCampDialog({
                               <p>Select dates on the calendar below to schedule camp sessions. Click a day to add a session with the default start and end times.</p>
                             </div>
                             
-                            <div className="p-4 border rounded-md">
+                            <div className="border rounded-md p-4">
                               <div className="calendar-container">
                                 {form.watch('startDate') && form.watch('endDate') ? (
-                                  <div className="text-center py-4">
-                                    <p>Your camp's sessions will be configured after you create the camp.</p>
-                                    <p className="mt-2 text-sm">
-                                      The default session time will be from {form.watch('defaultStartTime')} to {form.watch('defaultEndTime')} for days you select.
-                                    </p>
+                                  <div>
+                                    <div className="text-center py-4 mb-4">
+                                      <p>Below you can see a preview of the calendar scheduler that will be available after creating the camp.</p>
+                                      <p className="mt-2 text-sm">
+                                        The default session time will be from {form.watch('defaultStartTime') || '09:00'} to {form.watch('defaultEndTime') || '17:00'} for days you select.
+                                      </p>
+                                    </div>
+                                    
+                                    {/* Sample calendar view */}
+                                    <div className="border rounded-md p-4 bg-muted/30">
+                                      <div className="text-sm font-medium mb-2">Calendar Preview</div>
+                                      <div className="grid grid-cols-7 gap-1 mb-2">
+                                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                                          <div key={day} className="text-center text-xs text-muted-foreground">{day}</div>
+                                        ))}
+                                        {Array.from({ length: 7 }).map((_, i) => (
+                                          <div 
+                                            key={i}
+                                            className="aspect-square border rounded-sm flex items-center justify-center text-sm hover:bg-accent cursor-pointer"
+                                          >
+                                            {i+1}
+                                          </div>
+                                        ))}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground mt-2">
+                                        Click on dates to add sessions after camp creation.
+                                      </div>
+                                    </div>
                                   </div>
                                 ) : (
                                   <div className="text-center py-4 text-muted-foreground">
