@@ -98,7 +98,8 @@ export function CalendarScheduler({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          sessionDate: selectedDate,
+          campId: campId,
+          sessionDate: format(selectedDate, 'yyyy-MM-dd'),
           startTime,
           endTime,
           status: "active",

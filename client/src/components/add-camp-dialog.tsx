@@ -89,8 +89,17 @@ export function AddCampDialog({
   const campEnd = new Date(campStart);
   campEnd.setDate(campEnd.getDate() + 7); // Camp runs for 7 days by default
 
-  const form = useForm<z.infer<typeof insertCampSchema>>({
-    resolver: zodResolver(insertCampSchema),
+  // Extended schema type for the form
+  type ExtendedCampSchema = z.infer<typeof insertCampSchema> & { 
+    defaultStartTime: string; 
+    defaultEndTime: string;
+  };
+
+  const form = useForm<ExtendedCampSchema>({
+    resolver: zodResolver(insertCampSchema.extend({
+      defaultStartTime: z.string().optional(),
+      defaultEndTime: z.string().optional()
+    })),
     defaultValues: {
       name: "",
       description: "",
@@ -112,11 +121,13 @@ export function AddCampDialog({
       startDate: campStart.toISOString().split("T")[0],
       endDate: campEnd.toISOString().split("T")[0],
       schedules: [],
+      defaultStartTime: "09:00",
+      defaultEndTime: "17:00",
     },
   });
 
   const createCampMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof insertCampSchema>) => {
+    mutationFn: async (data: Omit<ExtendedCampSchema, 'defaultStartTime' | 'defaultEndTime'>) => {
       setSubmitting(true); // Set submitting to true before API call
       try {
         if (!user?.organizationId) {
@@ -208,7 +219,7 @@ export function AddCampDialog({
     setSchedules(newSchedules);
   };
 
-  const onSubmit = async (data: z.infer<typeof insertCampSchema>) => {
+  const onSubmit = async (data: ExtendedCampSchema) => {
     console.log("Form submitted with data:", data);
     
     if (!selectedSport) {
@@ -321,7 +332,9 @@ export function AddCampDialog({
 
     console.log("About to call mutation with data", { ...data, schedules, sport: selectedSport, level: skillLevel });
     try {
-      createCampMutation.mutate({ ...data, schedules });
+      // Extract defaultStartTime and defaultEndTime fields, then pass the rest to the mutation
+      const { defaultStartTime, defaultEndTime, ...campData } = data;
+      createCampMutation.mutate({ ...campData, schedules });
       console.log("Mutation called successfully");
     } catch (error) {
       console.error("Error calling mutation:", error);
@@ -620,20 +633,74 @@ export function AddCampDialog({
                         <div className="p-3 bg-muted rounded-md mb-4">
                           <p className="text-sm">
                             The enhanced scheduling system allows you to create more complex schedules with recurring patterns and individual sessions.
-                            You'll be able to set this up after creating the camp.
+                            Use the calendar below to create your initial camp schedule.
                           </p>
                         </div>
                         
-                        <div className="text-center py-6 text-muted-foreground">
-                          <p>After creating your camp, you'll be able to:</p>
-                          <ul className="list-disc list-inside text-left mt-2 space-y-1">
-                            <li>Create recurring session patterns (daily, weekly, monthly)</li>
-                            <li>Schedule individual one-off sessions</li>
-                            <li>View a calendar of all sessions</li>
-                            <li>Add exceptions for holidays or special events</li>
-                          </ul>
-                          <p className="mt-3">For now, please set up a basic schedule below.</p>
-                        </div>
+                        {form.watch('startDate') && form.watch('endDate') ? (
+                          <div className="mt-4">
+                            <div className="grid gap-3 mb-4">
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <Label htmlFor="defaultStartTime">Default Start Time</Label>
+                                  <Input
+                                    id="defaultStartTime"
+                                    type="time"
+                                    defaultValue="09:00"
+                                    onChange={(e) => {
+                                      // This sets a default start time that will be used when clicking on days
+                                      form.setValue('defaultStartTime', e.target.value);
+                                    }}
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="defaultEndTime">Default End Time</Label>
+                                  <Input
+                                    id="defaultEndTime"
+                                    type="time"
+                                    defaultValue="17:00"
+                                    onChange={(e) => {
+                                      // This sets a default end time that will be used when clicking on days
+                                      form.setValue('defaultEndTime', e.target.value);
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="text-sm mb-4">
+                              <p>Select dates on the calendar below to schedule camp sessions. Click a day to add a session with the default start and end times.</p>
+                            </div>
+                            
+                            <div className="p-4 border rounded-md">
+                              <div className="calendar-container">
+                                {/* We'll implement a simplified calendar view here */}
+                                <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                                    <div key={day} className="font-medium">{day}</div>
+                                  ))}
+                                </div>
+                                
+                                <div className="text-center py-4 text-muted-foreground">
+                                  <p>Initial camp schedule setup will be available when the camp is created.</p>
+                                  <p className="mt-2 text-sm">After creating your camp, you'll be able to add individual sessions and recurring patterns using a full calendar interface.</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center py-6 text-muted-foreground">
+                            <p>Please set your camp start and end dates in the Information tab first.</p>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => setCurrentTab("basic")}
+                              className="mt-4"
+                            >
+                              Go to Information Tab
+                            </Button>
+                          </div>
+                        )}
                       </TabsContent>
                       
                       <TabsContent value="legacy" className="pt-4">
