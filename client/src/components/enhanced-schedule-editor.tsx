@@ -53,9 +53,13 @@ interface CampSession {
   sessionDate: Date | string;
   startTime: string;
   endTime: string;
-  status: 'active' | 'cancelled';
+  status: 'active' | 'cancelled' | 'rescheduled';
   notes?: string | null;
   recurrenceGroupId?: number | null;
+  rescheduledDate?: Date | string | null;
+  rescheduledStartTime?: string | null;
+  rescheduledEndTime?: string | null;
+  rescheduledStatus?: 'confirmed' | 'tbd' | null;
 }
 
 interface DayEvent {
@@ -1308,9 +1312,74 @@ export function EnhancedScheduleEditor({
                   <SelectContent>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="rescheduled">Rescheduled</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              
+              {editingSession.status === 'rescheduled' && (
+                <>
+                  <div className="flex justify-between items-center">
+                    <Label>Rescheduled Status</Label>
+                    <Select
+                      value={editingSession.rescheduledStatus || 'tbd'}
+                      onValueChange={(value) => handleInputChange(setEditingSession, 'rescheduledStatus', value)}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Reschedule status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="confirmed">Confirmed</SelectItem>
+                        <SelectItem value="tbd">To Be Determined</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {editingSession.rescheduledStatus === 'confirmed' && (
+                    <>
+                      <div>
+                        <Label>Rescheduled Date</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start text-left font-normal"
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {editingSession.rescheduledDate ? format(editingSession.rescheduledDate as Date, 'PP') : "Select new date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={editingSession.rescheduledDate as Date}
+                              onSelect={(date) => handleInputChange(setEditingSession, 'rescheduledDate', date || new Date())}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>New Start Time</Label>
+                          <TimePickerInput
+                            value={editingSession.rescheduledStartTime || ''}
+                            onChange={(value) => handleInputChange(setEditingSession, 'rescheduledStartTime', value)}
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label>New End Time</Label>
+                          <TimePickerInput
+                            value={editingSession.rescheduledEndTime || ''}
+                            onChange={(value) => handleInputChange(setEditingSession, 'rescheduledEndTime', value)}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
               
               <div>
                 <Label>Notes</Label>

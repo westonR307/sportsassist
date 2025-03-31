@@ -105,7 +105,16 @@ export const insertCampSessionSchema = createInsertSchema(campSessions).omit({
     return new Date(val);
   }),
   startTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format"),
-  endTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format")
+  endTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format"),
+  status: z.enum(["active", "cancelled", "rescheduled"]),
+  rescheduledDate: z.string().or(z.date()).transform(val => {
+    if (val === null || val === undefined) return null;
+    if (val instanceof Date) return val;
+    return new Date(val);
+  }).nullable().optional(),
+  rescheduledStartTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format").nullable().optional(),
+  rescheduledEndTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format").nullable().optional(),
+  rescheduledStatus: z.enum(["confirmed", "tbd"]).nullable().optional(),
 });
 
 // Schema for recurrence patterns

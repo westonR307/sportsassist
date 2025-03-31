@@ -94,7 +94,7 @@ interface ScheduleExceptionWithPermissions {
 
 export function CampScheduleDisplay({ campId }: CampScheduleProps) {
   const [showExceptionDialog, setShowExceptionDialog] = useState(false);
-  const [activeTab, setActiveTab] = useState("regular");
+  const [activeTab, setActiveTab] = useState("enhanced");
   const [selectedException, setSelectedException] = useState<ScheduleException | undefined>(undefined);
   const [, navigate] = useLocation();
 
@@ -264,41 +264,19 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
       
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mx-4 mb-2">
-          <TabsTrigger value="regular">Regular Schedule</TabsTrigger>
+          <TabsTrigger value="enhanced">
+            <Calendar className="h-4 w-4 mr-1" />
+            Calendar Schedule
+          </TabsTrigger>
           <TabsTrigger value="exceptions" className="relative">
-            Exceptions
+            Session Changes
             {hasUpcomingExceptions && (
               <span className="absolute -top-1 -right-1 h-2 w-2 bg-yellow-500 rounded-full" />
             )}
           </TabsTrigger>
-          {(patterns.length > 0 || sessions.length > 0) && (
-            <TabsTrigger value="enhanced">
-              <Calendar className="h-4 w-4 mr-1" />
-              Enhanced Calendar
-            </TabsTrigger>
-          )}
         </TabsList>
         
-        <TabsContent value="regular" className="m-0">
-          <CardContent>
-            <div className="space-y-4">
-              {Object.entries(schedulesByDay).map(([day, daySchedules]) => (
-                <div key={day} className="border rounded-md p-3">
-                  <h4 className="font-medium mb-2">{DAYS_OF_WEEK[parseInt(day)]}</h4>
-                  <div className="space-y-2">
-                    {daySchedules.map((schedule, index) => (
-                      <div key={index} className="flex justify-between text-sm">
-                        <span>{formatTime(schedule.startTime)}</span>
-                        <span>to</span>
-                        <span>{formatTime(schedule.endTime)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </TabsContent>
+
         
         <TabsContent value="enhanced" className="m-0">
           <CardContent>
@@ -354,6 +332,28 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
                                 </Badge>
                               )}
                             </div>
+                            {session.status === 'rescheduled' && (
+                              <div className="mt-2 border-t pt-2">
+                                <div className="flex justify-between items-center">
+                                  <p className="text-xs font-medium text-muted-foreground">
+                                    Rescheduled to:
+                                  </p>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {session.rescheduledStatus === 'confirmed' ? 'Confirmed' : 'TBD'}
+                                  </Badge>
+                                </div>
+                                {session.rescheduledStatus === 'confirmed' && session.rescheduledDate && (
+                                  <>
+                                    <p className="text-sm font-medium mt-1">
+                                      {formatDate(session.rescheduledDate)}
+                                    </p>
+                                    <p className="text-sm">
+                                      {formatTime(session.rescheduledStartTime || '')} - {formatTime(session.rescheduledEndTime || '')}
+                                    </p>
+                                  </>
+                                )}
+                              </div>
+                            )}
                             {session.notes && (
                               <p className="text-sm text-muted-foreground mt-2">{session.notes}</p>
                             )}
