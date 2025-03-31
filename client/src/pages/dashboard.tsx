@@ -88,8 +88,8 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile Menu Button */}
-      <div className="lg:hidden fixed top-0 left-0 m-4 z-50">
+      {/* Mobile Menu Button - Hidden when sidebar is open */}
+      <div className={`lg:hidden fixed top-0 left-0 m-4 z-50 transition-opacity duration-300 ${sidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         <Button
           variant="outline"
           size="icon"
@@ -110,10 +110,21 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
         overflow-hidden
       `}
       >
-        <div className="p-4 border-b whitespace-nowrap">
-          <h2 className={`font-semibold text-lg ${!sidebarOpen && "lg:opacity-0"}`}>
-            {organization?.name || "Sports Camp Manager"}
-          </h2>
+        <div className="p-4 border-b whitespace-nowrap relative">
+          <div className="flex justify-between items-center">
+            <h2 className={`font-semibold text-lg ${!sidebarOpen && "lg:opacity-0"}`}>
+              {organization?.name || "Sports Camp Manager"}
+            </h2>
+            {/* Close button for mobile */}
+            <Button 
+              variant="ghost" 
+              size="icon"
+              className="lg:hidden absolute right-2 top-3"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
           {organization?.name && sidebarOpen && (
             <p className="text-xs text-muted-foreground mt-1 truncate">
               Sports Camp Management
