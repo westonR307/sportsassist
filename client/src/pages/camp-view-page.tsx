@@ -3,19 +3,20 @@ import { useAuth } from "@/hooks/use-auth";
 import { DashboardLayout } from "./dashboard";
 import { ParentSidebar } from "@/components/parent-sidebar";
 import { BackButton } from "@/components/back-button";
-import { useParams, useLocation } from "wouter";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useParams } from "react-router-dom"; // Changed import for useParams
+import { useLocation } from "wouter";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { 
-  Tooltip, 
-  TooltipContent, 
-  TooltipTrigger, 
-  TooltipProvider 
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider
 } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
@@ -24,21 +25,17 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-  DropdownMenuPortal
 } from "@/components/ui/dropdown-menu";
-import { 
+import {
   AlertTriangle,
-  Loader2, 
-  Edit, 
-  MessageSquare, 
-  Users, 
-  ShieldAlert, 
-  CalendarDays, 
-  Calendar, 
-  FileText, 
+  Loader2,
+  Edit,
+  MessageSquare,
+  Users,
+  ShieldAlert,
+  CalendarDays,
+  Calendar,
+  FileText,
   CheckCircle,
   ArrowLeft,
   Clock,
@@ -76,12 +73,10 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { type Camp, type Child } from "@shared/schema";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 import { EditCampDialog } from "@/components/edit-camp-dialog";
 import { CampScheduleDisplay } from "@/components/camp-schedule";
-// Enhanced schedule editor
 import { EnhancedScheduleEditor } from "@/components/enhanced-schedule-editor";
-// Using the fixed schedule editor dialog as fallback
 import { ScheduleEditorDialog } from "@/components/schedule-editor-dialog-fixed";
 import { EditCampCustomFields } from "@/components/edit-camp-custom-fields";
 import { ExportParticipantsDialog } from "@/components/export-participants-dialog";
@@ -103,6 +98,7 @@ import {
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
+
 // Extended camp type to include permissions from the server
 interface CampWithPermissions extends Camp {
   permissions?: {
@@ -118,66 +114,34 @@ interface RegistrationsResponse {
   }
 }
 
-function CampViewPage(props: { id?: string }) {
-  // Get the id parameter either from props or from URL params
-  const params = useParams<{ id: string }>();
-  const idFromParams = params.id;
-  // Use the id from props if available, otherwise use the one from URL params
-  const id = props.id || idFromParams;
-  
-  // Log to help with debugging
-  console.log("CampViewPage - id from props:", props.id);
-  console.log("CampViewPage - id from params:", idFromParams);
-  console.log("CampViewPage - final id being used:", id);
-  
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [location, navigate] = useLocation();
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [scheduleEditorOpen, setScheduleEditorOpen] = useState(false);
-  const [registering, setRegistering] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showCancelDialog, setShowCancelDialog] = useState(false);
-  const [cancelReason, setCancelReason] = useState("");
-  
-  // Check for hash fragments in URL to trigger UI behaviors
-  useEffect(() => {
-    // Check for schedule editor hash
-    if (location.includes('#schedule-editor')) {
-      setScheduleEditorOpen(true);
-    }
-  }, [location]);
-
-  // Check if user is a parent
-  const isParent = user?.role === 'parent';
-
-  // Updated to use the extended type with permissions
+// Custom hook to fetch camp data
+const useCampData = (id: string | undefined) => {
+  const queryClient = useQueryClient();
   const { data: camp, isLoading, error: campError } = useQuery<CampWithPermissions>({
     queryKey: ['camp', id],
     queryFn: async () => {
       if (!id) throw new Error('No camp ID provided');
       console.log("Fetching camp with ID:", id);
-      
+
       // Make sure ID is properly handled - we might get "undefined" as a string
       if (id === 'undefined' || id === 'null') {
         throw new Error('Invalid camp ID: ' + id);
       }
-      
-      // Debugging URL formation
+
       const url = `/api/camps/${id}`;
       console.log("Full API URL:", url);
       console.log("URL params check - id type:", typeof id, "value:", id);
-      
+
       try {
         const response = await fetch(url);
         console.log("API Response status:", response.status);
-        
+
         if (!response.ok) {
           const errorText = await response.text();
           console.error("Failed to fetch camp:", errorText);
           throw new Error(errorText || 'Failed to fetch camp');
         }
-        
+
         const data = await response.json();
         console.log("Received camp data:", JSON.stringify(data, null, 2));
         return data;
@@ -190,66 +154,77 @@ function CampViewPage(props: { id?: string }) {
     retry: 1,
     onError: (error) => {
       console.error("Error fetching camp details:", error);
-      toast({
-        title: "Error loading camp details",
-        description: error instanceof Error ? error.message : "Unknown error occurred",
-        variant: "destructive"
-      });
+      // toast is not available here, needs to be handled elsewhere.
     }
   });
+  return { isLoading, camp, campError };
+};
 
-  // Updated to use the response type that includes permissions
+
+function CampViewPage(props: { id?: string }) {
+  const params = useParams();
+  const idFromParams = params.id;
+  const id = props.id || idFromParams;
+  console.log("CampViewPage - id from props:", props.id);
+  console.log("CampViewPage - id from params:", idFromParams);
+  console.log("CampViewPage - final id being used:", id);
+
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [location, navigate] = useLocation();
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [scheduleEditorOpen, setScheduleEditorOpen] = useState(false);
+  const [registering, setRegistering] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (location.includes('#schedule-editor')) {
+      setScheduleEditorOpen(true);
+    }
+  }, [location]);
+
+  const isParent = user?.role === 'parent';
+  const { isLoading, camp, campError } = useCampData(id);
+
+
   const { data: registrationsData, isLoading: isLoadingRegistrations } = useQuery<RegistrationsResponse>({
     queryKey: [`/api/camps/${id}/registrations`],
     enabled: !!id,
   });
 
-  // Extract the registrations array from the response
   const registrations = registrationsData?.registrations || [];
-  
-  // Check if the user has permission to manage this camp
   const canManage = camp?.permissions?.canManage || false;
 
-  // Calculate registration status
   const getRegistrationStatus = () => {
     if (!camp) return 'unknown';
-    
+
     const now = new Date();
     const regStartDate = new Date(camp.registrationStartDate);
     const regEndDate = new Date(camp.registrationEndDate);
     const campStartDate = new Date(camp.startDate);
-    
-    // Check if registration period has ended
+
     if (now > regEndDate) return 'closed';
-    
-    // Check if camp has already started
     if (now > campStartDate) return 'in_progress';
-    
-    // Check if registration hasn't opened yet
     if (now < regStartDate) return 'not_open';
-    
-    // Check if camp is at capacity
+
     const registeredCount = registrations.length;
     if (registeredCount >= camp.capacity) {
       return camp.waitlistEnabled ? 'waitlist' : 'full';
     }
-    
-    // Default case: Registration is open
+
     return 'open';
   };
-  
+
   const registrationStatus = camp ? getRegistrationStatus() : 'unknown';
-  
-  // Check if the current user's child is already registered
+
   const isUserRegistered = () => {
     if (!user || !registrations || !isParent) return false;
-    
-    // In a real app, we would check if any of the parent's children are registered
-    // For now, we'll use a simplified version
     return registrations.some((reg: any) => reg.parentId === user.id);
   };
-  
-  // Get parent's children
+
   const { data: children = [], isLoading: isLoadingChildren } = useQuery<Child[]>({
     queryKey: ['/api/parent/children'],
     enabled: isParent && !!user,
@@ -261,7 +236,6 @@ function CampViewPage(props: { id?: string }) {
   const [exportFormat, setExportFormat] = useState<"pdf" | "csv">("pdf");
   const [showFormFieldsDialog, setShowFormFieldsDialog] = useState(false);
 
-  // Dialog to select a child for registration
   const ChildSelectionDialog = () => {
     if (isLoadingChildren) {
       return (
@@ -278,8 +252,8 @@ function CampViewPage(props: { id?: string }) {
           <p className="text-sm text-muted-foreground">
             Please add an athlete profile before registering for a camp.
           </p>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="mt-4"
             onClick={() => {
               setShowChildSelectionDialog(false);
@@ -299,7 +273,7 @@ function CampViewPage(props: { id?: string }) {
         </p>
         <div className="grid gap-3">
           {children.map((child) => (
-            <Card 
+            <Card
               key={child.id}
               className={`cursor-pointer transition-colors ${selectedChildId === child.id ? 'border-primary' : 'hover:border-primary/50'}`}
               onClick={() => setSelectedChildId(child.id)}
@@ -324,13 +298,13 @@ function CampViewPage(props: { id?: string }) {
           ))}
         </div>
         <div className="flex justify-end gap-2 mt-4">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => setShowChildSelectionDialog(false)}
           >
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={() => {
               if (selectedChildId) {
                 registerMutation.mutate();
@@ -351,17 +325,15 @@ function CampViewPage(props: { id?: string }) {
     );
   };
 
-  // Registration mutation
   const registerMutation = useMutation({
     mutationFn: async () => {
       setRegistering(true);
       try {
-        // Use the selected child ID for registration
         const response = await apiRequest('POST', `/api/camps/${id}/register`, {
           campId: parseInt(id),
           childId: selectedChildId,
         });
-        
+
         return await response.json();
       } finally {
         setRegistering(false);
@@ -372,8 +344,7 @@ function CampViewPage(props: { id?: string }) {
         title: "Registration successful",
         description: "You have successfully registered for this camp.",
       });
-      
-      // Refresh registration data
+
       queryClient.invalidateQueries({ queryKey: [`/api/camps/${id}/registrations`] });
     },
     onError: (error: any) => {
@@ -384,12 +355,10 @@ function CampViewPage(props: { id?: string }) {
       });
     }
   });
-  
-  // Delete camp mutation (soft delete)
+
   const deleteCampMutation = useMutation({
     mutationFn: async () => {
       try {
-        // Call the soft delete endpoint
         const response = await apiRequest('POST', `/api/camps/${id}/delete`, {});
         return await response.json();
       } catch (error) {
@@ -402,14 +371,12 @@ function CampViewPage(props: { id?: string }) {
         title: "Camp deleted",
         description: "The camp has been successfully deleted.",
       });
-      
-      // Redirect to camps list
+
       navigate('/dashboard');
     },
     onError: (error: any) => {
       console.error("Delete camp error:", error);
-      
-      // Check if the error is because registration has started
+
       if (error.message && error.message.includes("registration has started")) {
         toast({
           title: "Cannot delete camp",
@@ -425,12 +392,10 @@ function CampViewPage(props: { id?: string }) {
       }
     }
   });
-  
-  // Cancel camp mutation
+
   const cancelCampMutation = useMutation({
     mutationFn: async () => {
       try {
-        // Call the cancel endpoint with reason
         const response = await apiRequest('POST', `/api/camps/${id}/cancel`, {
           reason: cancelReason
         });
@@ -445,8 +410,7 @@ function CampViewPage(props: { id?: string }) {
         title: "Camp cancelled",
         description: "The camp has been cancelled and all registered participants will be notified.",
       });
-      
-      // Refresh camp data
+
       queryClient.invalidateQueries({ queryKey: ['camp', id] });
       setShowCancelDialog(false);
       setCancelReason("");
@@ -460,11 +424,7 @@ function CampViewPage(props: { id?: string }) {
     }
   });
 
-  // Render appropriate content for parent vs organization user
   const renderContent = () => {
-    // Move hooks outside of conditions
-    const params = useParams();
-    
     if (isLoading) {
       return <div className="flex items-center justify-center h-full">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -472,14 +432,13 @@ function CampViewPage(props: { id?: string }) {
     }
 
     if (!camp) {
-      // Add more detailed debugging information for when camp is null
       console.log("Camp data is null or undefined", {
         id,
         isLoading,
         campError,
         routeParams: params
       });
-      
+
       return <div className="flex items-center justify-center h-full">
         <Card className="w-[400px]">
           <CardHeader>
@@ -501,18 +460,15 @@ function CampViewPage(props: { id?: string }) {
 
     return (
       <div className="space-y-6 pt-4">
-        {/* Header */}
         <div className="flex flex-col w-full mb-6 mt-2">
-          {/* Navigation Area */}
           <div className="flex w-full mb-3">
-            <BackButton 
+            <BackButton
               to={isParent ? "/find-camps" : "/dashboard"}
               label={isParent ? "Back to Camps" : "Back to Dashboard"}
               className="self-start"
             />
           </div>
-          
-          {/* Camp Title Area */}
+
           <div className="flex flex-col mb-4 w-full">
             <h1 className="text-2xl md:text-3xl font-bold leading-tight break-words max-w-full">
               {camp.name}
@@ -521,13 +477,10 @@ function CampViewPage(props: { id?: string }) {
               {camp.type === "virtual" ? "Virtual Camp" : `${camp.city}, ${camp.state}`}
             </p>
           </div>
-          
-          {/* Action Buttons Area - More mobile friendly */}
+
           <div className="flex flex-wrap gap-2 items-center">
             {canManage ? (
-              // Only show management buttons if user has permission
               <div className="flex flex-wrap gap-2 items-center justify-center">
-                {/* Primary management buttons */}
                 <div className="flex gap-2">
                   <Button onClick={() => setEditDialogOpen(true)}>
                     <Edit className="h-4 w-4 mr-2" />
@@ -537,11 +490,10 @@ function CampViewPage(props: { id?: string }) {
                     <MessageSquare className="h-4 w-4 mr-2" />
                     Message
                   </Button>
-                
-                {/* Destructive actions */}
+                </div>
                 {registrationStatus === 'not_open' ? (
-                  <Button 
-                    variant="destructive" 
+                  <Button
+                    variant="destructive"
                     onClick={() => setShowDeleteDialog(true)}
                     size="sm"
                   >
@@ -549,8 +501,8 @@ function CampViewPage(props: { id?: string }) {
                     Delete
                   </Button>
                 ) : (
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="text-amber-600 border-amber-200 hover:bg-amber-50"
                     onClick={() => setShowCancelDialog(true)}
                     size="sm"
@@ -559,17 +511,15 @@ function CampViewPage(props: { id?: string }) {
                     Cancel
                   </Button>
                 )}
-                </div>
               </div>
             ) : isParent ? (
-              // For parents show the appropriate registration button based on status
               isUserRegistered() ? (
                 <Button variant="outline" disabled>
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Already Registered
                 </Button>
               ) : registrationStatus === 'open' ? (
-                <Button 
+                <Button
                   onClick={() => setShowChildSelectionDialog(true)}
                   disabled={registerMutation.isPending}
                 >
@@ -612,7 +562,6 @@ function CampViewPage(props: { id?: string }) {
                 </Button>
               )
             ) : (
-              // Show a message for other non-organizers
               <div className="flex items-center text-muted-foreground">
                 <ShieldAlert className="h-4 w-4 mr-2" />
                 <span className="text-sm">View only</span>
@@ -621,7 +570,6 @@ function CampViewPage(props: { id?: string }) {
           </div>
         </div>
 
-        {/* Tabs */}
         <Tabs defaultValue="details" className="space-y-6">
           <TabsList className={`grid w-full max-w-md ${canManage ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <TabsTrigger value="details">Details</TabsTrigger>
@@ -630,8 +578,7 @@ function CampViewPage(props: { id?: string }) {
               <TabsTrigger value="attendance">Attendance</TabsTrigger>
             )}
           </TabsList>
-          
-          {/* Camp Details Tab */}
+
           <TabsContent value="details" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-6">
@@ -639,7 +586,6 @@ function CampViewPage(props: { id?: string }) {
                   <CardHeader>
                     <div className="flex justify-between items-center">
                       <CardTitle>Camp Information</CardTitle>
-                      {/* Registration status badge */}
                       {registrationStatus === 'open' && (
                         <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
                           <CheckCircle className="h-3 w-3 mr-1" />
@@ -732,15 +678,14 @@ function CampViewPage(props: { id?: string }) {
                     </div>
                   </CardContent>
                 </Card>
-                
-                {/* Camp Schedule Section */}
+
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>Camp Schedule</CardTitle>
                     {canManage && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => setScheduleEditorOpen(true)}
                         className="h-8"
                       >
@@ -756,8 +701,7 @@ function CampViewPage(props: { id?: string }) {
               </div>
             </div>
           </TabsContent>
-          
-          {/* Registrations Tab */}
+
           <TabsContent value="registrations">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
@@ -772,7 +716,7 @@ function CampViewPage(props: { id?: string }) {
                         <Users className="h-4 w-4 mr-2" />
                         Manage Athletes
                       </Button>
-                      
+
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button size="icon" variant="ghost" className="h-8 w-8">
@@ -820,24 +764,22 @@ function CampViewPage(props: { id?: string }) {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {/* Note explaining the view permissions */}
                     {!canManage && (
                       <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md mb-4">
                         <p className="flex items-center">
                           <ShieldAlert className="h-4 w-4 mr-2 text-orange-500" />
                           You are viewing this camp as {user?.role === 'parent' ? 'a parent' : 'a guest'}.
-                          {user?.role === 'parent' ? 
-                            ' You can only see registrations for your own children.' : 
+                          {user?.role === 'parent' ?
+                            ' You can only see registrations for your own children.' :
                             ' You need to be part of the organization to view detailed registration information.'}
                         </p>
                       </div>
                     )}
-                    
-                    {/* Registration list */}
+
                     <div className="space-y-2">
                       {registrations.map((registration: any) => (
-                        <div 
-                          key={registration.id} 
+                        <div
+                          key={registration.id}
                           className="p-3 border rounded-md flex justify-between items-center"
                         >
                           <div className="flex items-center space-x-3">
@@ -859,7 +801,7 @@ function CampViewPage(props: { id?: string }) {
                             <span className={`px-2 py-1 rounded-full text-xs ${registration.paid ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
                               {registration.paid ? 'Paid' : 'Unpaid'}
                             </span>
-                            
+
                             {canManage && (
                               <Button variant="ghost" size="sm">
                                 <Edit className="h-3 w-3" />
@@ -874,10 +816,8 @@ function CampViewPage(props: { id?: string }) {
               </CardContent>
             </Card>
           </TabsContent>
-          
 
-          
-          {/* Attendance Tab - Only for managers */}
+
           {canManage && (
             <TabsContent value="attendance">
               <Card>
@@ -894,7 +834,6 @@ function CampViewPage(props: { id?: string }) {
                       defaultValue={new Date().toISOString().split('T')[0]}
                       onChange={(e) => {
                         if (e.target.value) {
-                          // This would be used to filter the attendance records
                           console.log("Filter attendance by date:", e.target.value);
                         }
                       }}
@@ -999,8 +938,8 @@ function CampViewPage(props: { id?: string }) {
                                     <TooltipProvider>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
-                                          <Button 
-                                            size="sm" 
+                                          <Button
+                                            size="sm"
                                             variant="ghost"
                                             onClick={() => {
                                               toast({
@@ -1019,12 +958,12 @@ function CampViewPage(props: { id?: string }) {
                                         </TooltipContent>
                                       </Tooltip>
                                     </TooltipProvider>
-                                    
+
                                     <TooltipProvider>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
-                                          <Button 
-                                            size="sm" 
+                                          <Button
+                                            size="sm"
                                             variant="ghost"
                                             onClick={() => {
                                               toast({
@@ -1050,17 +989,16 @@ function CampViewPage(props: { id?: string }) {
                           </TableBody>
                         </Table>
                       </div>
-                      
+
                       <div className="flex justify-between items-center">
                         <p className="text-sm text-muted-foreground">
                           Showing {registrations.length} athletes
                         </p>
                         <div className="space-x-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => {
-                              // Logic to save attendance updates
                               toast({
                                 title: "Attendance Saved",
                                 description: `Saved attendance records for ${registrations.length} athletes.`,
@@ -1071,11 +1009,10 @@ function CampViewPage(props: { id?: string }) {
                             <Save className="h-4 w-4 mr-2" />
                             Save Attendance
                           </Button>
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => {
-                              // Logic to mark all as present
                               toast({
                                 title: "Marked All as Present",
                                 description: `All ${registrations.length} athletes have been marked as present.`,
@@ -1095,8 +1032,7 @@ function CampViewPage(props: { id?: string }) {
             </TabsContent>
           )}
         </Tabs>
-        
-        {/* Edit Camp Dialog */}
+
         {camp && (
           <>
             <EditCampDialog
@@ -1104,7 +1040,6 @@ function CampViewPage(props: { id?: string }) {
               onOpenChange={setEditDialogOpen}
               camp={camp}
             />
-            {/* Enhanced Schedule Editor Dialog */}
             <Dialog open={scheduleEditorOpen} onOpenChange={setScheduleEditorOpen}>
               <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
@@ -1114,7 +1049,7 @@ function CampViewPage(props: { id?: string }) {
                   </DialogDescription>
                 </DialogHeader>
                 {camp && (
-                  <EnhancedScheduleEditor 
+                  <EnhancedScheduleEditor
                     campId={camp.id}
                     startDate={camp.startDate}
                     endDate={camp.endDate}
@@ -1124,8 +1059,7 @@ function CampViewPage(props: { id?: string }) {
                 )}
               </DialogContent>
             </Dialog>
-            
-            {/* Child Selection Dialog */}
+
             <Dialog open={showChildSelectionDialog} onOpenChange={setShowChildSelectionDialog}>
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
@@ -1137,8 +1071,7 @@ function CampViewPage(props: { id?: string }) {
                 <ChildSelectionDialog />
               </DialogContent>
             </Dialog>
-            
-            {/* Delete Camp Alert Dialog */}
+
             <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
               <AlertDialogContent>
                 <AlertDialogHeader>
@@ -1153,7 +1086,7 @@ function CampViewPage(props: { id?: string }) {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction 
+                  <AlertDialogAction
                     onClick={() => deleteCampMutation.mutate()}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     disabled={deleteCampMutation.isPending}
@@ -1168,8 +1101,7 @@ function CampViewPage(props: { id?: string }) {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            
-            {/* Cancel Camp Alert Dialog */}
+
             <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
               <AlertDialogContent>
                 <AlertDialogHeader>
@@ -1190,7 +1122,7 @@ function CampViewPage(props: { id?: string }) {
                 </div>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction 
+                  <AlertDialogAction
                     onClick={() => cancelCampMutation.mutate()}
                     className="bg-amber-600 text-white hover:bg-amber-700"
                     disabled={cancelCampMutation.isPending || !cancelReason.trim()}
@@ -1207,8 +1139,7 @@ function CampViewPage(props: { id?: string }) {
             </AlertDialog>
           </>
         )}
-        
-        {/* Form Fields Dialog in a modal */}
+
         {camp && (
           <Dialog open={showFormFieldsDialog} onOpenChange={setShowFormFieldsDialog}>
             <DialogContent className="max-w-3xl">
@@ -1227,8 +1158,7 @@ function CampViewPage(props: { id?: string }) {
             </DialogContent>
           </Dialog>
         )}
-        
-        {/* Export Participants Dialog */}
+
         {camp && (
           <ExportParticipantsDialog
             open={showExportDialog}
@@ -1239,10 +1169,9 @@ function CampViewPage(props: { id?: string }) {
             exportFormat={exportFormat}
           />
         )}
-        
-        {/* Form Fields Dialog */}
+
         {camp && (
-          <CampFormFieldsDialog 
+          <CampFormFieldsDialog
             camp={camp}
             open={showFormFieldsDialog}
             onOpenChange={setShowFormFieldsDialog}
@@ -1252,7 +1181,6 @@ function CampViewPage(props: { id?: string }) {
     );
   };
 
-  // Render content with appropriate layout
   if (isParent) {
     return (
       <div className="flex min-h-screen bg-background">
