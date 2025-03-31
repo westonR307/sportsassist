@@ -30,6 +30,7 @@ import {
   Award,
   ClipboardList,
   Clipboard,
+  X,
 } from "lucide-react";
 import { useLocation as useWouterLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
