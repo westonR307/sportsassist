@@ -524,11 +524,6 @@ function CampViewPage(props: { id?: string }) {
                     <MessageSquare className="h-4 w-4 mr-2" />
                     Message
                   </Button>
-                  
-                  <Button variant="outline" onClick={() => setScheduleEditorOpen(true)}>
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Schedule Management
-                  </Button>
                 
                 {/* Destructive actions */}
                 {registrationStatus === 'not_open' ? (
