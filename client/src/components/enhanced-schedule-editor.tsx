@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { TimePickerInput } from "@/components/custom-fields/time-picker-input";
 import { Textarea } from "@/components/ui/textarea";
+import { CalendarScheduler } from "./calendar-scheduler";
 
 const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -31,6 +32,19 @@ interface RecurrencePattern {
   endTime: string;
   patternType: 'standard' | 'exception';
   daysOfWeek: number[] | null;
+}
+
+interface PartialRecurrencePattern {
+  id?: number;
+  name?: string;
+  startDate?: Date | string;
+  endDate?: Date | string;
+  repeatType?: 'daily' | 'weekly' | 'monthly' | 'custom';
+  campId?: number;
+  startTime?: string;
+  endTime?: string;
+  patternType?: 'standard' | 'exception';
+  daysOfWeek?: number[] | null;
 }
 
 interface CampSession {
@@ -458,7 +472,8 @@ export function EnhancedScheduleEditor({
       
       // Fall back to creating a legacy schedule
       // Extract the day of week from the sessionDate
-      const dayOfWeek = new Date(newSession.sessionDate).getDay();
+      const sessionDate = newSession.sessionDate ? new Date(newSession.sessionDate) : new Date();
+      const dayOfWeek = sessionDate.getDay();
       
       const schedulePayload = {
         campId: newSession.campId,
@@ -599,12 +614,12 @@ export function EnhancedScheduleEditor({
   };
   
   // Getter for specific day of week
-  const isPatternActiveOnDay = (pattern: RecurrencePattern, day: number) => {
+  const isPatternActiveOnDay = (pattern: PartialRecurrencePattern, day: number) => {
     return pattern.daysOfWeek?.includes(day) || false;
   };
 
   // Toggle day of week selection for a pattern
-  const togglePatternDay = (pattern: Partial<RecurrencePattern>, day: number) => {
+  const togglePatternDay = (pattern: PartialRecurrencePattern, day: number) => {
     const days = pattern.daysOfWeek || [];
     if (days.includes(day)) {
       return { ...pattern, daysOfWeek: days.filter(d => d !== day) };
@@ -625,7 +640,10 @@ export function EnhancedScheduleEditor({
   
   const handleEditPatternDayToggle = (day: number) => {
     if (editingPattern) {
-      setEditingPattern(togglePatternDay(editingPattern, day));
+      const updated = togglePatternDay(editingPattern, day);
+      if (updated.name) { // Ensure required properties exist for RecurrencePattern
+        setEditingPattern(updated as RecurrencePattern);
+      }
     }
   };
   
@@ -639,133 +657,26 @@ export function EnhancedScheduleEditor({
         </TabsList>
         
         <TabsContent value="calendar" className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium">Calendar View</h3>
-            {permissions.canManage && (
-              <div className="flex space-x-2">
-                <Button size="sm" onClick={() => {
-                  setNewSession({
-                    campId,
-                    sessionDate: selectedDate || new Date(),
-                    startTime: '09:00',
-                    endTime: '10:00',
-                    status: 'active',
-                  });
-                  setAddSessionOpen(true);
-                }}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Session
-                </Button>
-              </div>
-            )}
+            <p className="text-sm text-muted-foreground">
+              Click on dates to add or manage sessions
+            </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-1">
-              <Card>
-                <CardContent className="pt-6">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    className="rounded-md border"
-                    modifiers={{
-                      hasSession: dateDecorator
-                    }}
-                    modifiersStyles={{
-                      hasSession: {
-                        fontWeight: 'bold',
-                        backgroundColor: 'var(--primary-200)',
-                        color: 'var(--primary-600)'
-                      }
-                    }}
-                  />
-                </CardContent>
-              </Card>
-            </div>
-            
-            <div className="md:col-span-2">
-              <Card>
-                <CardHeader>
-                  <h3 className="text-md font-medium">
-                    {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Select a date'}
-                  </h3>
-                </CardHeader>
-                <CardContent>
-                  {selectedDate && (
-                    <div className="space-y-4">
-                      {getSessionsForDate(selectedDate).length > 0 ? (
-                        getSessionsForDate(selectedDate).map((session) => (
-                          <div key={session.id} className="flex items-center justify-between p-3 border rounded-md">
-                            <div>
-                              <p className="font-medium">
-                                {session.startTime.substring(0, 5)} - {session.endTime.substring(0, 5)}
-                              </p>
-                              {session.status !== 'active' && (
-                                <Badge variant={session.status === 'cancelled' ? 'destructive' : 'outline'}>
-                                  {session.status.charAt(0).toUpperCase() + session.status.slice(1)}
-                                </Badge>
-                              )}
-                              {session.notes && (
-                                <p className="text-sm text-muted-foreground mt-1">{session.notes}</p>
-                              )}
-                            </div>
-                            
-                            {permissions.canManage && (
-                              <div className="flex space-x-2">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => {
-                                    setEditingSession({
-                                      ...session,
-                                      sessionDate: new Date(session.sessionDate)
-                                    });
-                                    setEditSessionOpen(true);
-                                  }}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => session.id && handleDeleteSession(session.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-center py-8 text-muted-foreground">
-                          <p>No sessions scheduled for this date.</p>
-                          {permissions.canManage && (
-                            <Button 
-                              variant="outline" 
-                              className="mt-4"
-                              onClick={() => {
-                                setNewSession({
-                                  campId,
-                                  sessionDate: selectedDate,
-                                  startTime: '09:00',
-                                  endTime: '10:00',
-                                  status: 'active',
-                                });
-                                setAddSessionOpen(true);
-                              }}
-                            >
-                              <Plus className="h-4 w-4 mr-1" />
-                              Add Session
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+          {/* New Calendar Scheduler Component */}
+          <div className="mt-4">
+            <CalendarScheduler
+              campId={campId}
+              startDate={startDate ? new Date(startDate) : new Date()}
+              endDate={endDate ? new Date(endDate) : new Date()}
+              sessions={sessions}
+              onSave={() => {
+                loadSessions();
+                if (onSave) onSave();
+              }}
+              canManage={permissions.canManage}
+            />
           </div>
         </TabsContent>
         
