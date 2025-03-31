@@ -8,23 +8,72 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { ScheduleExceptionDialog } from './schedule-exception-dialog';
-import { format, parseISO, isSameDay } from 'date-fns';
+import { format, parseISO, parse, isSameDay, isValid } from 'date-fns';
 import { useLocation } from 'wouter';
 
 import { DAYS_OF_WEEK } from "@/pages/constants";
+
+// Parses a date string safely, handling various formats from the backend
+const parseDate = (dateString: string | Date): Date => {
+  if (dateString instanceof Date) {
+    return dateString;
+  }
+  
+  try {
+    // Try standard ISO parsing first
+    const parsedDate = new Date(dateString);
+    
+    // Check if valid date was returned
+    if (isValid(parsedDate)) {
+      return parsedDate;
+    }
+    
+    // Try alternate formats if needed
+    if (dateString.includes('T')) {
+      return parseISO(dateString);
+    }
+    
+    // Try parsing YYYY-MM-DD format
+    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return parse(dateString, 'yyyy-MM-dd', new Date());
+    }
+    
+    console.warn(`Unable to parse date string: ${dateString}, using current date as fallback`);
+    return new Date();
+  } catch (error) {
+    console.error(`Error parsing date: ${dateString}`, error);
+    return new Date();
+  }
+};
+
+// Formats a date consistently 
+const formatDate = (dateString: string | Date, formatString = 'EEEE, MMMM d, yyyy'): string => {
+  try {
+    const date = parseDate(dateString);
+    return format(date, formatString);
+  } catch (error) {
+    console.error(`Error formatting date: ${dateString}`, error);
+    return 'Invalid date';
+  }
+};
 
 // Helper function to format time from database format (HH:MM:SS) to AM/PM format
 const formatTime = (time: string) => {
   if (!time) return '';
   
-  // Handle different time formats
-  const timeStr = time.includes('T') ? time.split('T')[1].substring(0, 5) : time.substring(0, 5);
-  
-  const [hours, minutes] = timeStr.split(':').map(Number);
-  const period = hours >= 12 ? 'PM' : 'AM';
-  const hours12 = hours % 12 || 12;
-  
-  return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+  try {
+    // Handle different time formats
+    const timeStr = time.includes('T') ? time.split('T')[1].substring(0, 5) : time.substring(0, 5);
+    
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const hours12 = hours % 12 || 12;
+    
+    return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+  } catch (error) {
+    console.error(`Error formatting time: ${time}`, error);
+    return time || '';
+  }
 };
 
 // Sort schedules by day of week
@@ -183,7 +232,7 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
     
   // Sort exceptions by date (most recent first)
   const sortedExceptions = [...exceptions].sort((a, b) => 
-    new Date(b.exceptionDate).getTime() - new Date(a.exceptionDate).getTime()
+    parseDate(b.exceptionDate).getTime() - parseDate(a.exceptionDate).getTime()
   );
   
   // Find upcoming exceptions (today or in the future)
@@ -191,7 +240,7 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
   today.setHours(0, 0, 0, 0);
   
   const upcomingExceptions = sortedExceptions.filter(
-    exception => new Date(exception.exceptionDate) >= today
+    exception => parseDate(exception.exceptionDate) >= today
   );
   
   const hasUpcomingExceptions = upcomingExceptions.length > 0;
@@ -263,7 +312,7 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
                         <div key={pattern.id} className="border rounded-md p-3">
                           <h4 className="font-medium">{pattern.name}</h4>
                           <p className="text-sm text-muted-foreground">
-                            {format(new Date(pattern.startDate), 'MMM d, yyyy')} - {format(new Date(pattern.endDate), 'MMM d, yyyy')}
+                            {formatDate(pattern.startDate, 'MMM d, yyyy')} - {formatDate(pattern.endDate, 'MMM d, yyyy')}
                           </p>
                           <div className="flex flex-wrap gap-2 mt-2">
                             <Badge variant="outline" className="bg-primary/10">
@@ -289,12 +338,12 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
                     <h3 className="text-lg font-medium mb-3">Upcoming Sessions</h3>
                     <div className="space-y-3">
                       {sessions
-                        .filter(session => new Date(session.sessionDate) >= today)
-                        .sort((a, b) => new Date(a.sessionDate).getTime() - new Date(b.sessionDate).getTime())
+                        .filter(session => parseDate(session.sessionDate) >= today)
+                        .sort((a, b) => parseDate(a.sessionDate).getTime() - parseDate(b.sessionDate).getTime())
                         .slice(0, 5)
                         .map((session) => (
                           <div key={session.id} className="border rounded-md p-3">
-                            <h4 className="font-medium">{format(new Date(session.sessionDate), 'EEEE, MMMM d, yyyy')}</h4>
+                            <h4 className="font-medium">{formatDate(session.sessionDate)}</h4>
                             <div className="flex justify-between items-center mt-1">
                               <p className="text-sm">
                                 {formatTime(session.startTime)} - {formatTime(session.endTime)}
@@ -310,9 +359,9 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
                             )}
                           </div>
                         ))}
-                      {sessions.filter(session => new Date(session.sessionDate) >= today).length > 5 && (
+                      {sessions.filter(session => parseDate(session.sessionDate) >= today).length > 5 && (
                         <p className="text-sm text-center text-muted-foreground">
-                          + {sessions.filter(session => new Date(session.sessionDate) >= today).length - 5} more sessions
+                          + {sessions.filter(session => parseDate(session.sessionDate) >= today).length - 5} more sessions
                         </p>
                       )}
                     </div>
@@ -369,7 +418,7 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
             ) : (
               <div className="space-y-4">
                 {sortedExceptions.map((exception) => {
-                  const exceptionDate = new Date(exception.exceptionDate);
+                  const exceptionDate = parseDate(exception.exceptionDate);
                   const isPast = exceptionDate < today;
                   
                   return (
@@ -380,7 +429,7 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <h4 className="font-medium">
-                            {format(new Date(exception.exceptionDate), "EEEE, MMMM d, yyyy")}
+                            {formatDate(exception.exceptionDate)}
                           </h4>
                           <p className="text-sm text-muted-foreground">
                             {formatTime(exception.startTime)} to {formatTime(exception.endTime)}
@@ -489,7 +538,9 @@ export function CampScheduleSummary({
     
     // If no patterns but there are sessions, show session count
     if (sessions && sessions.length > 0) {
-      const upcomingSessions = sessions.filter(s => new Date(s.sessionDate) >= new Date());
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const upcomingSessions = sessions.filter(s => parseDate(s.sessionDate) >= today);
       return (
         <span className="flex items-center">
           <Calendar className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
