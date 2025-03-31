@@ -199,7 +199,7 @@ function CampViewPage(props: { id?: string }) {
     return () => {
       window.removeEventListener('hashchange', handleHashChange);
     };
-  }, [id]); // Re-run when id changes to ensure dialog opens when navigating between camps
+  }, []);
 
   const isParent = user?.role === 'parent';
   const { isLoading, camp, campError } = useCampData(id);
@@ -696,20 +696,16 @@ function CampViewPage(props: { id?: string }) {
 
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Camp Sessions</CardTitle>
+                    <CardTitle>Camp Schedule</CardTitle>
                     {canManage && (
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
-                          // Update URL hash to trigger the schedule editor
-                          window.location.hash = 'schedule-editor';
-                          // This will be picked up by the useEffect hook that monitors hash changes
-                        }}
+                        onClick={() => setScheduleEditorOpen(true)}
                         className="h-8"
                       >
                         <Calendar className="h-4 w-4 mr-2" />
-                        Camp Sessions
+                        Edit Schedule
                       </Button>
                     )}
                   </CardHeader>
