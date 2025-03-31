@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { CampSchedule, ScheduleException } from '@shared/schema';
-import { Loader2, Clock, CalendarPlus, AlertTriangle } from 'lucide-react';
+import { Loader2, Clock, CalendarPlus, AlertTriangle, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -45,6 +45,7 @@ interface ScheduleExceptionWithPermissions {
 export function CampScheduleDisplay({ campId }: CampScheduleProps) {
   const [showExceptionDialog, setShowExceptionDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("regular");
+  const [selectedException, setSelectedException] = useState<ScheduleException | undefined>(undefined);
 
   // Query regular schedules with explicit fetcher
   const { 
@@ -220,17 +221,32 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
                             {formatTime(exception.startTime)} to {formatTime(exception.endTime)}
                           </p>
                         </div>
-                        <Badge 
-                          variant={
-                            exception.status === "active" ? "default" :
-                            exception.status === "cancelled" ? "destructive" : 
-                            "outline"
-                          }
-                        >
-                          {exception.status === "active" ? "Rescheduled" : 
-                           exception.status === "cancelled" ? "Cancelled" : 
-                           "Modified"}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          {canManage && !isPast && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-7 w-7" 
+                              onClick={() => {
+                                setSelectedException(exception);
+                                setShowExceptionDialog(true);
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Badge 
+                            variant={
+                              exception.status === "active" ? "default" :
+                              exception.status === "cancelled" ? "destructive" : 
+                              "outline"
+                            }
+                          >
+                            {exception.status === "active" ? "Rescheduled" : 
+                             exception.status === "cancelled" ? "Cancelled" : 
+                             "Modified"}
+                          </Badge>
+                        </div>
                       </div>
                       {exception.reason && (
                         <div className="mt-2 text-sm border-t pt-2">
@@ -265,9 +281,15 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
       {canManage && (
         <ScheduleExceptionDialog
           open={showExceptionDialog}
-          onOpenChange={setShowExceptionDialog}
+          onOpenChange={(open) => {
+            setShowExceptionDialog(open);
+            if (!open) {
+              setSelectedException(undefined);
+            }
+          }}
           campId={campId}
           regularSchedules={schedules}
+          exception={selectedException}
         />
       )}
     </Card>

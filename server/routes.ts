@@ -4,6 +4,8 @@ import { createServer, type Server } from "http";
 import { db } from "./db";
 import { eq, inArray } from "drizzle-orm";
 import { campSports, scheduleExceptions, campSchedules, insertScheduleExceptionSchema, sports } from "@shared/schema";
+// Import the scheduleExceptionSchema from our dialog component for validation
+import { scheduleExceptionSchema } from "../client/src/components/schedule-exception-dialog";
 
 function logError(location: string, error: any) {
   console.error(`Error in ${location}:`, {
@@ -1228,6 +1230,61 @@ export async function registerRoutes(app: Express) {
     } catch (error) {
       console.error("Error creating schedule exception:", error);
       res.status(500).json({ message: "Failed to create schedule exception" });
+    }
+  });
+  
+  // Update an existing schedule exception
+  app.put("/api/camps/:campId/schedule-exceptions/:id", async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const campId = parseInt(req.params.campId);
+      const exceptionId = parseInt(req.params.id);
+      
+      // First check if the exception exists
+      const existingException = await storage.getScheduleException(exceptionId);
+      if (!existingException) {
+        return res.status(404).json({ message: "Schedule exception not found" });
+      }
+      
+      // Make sure the exception belongs to the specified camp
+      if (existingException.campId !== campId) {
+        return res.status(400).json({ message: "Schedule exception does not belong to this camp" });
+      }
+      
+      // Check if the camp exists
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if the user has permission to manage this camp
+      const canManage = req.user.organizationId === camp.organizationId;
+      if (!canManage) {
+        return res.status(403).json({ message: "You don't have permission to manage this camp" });
+      }
+      
+      // Validate the update data
+      const parsed = scheduleExceptionSchema.partial().safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json(parsed.error);
+      }
+      
+      // Update the exception
+      const updatedExceptionData = {
+        ...parsed.data,
+        // Make sure we convert the date string to a Date object if it exists
+        ...(parsed.data.exceptionDate && { exceptionDate: new Date(parsed.data.exceptionDate) })
+      };
+      
+      const updatedException = await storage.updateScheduleException(exceptionId, updatedExceptionData);
+      
+      res.json(updatedException);
+    } catch (error) {
+      console.error("Error updating schedule exception:", error);
+      res.status(500).json({ message: "Failed to update schedule exception" });
     }
   });
 

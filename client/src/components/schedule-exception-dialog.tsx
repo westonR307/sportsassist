@@ -12,18 +12,19 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { DAYS_OF_WEEK } from "@/pages/constants";
-import { CampSchedule } from "@shared/schema";
-import { format } from "date-fns";
+import { CampSchedule, ScheduleException } from "@shared/schema";
+import { format, parseISO } from "date-fns";
 
 interface ScheduleExceptionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   campId: number;
   regularSchedules: CampSchedule[];
+  exception?: ScheduleException; // Pass existing exception for editing mode
 }
 
 // Define the form schema
-const scheduleExceptionSchema = z.object({
+export const scheduleExceptionSchema = z.object({
   campId: z.number(),
   originalScheduleId: z.number().optional(),
   exceptionDate: z.string().min(1, "Date is required"),
@@ -40,28 +41,64 @@ export function ScheduleExceptionDialog({
   open, 
   onOpenChange, 
   campId,
-  regularSchedules 
+  regularSchedules,
+  exception
 }: ScheduleExceptionDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const isEditMode = !!exception;
   
   // Get current date in YYYY-MM-DD format for default value
   const currentDate = new Date();
   const formattedDate = format(currentDate, "yyyy-MM-dd");
   
-  // Initialize form with default values
+  // Set up default values based on whether we're editing or creating
+  const defaultValues = React.useMemo(() => {
+    if (isEditMode && exception) {
+      // Format the date from ISO to YYYY-MM-DD
+      const exceptionDate = exception.exceptionDate instanceof Date 
+        ? format(exception.exceptionDate, "yyyy-MM-dd")
+        : typeof exception.exceptionDate === 'string'
+          ? format(parseISO(exception.exceptionDate), "yyyy-MM-dd")
+          : formattedDate;
+          
+      return {
+        campId,
+        originalScheduleId: exception.originalScheduleId,
+        exceptionDate,
+        dayOfWeek: exception.dayOfWeek,
+        // Format time strings to HH:MM
+        startTime: exception.startTime?.substring(0, 5) || "09:00",
+        endTime: exception.endTime?.substring(0, 5) || "17:00",
+        status: exception.status || "active",
+        reason: exception.reason || "",
+      };
+    } else {
+      // Default values for creating a new exception
+      return {
+        campId,
+        exceptionDate: formattedDate,
+        dayOfWeek: currentDate.getDay(), // 0-6, where 0 is Sunday
+        startTime: "09:00",
+        endTime: "17:00",
+        status: "active" as const,
+        reason: "",
+      };
+    }
+  }, [campId, exception, isEditMode, formattedDate]);
+  
+  // Initialize form with the appropriate values
   const form = useForm<FormValues>({
     resolver: zodResolver(scheduleExceptionSchema),
-    defaultValues: {
-      campId,
-      exceptionDate: formattedDate,
-      dayOfWeek: currentDate.getDay(), // 0-6, where 0 is Sunday
-      startTime: "09:00",
-      endTime: "17:00",
-      status: "active",
-      reason: "",
-    },
+    defaultValues
   });
+
+  React.useEffect(() => {
+    // Reset form when mode changes or exception changes
+    if (open) {
+      form.reset(defaultValues);
+    }
+  }, [form, defaultValues, open]);
   
   // Mutation for creating a schedule exception
   const createMutation = useMutation({
@@ -86,8 +123,41 @@ export function ScheduleExceptionDialog({
     },
   });
   
+  // Mutation for updating an existing schedule exception
+  const updateMutation = useMutation({
+    mutationFn: async (values: FormValues) => {
+      if (!exception) throw new Error("No exception to update");
+      
+      const res = await apiRequest(
+        "PUT", 
+        `/api/camps/${campId}/schedule-exceptions/${exception.id}`, 
+        values
+      );
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Schedule exception updated",
+        description: "The schedule exception has been updated successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'schedule-exceptions'] });
+      onOpenChange(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update schedule exception",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
   const onSubmit = (values: FormValues) => {
-    createMutation.mutate(values);
+    if (isEditMode) {
+      updateMutation.mutate(values);
+    } else {
+      createMutation.mutate(values);
+    }
   };
   
   // Handle the day of week change when date is selected
@@ -120,40 +190,44 @@ export function ScheduleExceptionDialog({
     }
   };
 
+  const isPending = createMutation.isPending || updateMutation.isPending;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create Schedule Exception</DialogTitle>
+          <DialogTitle>{isEditMode ? "Edit" : "Create"} Schedule Exception</DialogTitle>
           <DialogDescription>
-            Add a one-time change to the regular camp schedule.
+            {isEditMode ? "Modify" : "Add"} a one-time change to the regular camp schedule.
           </DialogDescription>
         </DialogHeader>
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Regular schedule selection */}
-            <div className="mb-4">
-              <label className="text-sm font-medium mb-1 block">
-                Base on Regular Schedule (optional)
-              </label>
-              <Select 
-                onValueChange={handleScheduleSelection}
-                defaultValue="none"
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a regular schedule" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None (Create from scratch)</SelectItem>
-                  {regularSchedules.map((schedule) => (
-                    <SelectItem key={schedule.id} value={schedule.id.toString()}>
-                      {DAYS_OF_WEEK[schedule.dayOfWeek]} ({schedule.startTime} - {schedule.endTime})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Regular schedule selection - only show for new exceptions */}
+            {!isEditMode && (
+              <div className="mb-4">
+                <label className="text-sm font-medium mb-1 block">
+                  Base on Regular Schedule (optional)
+                </label>
+                <Select 
+                  onValueChange={handleScheduleSelection}
+                  defaultValue="none"
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a regular schedule" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None (Create from scratch)</SelectItem>
+                    {regularSchedules.map((schedule) => (
+                      <SelectItem key={schedule.id} value={schedule.id.toString()}>
+                        {DAYS_OF_WEEK[schedule.dayOfWeek]} ({schedule.startTime.substring(0, 5)} - {schedule.endTime.substring(0, 5)})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             
             {/* Exception date */}
             <FormField
@@ -286,15 +360,17 @@ export function ScheduleExceptionDialog({
                 variant="outline" 
                 type="button" 
                 onClick={() => onOpenChange(false)}
-                disabled={createMutation.isPending}
+                disabled={isPending}
               >
                 Cancel
               </Button>
               <Button 
                 type="submit" 
-                disabled={createMutation.isPending}
+                disabled={isPending}
               >
-                {createMutation.isPending ? "Creating..." : "Create Exception"}
+                {isPending 
+                  ? (isEditMode ? "Updating..." : "Creating...") 
+                  : (isEditMode ? "Update Exception" : "Create Exception")}
               </Button>
             </DialogFooter>
           </form>
