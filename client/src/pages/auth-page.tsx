@@ -44,6 +44,8 @@ const registerSchema = insertUserSchema.pick({
   role: true
 }).extend({
   password: z.string().min(8, "Password must be at least 8 characters"),
+  organizationName: z.string().optional(),
+  organizationDescription: z.string().optional(),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -97,6 +99,8 @@ function AuthPage() {
       email: "",
       password: "",
       role: "parent",
+      organizationName: "",
+      organizationDescription: "",
     },
   });
 
@@ -105,7 +109,25 @@ function AuthPage() {
   };
 
   const onRegisterSubmit = (data: RegisterFormValues) => {
-    registerMutation.mutate(data);
+    // Manually validate organization name for camp creators
+    if (data.role === 'camp_creator' && (!data.organizationName || data.organizationName.trim() === '')) {
+      registerForm.setError('organizationName', {
+        type: 'manual',
+        message: 'Organization name is required for camp creators'
+      });
+      return;
+    }
+    
+    // Create a username from the email if not provided
+    const username = data.email.split('@')[0];
+    
+    // Combine data with derived username
+    const fullData = {
+      ...data,
+      username
+    };
+    
+    registerMutation.mutate(fullData);
   };
 
   return (
@@ -239,7 +261,14 @@ function AuthPage() {
                                 type="button"
                                 variant={field.value === "parent" ? "default" : "outline"}
                                 className="w-full"
-                                onClick={() => registerForm.setValue("role", "parent")}
+                                onClick={() => {
+                                  // Clear organization fields when changing away from camp_creator
+                                  if (field.value === "camp_creator") {
+                                    registerForm.setValue("organizationName", "");
+                                    registerForm.setValue("organizationDescription", "");
+                                  }
+                                  registerForm.setValue("role", "parent");
+                                }}
                               >
                                 Parent
                               </Button>
@@ -255,7 +284,14 @@ function AuthPage() {
                                 type="button"
                                 variant={field.value === "athlete" ? "default" : "outline"}
                                 className="w-full"
-                                onClick={() => registerForm.setValue("role", "athlete")}
+                                onClick={() => {
+                                  // Clear organization fields when changing away from camp_creator
+                                  if (field.value === "camp_creator") {
+                                    registerForm.setValue("organizationName", "");
+                                    registerForm.setValue("organizationDescription", "");
+                                  }
+                                  registerForm.setValue("role", "athlete");
+                                }}
                               >
                                 Athlete (16+)
                               </Button>
@@ -264,6 +300,45 @@ function AuthPage() {
                           </FormItem>
                         )}
                       />
+                      
+                      {/* Show organization fields only for camp creators */}
+                      {registerForm.watch("role") === "camp_creator" && (
+                        <div className="space-y-4 border p-4 rounded-md border-primary/20 bg-primary/5">
+                          <h3 className="text-md font-medium">Organization Information</h3>
+                          <FormField
+                            control={registerForm.control}
+                            name="organizationName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Organization Name</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Enter your organization name" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={registerForm.control}
+                            name="organizationDescription"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Organization Description</FormLabel>
+                                <FormControl>
+                                  <textarea 
+                                    {...field}
+                                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background min-h-[100px]"
+                                    placeholder="Tell us about your organization"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      )}
+                      
                       <Button 
                         type="submit" 
                         className="w-full" 

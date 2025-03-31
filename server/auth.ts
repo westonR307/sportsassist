@@ -224,9 +224,10 @@ export function setupAuth(app: Express) {
       }
       
       // Get user data from request
-      const { email, password, role, ...otherFields } = req.body;
+      const { email, password, role, organizationName, organizationDescription, ...otherFields } = req.body;
       
       console.log("Other fields from registration:", otherFields);
+      console.log(`Organization data - Name: ${organizationName}, Description: ${organizationDescription}`);
       
       // Check if the role is valid
       if (role && !["camp_creator", "parent", "athlete"].includes(role)) {
@@ -237,18 +238,47 @@ export function setupAuth(app: Express) {
       // Create the user
       const hashedPassword = await hashPassword(password);
       
-      // Generate a username from the email if it's not provided
-      const username = email.split('@')[0] + Math.floor(Math.random() * 10000);
+      // Generate a username if not provided
+      const username = req.body.username || (email.split('@')[0] + Math.floor(Math.random() * 10000));
       
+      let organizationId: number | undefined = undefined;
+      
+      // If this is a camp_creator and they provided organization info, create the organization first
+      if (role === "camp_creator" && organizationName) {
+        try {
+          console.log(`Creating organization: ${organizationName}`);
+          const organization = await storage.createOrganization({
+            name: organizationName,
+            description: organizationDescription || '',
+            // Note: Contact email is stored in the user's email field
+          });
+          
+          console.log("Organization created successfully:", organization);
+          organizationId = organization.id;
+        } catch (orgError: any) {
+          console.error("Error creating organization:", orgError);
+          return res.status(500).json({ 
+            message: `Failed to create organization: ${orgError.message}` 
+          });
+        }
+      }
+      
+      // Create user data with organization if applicable
       const userData = {
-        username, // Use generated username
+        username, // Use generated or provided username
         email,
         password: hashedPassword,
         role: role || "parent",
         ...otherFields,
+        ...(organizationId ? { organizationId } : {})
       };
       
-      console.log(`Creating user with data:`, userData);
+      console.log(`Creating user with data:`, {
+        ...userData,
+        password: "REDACTED",
+        organizationId
+      });
+      
       const user = await storage.createUser(userData);
       console.log("User created successfully:", user);
       
@@ -292,8 +322,10 @@ export function setupAuth(app: Express) {
       
       const updatedUser = await storage.updateUserProfile(userId, profileData);
       
-      // Update the session user data
-      req.session.passport.user = updatedUser.id;
+      // Update the session user data if passport exists
+      if (req.session && req.session.passport) {
+        req.session.passport.user = updatedUser.id;
+      }
       
       res.json(updatedUser);
     } catch (error: any) {
