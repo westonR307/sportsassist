@@ -37,11 +37,27 @@ import { type Camp } from "@shared/schema";
 import { AddCampDialog } from "@/components/add-camp-dialog";
 
 
+// Organization interface
+interface Organization {
+  id: number;
+  name: string;
+  description: string | null;
+  logoUrl?: string | null;
+  stripeAccountId?: string | null;
+  createdAt?: Date;
+}
+
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useWouterLocation();
   const { user, logoutMutation } = useAuth();
   // Initialize sidebar closed by default (safer for mobile)
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  
+  // Load organization data if the user has an organizationId
+  const { data: organization } = useQuery<Organization>({
+    queryKey: [`/api/organizations/${user?.organizationId}`],
+    enabled: !!user?.organizationId,
+  });
   
   // Set sidebar state based on screen size on initial load
   React.useEffect(() => {
@@ -96,8 +112,13 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
       >
         <div className="p-4 border-b whitespace-nowrap">
           <h2 className={`font-semibold text-lg ${!sidebarOpen && "lg:opacity-0"}`}>
-            Sports Camp Manager
+            {organization?.name || "Sports Camp Manager"}
           </h2>
+          {organization?.name && sidebarOpen && (
+            <p className="text-xs text-muted-foreground mt-1 truncate">
+              Sports Camp Management
+            </p>
+          )}
         </div>
         <nav className="p-4 space-y-2">
           <button
@@ -183,6 +204,19 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
           </Button>
         </nav>
       </div>
+
+      {/* Organization Logo in Top Center */}
+      {organization?.logoUrl && (
+        <div className="fixed top-0 left-0 right-0 z-30 flex justify-center items-center h-16 pointer-events-none">
+          <div className="bg-white p-2 rounded-b-lg shadow-sm">
+            <img 
+              src={organization.logoUrl} 
+              alt={`${organization.name} logo`} 
+              className="h-10 max-w-[200px] object-contain" 
+            />
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <div
