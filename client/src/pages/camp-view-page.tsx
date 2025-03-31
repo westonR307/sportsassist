@@ -3,8 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { DashboardLayout } from "./dashboard";
 import { ParentSidebar } from "@/components/parent-sidebar";
 import { BackButton } from "@/components/back-button";
-import { useParams } from "react-router-dom"; // Changed import for useParams
-import { useLocation } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
