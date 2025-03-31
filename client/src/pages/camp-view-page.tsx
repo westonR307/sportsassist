@@ -462,6 +462,9 @@ function CampViewPage(props: { id?: string }) {
 
   // Render appropriate content for parent vs organization user
   const renderContent = () => {
+    // Move hooks outside of conditions
+    const params = useParams();
+    
     if (isLoading) {
       return <div className="flex items-center justify-center h-full">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -474,7 +477,7 @@ function CampViewPage(props: { id?: string }) {
         id,
         isLoading,
         campError,
-        routeParams: useParams()
+        routeParams: params
       });
       
       return <div className="flex items-center justify-center h-full">
