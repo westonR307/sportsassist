@@ -682,7 +682,7 @@ export function AddCampDialog({
                             </div>
                             
                             <div className="text-sm mb-4">
-                              <p>Select dates on the calendar below to schedule camp sessions. Click a day to add a session with the default start and end times.</p>
+                              <p>After camp creation, you'll be able to select dates on an interactive calendar to add sessions using these default times. The calendar will be accessible from the camp's details page.</p>
                             </div>
                             
                             <div className="border rounded-md p-4">
@@ -696,24 +696,36 @@ export function AddCampDialog({
                                       </p>
                                     </div>
                                     
-                                    {/* Sample calendar view */}
-                                    <div className="border rounded-md p-4 bg-muted/30">
-                                      <div className="text-sm font-medium mb-2">Calendar Preview</div>
-                                      <div className="grid grid-cols-7 gap-1 mb-2">
-                                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                                          <div key={day} className="text-center text-xs text-muted-foreground">{day}</div>
-                                        ))}
-                                        {Array.from({ length: 7 }).map((_, i) => (
-                                          <div 
-                                            key={i}
-                                            className="aspect-square border rounded-sm flex items-center justify-center text-sm hover:bg-accent cursor-pointer"
-                                          >
-                                            {i+1}
-                                          </div>
-                                        ))}
+                                    {/* Real calendar scheduler component */}
+                                    <div className="border rounded-md p-4">
+                                      <div className="text-sm font-medium mb-2">
+                                        Calendar Scheduling Preview
                                       </div>
-                                      <div className="text-xs text-muted-foreground mt-2">
-                                        Click on dates to add sessions after camp creation.
+                                      <p className="text-xs text-muted-foreground mb-4">
+                                        The enhanced scheduling interface will look similar to this.
+                                      </p>
+                                      <div className="grid grid-cols-1 gap-4">
+                                        <div className="border rounded-md p-4 bg-muted/30">
+                                          {/* Calendar preview */}
+                                          <div className="grid grid-cols-7 gap-1 mb-2">
+                                            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                                              <div key={day} className="text-center text-xs text-muted-foreground">{day}</div>
+                                            ))}
+                                            {Array.from({ length: 28 }).map((_, i) => {
+                                              const isWeekend = i % 7 === 0 || i % 7 === 6;
+                                              return (
+                                                <div 
+                                                  key={i}
+                                                  className={`aspect-square border rounded-sm flex items-center justify-center text-sm ${
+                                                    isWeekend ? 'text-muted-foreground' : ''
+                                                  }`}
+                                                >
+                                                  {i+1}
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
