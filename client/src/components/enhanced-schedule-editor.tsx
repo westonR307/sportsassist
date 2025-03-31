@@ -87,31 +87,14 @@ export function EnhancedScheduleEditor({
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("calendar");
   const [sessions, setSessions] = useState<CampSession[]>([]);
-  const [patterns, setPatterns] = useState<RecurrencePattern[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [permissions, setPermissions] = useState({ canManage: editable });
   
   // Dialog states
-  const [addPatternOpen, setAddPatternOpen] = useState(false);
-  const [editPatternOpen, setEditPatternOpen] = useState(false);
   const [addSessionOpen, setAddSessionOpen] = useState(false);
   const [editSessionOpen, setEditSessionOpen] = useState(false);
   
   // Form states
-  const [newPattern, setNewPattern] = useState<Partial<RecurrencePattern>>({
-    name: '',
-    startDate: new Date(),
-    endDate: addDays(new Date(), 30),
-    repeatType: 'weekly',
-    campId,
-    startTime: '09:00',
-    endTime: '10:00',
-    patternType: 'standard',
-    daysOfWeek: [1, 3, 5], // Mon, Wed, Fri by default
-  });
-  
-  const [editingPattern, setEditingPattern] = useState<RecurrencePattern | null>(null);
-  
   const [newSession, setNewSession] = useState<Partial<CampSession>>({
     campId,
     sessionDate: new Date(),
@@ -127,7 +110,6 @@ export function EnhancedScheduleEditor({
   useEffect(() => {
     if (campId) {
       loadSessions();
-      loadPatterns();
     }
   }, [campId]);
   
@@ -442,6 +424,16 @@ export function EnhancedScheduleEditor({
   };
   
   const handleAddSession = async () => {
+    // Validate that notes are provided
+    if (!newSession.notes || newSession.notes.trim() === '') {
+      toast({
+        title: "Required Field",
+        description: "Please provide notes about this session.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       const payload = {
         ...newSession,
@@ -513,6 +505,16 @@ export function EnhancedScheduleEditor({
   
   const handleUpdateSession = async () => {
     if (!editingSession?.id) return;
+    
+    // Validate that notes are provided
+    if (!editingSession.notes || editingSession.notes.trim() === '') {
+      toast({
+        title: "Required Field",
+        description: "Please provide notes about this update.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
       // Prepare the payload with properly formatted dates
@@ -624,38 +626,9 @@ export function EnhancedScheduleEditor({
     return sessionsForDay.length > 0;
   };
   
-  // Getter for specific day of week
-  const isPatternActiveOnDay = (pattern: PartialRecurrencePattern, day: number) => {
-    return pattern.daysOfWeek?.includes(day) || false;
-  };
-
-  // Toggle day of week selection for a pattern
-  const togglePatternDay = (pattern: PartialRecurrencePattern, day: number) => {
-    const days = pattern.daysOfWeek || [];
-    if (days.includes(day)) {
-      return { ...pattern, daysOfWeek: days.filter(d => d !== day) };
-    } else {
-      return { ...pattern, daysOfWeek: [...days, day].sort() };
-    }
-  };
-  
   // Form event handlers
   const handleInputChange = (setter: React.Dispatch<React.SetStateAction<any>>, field: string, value: any) => {
     setter((prev: any) => ({ ...prev, [field]: value }));
-  };
-  
-  // Pattern day of week handlers
-  const handleNewPatternDayToggle = (day: number) => {
-    setNewPattern(togglePatternDay(newPattern, day));
-  };
-  
-  const handleEditPatternDayToggle = (day: number) => {
-    if (editingPattern) {
-      const updated = togglePatternDay(editingPattern, day);
-      if (updated.name) { // Ensure required properties exist for RecurrencePattern
-        setEditingPattern(updated as RecurrencePattern);
-      }
-    }
   };
   
   return (
@@ -663,7 +636,6 @@ export function EnhancedScheduleEditor({
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="calendar">Calendar View</TabsTrigger>
-          <TabsTrigger value="patterns">Recurrence Patterns</TabsTrigger>
           <TabsTrigger value="list">Session List</TabsTrigger>
         </TabsList>
         
@@ -1242,11 +1214,12 @@ export function EnhancedScheduleEditor({
             </div>
             
             <div>
-              <Label>Notes</Label>
+              <Label>Notes <span className="text-red-500">*</span></Label>
               <Textarea
                 value={newSession.notes || ''}
                 onChange={(e) => handleInputChange(setNewSession, 'notes', e.target.value)}
-                placeholder="Any notes about this session"
+                placeholder="Required - Describe this session's purpose"
+                className={!newSession.notes ? "border-red-300" : ""}
               />
             </div>
           </div>
@@ -1393,11 +1366,12 @@ export function EnhancedScheduleEditor({
               )}
               
               <div>
-                <Label>Notes</Label>
+                <Label>Notes <span className="text-red-500">*</span></Label>
                 <Textarea
                   value={editingSession.notes || ''}
                   onChange={(e) => handleInputChange(setEditingSession, 'notes', e.target.value)}
-                  placeholder="Any notes about this session"
+                  placeholder="Required - Please explain reasons for changes"
+                  className={!editingSession.notes ? "border-red-300" : ""}
                 />
               </div>
             </div>
