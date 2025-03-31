@@ -143,47 +143,48 @@ export function registerParentRoutes(app: Express) {
       }
       
       // Create a simplified update object with only the fields we explicitly want to update
-      // Remove height, weight, and make communication fields optional
       const updateData = {
         parentId: req.user.id, // Keep parent ID unchanged
         fullName: req.body.fullName,
         gender: req.body.gender,
         dateOfBirth: req.body.dateOfBirth ? new Date(req.body.dateOfBirth) : undefined,
         
-        // Optional fields - only include if they're provided
+        // Handle communication preferences specially
         ...(req.body.communicationOptIn !== undefined && { 
           communicationOptIn: req.body.communicationOptIn 
         }),
-        ...(req.body.preferredContact && { 
+        ...(req.body.preferredContact !== undefined && { 
           preferredContact: req.body.preferredContact 
         }),
-        ...(req.body.emergencyContact && { 
+        
+        // Handle empty strings for optional fields by using explicit checks
+        ...(req.body.emergencyContact !== undefined && { 
           emergencyContact: req.body.emergencyContact 
         }),
-        ...(req.body.emergencyPhone && { 
+        ...(req.body.emergencyPhone !== undefined && { 
           emergencyPhone: req.body.emergencyPhone 
         }),
-        ...(req.body.schoolName && { 
+        ...(req.body.schoolName !== undefined && { 
           schoolName: req.body.schoolName 
         }),
-        ...(req.body.currentGrade && { 
+        ...(req.body.currentGrade !== undefined && { 
           currentGrade: req.body.currentGrade 
         }),
-        ...(req.body.sportsHistory && { 
+        ...(req.body.sportsHistory !== undefined && { 
           sportsHistory: req.body.sportsHistory 
         }),
-        ...(req.body.jerseySize && { 
+        ...(req.body.jerseySize !== undefined && { 
           jerseySize: req.body.jerseySize 
         }),
-        ...(req.body.medicalInformation && { 
+        ...(req.body.medicalInformation !== undefined && { 
           medicalInformation: req.body.medicalInformation 
         }),
-        ...(req.body.specialNeeds && { 
+        ...(req.body.specialNeeds !== undefined && { 
           specialNeeds: req.body.specialNeeds 
         }),
         
         // Only include sportsInterests if it's provided in the request
-        ...(req.body.sportsInterests && { 
+        ...(req.body.sportsInterests && Array.isArray(req.body.sportsInterests) && { 
           sportsInterests: req.body.sportsInterests 
         }),
       };
@@ -191,9 +192,15 @@ export function registerParentRoutes(app: Express) {
       console.log("Prepared update data:", JSON.stringify(updateData, null, 2));
       
       try {
+        // Update the child in the database
         const updatedChild = await storage.updateChild(childId, updateData);
         console.log("Child updated successfully:", JSON.stringify(updatedChild, null, 2));
-        return res.json(updatedChild);
+        
+        // After successful update, fetch the complete child record to return
+        const refreshedChild = await storage.getChild(childId);
+        console.log("Returning complete updated child data");
+        
+        return res.json(refreshedChild);
       } catch (updateError) {
         console.error("Error in storage.updateChild:", updateError);
         return res.status(500).json({ message: "Failed to update child record", error: updateError.message });

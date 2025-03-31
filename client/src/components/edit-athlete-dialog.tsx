@@ -188,20 +188,44 @@ export function EditAthleteDialog({
   });
 
   const onSubmit = (values: EditChildFormValues) => {
-    console.log("Submitting edited athlete data:", values);
+    console.log("Starting athlete update process...");
+    // Create a more visible log to help debug
+    console.log("Submitting data:", values);
+    
     // Force the required fields
     const formattedValues = {
       ...values,
       communicationOptIn: values.communicationOptIn ?? true,
       preferredContact: values.preferredContact ?? "email",
     };
-    console.log("Final submission data:", formattedValues);
     
-    // Log the form state to see if there are any errors
-    console.log("Form state:", form.formState);
+    // Create a more visible log of the payload
+    console.log("Full payload:", JSON.stringify(formattedValues, null, 2));
     
     // Try with the formatted values
-    updateChildMutation.mutate(formattedValues);
+    updateChildMutation.mutate(formattedValues, {
+      onSuccess: (data) => {
+        console.log("Update successful, received data:", data);
+        // Show a toast notification
+        toast({
+          title: "Athlete Profile Updated",
+          description: `${values.fullName}'s information has been successfully updated.`,
+          variant: "default",
+        });
+        // Close the dialog
+        onOpenChange(false);
+        // Invalidate the query to refresh the data
+        queryClient.invalidateQueries({ queryKey: ["/api/parent/children"] });
+      },
+      onError: (error: Error) => {
+        console.error("Update failed:", error);
+        toast({
+          title: "Update Failed",
+          description: error.message || "There was an error updating the athlete profile.",
+          variant: "destructive",
+        });
+      }
+    });
   };
 
   if (!athlete) return null;
@@ -565,11 +589,16 @@ export function EditAthleteDialog({
               <Button 
                 type="submit" 
                 disabled={updateChildMutation.isPending}
+                className="min-w-[120px]"
               >
-                {updateChildMutation.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {updateChildMutation.isPending ? (
+                  <span className="flex items-center">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </span>
+                ) : (
+                  "Save Changes"
                 )}
-                Save Changes
               </Button>
             </div>
           </form>
