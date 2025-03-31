@@ -528,9 +528,8 @@ function CampViewPage(props: { id?: string }) {
                   {/* Settings Dropdown */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline">
-                        <Settings className="h-4 w-4 mr-2" />
-                        Settings <ChevronDown className="h-4 w-4 ml-1"/>
+                      <Button variant="outline" size="icon">
+                        <Settings className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -918,12 +917,18 @@ function CampViewPage(props: { id?: string }) {
                     <div className="flex">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button size="sm" variant="outline">
-                            <Download className="h-4 w-4 mr-2" />
-                            Export <ChevronDown className="h-4 w-4 ml-1"/>
+                          <Button size="icon" variant="ghost" className="h-8 w-8">
+                            <Settings className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Attendance Options</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setShowFormFieldsDialog(true)}>
+                            <FileText className="h-4 w-4 mr-2" />
+                            Form Fields Settings
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           <DropdownMenuLabel>Export Options</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => {
