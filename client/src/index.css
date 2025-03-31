@@ -51,90 +51,32 @@
     color: var(--primary-foreground);
   }
   
-  /* React Time Picker Custom Styling */
-  .react-time-picker {
-    display: inline-flex;
-    position: relative;
-    width: 100%;
+  /* Simple Time Input Custom Styling */
+  .time-input {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
+    text-align: center;
+    cursor: default;
   }
-
-  .react-time-picker__wrapper {
-    border: none !important;
-    display: flex;
-    width: 100%;
-    padding: 0.5rem 0;
-  }
-
-  .react-time-picker__inputGroup {
-    min-width: 1px !important;
-    flex-grow: 1;
-    padding: 0 0.25rem;
-    display: flex;
-    align-items: center;
-  }
-
-  .react-time-picker__inputGroup__input {
-    min-width: 0.8em !important;
-    height: 100%;
-    position: relative;
-    padding: 0 0.25rem;
-    border: 0;
-    background: none;
-    color: currentColor;
-    font-size: 1rem;
-    font-family: inherit;
-  }
-
-  .react-time-picker__inputGroup__input:focus {
+  
+  .time-input:focus {
     outline: none;
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 30%);
   }
-
-  .react-time-picker__inputGroup__amPm {
-    font-weight: 500;
-    color: hsl(var(--primary));
+  
+  .time-input:hover {
+    border-color: hsl(var(--primary) / 50%);
   }
-
-  .react-time-picker__inputGroup__divider {
-    padding: 0 0.125rem;
-    user-select: none;
-  }
-
-  .react-time-picker__inputGroup__leadingZero {
-    font-weight: normal;
-  }
-
-  .react-time-picker__button {
-    border: 0;
-    background: transparent;
-    padding: 4px 6px;
-  }
-
-  .react-time-picker__button:enabled:hover .react-time-picker__button__icon,
-  .react-time-picker__button:enabled:focus .react-time-picker__button__icon {
-    stroke: hsl(var(--primary));
-  }
-
-  .react-time-picker__button:disabled .react-time-picker__button__icon {
-    stroke: #929292;
-  }
-
-  .react-time-picker__button svg {
-    stroke: currentColor;
-    width: 16px;
-    height: 16px;
-  }
-
-  .react-time-picker__clock {
-    width: 200px;
-    height: 200px;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    z-index: 1;
-    background-color: hsl(var(--background));
-    border: 1px solid hsl(var(--border));
-    border-radius: var(--radius);
-    padding: 1rem;
-    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+  
+  @media (hover: none) {
+    .time-input::-webkit-datetime-edit {
+      padding: 0;
+    }
+    
+    .time-input::-webkit-inner-spin-button,
+    .time-input::-webkit-calendar-picker-indicator {
+      display: none;
+    }
   }
 }
