@@ -182,9 +182,24 @@ function CampViewPage(props: { id?: string }) {
   useEffect(() => {
     // Check if URL contains schedule-editor hash and open dialog if it does
     if (window.location.hash === '#schedule-editor') {
+      console.log("Schedule editor hash detected, opening dialog");
       setScheduleEditorOpen(true);
     }
-  }, [location, window.location.hash]);
+    
+    // Add event listener for hash changes
+    const handleHashChange = () => {
+      if (window.location.hash === '#schedule-editor') {
+        console.log("Hash change detected to #schedule-editor");
+        setScheduleEditorOpen(true);
+      }
+    };
+    
+    window.addEventListener('hashchange', handleHashChange);
+    
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, []);
 
   const isParent = user?.role === 'parent';
   const { isLoading, camp, campError } = useCampData(id);
