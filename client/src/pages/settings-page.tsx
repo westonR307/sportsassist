@@ -25,14 +25,14 @@ import { Loader2 } from "lucide-react";
 interface Organization {
   id: number;
   name: string;
-  description: string;
-  contactEmail: string;
+  description: string | null;
+  stripeAccountId?: string | null;
+  createdAt?: Date;
 }
 
 const organizationSettingsSchema = z.object({
   name: z.string().min(1, "Organization name is required"),
-  description: z.string(),
-  contactEmail: z.string().email("Invalid email address"),
+  description: z.string().nullable().optional(),
 });
 
 type OrganizationSettings = z.infer<typeof organizationSettingsSchema>;
@@ -52,7 +52,6 @@ function SettingsPage() {
     values: organization ? {
       name: organization.name,
       description: organization.description,
-      contactEmail: organization.contactEmail,
     } : undefined,
   });
 
@@ -62,7 +61,6 @@ function SettingsPage() {
       console.log("Setting organization data:", organization);
       form.setValue("name", organization.name);
       form.setValue("description", organization.description);
-      form.setValue("contactEmail", organization.contactEmail);
     }
   }, [organization, form]);
 
@@ -166,6 +164,7 @@ function SettingsPage() {
                         <FormControl>
                           <textarea 
                             {...field}
+                            value={field.value || ''}
                             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background min-h-[100px]"
                             placeholder="Enter organization description"
                           />
@@ -175,19 +174,7 @@ function SettingsPage() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="contactEmail"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Contact Email</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="email" placeholder="Enter contact email" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+
 
                   <Button 
                     type="submit" 

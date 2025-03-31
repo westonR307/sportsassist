@@ -284,6 +284,66 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  // Get organization details
+  app.get("/api/organizations/:orgId", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const orgId = parseInt(req.params.orgId);
+    
+    // Only allow users who belong to this organization to access its details
+    if (req.user.organizationId !== orgId && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized to access this organization" });
+    }
+
+    try {
+      const organization = await storage.getOrganization(orgId);
+      
+      if (!organization) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+      
+      res.json(organization);
+    } catch (error) {
+      console.error("Error fetching organization:", error);
+      res.status(500).json({ message: "Failed to fetch organization details" });
+    }
+  });
+
+  // Update organization details
+  app.patch("/api/organizations/:orgId", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const orgId = parseInt(req.params.orgId);
+    
+    // Only allow camp creators who belong to this organization to update it
+    if (req.user.organizationId !== orgId || req.user.role !== "camp_creator") {
+      return res.status(403).json({ message: "Not authorized to update this organization" });
+    }
+
+    try {
+      const organization = await storage.getOrganization(orgId);
+      
+      if (!organization) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+      
+      // Update the organization with the allowed fields
+      const updatedOrganization = await storage.updateOrganization(orgId, {
+        name: req.body.name,
+        description: req.body.description
+      });
+      
+      res.json(updatedOrganization);
+    } catch (error) {
+      console.error("Error updating organization:", error);
+      res.status(500).json({ message: "Failed to update organization details" });
+    }
+  });
+
   app.get("/api/organizations/:orgId/invitations", async (req, res) => {
     if (!req.user || req.user.role !== "camp_creator") {
       return res.status(403).json({ message: "Only organization owners can view invitations" });

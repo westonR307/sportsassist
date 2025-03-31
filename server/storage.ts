@@ -64,6 +64,7 @@ export interface IStorage {
   getRegistration(id: number): Promise<Registration | undefined>;
   createOrganization(org: InsertOrganization): Promise<Organization>;
   getOrganization(id: number): Promise<Organization | undefined>;
+  updateOrganization(id: number, orgData: Partial<Omit<Organization, "id" | "createdAt">>): Promise<Organization>;
   getOrganizationUsers(orgId: number): Promise<User[]>;
   createInvitation(invitation: InsertInvitation & { token: string }): Promise<Invitation>;
   getInvitation(token: string): Promise<Invitation | undefined>;
@@ -487,6 +488,34 @@ export class DatabaseStorage implements IStorage {
       .from(organizations)
       .where(eq(organizations.id, id));
     return organization;
+  }
+
+  async updateOrganization(id: number, orgData: Partial<Omit<Organization, "id" | "createdAt">>): Promise<Organization> {
+    try {
+      console.log(`Updating organization ${id} with data:`, orgData);
+      
+      // Verify the organization exists
+      const organization = await this.getOrganization(id);
+      if (!organization) {
+        throw new Error(`Organization with ID ${id} not found`);
+      }
+      
+      // Update the organization
+      const [updatedOrganization] = await db.update(organizations)
+        .set({
+          ...(orgData.name && { name: orgData.name }),
+          ...(orgData.description !== undefined && { description: orgData.description }),
+          ...(orgData.stripeAccountId !== undefined && { stripeAccountId: orgData.stripeAccountId })
+        })
+        .where(eq(organizations.id, id))
+        .returning();
+      
+      console.log(`Updated organization ${id}`);
+      return updatedOrganization;
+    } catch (error) {
+      console.error(`Error updating organization ${id}:`, error);
+      throw new Error(`Failed to update organization: ${error.message}`);
+    }
   }
 
   async getOrganizationUsers(orgId: number): Promise<User[]> {
