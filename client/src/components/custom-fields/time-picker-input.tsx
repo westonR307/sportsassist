@@ -104,27 +104,48 @@ export function TimePickerInput({
   label,
 }: TimePickerInputProps) {
   const [hasError, setHasError] = useState(false);
+  const [inputValue, setInputValue] = useState("");
   const displayValue = value ? formatTo12Hour(value) : "";
+
+  // Initialize input value when the component receives a new value
+  useEffect(() => {
+    setInputValue(displayValue);
+  }, [value]);
 
   // Check if display value shows NaN which indicates an error
   useEffect(() => {
     setHasError(displayValue.includes("NaN"));
   }, [displayValue]);
 
+  // Separate the input handling from saving to allow for temp empty state
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value;
-    const timeValue = formatTo24Hour(inputValue);
-    onChange(timeValue);
+    const newValue = e.target.value;
+    setInputValue(newValue);
     
     // Reset error state when user types
     if (hasError) {
       setHasError(false);
     }
+    
+    // Only save non-empty values
+    if (newValue.trim() !== "") {
+      const timeValue = formatTo24Hour(newValue);
+      onChange(timeValue);
+    }
+  };
+
+  // Handle clearing the field
+  const handleClear = () => {
+    setInputValue("");
+    onChange("");
+    setHasError(false);
   };
 
   // Handle resetting the time to a default value
   const handleReset = () => {
-    onChange("09:00"); // Default to 9:00 AM
+    const defaultTime = "09:00"; // Default to 9:00 AM
+    onChange(defaultTime);
+    setInputValue(formatTo12Hour(defaultTime));
     setHasError(false);
   };
 
@@ -195,27 +216,39 @@ export function TimePickerInput({
       <div className="relative">
         <Input
           type="text"
-          value={displayValue}
+          value={inputValue}
           onChange={handleChange}
           onWheel={handleScroll}
           placeholder="e.g. 5:30 PM"
           disabled={disabled}
-          className={cn("w-full time-input pr-10", hasError && "border-red-500")}
+          className={cn("w-full time-input pr-20", hasError && "border-red-500")}
         />
-        {hasError && (
-          <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1">
+        <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1">
+          {inputValue && !disabled && (
+            <Button 
+              type="button" 
+              variant="ghost" 
+              size="icon" 
+              className="h-7 w-7 text-gray-500 hover:text-gray-700"
+              onClick={handleClear}
+              title="Clear time"
+            >
+              <XCircle className="h-4 w-4" />
+            </Button>
+          )}
+          {hasError && (
             <Button 
               type="button" 
               variant="ghost" 
               size="icon" 
               className="h-7 w-7 text-red-500"
               onClick={handleReset}
-              title="Reset time"
+              title="Reset to valid time"
             >
               <RefreshCcw className="h-4 w-4" />
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
       {hasError ? (
         <p className="text-xs text-red-500 mt-1">
