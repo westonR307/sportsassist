@@ -139,6 +139,14 @@ function CampViewPage(props: { id?: string }) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  
+  // Check for hash fragments in URL to trigger UI behaviors
+  useEffect(() => {
+    // Check for schedule editor hash
+    if (location.includes('#schedule-editor')) {
+      setScheduleEditorOpen(true);
+    }
+  }, [location]);
 
   // Check if user is a parent
   const isParent = user?.role === 'parent';

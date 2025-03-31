@@ -324,10 +324,15 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => navigate(`/dashboard/camps/${campId}#schedule-editor`)}
+                      className="text-xs"
+                      onClick={() => {
+                        // Use proper fragment navigation with Wouter
+                        const baseUrl = `/dashboard/camps/${campId}`;
+                        navigate(`${baseUrl}#schedule-editor`);
+                      }}
                     >
-                      <Calendar className="h-4 w-4 mr-1" />
-                      Open Full Calendar
+                      <Calendar className="h-3 w-3 mr-1" />
+                      Full Calendar
                     </Button>
                   </div>
                 )}
@@ -338,11 +343,16 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
                 {canManage && (
                   <Button
                     variant="outline"
-                    className="mt-4"
-                    onClick={() => navigate(`/dashboard/camps/${campId}#schedule-editor`)}
+                    size="sm"
+                    className="mt-4 text-xs"
+                    onClick={() => {
+                      // Use proper fragment navigation with Wouter
+                      const baseUrl = `/dashboard/camps/${campId}`;
+                      navigate(`${baseUrl}#schedule-editor`);
+                    }}
                   >
-                    <Calendar className="h-4 w-4 mr-1" />
-                    Set Up Enhanced Schedule
+                    <Calendar className="h-3 w-3 mr-1" />
+                    Set Up Schedule
                   </Button>
                 )}
               </div>
