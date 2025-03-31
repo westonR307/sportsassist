@@ -35,6 +35,18 @@ export default function MyAthletesPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
+  // Calculate age based on date of birth (more accurate than just year difference)
+  const calculateAge = (birthDate: Date) => {
+    const today = new Date();
+    const birthDateObj = new Date(birthDate);
+    let age = today.getFullYear() - birthDateObj.getFullYear();
+    const m = today.getMonth() - birthDateObj.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDateObj.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
   const { data: children = [], isLoading } = useQuery<ExtendedChild[]>({
     queryKey: ["/api/parent/children"],
     enabled: !!user,
@@ -123,7 +135,7 @@ export default function MyAthletesPage() {
                         <div>
                           <p className="text-sm font-medium">Age</p>
                           <p className="text-sm text-muted-foreground">
-                            {new Date().getFullYear() - new Date(child.dateOfBirth).getFullYear()} years
+                            {calculateAge(child.dateOfBirth)} years
                           </p>
                         </div>
                         {child.sportsInterests && child.sportsInterests.length > 0 && (
