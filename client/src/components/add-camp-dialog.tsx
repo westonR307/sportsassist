@@ -628,7 +628,7 @@ export function AddCampDialog({
                 <TabsContent value="schedule" className="space-y-4 mt-0">
                   <div className="space-y-4">
                     <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-medium">Camp Schedule</h3>
+                      <h3 className="text-lg font-medium">Calendar Scheduling</h3>
                     </div>
 
                     <Tabs defaultValue="enhanced">
@@ -639,9 +639,15 @@ export function AddCampDialog({
                       <TabsContent value="enhanced" className="pt-4">
                         <div className="p-3 bg-muted rounded-md mb-4">
                           <p className="text-sm">
-                            The enhanced scheduling system allows you to create more complex schedules with recurring patterns and individual sessions.
-                            Use the calendar below to create your initial camp schedule.
+                            Our calendar-based scheduling system allows you to create a flexible camp schedule.
+                            After creating the camp, you'll be able to:
                           </p>
+                          <ul className="list-disc ml-5 mt-2 text-sm space-y-1">
+                            <li>Click on dates to add sessions</li>
+                            <li>Set specific start and end times for each day</li>
+                            <li>Create recurring patterns for regular sessions</li>
+                            <li>Manage individual sessions</li>
+                          </ul>
                         </div>
                         
                         {form.watch('startDate') && form.watch('endDate') ? (

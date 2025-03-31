@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { format, parseISO, addDays, isSameDay } from "date-fns";
-import { X, Calendar as CalendarIcon, Plus, ArrowRight, Pencil, Trash2, AlertCircle } from "lucide-react";
+import { X, Calendar as CalendarIcon, Plus, ArrowRight, Pencil, Trash2, AlertCircle, Save } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
@@ -659,9 +659,23 @@ export function EnhancedScheduleEditor({
         <TabsContent value="calendar" className="space-y-4">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium">Calendar View</h3>
-            <p className="text-sm text-muted-foreground">
-              Click on dates to add or manage sessions
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-muted-foreground mr-2">
+                Click on dates to add or manage sessions
+              </p>
+              {onSave && editable && (
+                <Button 
+                  onClick={() => {
+                    // Call the onSave handler to close the dialog
+                    loadSessions();
+                    if (onSave) onSave();
+                  }}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save and Close
+                </Button>
+              )}
+            </div>
           </div>
           
           {/* New Calendar Scheduler Component */}
@@ -672,8 +686,10 @@ export function EnhancedScheduleEditor({
               endDate={endDate ? new Date(endDate) : new Date()}
               sessions={sessions}
               onSave={() => {
+                // Load sessions but don't close the dialog
                 loadSessions();
-                if (onSave) onSave();
+                // Only call onSave when we specifically want to close the dialog (via close button)
+                // This ensures calendar stays open after adding/deleting sessions
               }}
               canManage={permissions.canManage}
             />

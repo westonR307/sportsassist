@@ -138,9 +138,10 @@ export function CalendarScheduler({
       // Still invalidate the query cache for background refresh
       queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'sessions'] });
       
-      // Call onSave to refresh the parent component AFTER we've updated our local state
-      onSave(); 
-
+      // NOTE: We're keeping the calendar open (NOT calling onSave here)
+      // Only refresh the parent component's data without closing the dialog
+      // This ensures the calendar remains open after adding a session
+      
       toast({
         title: "Session added",
         description: `Session added on ${format(selectedDate, "MMMM d, yyyy")} from ${formatTimeForDisplay(startTime)} to ${formatTimeForDisplay(endTime)}`,
@@ -177,8 +178,9 @@ export function CalendarScheduler({
       // Also update the full sessions list
       setSessions(prev => prev.filter(session => session.id !== sessionId));
       
-      // Notify parent component to refresh its data
-      onSave();
+      // NOTE: We're keeping the calendar open (NOT calling onSave here)
+      // Only invalidate the query cache to refresh the data in the background
+      // This ensures the calendar remains open after deleting a session
 
       // Invalidate the sessions query cache to trigger a background refresh
       queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'sessions'] });
