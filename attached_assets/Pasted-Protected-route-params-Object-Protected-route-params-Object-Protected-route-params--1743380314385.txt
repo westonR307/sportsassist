@@ -1,0 +1,45 @@
+Protected route params: 
+Object {}
+Protected route params: 
+Object {}
+Protected route params: 
+Object {}
+Protected route params: 
+Object {}
+Protected route params: 
+Object {}
+Protected route params: 
+Object {}
+Protected route params: 
+Object {}
+Protected route params: 
+Object {}
+Warning: Cannot update a component (&#x60;Switch&#x60;) while rendering a different component (&#x60;AuthPage&#x60;). To locate the bad setState() call inside &#x60;AuthPage&#x60;, follow the stack trace as described in https://reactjs.org/link/setstate-in-render
+    at AuthPage (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/pages/auth-page.tsx:63:64)
+    at Route (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=2b83f9aa:280:16)
+    at Switch (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=2b83f9aa:336:17)
+    at Router (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/App.tsx?v=_Yyeucx5UcqbPXsFVmY1y:98:31)
+    at AuthProvider (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/hooks/use-auth.tsx:26:32)
+    at QueryClientProvider (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=2b83f9aa:2805:3)
+    at ErrorBoundary (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/components/error-boundary.tsx:7:5)
+    at App
+at AuthPage (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/pages/auth-page.tsx:63:64)
+at Route (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=2b83f9aa:280:16)
+at Switch (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=2b83f9aa:336:17)
+at Router (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/App.tsx?v=_Yyeucx5UcqbPXsFVmY1y:98:31)
+at AuthProvider (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/hooks/use-auth.tsx:26:32)
+at QueryClientProvider (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=2b83f9aa:2805:3)
+at ErrorBoundary (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/components/error-boundary.tsx:7:5)
+at App
+at t.value (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Protected route params: 
+Object {}
+Protected route params: 
+Object {}
+Protected route params: 
+Object {}
+Protected route params: 
+Object {}
