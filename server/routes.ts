@@ -54,9 +54,13 @@ import {
   insertCustomFieldSchema,
   insertCampCustomFieldSchema,
   insertCustomFieldResponseSchema,
+  insertCampSessionSchema,
+  insertRecurrencePatternSchema,
   sports, 
   children, 
-  childSports 
+  childSports,
+  campSessions,
+  recurrencePatterns
 } from "@shared/schema";
 import { campSchedules, campSports } from "@shared/tables";
 import { eq } from "drizzle-orm";
@@ -1339,6 +1343,347 @@ export async function registerRoutes(app: Express) {
     } catch (error) {
       console.error("Error deleting schedule exception:", error);
       res.status(500).json({ message: "Failed to delete schedule exception" });
+    }
+  });
+
+  // ENHANCED SCHEDULING ENDPOINTS
+  
+  // Get all camp sessions for a specific camp
+  app.get("/api/camps/:id/sessions", async (req, res) => {
+    try {
+      const campId = parseInt(req.params.id);
+      console.log("Fetching camp sessions for camp ID:", campId);
+      
+      // Check if the camp exists
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Get all sessions for this camp
+      const sessions = await storage.getCampSessions(campId);
+      console.log("Retrieved sessions count:", sessions.length);
+      
+      // Add permissions for the frontend to know what actions to show
+      let canManage = false;
+      if (req.user) {
+        canManage = req.user.organizationId === camp.organizationId;
+      }
+      
+      const response = {
+        sessions,
+        permissions: {
+          canManage
+        }
+      };
+      
+      res.json(response);
+    } catch (error) {
+      console.error("Error fetching camp sessions:", error);
+      res.status(500).json({ message: "Failed to fetch camp sessions" });
+    }
+  });
+  
+  // Create a new camp session
+  app.post("/api/camps/:id/sessions", async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      
+      // Check if the camp exists
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if the user has permission to manage this camp
+      const canManage = req.user.organizationId === camp.organizationId;
+      if (!canManage) {
+        return res.status(403).json({ message: "You don't have permission to manage this camp" });
+      }
+      
+      // Validate and create the session
+      const parsed = insertCampSessionSchema.safeParse({
+        ...req.body,
+        campId
+      });
+      
+      if (!parsed.success) {
+        return res.status(400).json(parsed.error);
+      }
+      
+      const session = await storage.createCampSession(parsed.data);
+      
+      res.status(201).json(session);
+    } catch (error) {
+      console.error("Error creating camp session:", error);
+      res.status(500).json({ message: "Failed to create camp session" });
+    }
+  });
+  
+  // Update an existing camp session
+  app.put("/api/camps/:campId/sessions/:id", async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const campId = parseInt(req.params.campId);
+      const sessionId = parseInt(req.params.id);
+      
+      // Check if the camp exists
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if the user has permission to manage this camp
+      const canManage = req.user.organizationId === camp.organizationId;
+      if (!canManage) {
+        return res.status(403).json({ message: "You don't have permission to manage this camp" });
+      }
+      
+      // Validate the update data
+      const parsed = insertCampSessionSchema.partial().safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json(parsed.error);
+      }
+      
+      // Update the session
+      const updatedSession = await storage.updateCampSession(sessionId, parsed.data);
+      
+      res.json(updatedSession);
+    } catch (error) {
+      console.error("Error updating camp session:", error);
+      res.status(500).json({ message: "Failed to update camp session" });
+    }
+  });
+  
+  // Delete a camp session
+  app.delete("/api/camps/:campId/sessions/:id", async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const campId = parseInt(req.params.campId);
+      const sessionId = parseInt(req.params.id);
+      
+      // Check if the camp exists
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if the user has permission to manage this camp
+      const canManage = req.user.organizationId === camp.organizationId;
+      if (!canManage) {
+        return res.status(403).json({ message: "You don't have permission to manage this camp" });
+      }
+      
+      // Delete the session
+      await storage.deleteCampSession(sessionId);
+      
+      res.json({ success: true, message: "Camp session deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting camp session:", error);
+      res.status(500).json({ message: "Failed to delete camp session" });
+    }
+  });
+  
+  // RECURRENCE PATTERN ENDPOINTS
+  
+  // Get all recurrence patterns for a specific camp
+  app.get("/api/camps/:id/recurrence-patterns", async (req, res) => {
+    try {
+      const campId = parseInt(req.params.id);
+      
+      // Check if the camp exists
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Get all recurrence patterns for this camp
+      const patterns = await storage.getRecurrencePatterns(campId);
+      
+      // Add permissions for the frontend to know what actions to show
+      let canManage = false;
+      if (req.user) {
+        canManage = req.user.organizationId === camp.organizationId;
+      }
+      
+      const response = {
+        patterns,
+        permissions: {
+          canManage
+        }
+      };
+      
+      res.json(response);
+    } catch (error) {
+      console.error("Error fetching recurrence patterns:", error);
+      res.status(500).json({ message: "Failed to fetch recurrence patterns" });
+    }
+  });
+  
+  // Create a new recurrence pattern
+  app.post("/api/camps/:id/recurrence-patterns", async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      
+      // Check if the camp exists
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if the user has permission to manage this camp
+      const canManage = req.user.organizationId === camp.organizationId;
+      if (!canManage) {
+        return res.status(403).json({ message: "You don't have permission to manage this camp" });
+      }
+      
+      // Validate and create the recurrence pattern
+      const parsed = insertRecurrencePatternSchema.safeParse({
+        ...req.body,
+        campId
+      });
+      
+      if (!parsed.success) {
+        return res.status(400).json(parsed.error);
+      }
+      
+      const pattern = await storage.createRecurrencePattern(parsed.data);
+      
+      res.status(201).json(pattern);
+    } catch (error) {
+      console.error("Error creating recurrence pattern:", error);
+      res.status(500).json({ message: "Failed to create recurrence pattern" });
+    }
+  });
+  
+  // Generate camp sessions from a recurrence pattern
+  app.post("/api/recurrence-patterns/:id/generate-sessions", async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const patternId = parseInt(req.params.id);
+      
+      // Check if the pattern exists
+      const pattern = await storage.getRecurrencePattern(patternId);
+      if (!pattern) {
+        return res.status(404).json({ message: "Recurrence pattern not found" });
+      }
+      
+      // Check if the camp exists
+      const camp = await storage.getCamp(pattern.campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if the user has permission to manage this camp
+      const canManage = req.user.organizationId === camp.organizationId;
+      if (!canManage) {
+        return res.status(403).json({ message: "You don't have permission to manage this camp" });
+      }
+      
+      // Generate the sessions
+      const sessions = await storage.generateCampSessionsFromPattern(patternId);
+      
+      res.status(201).json(sessions);
+    } catch (error) {
+      console.error("Error generating sessions from pattern:", error);
+      res.status(500).json({ message: "Failed to generate sessions from pattern" });
+    }
+  });
+  
+  // Update an existing recurrence pattern
+  app.put("/api/recurrence-patterns/:id", async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const patternId = parseInt(req.params.id);
+      
+      // Check if the pattern exists
+      const pattern = await storage.getRecurrencePattern(patternId);
+      if (!pattern) {
+        return res.status(404).json({ message: "Recurrence pattern not found" });
+      }
+      
+      // Check if the camp exists
+      const camp = await storage.getCamp(pattern.campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if the user has permission to manage this camp
+      const canManage = req.user.organizationId === camp.organizationId;
+      if (!canManage) {
+        return res.status(403).json({ message: "You don't have permission to manage this camp" });
+      }
+      
+      // Validate the update data
+      const parsed = insertRecurrencePatternSchema.partial().safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json(parsed.error);
+      }
+      
+      // Update the pattern
+      const updatedPattern = await storage.updateRecurrencePattern(patternId, parsed.data);
+      
+      res.json(updatedPattern);
+    } catch (error) {
+      console.error("Error updating recurrence pattern:", error);
+      res.status(500).json({ message: "Failed to update recurrence pattern" });
+    }
+  });
+  
+  // Delete a recurrence pattern
+  app.delete("/api/recurrence-patterns/:id", async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const patternId = parseInt(req.params.id);
+      
+      // Check if the pattern exists
+      const pattern = await storage.getRecurrencePattern(patternId);
+      if (!pattern) {
+        return res.status(404).json({ message: "Recurrence pattern not found" });
+      }
+      
+      // Check if the camp exists
+      const camp = await storage.getCamp(pattern.campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if the user has permission to manage this camp
+      const canManage = req.user.organizationId === camp.organizationId;
+      if (!canManage) {
+        return res.status(403).json({ message: "You don't have permission to manage this camp" });
+      }
+      
+      // Delete the pattern
+      await storage.deleteRecurrencePattern(patternId);
+      
+      res.json({ success: true, message: "Recurrence pattern deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting recurrence pattern:", error);
+      res.status(500).json({ message: "Failed to delete recurrence pattern" });
     }
   });
 

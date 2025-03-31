@@ -79,7 +79,9 @@ import { type Camp, type Child } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { EditCampDialog } from "@/components/edit-camp-dialog";
 import { CampScheduleDisplay } from "@/components/camp-schedule";
-// Using the fixed schedule editor dialog
+// Enhanced schedule editor
+import { EnhancedScheduleEditor } from "@/components/enhanced-schedule-editor";
+// Using the fixed schedule editor dialog as fallback
 import { ScheduleEditorDialog } from "@/components/schedule-editor-dialog-fixed";
 import { EditCampCustomFields } from "@/components/edit-camp-custom-fields";
 import { ExportParticipantsDialog } from "@/components/export-participants-dialog";
@@ -1091,11 +1093,26 @@ function CampViewPage(props: { id?: string }) {
               onOpenChange={setEditDialogOpen}
               camp={camp}
             />
-            <ScheduleEditorDialog
-              open={scheduleEditorOpen}
-              onOpenChange={setScheduleEditorOpen}
-              camp={camp}
-            />
+            {/* Enhanced Schedule Editor Dialog */}
+            <Dialog open={scheduleEditorOpen} onOpenChange={setScheduleEditorOpen}>
+              <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Edit Camp Schedule</DialogTitle>
+                  <DialogDescription>
+                    Manage your camp schedule with our enhanced calendar view
+                  </DialogDescription>
+                </DialogHeader>
+                {camp && (
+                  <EnhancedScheduleEditor 
+                    campId={camp.id}
+                    startDate={camp.startDate}
+                    endDate={camp.endDate}
+                    onSave={() => setScheduleEditorOpen(false)}
+                    editable={true}
+                  />
+                )}
+              </DialogContent>
+            </Dialog>
             
             {/* Child Selection Dialog */}
             <Dialog open={showChildSelectionDialog} onOpenChange={setShowChildSelectionDialog}>

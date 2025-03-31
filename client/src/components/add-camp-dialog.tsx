@@ -606,78 +606,111 @@ export function AddCampDialog({
 
                 <TabsContent value="schedule" className="space-y-4 mt-0">
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center mb-4">
                       <h3 className="text-lg font-medium">Camp Schedule</h3>
-                      <Button type="button" onClick={addSchedule} size="sm">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Schedule
-                      </Button>
                     </div>
 
-                    {schedules.map((schedule, index) => (
-                      <div
-                        key={index}
-                        className="flex items-start space-x-4 p-4 border rounded-lg relative"
-                      >
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute top-2 right-2"
-                          onClick={() => removeSchedule(index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-
-                        <div className="flex-1 space-y-4">
-                          <div>
-                            <Label>Day of Week</Label>
-                            <select
-                              value={schedule.dayOfWeek}
-                              onChange={(e) =>
-                                updateSchedule(index, "dayOfWeek", parseInt(e.target.value))
-                              }
-                              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                            >
-                              {daysOfWeek.map((day, i) => (
-                                <option key={i} value={i}>
-                                  {day}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <Label>Start Time</Label>
-                              <Input
-                                type="time"
-                                value={schedule.startTime}
-                                onChange={(e) =>
-                                  updateSchedule(index, "startTime", e.target.value)
-                                }
-                              />
-                            </div>
-                            <div>
-                              <Label>End Time</Label>
-                              <Input
-                                type="time"
-                                value={schedule.endTime}
-                                onChange={(e) =>
-                                  updateSchedule(index, "endTime", e.target.value)
-                                }
-                              />
-                            </div>
-                          </div>
+                    <Tabs defaultValue="legacy">
+                      <TabsList>
+                        <TabsTrigger value="enhanced">Enhanced Scheduling</TabsTrigger>
+                        <TabsTrigger value="legacy">Basic Scheduling</TabsTrigger>
+                      </TabsList>
+                      
+                      <TabsContent value="enhanced" className="pt-4">
+                        <div className="p-3 bg-muted rounded-md mb-4">
+                          <p className="text-sm">
+                            The enhanced scheduling system allows you to create more complex schedules with recurring patterns and individual sessions.
+                            You'll be able to set this up after creating the camp.
+                          </p>
                         </div>
-                      </div>
-                    ))}
+                        
+                        <div className="text-center py-6 text-muted-foreground">
+                          <p>After creating your camp, you'll be able to:</p>
+                          <ul className="list-disc list-inside text-left mt-2 space-y-1">
+                            <li>Create recurring session patterns (daily, weekly, monthly)</li>
+                            <li>Schedule individual one-off sessions</li>
+                            <li>View a calendar of all sessions</li>
+                            <li>Add exceptions for holidays or special events</li>
+                          </ul>
+                          <p className="mt-3">For now, please set up a basic schedule below.</p>
+                        </div>
+                      </TabsContent>
+                      
+                      <TabsContent value="legacy" className="pt-4">
+                        <div className="flex justify-between items-center">
+                          <h3 className="text-md font-medium">Weekly Schedule</h3>
+                          <Button type="button" onClick={addSchedule} size="sm">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Schedule
+                          </Button>
+                        </div>
 
-                    {schedules.length === 0 && (
-                      <div className="text-center py-8 text-muted-foreground">
-                        No schedules added. Click "Add Schedule" to create camp schedules.
-                      </div>
-                    )}
+                        {schedules.map((schedule, index) => (
+                          <div
+                            key={index}
+                            className="flex items-start space-x-4 p-4 border rounded-lg relative mt-4"
+                          >
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute top-2 right-2"
+                              onClick={() => removeSchedule(index)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+
+                            <div className="flex-1 space-y-4">
+                              <div>
+                                <Label>Day of Week</Label>
+                                <select
+                                  value={schedule.dayOfWeek}
+                                  onChange={(e) =>
+                                    updateSchedule(index, "dayOfWeek", parseInt(e.target.value))
+                                  }
+                                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                                >
+                                  {daysOfWeek.map((day, i) => (
+                                    <option key={i} value={i}>
+                                      {day}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <Label>Start Time</Label>
+                                  <Input
+                                    type="time"
+                                    value={schedule.startTime}
+                                    onChange={(e) =>
+                                      updateSchedule(index, "startTime", e.target.value)
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <Label>End Time</Label>
+                                  <Input
+                                    type="time"
+                                    value={schedule.endTime}
+                                    onChange={(e) =>
+                                      updateSchedule(index, "endTime", e.target.value)
+                                    }
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+
+                        {schedules.length === 0 && (
+                          <div className="text-center py-8 text-muted-foreground mt-4">
+                            No schedules added. Click "Add Schedule" to create camp schedules.
+                          </div>
+                        )}
+                      </TabsContent>
+                    </Tabs>
                   </div>
 
                   <div className="flex justify-between space-x-2 pt-4">
