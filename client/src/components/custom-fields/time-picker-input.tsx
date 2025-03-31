@@ -1,8 +1,6 @@
-import React, { useState } from "react";
+import React from "react";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TimePickerInputProps {
@@ -24,6 +22,33 @@ function formatTo12Hour(timeString: string): string {
   return `${hour12}:${minutes.toString().padStart(2, "0")} ${period}`;
 }
 
+// Convert 12hr format string to 24hr format for storage
+function formatTo24Hour(timeString: string): string {
+  if (!timeString) return "";
+  
+  // If the timestring already contains a colon, it might be in 24hr format already
+  if (timeString.includes(":") && !timeString.includes("AM") && !timeString.includes("PM")) {
+    // Make sure it's properly formatted
+    const [hours, minutes] = timeString.split(":").map(Number);
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+  }
+  
+  // Handle 12hr format with AM/PM
+  const isPM = timeString.toLowerCase().includes("pm");
+  const timeWithoutAmPm = timeString.toLowerCase().replace(/\s*[ap]m\s*/, "");
+  
+  let [hours, minutes = "00"] = timeWithoutAmPm.split(":").map(part => part.trim());
+  let hour = parseInt(hours, 10);
+  
+  if (isPM && hour < 12) {
+    hour += 12;
+  } else if (!isPM && hour === 12) {
+    hour = 0;
+  }
+  
+  return `${hour.toString().padStart(2, "0")}:${minutes.padStart(2, "0")}`;
+}
+
 export function TimePickerInput({
   value,
   onChange,
@@ -31,60 +56,28 @@ export function TimePickerInput({
   disabled = false,
   label,
 }: TimePickerInputProps) {
-  const [open, setOpen] = useState(false);
-  
-  // Common time presets
-  const timePresets = [
-    { label: "8:00 AM", value: "08:00" },
-    { label: "9:00 AM", value: "09:00" },
-    { label: "10:00 AM", value: "10:00" },
-    { label: "11:00 AM", value: "11:00" },
-    { label: "12:00 PM", value: "12:00" },
-    { label: "1:00 PM", value: "13:00" },
-    { label: "2:00 PM", value: "14:00" },
-    { label: "3:00 PM", value: "15:00" },
-    { label: "4:00 PM", value: "16:00" },
-    { label: "5:00 PM", value: "17:00" },
-    { label: "6:00 PM", value: "18:00" },
-    { label: "7:00 PM", value: "19:00" },
-  ];
+  const displayValue = value ? formatTo12Hour(value) : "";
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    const timeValue = formatTo24Hour(inputValue);
+    onChange(timeValue);
+  };
 
   return (
     <div className={cn("w-full", className)}>
       {label && <Label className="mb-2 block">{label}</Label>}
-      <Popover open={open && !disabled} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className={cn(
-              "w-full justify-start text-left font-normal",
-              !value && "text-muted-foreground"
-            )}
-            disabled={disabled}
-          >
-            <Clock className="mr-2 h-4 w-4" />
-            {value ? formatTo12Hour(value) : "Select time"}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-64" align="start">
-          <div className="grid grid-cols-2 gap-2 p-2">
-            {timePresets.map((preset) => (
-              <Button
-                key={preset.value}
-                variant={value === preset.value ? "default" : "outline"}
-                size="sm"
-                className="justify-start font-normal"
-                onClick={() => {
-                  onChange(preset.value);
-                  setOpen(false);
-                }}
-              >
-                {preset.label}
-              </Button>
-            ))}
-          </div>
-        </PopoverContent>
-      </Popover>
+      <Input
+        type="text"
+        value={displayValue}
+        onChange={handleChange}
+        placeholder="e.g. 5:30 PM"
+        disabled={disabled}
+        className="w-full"
+      />
+      <p className="text-xs text-muted-foreground mt-1">
+        Enter time in 12-hour format (e.g., 5:30 PM or 9:00 AM)
+      </p>
     </div>
   );
 }
