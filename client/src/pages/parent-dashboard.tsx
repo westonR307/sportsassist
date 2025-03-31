@@ -33,7 +33,7 @@ import { insertChildSchema } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
 import { ViewAthleteDialog } from "@/components/view-athlete-dialog";
-import { EditAthleteDialog } from "@/components/edit-athlete-dialog";
+import { SimpleEditAthleteDialog } from "@/components/simple-edit-athlete-dialog";
 import { ProfilePhotoUploader } from "@/components/profile-photo-uploader";
 
 // All sport-related constants are now imported from shared/sports-utils.ts
@@ -307,7 +307,7 @@ export default function ParentDashboard() {
 
       {/* Edit Athlete Dialog */}
       {selectedAthlete && (
-        <EditAthleteDialog
+        <SimpleEditAthleteDialog
           athlete={selectedAthlete}
           open={editDialogOpen}
           onOpenChange={setEditDialogOpen}

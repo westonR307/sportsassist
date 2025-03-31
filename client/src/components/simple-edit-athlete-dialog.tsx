@@ -22,7 +22,15 @@ export function SimpleEditAthleteDialog({ athlete, open, onOpenChange }: SimpleE
     gender: athlete?.gender || "male",
     dateOfBirth: athlete?.dateOfBirth ? new Date(athlete.dateOfBirth).toISOString().split('T')[0] : "",
     schoolName: athlete?.schoolName || "",
+    currentGrade: athlete?.currentGrade || "",
+    sportsHistory: athlete?.sportsHistory || "",
+    emergencyContact: athlete?.emergencyContact || "",
+    emergencyPhone: athlete?.emergencyPhone || "",
     medicalInformation: athlete?.medicalInformation || "",
+    specialNeeds: athlete?.specialNeeds || "",
+    jerseySize: athlete?.jerseySize || "",
+    communicationOptIn: athlete?.communicationOptIn ?? true,
+    preferredContact: athlete?.preferredContact || "email",
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -33,6 +41,11 @@ export function SimpleEditAthleteDialog({ athlete, open, onOpenChange }: SimpleE
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+  
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormData(prev => ({ ...prev, [name]: checked }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -64,14 +77,21 @@ export function SimpleEditAthleteDialog({ athlete, open, onOpenChange }: SimpleE
     try {
       console.log("Submitting data:", formData);
       
-      // Create a minimal payload with just the fields we're editing
-      // Include medical information as it's expected by the server
+      // Create a comprehensive payload with all fields
       const payload = {
         fullName: formData.fullName,
         dateOfBirth: formData.dateOfBirth,
         gender: formData.gender || "male",
         schoolName: formData.schoolName || "",
+        currentGrade: formData.currentGrade || "",
+        sportsHistory: formData.sportsHistory || "",
+        emergencyContact: formData.emergencyContact || "",
+        emergencyPhone: formData.emergencyPhone || "",
         medicalInformation: formData.medicalInformation || "",
+        specialNeeds: formData.specialNeeds || "",
+        jerseySize: formData.jerseySize || "",
+        communicationOptIn: formData.communicationOptIn,
+        preferredContact: formData.preferredContact || "email",
         // Include an empty sportsInterests array to satisfy server expectations
         sportsInterests: []
       };
@@ -125,14 +145,14 @@ export function SimpleEditAthleteDialog({ athlete, open, onOpenChange }: SimpleE
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
-        className="sm:max-w-[500px]"
+        className="sm:max-w-[600px]"
         aria-labelledby="simple-edit-athlete-title"
         aria-describedby="simple-edit-athlete-description"
       >
         <DialogHeader>
-          <DialogTitle id="simple-edit-athlete-title">Edit Athlete - Basic Information</DialogTitle>
+          <DialogTitle id="simple-edit-athlete-title">Edit Athlete Profile</DialogTitle>
           <p id="simple-edit-athlete-description" className="text-sm text-muted-foreground">
-            Update {athlete.fullName}'s basic information.
+            Update {athlete.fullName}'s information.
           </p>
         </DialogHeader>
         
@@ -188,7 +208,53 @@ export function SimpleEditAthleteDialog({ athlete, open, onOpenChange }: SimpleE
               placeholder="School name"
             />
           </div>
-
+          
+          <div className="space-y-2">
+            <label htmlFor="currentGrade" className="text-sm font-medium">Current Grade</label>
+            <Input 
+              id="currentGrade"
+              name="currentGrade"
+              value={formData.currentGrade}
+              onChange={handleInputChange}
+              placeholder="Current grade"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label htmlFor="sportsHistory" className="text-sm font-medium">Sports History</label>
+            <Input 
+              id="sportsHistory"
+              name="sportsHistory"
+              value={formData.sportsHistory}
+              onChange={handleInputChange}
+              placeholder="Previous sports experience"
+            />
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label htmlFor="emergencyContact" className="text-sm font-medium">Emergency Contact</label>
+              <Input 
+                id="emergencyContact"
+                name="emergencyContact"
+                value={formData.emergencyContact}
+                onChange={handleInputChange}
+                placeholder="Emergency contact name"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="emergencyPhone" className="text-sm font-medium">Emergency Phone</label>
+              <Input 
+                id="emergencyPhone"
+                name="emergencyPhone"
+                value={formData.emergencyPhone}
+                onChange={handleInputChange}
+                placeholder="Emergency contact phone"
+              />
+            </div>
+          </div>
+          
           <div className="space-y-2">
             <label htmlFor="medicalInformation" className="text-sm font-medium">Medical Information</label>
             <Input 
@@ -198,6 +264,66 @@ export function SimpleEditAthleteDialog({ athlete, open, onOpenChange }: SimpleE
               onChange={handleInputChange}
               placeholder="Any medical conditions or allergies"
             />
+          </div>
+          
+          <div className="space-y-2">
+            <label htmlFor="specialNeeds" className="text-sm font-medium">Special Needs</label>
+            <Input 
+              id="specialNeeds"
+              name="specialNeeds"
+              value={formData.specialNeeds}
+              onChange={handleInputChange}
+              placeholder="Any special requirements"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label htmlFor="jerseySize" className="text-sm font-medium">Jersey Size</label>
+            <select
+              id="jerseySize"
+              name="jerseySize"
+              value={formData.jerseySize}
+              onChange={handleSelectChange}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+            >
+              <option value="">Select a size</option>
+              <option value="YS">Youth Small</option>
+              <option value="YM">Youth Medium</option>
+              <option value="YL">Youth Large</option>
+              <option value="AS">Adult Small</option>
+              <option value="AM">Adult Medium</option>
+              <option value="AL">Adult Large</option>
+              <option value="AXL">Adult XL</option>
+            </select>
+          </div>
+          
+          <div className="space-y-2">
+            <label htmlFor="preferredContact" className="text-sm font-medium">Preferred Contact Method</label>
+            <select
+              id="preferredContact"
+              name="preferredContact"
+              value={formData.preferredContact}
+              onChange={handleSelectChange}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+            >
+              <option value="email">Email</option>
+              <option value="phone">Phone</option>
+              <option value="text">Text Message</option>
+            </select>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="communicationOptIn"
+              name="communicationOptIn"
+              checked={formData.communicationOptIn}
+              onChange={handleCheckboxChange}
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <label htmlFor="communicationOptIn" className="text-sm">
+              Receive updates about camps and events
+            </label>
           </div>
           
           <DialogFooter>
