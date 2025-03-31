@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { 
@@ -52,6 +52,22 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 function AuthPage() {
   const { user, isLoading, loginMutation, registerMutation } = useAuth();
   const [, setLocation] = useLocation();
+  const [activeTab, setActiveTab] = useState<string>("login");
+  
+  // Handle redirection in useEffect to avoid state updates during render
+  useEffect(() => {
+    if (user) {
+      if (user.role === "parent" && !user.onboarding_completed) {
+        setLocation("/parent-onboarding");
+      } else if (user.role === "parent") {
+        setLocation("/parent-dashboard");
+      } else if (user.role === "athlete") {
+        setLocation("/athlete-dashboard"); // Will create this route later
+      } else {
+        setLocation("/");
+      }
+    }
+  }, [user, setLocation]);
   
   // Show loading state while checking authentication
   if (isLoading) {
@@ -61,7 +77,11 @@ function AuthPage() {
       </div>
     );
   }
-  const [activeTab, setActiveTab] = useState<string>("login");
+  
+  // Return null immediately if user is authenticated - redirects handled above
+  if (user) {
+    return null;
+  }
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -87,20 +107,6 @@ function AuthPage() {
   const onRegisterSubmit = (data: RegisterFormValues) => {
     registerMutation.mutate(data);
   };
-
-  // Redirect if user is already logged in
-  if (user) {
-    if (user.role === "parent" && !user.onboarding_completed) {
-      setLocation("/parent-onboarding");
-    } else if (user.role === "parent") {
-      setLocation("/parent-dashboard");
-    } else if (user.role === "athlete") {
-      setLocation("/athlete-dashboard"); // Will create this route later
-    } else {
-      setLocation("/");
-    }
-    return null;
-  }
 
   return (
     <div className="flex min-h-screen bg-muted/30">

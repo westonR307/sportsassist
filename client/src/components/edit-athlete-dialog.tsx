@@ -55,9 +55,9 @@ const editChildSchema = z.object({
     preferredPositions: z.array(z.string()).optional(),
     currentTeam: z.string().optional(),
   })).optional(),
-  // Default values for required fields in DB schema
-  preferredContact: z.enum(["email", "sms", "app"]).default("email"),
-  communicationOptIn: z.boolean().default(true),
+  // Make communication fields optional but provide defaults
+  preferredContact: z.enum(["email", "sms", "app"]).optional().default("email"),
+  communicationOptIn: z.boolean().optional().default(true),
 });
 
 type EditChildFormValues = z.infer<typeof editChildSchema>;
@@ -139,19 +139,19 @@ export function EditAthleteDialog({
         fullName: values.fullName,
         dateOfBirth: values.dateOfBirth,
         gender: values.gender || 'male',
-        communicationOptIn: true, // Set this explicitly
-        preferredContact: "email", // Set this explicitly
+        communicationOptIn: values.communicationOptIn ?? true, // Use the form value or default to true
+        preferredContact: values.preferredContact ?? "email", // Use the form value or default to email
         // Optional fields that might be filled
         emergencyContact: values.emergencyContact || "",
         emergencyPhone: values.emergencyPhone || "",
         sportsInterests: values.sportsInterests || [],
-        currentGrade: values.currentGrade,
-        schoolName: values.schoolName,
-        jerseySize: values.jerseySize,
-        medicalInformation: values.medicalInformation,
-        specialNeeds: values.specialNeeds,
+        currentGrade: values.currentGrade || "",
+        schoolName: values.schoolName || "",
+        jerseySize: values.jerseySize || "",
+        medicalInformation: values.medicalInformation || "",
+        specialNeeds: values.specialNeeds || "",
         // Height and weight fields removed
-        sportsHistory: values.sportsHistory,
+        sportsHistory: values.sportsHistory || "",
       };
       
       console.log("Mutation payload:", JSON.stringify(payload, null, 2));
