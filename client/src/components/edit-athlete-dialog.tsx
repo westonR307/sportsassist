@@ -38,23 +38,24 @@ const editChildSchema = z.object({
     message: "Please enter a valid date",
   }),
   gender: z.enum(["male", "female", "other", "prefer_not_to_say"]),
-  currentGrade: z.string().optional(),
-  schoolName: z.string().optional(),
-  sportsHistory: z.string().optional(),
-  emergencyContact: z.string().min(10, { message: "Emergency contact should be at least 10 characters" }),
-  emergencyPhone: z.string().min(10, { message: "Phone number should be at least 10 digits" }),
-  medicalInformation: z.string().optional(),
-  specialNeeds: z.string().optional(),
-  jerseySize: z.string().optional(),
-  // Height and weight fields removed
-  profilePhoto: z.string().optional(),
-  // Sports interests
+  // Make these fields more flexible with empty string handling
+  currentGrade: z.string().optional().or(z.literal('')),
+  schoolName: z.string().optional().or(z.literal('')),
+  sportsHistory: z.string().optional().or(z.literal('')),
+  // Relax the validation for these required fields to handle empty states
+  emergencyContact: z.string().optional().or(z.literal('')),
+  emergencyPhone: z.string().optional().or(z.literal('')),
+  medicalInformation: z.string().optional().or(z.literal('')),
+  specialNeeds: z.string().optional().or(z.literal('')),
+  jerseySize: z.string().optional().or(z.literal('')),
+  profilePhoto: z.string().optional().or(z.literal('')),
+  // Sports interests - make more flexible
   sportsInterests: z.array(z.object({
     sportId: z.number(),
     skillLevel: z.enum(["beginner", "intermediate", "advanced"]),
-    preferredPositions: z.array(z.string()).optional(),
-    currentTeam: z.string().optional(),
-  })).optional(),
+    preferredPositions: z.array(z.string()).optional().default([]),
+    currentTeam: z.string().optional().or(z.literal('')),
+  })).optional().default([]),
   // Make communication fields optional but provide defaults
   preferredContact: z.enum(["email", "sms", "app"]).optional().default("email"),
   communicationOptIn: z.boolean().optional().default(true),
@@ -159,9 +160,6 @@ export function EditAthleteDialog({
       
       console.log("DIAGNOSIS - Comprehensive edit mutation payload:", JSON.stringify(payload, null, 2));
       
-      // Use a safe window alert to show what we're submitting (for debugging only)
-      alert(`DEBUG - Submitting data for athlete ID ${athlete.id}: ${JSON.stringify(payload)}`);
-      
       // Use fetch directly for more control over the request
       try {
         console.log(`DIAGNOSIS - Making fetch request to /api/parent/children/${athlete.id}`);
@@ -179,17 +177,15 @@ export function EditAthleteDialog({
         if (!response.ok) {
           const errorText = await response.text();
           console.error(`DIAGNOSIS - Server error: ${response.status}`, errorText);
-          alert(`DEBUG ERROR - Server responded with ${response.status}: ${errorText}`);
           throw new Error(`Failed to update athlete: ${errorText || response.statusText}`);
         }
         
         const data = await response.json();
         console.log("DIAGNOSIS - Edit athlete - update successful, received data:", data);
-        alert(`DEBUG SUCCESS - Server responded with data: ${JSON.stringify(data)}`);
         return data;
-      } catch (error) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
         console.error("DIAGNOSIS - Edit athlete - update request failed:", error);
-        alert(`DEBUG CATCH ERROR: ${error.message}`);
         throw error;
       }
     },
@@ -208,11 +204,12 @@ export function EditAthleteDialog({
         variant: "default",
       });
     },
-    onError: (error: Error) => {
+    onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : 'There was an error updating the athlete profile';
       console.error("Edit athlete - mutation error callback:", error);
       toast({
         title: "Failed to Update Athlete",
-        description: error.message || "There was an error updating the athlete profile.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
