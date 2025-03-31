@@ -525,26 +525,10 @@ function CampViewPage(props: { id?: string }) {
                     Message
                   </Button>
                   
-                  {/* Settings Dropdown */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="icon">
-                        <Settings className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Camp Settings</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => setShowFormFieldsDialog(true)}>
-                        <FileText className="h-4 w-4 mr-2" />
-                        <span>Registration Form Fields</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setScheduleEditorOpen(true)}>
-                        <Calendar className="h-4 w-4 mr-2" />
-                        <span>Schedule Management</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <Button variant="outline" onClick={() => setScheduleEditorOpen(true)}>
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Schedule Management
+                  </Button>
                 
                 {/* Destructive actions */}
                 {registrationStatus === 'not_open' ? (
@@ -788,13 +772,6 @@ function CampViewPage(props: { id?: string }) {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Registration Settings</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => setShowFormFieldsDialog(true)}>
-                            <FileText className="h-4 w-4 mr-2" />
-                            Form Fields & Custom Fields
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
                           <DropdownMenuLabel>Export Options</DropdownMenuLabel>
                           <DropdownMenuItem onClick={() => {
                             setExportFormat("pdf");
@@ -922,13 +899,6 @@ function CampViewPage(props: { id?: string }) {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Attendance Options</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => setShowFormFieldsDialog(true)}>
-                            <FileText className="h-4 w-4 mr-2" />
-                            Form Fields Settings
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
                           <DropdownMenuLabel>Export Options</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => {
