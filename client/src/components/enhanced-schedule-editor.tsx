@@ -19,34 +19,6 @@ import { TimePickerInput } from "@/components/custom-fields/time-picker-input";
 import { Textarea } from "@/components/ui/textarea";
 import { CalendarScheduler } from "./calendar-scheduler";
 
-const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
-interface RecurrencePattern {
-  id?: number;
-  name: string;
-  startDate: Date | string;
-  endDate: Date | string;
-  repeatType: 'daily' | 'weekly' | 'monthly' | 'custom';
-  campId: number;
-  startTime: string;
-  endTime: string;
-  patternType: 'standard' | 'exception';
-  daysOfWeek: number[] | null;
-}
-
-interface PartialRecurrencePattern {
-  id?: number;
-  name?: string;
-  startDate?: Date | string;
-  endDate?: Date | string;
-  repeatType?: 'daily' | 'weekly' | 'monthly' | 'custom';
-  campId?: number;
-  startTime?: string;
-  endTime?: string;
-  patternType?: 'standard' | 'exception';
-  daysOfWeek?: number[] | null;
-}
-
 interface CampSession {
   id?: number;
   campId: number;
@@ -54,6 +26,21 @@ interface CampSession {
   startTime: string;
   endTime: string;
   status: 'active' | 'cancelled' | 'rescheduled';
+  notes?: string | null;
+  recurrenceGroupId?: number | null;
+  rescheduledDate?: Date | string | null;
+  rescheduledStartTime?: string | null;
+  rescheduledEndTime?: string | null;
+  rescheduledStatus?: 'confirmed' | 'tbd' | null;
+}
+
+interface PartialCampSession {
+  id?: number;
+  campId?: number;
+  sessionDate?: Date | string;
+  startTime?: string;
+  endTime?: string;
+  status?: 'active' | 'cancelled' | 'rescheduled';
   notes?: string | null;
   recurrenceGroupId?: number | null;
   rescheduledDate?: Date | string | null;
@@ -101,12 +88,13 @@ export function EnhancedScheduleEditor({
     startTime: '09:00',
     endTime: '10:00',
     status: 'active',
-    notes: '',
   });
   
   const [editingSession, setEditingSession] = useState<CampSession | null>(null);
   
-  // Load initial data
+  // Days of week helper
+  const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  
   useEffect(() => {
     if (campId) {
       loadSessions();
@@ -123,306 +111,70 @@ export function EnhancedScheduleEditor({
         if (data && data.sessions) {
           setSessions(data.sessions.map((session: any) => ({
             ...session,
-            sessionDate: new Date(session.sessionDate)
+            sessionDate: new Date(session.sessionDate),
+            rescheduledDate: session.rescheduledDate ? new Date(session.rescheduledDate) : null
           })));
+          
+          if (data.permissions) {
+            setPermissions(data.permissions);
+          }
+          
+          return;
         }
-        
-        if (data && data.permissions) {
-          setPermissions(data.permissions);
-        }
-        return; // Exit if successful
       } catch (apiError) {
         console.log("API endpoint not found, falling back to legacy schedule format");
-        // If the custom endpoint isn't implemented yet, fall back to the legacy format
       }
       
-      // Fall back to using legacy camp schedules
-      const fallbackResponse = await fetch(`/api/camps/${campId}/schedules`);
-      const fallbackData = await fallbackResponse.json();
-      
-      if (fallbackData && fallbackData.schedules) {
-        // Convert legacy schedules to sessions format
-        const startDateObj = startDate ? new Date(startDate) : new Date();
-        const endDateObj = endDate ? new Date(endDate) : new Date(startDateObj);
-        endDateObj.setDate(endDateObj.getDate() + 30); // Default to 30 days if no end date
+      // Fall back to converting regular schedules to sessions
+      try {
+        const response = await fetch(`/api/camps/${campId}/schedules`);
+        const data = await response.json();
         
-        // Generate sessions from the legacy schedules
-        const generatedSessions: CampSession[] = [];
-        let currentDate = new Date(startDateObj);
-        
-        while (currentDate <= endDateObj) {
-          const dayOfWeek = currentDate.getDay(); // 0 = Sunday, 6 = Saturday
-          
-          // Find schedules for this day of the week
-          const schedulesForDay = fallbackData.schedules.filter(
-            (schedule: any) => schedule.dayOfWeek === dayOfWeek
-          );
-          
-          // Create a session for each schedule on this day
-          schedulesForDay.forEach((schedule: any) => {
-            generatedSessions.push({
-              id: schedule.id * 1000 + generatedSessions.length, // Generate a unique ID
-              campId: schedule.campId,
-              sessionDate: new Date(currentDate),
+        if (data && data.schedules) {
+          // Convert regular schedules to virtual sessions
+          const today = new Date();
+          const sessionsFromSchedules = data.schedules.map((schedule: any) => {
+            const sessionDate = new Date(today);
+            // Set the date to next occurrence of this day of week
+            const dayDiff = (schedule.dayOfWeek - today.getDay() + 7) % 7;
+            sessionDate.setDate(today.getDate() + dayDiff);
+            
+            return {
+              id: `schedule-${schedule.id}`,
+              campId,
+              sessionDate,
               startTime: schedule.startTime,
               endTime: schedule.endTime,
               status: 'active',
-              notes: null,
-              recurrenceGroupId: null
-            });
+              isVirtual: true, // Mark as virtual since it's derived from a schedule
+            };
           });
           
-          // Move to the next day
-          currentDate.setDate(currentDate.getDate() + 1);
-        }
-        
-        setSessions(generatedSessions);
-        
-        if (fallbackData.permissions) {
-          setPermissions(fallbackData.permissions);
-        }
-      }
-    } catch (error) {
-      console.error("Failed to load camp sessions:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load camp sessions. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  const loadPatterns = async () => {
-    try {
-      // First try to use the API version with the custom endpoint
-      try {
-        const response = await fetch(`/api/camps/${campId}/recurrence-patterns`);
-        const data = await response.json();
-        
-        if (data && data.patterns) {
-          setPatterns(data.patterns.map((pattern: any) => ({
-            ...pattern,
-            startDate: new Date(pattern.startDate),
-            endDate: new Date(pattern.endDate)
-          })));
-          return; // Exit if successful
-        }
-      } catch (apiError) {
-        console.log("API endpoint not found, falling back to legacy schedule format");
-        // If the custom endpoint isn't implemented yet, fall back to converting schedules to patterns
-      }
-      
-      // Fall back to using legacy camp schedules
-      const fallbackResponse = await fetch(`/api/camps/${campId}/schedules`);
-      const fallbackData = await fallbackResponse.json();
-      
-      if (fallbackData && fallbackData.schedules && fallbackData.schedules.length > 0) {
-        // Create a single weekly pattern for all schedules
-        const startDateObj = startDate ? new Date(startDate) : new Date();
-        const endDateObj = endDate ? new Date(endDate) : new Date(startDateObj);
-        endDateObj.setDate(endDateObj.getDate() + 30); // Default to 30 days if no end date
-        
-        // Group schedules by the days they run
-        const daysActive = fallbackData.schedules.map((s: any) => s.dayOfWeek);
-        
-        const generatedPattern: RecurrencePattern = {
-          id: 1000, // Generate a unique ID
-          name: "Weekly Schedule",
-          startDate: startDateObj,
-          endDate: endDateObj,
-          repeatType: 'weekly',
-          campId: campId,
-          startTime: fallbackData.schedules[0].startTime,
-          endTime: fallbackData.schedules[0].endTime,
-          patternType: 'standard',
-          daysOfWeek: daysActive
-        };
-        
-        setPatterns([generatedPattern]);
-      }
-    } catch (error) {
-      console.error("Failed to load recurrence patterns:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load schedule patterns. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  const handleAddPattern = async () => {
-    try {
-      const payload = {
-        ...newPattern,
-        startDate: format(newPattern.startDate as Date, 'yyyy-MM-dd'),
-        endDate: format(newPattern.endDate as Date, 'yyyy-MM-dd'),
-      };
-      
-      try {
-        // Try the new API endpoint
-        const response = await fetch(`/api/camps/${campId}/recurrence-patterns`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload)
-        });
-        
-        const data = await response.json();
-        
-        if (data && data.id) {
-          toast({
-            title: "Success",
-            description: "New schedule pattern created successfully.",
-          });
+          setSessions(sessionsFromSchedules);
           
-          setAddPatternOpen(false);
-          loadPatterns();
-          loadSessions();
+          if (data.permissions) {
+            setPermissions(data.permissions);
+          }
+          
           return;
         }
-      } catch (apiError) {
-        console.log("API endpoint not found, falling back to legacy schedule format");
+      } catch (scheduleError) {
+        console.error("Failed to load schedules:", scheduleError);
       }
       
-      // Fall back to creating basic schedules in the old format
-      // Convert the pattern to individual day schedules
-      if (newPattern.daysOfWeek && newPattern.daysOfWeek.length > 0) {
-        const createSchedulesPromises = newPattern.daysOfWeek.map(async (day) => {
-          const schedulePayload = {
-            campId: newPattern.campId,
-            dayOfWeek: day,
-            startTime: newPattern.startTime,
-            endTime: newPattern.endTime,
-          };
-          
-          return fetch(`/api/camps/${campId}/schedules`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(schedulePayload)
-          });
-        });
-        
-        await Promise.all(createSchedulesPromises);
-        
-        toast({
-          title: "Success",
-          description: "New schedule created successfully.",
-        });
-        
-        setAddPatternOpen(false);
-        loadPatterns();
-        loadSessions();
-      }
+      // If all else fails, set empty array
+      setSessions([]);
+      
     } catch (error) {
-      console.error("Failed to create pattern:", error);
+      console.error("Failed to load sessions:", error);
       toast({
         title: "Error",
-        description: "Failed to create schedule pattern. Please try again.",
+        description: "Failed to load sessions. Please try again.",
         variant: "destructive",
       });
     }
   };
-  
-  const handleUpdatePattern = async () => {
-    if (!editingPattern?.id) return;
-    
-    try {
-      const payload = {
-        ...editingPattern,
-        startDate: format(editingPattern.startDate as Date, 'yyyy-MM-dd'),
-        endDate: format(editingPattern.endDate as Date, 'yyyy-MM-dd'),
-      };
-      
-      try {
-        // Try using new API endpoint
-        const response = await fetch(`/api/camps/${campId}/recurrence-patterns/${editingPattern.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload)
-        });
-        
-        const data = await response.json();
-        
-        if (data && data.id) {
-          toast({
-            title: "Success",
-            description: "Schedule pattern updated successfully.",
-          });
-          
-          setEditPatternOpen(false);
-          loadPatterns();
-          loadSessions();
-          return;
-        }
-      } catch (apiError) {
-        console.log("API endpoint not found, falling back to legacy schedule format");
-      }
-      
-      // For now, let's just show a success message as if it worked
-      // since there's no direct way to update a pattern in the legacy format
-      toast({
-        title: "Success",
-        description: "Schedule pattern updated successfully.",
-      });
-      
-      setEditPatternOpen(false);
-      loadPatterns();
-      loadSessions();
-    } catch (error) {
-      console.error("Failed to update pattern:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update schedule pattern. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  const handleDeletePattern = async (patternId: number) => {
-    if (!patternId) return;
-    
-    try {
-      try {
-        // Try using new API endpoint
-        await fetch(`/api/camps/${campId}/recurrence-patterns/${patternId}`, {
-          method: 'DELETE',
-        });
-        
-        toast({
-          title: "Success",
-          description: "Schedule pattern deleted successfully.",
-        });
-        
-        loadPatterns();
-        loadSessions();
-        return;
-      } catch (apiError) {
-        console.log("API endpoint not found, falling back to legacy schedule format");
-      }
-      
-      // No direct way to delete patterns in legacy format, just reload data
-      loadPatterns();
-      loadSessions();
-      
-      toast({
-        title: "Success",
-        description: "Schedule updated successfully.",
-      });
-    } catch (error) {
-      console.error("Failed to delete pattern:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete schedule pattern. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-  
+
   const handleAddSession = async () => {
     // Validate that notes are provided
     if (!newSession.notes || newSession.notes.trim() === '') {
@@ -679,99 +431,6 @@ export function EnhancedScheduleEditor({
           </div>
         </TabsContent>
         
-        <TabsContent value="patterns" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-medium">Recurrence Patterns</h3>
-            {permissions.canManage && (
-              <Button onClick={() => setAddPatternOpen(true)}>
-                <Plus className="h-4 w-4 mr-1" />
-                Add Pattern
-              </Button>
-            )}
-          </div>
-          
-          {patterns.length > 0 ? (
-            <div className="space-y-4">
-              {patterns.map((pattern) => (
-                <Card key={pattern.id}>
-                  <CardContent className="pt-6">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="text-lg font-medium">{pattern.name}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {format(new Date(pattern.startDate), 'MMM d, yyyy')} - {format(new Date(pattern.endDate), 'MMM d, yyyy')}
-                        </p>
-                        <div className="mt-2">
-                          <Badge>
-                            {pattern.startTime.substring(0, 5)} - {pattern.endTime.substring(0, 5)}
-                          </Badge>
-                          <Badge variant="outline" className="ml-2">
-                            {pattern.repeatType.charAt(0).toUpperCase() + pattern.repeatType.slice(1)}
-                          </Badge>
-                        </div>
-                        
-                        {pattern.daysOfWeek && pattern.daysOfWeek.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-3">
-                            {daysOfWeek.map((day, index) => (
-                              <Badge 
-                                key={index}
-                                variant={pattern.daysOfWeek?.includes(index) ? "default" : "outline"}
-                                className={pattern.daysOfWeek?.includes(index) ? "" : "opacity-40"}
-                              >
-                                {day.substring(0, 3)}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      
-                      {permissions.canManage && (
-                        <div className="flex space-x-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => {
-                              setEditingPattern({
-                                ...pattern,
-                                startDate: new Date(pattern.startDate),
-                                endDate: new Date(pattern.endDate)
-                              });
-                              setEditPatternOpen(true);
-                            }}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => pattern.id && handleDeletePattern(pattern.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>No recurrence patterns created yet.</p>
-              {permissions.canManage && (
-                <Button 
-                  variant="outline" 
-                  className="mt-4"
-                  onClick={() => setAddPatternOpen(true)}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Create First Pattern
-                </Button>
-              )}
-            </div>
-          )}
-        </TabsContent>
-        
         <TabsContent value="list" className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-medium">Session List</h3>
@@ -878,276 +537,6 @@ export function EnhancedScheduleEditor({
           )}
         </TabsContent>
       </Tabs>
-      
-      {/* Add Pattern Dialog */}
-      <Dialog open={addPatternOpen} onOpenChange={setAddPatternOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Add Recurrence Pattern</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="pattern-name">Pattern Name</Label>
-              <Input
-                id="pattern-name"
-                value={newPattern.name}
-                onChange={(e) => handleInputChange(setNewPattern, 'name', e.target.value)}
-                placeholder="e.g., Weekly Practice"
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Start Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-left font-normal"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {newPattern.startDate ? format(newPattern.startDate as Date, 'PP') : "Select date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={newPattern.startDate as Date}
-                      onSelect={(date) => handleInputChange(setNewPattern, 'startDate', date || new Date())}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              
-              <div>
-                <Label>End Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-left font-normal"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {newPattern.endDate ? format(newPattern.endDate as Date, 'PP') : "Select date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={newPattern.endDate as Date}
-                      onSelect={(date) => handleInputChange(setNewPattern, 'endDate', date || addDays(new Date(), 30))}
-                      disabled={(date) => date < (newPattern.startDate as Date)}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-            
-            <div>
-              <Label>Pattern Type</Label>
-              <Select
-                value={newPattern.repeatType}
-                onValueChange={(value) => handleInputChange(setNewPattern, 'repeatType', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a frequency" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="custom">Custom Days</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {(newPattern.repeatType === 'weekly' || newPattern.repeatType === 'custom') && (
-              <div className="space-y-2">
-                <Label>Days of Week</Label>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {daysOfWeek.map((day, index) => (
-                    <Badge 
-                      key={index}
-                      variant={isPatternActiveOnDay(newPattern, index) ? "default" : "outline"}
-                      className={cn(
-                        "cursor-pointer",
-                        !isPatternActiveOnDay(newPattern, index) && "opacity-50"
-                      )}
-                      onClick={() => handleNewPatternDayToggle(index)}
-                    >
-                      {day.substring(0, 3)}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Start Time</Label>
-                <TimePickerInput
-                  value={newPattern.startTime || ''}
-                  onChange={(value) => handleInputChange(setNewPattern, 'startTime', value)}
-                />
-              </div>
-              
-              <div>
-                <Label>End Time</Label>
-                <TimePickerInput
-                  value={newPattern.endTime || ''}
-                  onChange={(value) => handleInputChange(setNewPattern, 'endTime', value)}
-                />
-              </div>
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddPatternOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddPattern}>
-              Create Pattern
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Edit Pattern Dialog */}
-      <Dialog open={editPatternOpen} onOpenChange={setEditPatternOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Edit Recurrence Pattern</DialogTitle>
-          </DialogHeader>
-          
-          {editingPattern && (
-            <div className="space-y-4 py-4">
-              <div>
-                <Label htmlFor="edit-pattern-name">Pattern Name</Label>
-                <Input
-                  id="edit-pattern-name"
-                  value={editingPattern.name}
-                  onChange={(e) => handleInputChange(setEditingPattern, 'name', e.target.value)}
-                  placeholder="e.g., Weekly Practice"
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Start Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {editingPattern.startDate ? format(editingPattern.startDate as Date, 'PP') : "Select date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={editingPattern.startDate as Date}
-                        onSelect={(date) => handleInputChange(setEditingPattern, 'startDate', date || new Date())}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                
-                <div>
-                  <Label>End Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {editingPattern.endDate ? format(editingPattern.endDate as Date, 'PP') : "Select date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={editingPattern.endDate as Date}
-                        onSelect={(date) => handleInputChange(setEditingPattern, 'endDate', date || addDays(new Date(), 30))}
-                        disabled={(date) => date < (editingPattern.startDate as Date)}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-              
-              <div>
-                <Label>Pattern Type</Label>
-                <Select
-                  value={editingPattern.repeatType}
-                  onValueChange={(value) => handleInputChange(setEditingPattern, 'repeatType', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a frequency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">Daily</SelectItem>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="custom">Custom Days</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {(editingPattern.repeatType === 'weekly' || editingPattern.repeatType === 'custom') && (
-                <div className="space-y-2">
-                  <Label>Days of Week</Label>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {daysOfWeek.map((day, index) => (
-                      <Badge 
-                        key={index}
-                        variant={isPatternActiveOnDay(editingPattern, index) ? "default" : "outline"}
-                        className={cn(
-                          "cursor-pointer",
-                          !isPatternActiveOnDay(editingPattern, index) && "opacity-50"
-                        )}
-                        onClick={() => handleEditPatternDayToggle(index)}
-                      >
-                        {day.substring(0, 3)}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Start Time</Label>
-                  <TimePickerInput
-                    value={editingPattern.startTime || ''}
-                    onChange={(value) => handleInputChange(setEditingPattern, 'startTime', value)}
-                  />
-                </div>
-                
-                <div>
-                  <Label>End Time</Label>
-                  <TimePickerInput
-                    value={editingPattern.endTime || ''}
-                    onChange={(value) => handleInputChange(setEditingPattern, 'endTime', value)}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditPatternOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleUpdatePattern}>
-              Update Pattern
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       
       {/* Add Session Dialog */}
       <Dialog open={addSessionOpen} onOpenChange={setAddSessionOpen}>

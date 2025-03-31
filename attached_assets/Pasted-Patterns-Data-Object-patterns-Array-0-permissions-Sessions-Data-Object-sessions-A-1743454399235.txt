@@ -1,0 +1,76 @@
+Patterns Data: 
+Object {patterns: Array(0), permissions: {…}}
+Sessions Data: 
+Object {sessions: Array(3), permissions: {…}}
+Schedule Errors: null
+Exception Errors: null
+CampViewPage - id from props: 8
+CampViewPage - id from params: 8
+CampViewPage - final id being used: 8
+CampViewPage - id from props: 8
+CampViewPage - id from params: 8
+CampViewPage - final id being used: 8
+Camp ID: 8
+Schedule Data: 
+Object {schedules: Array(1), permissions: {…}}
+Exceptions Data: 
+Object {exceptions: Array(1), permissions: {…}}
+Patterns Data: 
+Object {patterns: Array(0), permissions: {…}}
+Sessions Data: 
+Object {sessions: Array(3), permissions: {…}}
+Schedule Errors: null
+Exception Errors: null
+Camp ID: 8
+Schedule Data: 
+Object {schedules: Array(1), permissions: {…}}
+Exceptions Data: 
+Object {exceptions: Array(1), permissions: {…}}
+Patterns Data: 
+Object {patterns: Array(0), permissions: {…}}
+Sessions Data: 
+Object {sessions: Array(3), permissions: {…}}
+Schedule Errors: null
+Exception Errors: null
+patterns is not defined
+patterns is not defined
+The above error occurred in the <EnhancedScheduleEditor> component:
+
+    at EnhancedScheduleEditor (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/components/enhanced-schedule-editor.tsx:38:3)
+    at div
+    at https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-VZNMAICS.js?v=b371e3bf:41:13
+    at https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WUMLVIQ5.js?v=b371e3bf:61:7
+    at https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-DKHUMOWT.js?v=b371e3bf:52:11
+    at https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-DKHUMOWT.js?v=b371e3bf:33:11
+    at https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-VZNMAICS.js?v=b371e3bf:41:13
+    at https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-AVGGA3ZM.js?v=b371e3bf:29:5
+    at https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-PFGGVT64.js?v=b371e3bf:232:13
+    at https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-PFGGVT64.js?v=b371e3bf:155:58
+    at Presence (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-S7EWQZ7Q.js?v=b371e3bf:24:11)
+    at https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-PFGGVT64.js?v=b371e3bf:146:64
+    at https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-DKHUMOWT.js?v=b371e3bf:52:11
+    at https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-DKHUMOWT.js?v=b371e3bf:33:11
+    at https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-VZNMAICS.js?v=b371e3bf:41:13
+    at https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-WUMLVIQ5.js?v=b371e3bf:260:22
+    at Presence (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-S7EWQZ7Q.js?v=b371e3bf:24:11)
+    at Provider (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-JJS7DLG7.js?v=b371e3bf:38:15)
+    at DialogPortal (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-PFGGVT64.js?v=b371e3bf:109:11)
+    at _c3 (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/components/ui/dialog.tsx:51:12)
+    at Provider (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-JJS7DLG7.js?v=b371e3bf:38:15)
+    at Dialog (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-PFGGVT64.js?v=b371e3bf:50:5)
+    at div
+    at main
+    at div
+    at div
+    at DashboardLayout (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/pages/dashboard.tsx:48:28)
+    at CampViewPage (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/pages/camp-view-page.tsx:150:18)
+    at Route (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=b371e3bf:280:16)
+    at ProtectedRoute (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/lib/protected-route.tsx:22:3)
+    at Switch (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=b371e3bf:336:17)
+    at Router (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/App.tsx?v=0Hu9wlC0u7S26OA4vQRqe:98:31)
+    at AuthProvider (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/hooks/use-auth.tsx:26:32)
+    at QueryClientProvider (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=b371e3bf:2805:3)
+    at ErrorBoundary (https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/src/components/error-boundary.tsx:7:5)
+    at App
+
+React will…
