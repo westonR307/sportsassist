@@ -376,8 +376,9 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
                       className="text-xs"
                       onClick={() => {
                         // Use proper fragment navigation with Wouter
-                        const baseUrl = `/dashboard/camps/${campId}`;
-                        navigate(`${baseUrl}#schedule-editor`);
+                        // Make sure this hash matches the one used in camp-view-page.tsx
+                        // Get the current path and append the hash
+                        navigate(`${window.location.pathname}#schedule-editor`);
                       }}
                     >
                       <Calendar className="h-3 w-3 mr-1" />
@@ -396,8 +397,9 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
                     className="mt-4 text-xs"
                     onClick={() => {
                       // Use proper fragment navigation with Wouter
-                      const baseUrl = `/dashboard/camps/${campId}`;
-                      navigate(`${baseUrl}#schedule-editor`);
+                      // Make sure this hash matches the one used in camp-view-page.tsx
+                      // Get the current path and append the hash
+                      navigate(`${window.location.pathname}#schedule-editor`);
                     }}
                   >
                     <Calendar className="h-3 w-3 mr-1" />
