@@ -22,12 +22,14 @@ import { useLocation as useWouterLocation, useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { type Camp } from "@shared/schema";
 import { AddCampDialog } from "@/components/add-camp-dialog";
+import { DashboardLayout } from "@/pages/dashboard";
 
 // Extended camp type to include permissions from the server
 interface CampWithPermissions extends Camp {
   permissions?: {
     canManage: boolean;
   }
+  schedules?: any[]; // Add schedules property for the CampScheduleSummary component
 }
 
 export default function CampsPage() {
@@ -43,7 +45,7 @@ export default function CampsPage() {
   // Check if user is a camp creator or manager who can create camps
   const canCreateCamps = user && ['camp_creator', 'manager'].includes(user.role);
 
-  return (
+  const campsContent = (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
@@ -299,8 +301,8 @@ export default function CampsPage() {
             return (
               <FlipCard 
                 key={camp.id}
-                frontCard={frontCard}
-                backCard={backCard}
+                front={frontCard}
+                back={backCard}
                 className="h-full"
               />
             );
@@ -314,5 +316,11 @@ export default function CampsPage() {
         onOpenChange={setShowAddCampDialog}
       />
     </div>
+  );
+  
+  return (
+    <DashboardLayout>
+      {campsContent}
+    </DashboardLayout>
   );
 }
