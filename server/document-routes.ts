@@ -186,10 +186,43 @@ export default function documentRoutes(storage: IStorage) {
       }
       
       // Validate field data
-      const fieldData = insertDocumentFieldSchema.parse({
-        ...req.body,
-        documentId
+      const validFieldTypes = ['signature', 'initial', 'date', 'text', 'checkbox', 'dynamic_field'];
+      
+      // Custom validation for field types including dynamic fields
+      const fieldSchema = z.object({
+        label: z.string(),
+        fieldType: z.enum(['signature', 'initial', 'date', 'text', 'checkbox', 'dynamic_field']),
+        required: z.boolean().optional().default(true),
+        xPosition: z.number(),
+        yPosition: z.number(),
+        pageNumber: z.number().optional().default(1),
+        width: z.number().optional().default(200),
+        height: z.number().optional().default(50),
+        order: z.number().optional().default(0),
+        dataSource: z.enum([
+          "athlete_name", "athlete_dob", "athlete_gender",
+          "athlete_emergency_contact", "athlete_emergency_phone",
+          "athlete_emergency_relation", "athlete_allergies",
+          "athlete_medical_conditions", "athlete_medications", 
+          "athlete_special_needs", "athlete_jersey_size", "athlete_shoe_size",
+          "parent_name", "parent_email", "parent_phone",
+          "camp_name", "camp_dates", "camp_location"
+        ]).optional().nullable()
+      }).refine(data => {
+        // If fieldType is 'dynamic_field', dataSource is required
+        if (data.fieldType === 'dynamic_field' && !data.dataSource) {
+          return false;
+        }
+        return true;
+      }, {
+        message: "Data source is required for dynamic fields",
+        path: ["dataSource"]
       });
+      
+      const fieldData = {
+        ...fieldSchema.parse(req.body),
+        documentId
+      };
       
       // Create the field
       const field = await storage.createDocumentField(fieldData);
@@ -249,7 +282,7 @@ export default function documentRoutes(storage: IStorage) {
       // Validate update data
       const updateSchema = z.object({
         label: z.string().optional(),
-        fieldType: z.enum(['signature', 'initial', 'date', 'text', 'checkbox']).optional(),
+        fieldType: z.enum(['signature', 'initial', 'date', 'text', 'checkbox', 'dynamic_field']).optional(),
         required: z.boolean().optional(),
         xPosition: z.number().optional(),
         yPosition: z.number().optional(),
@@ -259,6 +292,15 @@ export default function documentRoutes(storage: IStorage) {
         zIndex: z.number().optional(),
         defaultValue: z.string().optional(),
         placeholder: z.string().optional(),
+        dataSource: z.enum([
+          "athlete_name", "athlete_dob", "athlete_gender",
+          "athlete_emergency_contact", "athlete_emergency_phone",
+          "athlete_emergency_relation", "athlete_allergies",
+          "athlete_medical_conditions", "athlete_medications", 
+          "athlete_special_needs", "athlete_jersey_size", "athlete_shoe_size",
+          "parent_name", "parent_email", "parent_phone",
+          "camp_name", "camp_dates", "camp_location"
+        ]).optional(),
       });
       
       const updateData = updateSchema.parse(req.body);
@@ -449,11 +491,66 @@ export default function documentRoutes(storage: IStorage) {
         timestamp: new Date()
       });
       
-      // Return the document, fields and request info
+      // Check if we have any dynamic fields that need to be populated from the registration data
+      const dynamicFields = fields.filter(field => field.fieldType === 'dynamic_field' && field.dataSource);
+      let dynamicFieldData = {};
+      
+      // If we have dynamic fields and a registrationId in the request, fetch the related data
+      if (dynamicFields.length > 0 && signatureRequest.registrationId) {
+        try {
+          // Get the registration data
+          const registration = await storage.getRegistration(signatureRequest.registrationId);
+          if (registration) {
+            // Get child data for the registration
+            const child = await storage.getChild(registration.childId);
+            // Get camp data
+            const camp = await storage.getCamp(registration.campId);
+            
+            // Get user data if requestedForId is present (for parent information)
+            let parent = null;
+            if (signatureRequest.requestedForId) {
+              parent = await storage.getUser(signatureRequest.requestedForId);
+            }
+            
+            // Prepare the dynamic field data
+            dynamicFieldData = {
+              // Athlete data
+              athlete_name: child?.fullName || '',
+              athlete_dob: child?.dateOfBirth ? new Date(child.dateOfBirth).toLocaleDateString() : '',
+              athlete_gender: child?.gender || '',
+              athlete_emergency_contact: child?.emergencyContact || '',
+              athlete_emergency_phone: child?.emergencyPhone || '',
+              athlete_emergency_relation: child?.emergencyRelation || '',
+              athlete_allergies: child?.allergies ? child.allergies.join(', ') : '',
+              athlete_medical_conditions: child?.medicalConditions ? child.medicalConditions.join(', ') : '',
+              athlete_medications: child?.medications ? child.medications.join(', ') : '',
+              athlete_special_needs: child?.specialNeeds || '',
+              athlete_jersey_size: child?.jerseySize || '',
+              athlete_shoe_size: child?.shoeSize || '',
+              
+              // Parent data
+              parent_name: parent ? `${parent.first_name || ''} ${parent.last_name || ''}`.trim() : '',
+              parent_email: parent?.email || '',
+              parent_phone: parent?.phone_number || '',
+              
+              // Camp data
+              camp_name: camp?.name || '',
+              camp_dates: camp ? `${new Date(camp.startDate).toLocaleDateString()} - ${new Date(camp.endDate).toLocaleDateString()}` : '',
+              camp_location: camp ? `${camp.streetAddress}, ${camp.city}, ${camp.state} ${camp.zipCode}` : ''
+            };
+          }
+        } catch (error) {
+          console.error("Error fetching dynamic field data:", error);
+          // We'll continue even if we couldn't get all the dynamic data
+        }
+      }
+      
+      // Return the document, fields, request info, and dynamic field data
       return res.json({
         document,
         fields,
-        signatureRequest
+        signatureRequest,
+        dynamicFieldData
       });
     } catch (error: any) {
       console.error(`Error processing signature request with token ${req.params.token}:`, error);

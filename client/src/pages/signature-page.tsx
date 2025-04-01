@@ -6,13 +6,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
 import { apiRequest } from "@/lib/queryClient";
 import SignatureCanvas from 'react-signature-canvas';
 import { format } from "date-fns";
+import { Input } from "@/components/ui/input";
 
 export default function SignaturePage() {
   const params = useParams<{ token: string }>();
@@ -34,6 +35,26 @@ export default function SignaturePage() {
       });
     }
   });
+  
+  // Initialize field values with any dynamic data we received from the server
+  useEffect(() => {
+    if (data?.dynamicFieldData && Object.keys(data.dynamicFieldData).length > 0) {
+      const dynamicFields = data.fields.filter((field: any) => field.fieldType === 'dynamic_field' && field.dataSource);
+      
+      // Initialize field values with dynamic data
+      const initialFieldValues: {[key: string]: any} = {};
+      
+      // For each dynamic field, set the value from the dynamicFieldData
+      dynamicFields.forEach((field: any) => {
+        if (field.dataSource && data.dynamicFieldData[field.dataSource]) {
+          initialFieldValues[`field_${field.id}`] = data.dynamicFieldData[field.dataSource];
+        }
+      });
+      
+      // Set the initial field values
+      setSignatureData(initialFieldValues);
+    }
+  }, [data]);
 
   // Mutation for signing document
   const signDocumentMutation = useMutation({
@@ -216,6 +237,40 @@ export default function SignaturePage() {
             </CardContent>
           </Card>
 
+          <Separator className="my-8" />
+
+          {/* Dynamic Fields Section */}
+          {data.fields && data.fields.filter((field: any) => field.fieldType === 'dynamic_field').length > 0 && (
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold mb-4">Information</h2>
+              <p className="text-muted-foreground mb-4">
+                Please review the following information that will be included in this document.
+                You can make changes if needed.
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {data.fields
+                  .filter((field: any) => field.fieldType === 'dynamic_field')
+                  .sort((a: any, b: any) => a.order - b.order)
+                  .map((field: any) => (
+                    <div key={field.id} className="space-y-2">
+                      <Label htmlFor={`field_${field.id}`}>{field.label}</Label>
+                      <Input
+                        id={`field_${field.id}`}
+                        value={signatureData[`field_${field.id}`] || ''}
+                        onChange={(e) => setSignatureData({
+                          ...signatureData,
+                          [`field_${field.id}`]: e.target.value
+                        })}
+                        required={field.required}
+                      />
+                    </div>
+                  ))
+                }
+              </div>
+            </div>
+          )}
+          
           <Separator className="my-8" />
 
           <div className="mb-8">

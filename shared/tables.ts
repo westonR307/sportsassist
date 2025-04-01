@@ -7,7 +7,7 @@ import {
   type CampStatus, type RecurrencePattern,
   type DocumentType, type DocumentStatus, 
   type SignatureStatus, type SignatureFieldType,
-  type AuditAction
+  type DynamicFieldSource, type AuditAction
 } from "./types";
 
 // Define the table structure for the new enhanced camp session scheduling
@@ -283,6 +283,7 @@ export const documentFields = pgTable("document_fields", {
   width: integer("width").notNull().default(200), // Width in pixels
   height: integer("height").notNull().default(50), // Height in pixels
   order: integer("order").notNull().default(0), // Order of fields for sequential signing
+  dataSource: text("data_source").$type<DynamicFieldSource>(), // For dynamic field data source
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
