@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FlipCard } from "@/components/ui/flip-card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { CampScheduleSummary } from "@/components/camp-schedule";
 import {
   Plus,
@@ -32,11 +31,6 @@ import {
   X,
   ClipboardList,
   Clipboard,
-  ChevronRight,
-  List,
-  User,
-  UserPlus,
-  Building,
 } from "lucide-react";
 import { useLocation as useWouterLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -55,34 +49,15 @@ interface Organization {
 
 // Sidebar component for dashboard layout
 function DashboardSidebar() {
-  const { user, logoutMutation } = useAuth();
+  const { user, logout } = useAuth();
   const [location, navigate] = useWouterLocation();
-  
-  // Create a logout handler
-  const handleLogout = () => {
-    logoutMutation.mutate();
-  };
-  
-  // State for collapsible sections
-  const [openSections, setOpenSections] = React.useState({
-    camps: true,
-    team: true,
-    settings: true
-  });
-  
-  const toggleSection = (section: 'camps' | 'team' | 'settings') => {
-    setOpenSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
   
   const isActive = (path: string) => {
     return location.startsWith(path) ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground";
   };
   
   return (
-    <div className="h-full flex flex-col">
+    <div className="w-64 border-r h-full flex flex-col">
       <div className="p-4 border-b">
         <h2 className="font-bold text-lg">SportsAssist.io</h2>
         <div className="text-sm text-muted-foreground mt-1">
@@ -90,7 +65,7 @@ function DashboardSidebar() {
         </div>
       </div>
       
-      <div className="flex-1 py-4 overflow-y-auto">
+      <div className="flex-1 py-4">
         <nav className="space-y-1 px-2">
           <Button
             variant="ghost"
@@ -101,151 +76,50 @@ function DashboardSidebar() {
             Dashboard
           </Button>
           
-          {/* Camps Section */}
-          <Collapsible open={openSections.camps} className="px-1 py-1">
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" className="w-full justify-between items-center">
-                <div className="flex items-center">
-                  <ClipboardList className="h-4 w-4 mr-2" />
-                  <span>Camps</span>
-                </div>
-                <ChevronRight className={`h-4 w-4 transition-transform ${openSections.camps ? 'rotate-90' : ''}`} />
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="pl-6 pt-2 space-y-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`w-full justify-start ${isActive("/dashboard/camps")}`}
-                onClick={() => navigate("/dashboard/camps")}
-              >
-                <List className="h-4 w-4 mr-2" />
-                All Camps
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`w-full justify-start ${isActive("/dashboard/schedule")}`}
-                onClick={() => navigate("/dashboard/schedule")}
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                Schedule
-              </Button>
-              {user && ["camp_creator", "manager", "admin"].includes(user.role) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`w-full justify-start ${isActive("/dashboard/create-camp")}`}
-                  onClick={() => navigate("/dashboard")}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Camp
-                </Button>
-              )}
-            </CollapsibleContent>
-          </Collapsible>
+          <Button
+            variant="ghost"
+            className={`w-full justify-start ${isActive("/dashboard/schedule")}`}
+            onClick={() => navigate("/dashboard/schedule")}
+          >
+            <Calendar className="h-4 w-4 mr-2" />
+            Schedule
+          </Button>
           
-          {/* Team Section */}
-          {user && ["camp_creator", "manager", "admin"].includes(user.role) && (
-            <Collapsible open={openSections.team} className="px-1 py-1">
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="w-full justify-between items-center">
-                  <div className="flex items-center">
-                    <Users className="h-4 w-4 mr-2" />
-                    <span>Team</span>
-                  </div>
-                  <ChevronRight className={`h-4 w-4 transition-transform ${openSections.team ? 'rotate-90' : ''}`} />
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="pl-6 pt-2 space-y-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`w-full justify-start ${isActive("/dashboard/participants")}`}
-                  onClick={() => navigate("/dashboard/participants")}
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  Participants
-                </Button>
-                {user && ["admin", "manager"].includes(user.role) && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`w-full justify-start ${isActive("/dashboard/staff")}`}
-                    onClick={() => navigate("/dashboard/staff")}
-                  >
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Staff
-                  </Button>
-                )}
-              </CollapsibleContent>
-            </Collapsible>
-          )}
+          <Button
+            variant="ghost"
+            className={`w-full justify-start ${isActive("/dashboard/camps")}`}
+            onClick={() => navigate("/dashboard/camps")}
+          >
+            <ClipboardList className="h-4 w-4 mr-2" />
+            Manage Camps
+          </Button>
           
-          {/* Parent section for parent users */}
-          {user && user.role === "parent" && (
+          <Button
+            variant="ghost"
+            className={`w-full justify-start ${isActive("/dashboard/participants")}`}
+            onClick={() => navigate("/dashboard/participants")}
+          >
+            <Users className="h-4 w-4 mr-2" />
+            Participants
+          </Button>
+          
+          {user && ["admin", "manager"].includes(user.role) && (
             <Button
               variant="ghost"
-              className={`w-full justify-start ${isActive("/dashboard/parent")}`}
-              onClick={() => navigate("/dashboard/parent")}
+              className={`w-full justify-start ${isActive("/dashboard/organization")}`}
+              onClick={() => navigate("/dashboard/organization")}
             >
-              <Users className="h-4 w-4 mr-2" />
-              My Kids
+              <Settings className="h-4 w-4 mr-2" />
+              Organization
             </Button>
           )}
-          
-          {/* Settings Section */}
-          <Collapsible open={openSections.settings} className="px-1 py-1">
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" className="w-full justify-between items-center">
-                <div className="flex items-center">
-                  <Settings className="h-4 w-4 mr-2" />
-                  <span>Settings</span>
-                </div>
-                <ChevronRight className={`h-4 w-4 transition-transform ${openSections.settings ? 'rotate-90' : ''}`} />
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="pl-6 pt-2 space-y-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`w-full justify-start ${isActive("/dashboard/profile")}`}
-                onClick={() => navigate("/dashboard/profile")}
-              >
-                <User className="h-4 w-4 mr-2" />
-                Profile
-              </Button>
-              {user && ["admin", "manager"].includes(user.role) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`w-full justify-start ${isActive("/dashboard/organization")}`}
-                  onClick={() => navigate("/dashboard/organization")}
-                >
-                  <Building className="h-4 w-4 mr-2" />
-                  Organization
-                </Button>
-              )}
-              {user && ["admin", "manager"].includes(user.role) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`w-full justify-start ${isActive("/dashboard/custom-fields")}`}
-                  onClick={() => navigate("/dashboard/custom-fields")}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Custom Fields
-                </Button>
-              )}
-            </CollapsibleContent>
-          </Collapsible>
         </nav>
       </div>
       
       <div className="p-4 border-t">
         <div className="flex items-center mb-4">
           <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mr-2">
-            {user?.first_name?.[0]?.toUpperCase() || user?.username?.[0]?.toUpperCase() || "U"}
+            {user?.first_name?.[0]?.toUpperCase() || "U"}
           </div>
           <div>
             <div className="text-sm font-medium">
@@ -257,7 +131,7 @@ function DashboardSidebar() {
           </div>
         </div>
         
-        <Button variant="outline" className="w-full" onClick={handleLogout}>
+        <Button variant="outline" className="w-full" onClick={logout}>
           <LogOut className="h-4 w-4 mr-2" />
           Logout
         </Button>
@@ -304,29 +178,14 @@ function MobileNavigation() {
         <span className="text-xs">Camps</span>
       </Button>
       
-      {/* Only show participants tab for camp creators and managers */}
-      {user && ["camp_creator", "manager", "admin"].includes(user.role) && (
-        <Button
-          variant="ghost"
-          className={`flex-1 flex-col h-16 rounded-none ${isActive("/dashboard/participants")}`}
-          onClick={() => navigate("/dashboard/participants")}
-        >
-          <Users className="h-5 w-5 mb-1" />
-          <span className="text-xs">People</span>
-        </Button>
-      )}
-      
-      {/* Only show parent tab for parent users */}
-      {user && user.role === "parent" && (
-        <Button
-          variant="ghost"
-          className={`flex-1 flex-col h-16 rounded-none ${isActive("/dashboard/parent")}`}
-          onClick={() => navigate("/dashboard/parent")}
-        >
-          <Users className="h-5 w-5 mb-1" />
-          <span className="text-xs">My Kids</span>
-        </Button>
-      )}
+      <Button
+        variant="ghost"
+        className={`flex-1 flex-col h-16 rounded-none ${isActive("/dashboard/participants")}`}
+        onClick={() => navigate("/dashboard/participants")}
+      >
+        <Users className="h-5 w-5 mb-1" />
+        <span className="text-xs">People</span>
+      </Button>
       
       {user && ["admin", "manager"].includes(user.role) && (
         <Button
@@ -345,11 +204,11 @@ function MobileNavigation() {
 // Layout component
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      {/* Sidebar for desktop */}
-      <aside className="w-64 hidden md:block border-r shrink-0">
+    <div className="flex h-screen bg-background">
+      {/* Desktop sidebar - hidden on mobile */}
+      <div className="hidden md:block">
         <DashboardSidebar />
-      </aside>
+      </div>
       
       <div className="flex-1 flex flex-col overflow-hidden">
         <main className="flex-1 overflow-y-auto p-6 pb-20 md:pb-6">
