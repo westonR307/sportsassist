@@ -218,6 +218,23 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
               <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Custom Fields</span>
             </button>
           ) : null}
+          
+          {/* Documents Link */}
+          {user?.role === "camp_creator" || user?.role === "manager" ? (
+            <button
+              onClick={() => {
+                navigate("/documents");
+                // Close sidebar on mobile after navigation
+                if (window.innerWidth < 1024) setSidebarOpen(false);
+              }}
+              className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
+                wouterLocation === "/documents" || wouterLocation.startsWith("/documents/") ? "bg-gray-100" : ""
+              }`}
+            >
+              <ClipboardList className="h-5 w-5 flex-shrink-0" />
+              <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Documents</span>
+            </button>
+          ) : null}
           <Button
             variant="ghost"
             className="w-full justify-start whitespace-nowrap"
