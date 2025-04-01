@@ -61,7 +61,7 @@ function DashboardSidebar() {
       <div className="p-4 border-b">
         <h2 className="font-bold text-lg">SportsAssist.io</h2>
         <div className="text-sm text-muted-foreground mt-1">
-          {user?.organization?.name || "Organization"}
+          {user?.organizationId ? `Organization #${user.organizationId}` : "Organization"}
         </div>
       </div>
       
@@ -103,7 +103,7 @@ function DashboardSidebar() {
             Participants
           </Button>
           
-          {["admin", "manager"].includes(user?.role || "") && (
+          {user && ["admin", "manager"].includes(user.role) && (
             <Button
               variant="ghost"
               className={`w-full justify-start ${isActive("/dashboard/organization")}`}
@@ -123,10 +123,10 @@ function DashboardSidebar() {
           </div>
           <div>
             <div className="text-sm font-medium">
-              {user?.first_name} {user?.last_name}
+              {user?.first_name || user?.username} {user?.last_name}
             </div>
             <div className="text-xs text-muted-foreground capitalize">
-              {user?.role.replace('_', ' ')}
+              {user?.role?.replace('_', ' ') || "User"}
             </div>
           </div>
         </div>
@@ -140,15 +140,82 @@ function DashboardSidebar() {
   );
 }
 
+// Mobile Navigation component
+function MobileNavigation() {
+  const [location, navigate] = useWouterLocation();
+  const { user } = useAuth();
+  
+  const isActive = (path: string) => {
+    return location.startsWith(path) ? "text-primary border-t-primary" : "text-muted-foreground";
+  };
+  
+  return (
+    <div className="fixed bottom-0 left-0 right-0 bg-background border-t flex md:hidden">
+      <Button
+        variant="ghost"
+        className={`flex-1 flex-col h-16 rounded-none ${isActive("/dashboard")}`}
+        onClick={() => navigate("/dashboard")}
+      >
+        <BarChart3 className="h-5 w-5 mb-1" />
+        <span className="text-xs">Dashboard</span>
+      </Button>
+      
+      <Button
+        variant="ghost"
+        className={`flex-1 flex-col h-16 rounded-none ${isActive("/dashboard/schedule")}`}
+        onClick={() => navigate("/dashboard/schedule")}
+      >
+        <Calendar className="h-5 w-5 mb-1" />
+        <span className="text-xs">Schedule</span>
+      </Button>
+      
+      <Button
+        variant="ghost"
+        className={`flex-1 flex-col h-16 rounded-none ${isActive("/dashboard/camps")}`}
+        onClick={() => navigate("/dashboard/camps")}
+      >
+        <ClipboardList className="h-5 w-5 mb-1" />
+        <span className="text-xs">Camps</span>
+      </Button>
+      
+      <Button
+        variant="ghost"
+        className={`flex-1 flex-col h-16 rounded-none ${isActive("/dashboard/participants")}`}
+        onClick={() => navigate("/dashboard/participants")}
+      >
+        <Users className="h-5 w-5 mb-1" />
+        <span className="text-xs">People</span>
+      </Button>
+      
+      {user && ["admin", "manager"].includes(user.role) && (
+        <Button
+          variant="ghost"
+          className={`flex-1 flex-col h-16 rounded-none ${isActive("/dashboard/organization")}`}
+          onClick={() => navigate("/dashboard/organization")}
+        >
+          <Settings className="h-5 w-5 mb-1" />
+          <span className="text-xs">Settings</span>
+        </Button>
+      )}
+    </div>
+  );
+}
+
 // Layout component
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen bg-background">
-      <DashboardSidebar />
+      {/* Desktop sidebar - hidden on mobile */}
+      <div className="hidden md:block">
+        <DashboardSidebar />
+      </div>
+      
       <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-6 pb-20 md:pb-6">
           {children}
         </main>
+        {/* Mobile navigation bar - shown only on mobile */}
+        <MobileNavigation />
       </div>
     </div>
   );
@@ -158,7 +225,8 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 interface CampWithPermissions extends Camp {
   permissions?: {
     canManage: boolean;
-  }
+  };
+  maxParticipants?: number;
 }
 
 // Dashboard component for displaying camps and stats
@@ -704,7 +772,13 @@ function CampsDashboard() {
                       <div className="flex justify-between">
                         <span>Schedule:</span>
                         <span>
-                          <CampScheduleSummary campId={camp.id} />
+                          <Button
+                            variant="link"
+                            className="text-xs p-0 h-auto"
+                            onClick={() => navigate(`/dashboard/camps/${camp.id}`)}
+                          >
+                            View schedule details
+                          </Button>
                         </span>
                       </div>
                       
