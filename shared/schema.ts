@@ -23,7 +23,8 @@ import {
   documentFields,
   signatureRequests,
   signatures,
-  documentAuditTrail
+  documentAuditTrail,
+  campDocumentAgreements
 } from "./tables";
 
 // Import types
@@ -335,18 +336,27 @@ export const insertDocumentAuditTrailSchema = createInsertSchema(documentAuditTr
   timestamp: true,
 });
 
+// Create schema for connecting documents to camps
+export const insertCampDocumentAgreementSchema = createInsertSchema(campDocumentAgreements).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Export document types
 export type Document = typeof documents.$inferSelect;
 export type DocumentField = typeof documentFields.$inferSelect;
 export type SignatureRequest = typeof signatureRequests.$inferSelect;
 export type Signature = typeof signatures.$inferSelect;
 export type DocumentAuditTrail = typeof documentAuditTrail.$inferSelect;
+export type CampDocumentAgreement = typeof campDocumentAgreements.$inferSelect;
 
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 export type InsertDocumentField = z.infer<typeof insertDocumentFieldSchema>;
 export type InsertSignatureRequest = z.infer<typeof insertSignatureRequestSchema>;
 export type InsertSignature = z.infer<typeof insertSignatureSchema>;
 export type InsertDocumentAuditTrail = z.infer<typeof insertDocumentAuditTrailSchema>;
+export type InsertCampDocumentAgreement = z.infer<typeof insertCampDocumentAgreementSchema>;
 
 // Re-export tables
 export {
@@ -372,7 +382,8 @@ export {
   documentFields,
   signatureRequests,
   signatures,
-  documentAuditTrail
+  documentAuditTrail,
+  campDocumentAgreements
 };
 
 export const predefinedSports = [

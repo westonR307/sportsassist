@@ -331,3 +331,15 @@ export const documentAuditTrail = pgTable("document_audit_trail", {
   userAgent: text("user_agent"), // Browser user agent
   timestamp: timestamp("timestamp").notNull().defaultNow(),
 });
+
+// Table to link documents that are required for camps
+export const campDocumentAgreements = pgTable("camp_document_agreements", {
+  id: serial("id").primaryKey(),
+  campId: integer("camp_id").references(() => camps.id).notNull(),
+  documentId: integer("document_id").references(() => documents.id).notNull(),
+  required: boolean("required").notNull().default(true), // Whether this document is required before participation
+  sendOnRegistration: boolean("send_on_registration").notNull().default(true), // Whether to automatically send upon registration
+  order: integer("order").notNull().default(0), // Order to display documents
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});

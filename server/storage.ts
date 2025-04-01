@@ -188,6 +188,12 @@ export interface IStorage {
   // Document audit trail
   createAuditTrailEntry(entry: InsertDocumentAuditTrail): Promise<DocumentAuditTrail>;
   getAuditTrail(documentId: number): Promise<DocumentAuditTrail[]>;
+  
+  // Camp document agreements
+  createCampDocumentAgreement(agreement: InsertCampDocumentAgreement): Promise<CampDocumentAgreement>;
+  getCampDocumentAgreements(campId: number): Promise<(CampDocumentAgreement & { document: Document })[]>;
+  deleteCampDocumentAgreement(id: number): Promise<void>;
+  getCampDocumentAgreementsByCampId(campId: number): Promise<CampDocumentAgreement[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1997,6 +2003,92 @@ export class DatabaseStorage implements IStorage {
     } catch (error: any) {
       console.error(`Error getting audit trail for document ${documentId}:`, error);
       throw new Error(`Failed to get document audit trail: ${error.message}`);
+    }
+  }
+  
+  // Camp document agreement methods
+  async createCampDocumentAgreement(agreement: InsertCampDocumentAgreement): Promise<CampDocumentAgreement> {
+    try {
+      // Check if the document exists
+      const document = await this.getDocument(agreement.documentId);
+      if (!document) {
+        throw new Error(`Document with ID ${agreement.documentId} not found`);
+      }
+      
+      // Check if the camp exists
+      const camp = await this.getCamp(agreement.campId);
+      if (!camp) {
+        throw new Error(`Camp with ID ${agreement.campId} not found`);
+      }
+      
+      // Insert the agreement
+      const [newAgreement] = await db.insert(campDocumentAgreements).values({
+        ...agreement,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }).returning();
+      
+      console.log(`Created camp document agreement for camp ${agreement.campId} and document ${agreement.documentId}`);
+      return newAgreement;
+    } catch (error: any) {
+      console.error("Error creating camp document agreement:", error);
+      throw new Error(`Failed to create camp document agreement: ${error.message}`);
+    }
+  }
+  
+  async getCampDocumentAgreements(campId: number): Promise<(CampDocumentAgreement & { document: Document })[]> {
+    try {
+      // Get all agreements for the camp
+      const agreements = await db.select().from(campDocumentAgreements)
+        .where(eq(campDocumentAgreements.campId, campId));
+      
+      // If no agreements, return empty array
+      if (!agreements.length) {
+        return [];
+      }
+      
+      // Get all document IDs from agreements
+      const documentIds = agreements.map(agreement => agreement.documentId);
+      
+      // Get all the documents data
+      const documentsData = await db.select().from(documents)
+        .where(inArray(documents.id, documentIds));
+      
+      // Map documents data to agreements
+      const result = agreements.map(agreement => {
+        const documentData = documentsData.find(doc => doc.id === agreement.documentId);
+        return {
+          ...agreement,
+          document: documentData!
+        };
+      });
+      
+      return result as (CampDocumentAgreement & { document: Document })[];
+    } catch (error: any) {
+      console.error(`Error getting document agreements for camp ${campId}:`, error);
+      throw new Error(`Failed to get document agreements: ${error.message}`);
+    }
+  }
+  
+  async deleteCampDocumentAgreement(id: number): Promise<void> {
+    try {
+      await db.delete(campDocumentAgreements)
+        .where(eq(campDocumentAgreements.id, id));
+      
+      console.log(`Deleted camp document agreement with ID ${id}`);
+    } catch (error: any) {
+      console.error(`Error deleting camp document agreement ${id}:`, error);
+      throw new Error(`Failed to delete camp document agreement: ${error.message}`);
+    }
+  }
+  
+  async getCampDocumentAgreementsByCampId(campId: number): Promise<CampDocumentAgreement[]> {
+    try {
+      return await db.select().from(campDocumentAgreements)
+        .where(eq(campDocumentAgreements.campId, campId));
+    } catch (error: any) {
+      console.error(`Error getting document agreements for camp ${campId}:`, error);
+      throw new Error(`Failed to get document agreements for camp: ${error.message}`);
     }
   }
   
