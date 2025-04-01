@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { DashboardLayout } from "./dashboard";
 import { ParentSidebar } from "@/components/parent-sidebar";
 import { BackButton } from "@/components/back-button";
+import { ShareCampDialog } from "@/components/share-camp-dialog";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -56,7 +57,13 @@ import {
   Settings,
   UsersRound,
   ChevronDown,
-  Table as TableIcon
+  Table as TableIcon,
+  Share2,
+  Copy,
+  Link,
+  Facebook,
+  Mail,
+  Twitter
 } from "lucide-react";
 import {
   AlertDialog,
@@ -184,6 +191,7 @@ function CampViewPage(props: { id?: string }) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [showShareDialog, setShowShareDialog] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -485,12 +493,16 @@ function CampViewPage(props: { id?: string }) {
           </div>
 
           <div className="flex flex-wrap gap-2 items-center">
-            {canManage ? (
+            {canManage && (
               <div className="flex flex-wrap gap-2 items-center justify-center">
                 <div className="flex gap-2">
                   <Button onClick={() => setEditDialogOpen(true)}>
                     <Edit className="h-4 w-4 mr-2" />
                     Edit Camp
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowShareDialog(true)}>
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Share
                   </Button>
                   <Button variant="outline">
                     <MessageSquare className="h-4 w-4 mr-2" />
@@ -518,56 +530,76 @@ function CampViewPage(props: { id?: string }) {
                   </Button>
                 )}
               </div>
-            ) : isParent ? (
-              isUserRegistered() ? (
-                <Button variant="outline" disabled>
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Already Registered
-                </Button>
-              ) : registrationStatus === 'open' ? (
-                <Button
-                  onClick={() => setShowChildSelectionDialog(true)}
-                  disabled={registerMutation.isPending}
-                >
-                  {registerMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
+            )}
+            
+            {isParent && !canManage && (
+              <div className="flex gap-2">
+                {isUserRegistered() ? (
+                  <Button variant="outline" disabled>
                     <CheckCircle className="h-4 w-4 mr-2" />
-                  )}
-                  Register Now
+                    Already Registered
+                  </Button>
+                ) : registrationStatus === 'open' ? (
+                  <Button
+                    onClick={() => setShowChildSelectionDialog(true)}
+                    disabled={registerMutation.isPending}
+                  >
+                    {registerMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                    )}
+                    Register Now
+                  </Button>
+                ) : null}
+                <Button variant="outline" onClick={() => setShowShareDialog(true)}>
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share
                 </Button>
-              ) : registrationStatus === 'waitlist' ? (
-                <Button variant="secondary">
-                  <ClipboardList className="h-4 w-4 mr-2" />
-                  Join Waitlist
+              </div>
+            )}
+            
+            {user && !canManage && !isParent && (
+              <div className="flex gap-2">
+                {registrationStatus === 'waitlist' ? (
+                  <Button variant="secondary">
+                    <ClipboardList className="h-4 w-4 mr-2" />
+                    Join Waitlist
+                  </Button>
+                ) : registrationStatus === 'closed' ? (
+                  <Button variant="outline" disabled>
+                    <Ban className="h-4 w-4 mr-2" />
+                    Registration Closed
+                  </Button>
+                ) : registrationStatus === 'full' ? (
+                  <Button variant="outline" disabled>
+                    <Users2 className="h-4 w-4 mr-2" />
+                    Camp Full
+                  </Button>
+                ) : registrationStatus === 'not_open' ? (
+                  <Button variant="outline" disabled>
+                    <Clock className="h-4 w-4 mr-2" />
+                    Registration Opens {new Date(camp.registrationStartDate).toLocaleDateString()}
+                  </Button>
+                ) : registrationStatus === 'in_progress' ? (
+                  <Button variant="outline" disabled>
+                    <AlertCircle className="h-4 w-4 mr-2" />
+                    Camp In Progress
+                  </Button>
+                ) : (
+                  <Button variant="outline" disabled>
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Registration Unavailable
+                  </Button>
+                )}
+                <Button variant="outline" onClick={() => setShowShareDialog(true)}>
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share
                 </Button>
-              ) : registrationStatus === 'closed' ? (
-                <Button variant="outline" disabled>
-                  <Ban className="h-4 w-4 mr-2" />
-                  Registration Closed
-                </Button>
-              ) : registrationStatus === 'full' ? (
-                <Button variant="outline" disabled>
-                  <Users2 className="h-4 w-4 mr-2" />
-                  Camp Full
-                </Button>
-              ) : registrationStatus === 'not_open' ? (
-                <Button variant="outline" disabled>
-                  <Clock className="h-4 w-4 mr-2" />
-                  Registration Opens {new Date(camp.registrationStartDate).toLocaleDateString()}
-                </Button>
-              ) : registrationStatus === 'in_progress' ? (
-                <Button variant="outline" disabled>
-                  <AlertCircle className="h-4 w-4 mr-2" />
-                  Camp In Progress
-                </Button>
-              ) : (
-                <Button variant="outline" disabled>
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Registration Unavailable
-                </Button>
-              )
-            ) : (
+              </div>
+            )}
+            
+            {!user && !canManage && !isParent && (
               <div className="flex items-center text-muted-foreground">
                 <ShieldAlert className="h-4 w-4 mr-2" />
                 <span className="text-sm">View only</span>
@@ -1181,6 +1213,15 @@ function CampViewPage(props: { id?: string }) {
             camp={camp}
             open={showFormFieldsDialog}
             onOpenChange={setShowFormFieldsDialog}
+          />
+        )}
+
+        {camp && (
+          <ShareCampDialog
+            isOpen={showShareDialog}
+            onClose={() => setShowShareDialog(false)}
+            campName={camp.name}
+            campSlug={camp.slug || String(camp.id)}
           />
         )}
       </div>
