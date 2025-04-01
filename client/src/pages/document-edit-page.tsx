@@ -432,7 +432,7 @@ export default function DocumentEditPage() {
                           id="field-label"
                           value={newField.label}
                           onChange={(e) => handleNewFieldChange('label', e.target.value)}
-                          placeholder="e.g., Signature"
+                          placeholder="e.g., Parent Signature, Athlete Name, Emergency Contact"
                           className="col-span-3"
                           required
                         />
