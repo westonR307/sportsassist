@@ -29,6 +29,12 @@ interface SimpleCampSession {
   recurrenceGroupId?: number | null;
 }
 
+// Define custom handlers interface for testing and camp creation flow
+interface CustomHandlers {
+  addSession?: (sessionData: any) => Promise<any>;
+  deleteSession?: (sessionId: any) => Promise<boolean>;
+}
+
 interface CalendarSchedulerProps {
   campId: number;
   startDate: Date;
@@ -36,6 +42,7 @@ interface CalendarSchedulerProps {
   sessions: SimpleCampSession[];
   onSave: () => void;
   canManage: boolean;
+  customHandlers?: CustomHandlers;
 }
 
 export function CalendarScheduler({ 
@@ -44,7 +51,8 @@ export function CalendarScheduler({
   endDate, 
   sessions: initialSessions = [], 
   onSave,
-  canManage = true
+  canManage = true,
+  customHandlers
 }: CalendarSchedulerProps) {
   // Keep our own local state of sessions to avoid depending on parent refreshes
   const [sessions, setSessions] = useState<SimpleCampSession[]>(initialSessions);
@@ -107,19 +115,28 @@ export function CalendarScheduler({
         status: "active",
       };
 
-      const response = await fetch(`/api/camps/${campId}/sessions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(sessionData),
-      });
+      let createdSession;
+      
+      // Use custom handler if provided, otherwise use fetch
+      if (customHandlers?.addSession) {
+        console.log("Using custom handler to add session");
+        createdSession = await customHandlers.addSession(sessionData);
+      } else {
+        // Default implementation using fetch
+        const response = await fetch(`/api/camps/${campId}/sessions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(sessionData),
+        });
 
-      if (!response.ok) {
-        throw new Error("Failed to create session");
+        if (!response.ok) {
+          throw new Error("Failed to create session");
+        }
+
+        createdSession = await response.json();
       }
-
-      const createdSession = await response.json();
       
       // Optimistically update the UI by adding the new session to our local state
       // This gives immediate feedback without waiting for the query cache to refresh
@@ -135,12 +152,15 @@ export function CalendarScheduler({
       // Also update the selected date sessions to show in the right panel immediately
       setSelectedDateSessions(prev => [...prev, newSession]);
 
-      // Still invalidate the query cache for background refresh
-      queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'sessions'] });
+      // Still invalidate the query cache for background refresh (only if not using custom handlers)
+      if (!customHandlers?.addSession) {
+        queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'sessions'] });
+      }
       
-      // NOTE: We're keeping the calendar open (NOT calling onSave here)
-      // Only refresh the parent component's data without closing the dialog
-      // This ensures the calendar remains open after adding a session
+      // Call onSave to notify parent component (in case they need to update state)
+      if (onSave) {
+        onSave();
+      }
       
       toast({
         title: "Session added",
@@ -164,12 +184,26 @@ export function CalendarScheduler({
     try {
       setIsLoading(true);
 
-      const response = await fetch(`/api/camps/${campId}/sessions/${sessionId}`, {
-        method: "DELETE",
-      });
+      let success = false;
+      
+      // Use custom handler if provided, otherwise use fetch
+      if (customHandlers?.deleteSession) {
+        console.log("Using custom handler to delete session");
+        success = await customHandlers.deleteSession(sessionId);
+        if (!success) {
+          throw new Error("Failed to delete session using custom handler");
+        }
+      } else {
+        // Default implementation using fetch
+        const response = await fetch(`/api/camps/${campId}/sessions/${sessionId}`, {
+          method: "DELETE",
+        });
 
-      if (!response.ok) {
-        throw new Error("Failed to delete session");
+        if (!response.ok) {
+          throw new Error("Failed to delete session");
+        }
+        
+        success = true;
       }
 
       // Immediately update the UI by removing the deleted session from local state
@@ -178,12 +212,15 @@ export function CalendarScheduler({
       // Also update the full sessions list
       setSessions(prev => prev.filter(session => session.id !== sessionId));
       
-      // NOTE: We're keeping the calendar open (NOT calling onSave here)
-      // Only invalidate the query cache to refresh the data in the background
-      // This ensures the calendar remains open after deleting a session
-
-      // Invalidate the sessions query cache to trigger a background refresh
-      queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'sessions'] });
+      // Only invalidate query cache if we're not using custom handlers
+      if (!customHandlers?.deleteSession) {
+        queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'sessions'] });
+      }
+      
+      // Call onSave to notify parent component (in case they need to update state)
+      if (onSave) {
+        onSave();
+      }
 
       toast({
         title: "Session deleted",

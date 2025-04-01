@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,9 +26,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, Plus, X } from "lucide-react";
+import { Loader2, Plus, X, Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/api";
+import { CalendarScheduler } from "@/components/calendar-scheduler";
 
 // Map UI skill levels to schema skill levels
 const uiSkillLevels = ["Beginner", "Intermediate", "Advanced", "All Levels"];
@@ -72,12 +73,14 @@ export function AddCampDialog({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const [selectedSport, setSelectedSport] = React.useState<string | null>(null);
-  const [skillLevel, setSkillLevel] = React.useState("Beginner");
-  const [openSportCombobox, setOpenSportCombobox] = React.useState(false);
-  const [schedules, setSchedules] = React.useState<Schedule[]>([]);
-  const [currentTab, setCurrentTab] = React.useState("basic");
-  const [submitting, setSubmitting] = React.useState(false); // Added for loading state
+  const [selectedSport, setSelectedSport] = useState<string | null>(null);
+  const [skillLevel, setSkillLevel] = useState("Beginner");
+  const [openSportCombobox, setOpenSportCombobox] = useState(false);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [currentTab, setCurrentTab] = useState("basic");
+  const [submitting, setSubmitting] = useState(false); // Added for loading state
+  const [tempCampId, setTempCampId] = useState(-1); // Temporary ID for calendar scheduler
+  const [plannedSessions, setPlannedSessions] = useState<any[]>([]); // Sessions to be created
 
   // Get default dates
   const today = new Date();
@@ -155,11 +158,10 @@ export function AddCampDialog({
           repeatCount: Number(data.repeatCount) || 0,
           sportId: sportId, // Use the sportId from the selected sport
           skillLevel: mappedSkillLevel,
-          schedules: schedules.map(schedule => ({
-            dayOfWeek: schedule.dayOfWeek,
-            startTime: schedule.startTime.padStart(5, '0'),
-            endTime: schedule.endTime.padStart(5, '0')
-          }))
+          defaultStartTime: form.watch('defaultStartTime'),
+          defaultEndTime: form.watch('defaultEndTime'),
+          // Using empty schedules since we're using enhanced calendar scheduling
+          schedules: []
         };
 
         console.log("Creating camp with data:", JSON.stringify(requestData, null, 2));
@@ -167,6 +169,28 @@ export function AddCampDialog({
         // The apiRequest function automatically parses JSON responses
         const response = await apiRequest("POST", "/api/camps", requestData);
         console.log("Camp created successfully:", response);
+        
+        // Now create all the planned sessions for this camp
+        if (plannedSessions.length > 0 && response.id) {
+          console.log(`Creating ${plannedSessions.length} sessions for camp ${response.id}`);
+          
+          // Create a batch of promises to create all sessions
+          const sessionPromises = plannedSessions.map(session => {
+            // Prepare session data for API call, removing temporary ID
+            const { id, campId, ...sessionData } = session;
+            return apiRequest("POST", `/api/camps/${response.id}/sessions`, {
+              ...sessionData,
+              campId: response.id,
+              // Format date properly for PostgreSQL
+              date: sessionData.date instanceof Date ? formatDateForPostgres(sessionData.date) : sessionData.date
+            });
+          });
+          
+          // Wait for all sessions to be created
+          await Promise.all(sessionPromises);
+          console.log("All sessions created successfully!");
+        }
+        
         return response;
       } catch (error: any) {
         console.error("Camp creation error:", error);
@@ -183,6 +207,7 @@ export function AddCampDialog({
       setSchedules([]);
       setSelectedSport(null);
       setSkillLevel("Beginner");
+      setPlannedSessions([]); // Reset planned sessions
       toast({
         title: "Success",
         description: "Camp created successfully",
@@ -682,7 +707,7 @@ export function AddCampDialog({
                             </div>
                             
                             <div className="text-sm mb-4">
-                              <p>After camp creation, you'll be able to select dates on an interactive calendar to add sessions using these default times. The calendar will be accessible from the camp's details page.</p>
+                              <p>Now you can schedule camp sessions directly by using the calendar below. Set your default start and end times, then click on dates to add sessions.</p>
                             </div>
                             
                             <div className="border rounded-md p-4">
@@ -690,42 +715,53 @@ export function AddCampDialog({
                                 {form.watch('startDate') && form.watch('endDate') ? (
                                   <div>
                                     <div className="text-center py-4 mb-4">
-                                      <p>Below you can see a preview of the calendar scheduler that will be available after creating the camp.</p>
+                                      <p>Schedule your camp sessions using the calendar below.</p>
                                       <p className="mt-2 text-sm">
                                         The default session time will be from {form.watch('defaultStartTime') || '09:00'} to {form.watch('defaultEndTime') || '17:00'} for days you select.
                                       </p>
                                     </div>
                                     
-                                    {/* Real calendar scheduler component */}
-                                    <div className="border rounded-md p-4">
-                                      <div className="text-sm font-medium mb-2">
-                                        Calendar Scheduling Preview
-                                      </div>
-                                      <p className="text-xs text-muted-foreground mb-4">
-                                        The enhanced scheduling interface will look similar to this.
-                                      </p>
-                                      <div className="grid grid-cols-1 gap-4">
-                                        <div className="border rounded-md p-4 bg-muted/30">
-                                          {/* Calendar preview */}
-                                          <div className="grid grid-cols-7 gap-1 mb-2">
-                                            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                                              <div key={day} className="text-center text-xs text-muted-foreground">{day}</div>
-                                            ))}
-                                            {Array.from({ length: 28 }).map((_, i) => {
-                                              const isWeekend = i % 7 === 0 || i % 7 === 6;
-                                              return (
-                                                <div 
-                                                  key={i}
-                                                  className={`aspect-square border rounded-sm flex items-center justify-center text-sm ${
-                                                    isWeekend ? 'text-muted-foreground' : ''
-                                                  }`}
-                                                >
-                                                  {i+1}
-                                                </div>
-                                              );
-                                            })}
-                                          </div>
-                                        </div>
+                                    {/* Interactive calendar scheduler component */}
+                                    <div>
+                                      {/* We're using a temporary camp ID until the actual camp is created */}
+                                      <CalendarScheduler
+                                        campId={tempCampId}
+                                        startDate={new Date(form.watch('startDate'))}
+                                        endDate={new Date(form.watch('endDate'))}
+                                        sessions={plannedSessions}
+                                        onSave={() => {
+                                          // This gets called when sessions are added or deleted
+                                          console.log("Sessions planned:", plannedSessions);
+                                        }}
+                                        canManage={true}
+                                        // Override the add and delete methods to work with local state instead of API calls
+                                        customHandlers={{
+                                          addSession: (sessionData) => {
+                                            // Create a new session with a temporary ID
+                                            const newSession = {
+                                              ...sessionData,
+                                              id: Date.now(), // Use timestamp as temporary ID
+                                              campId: tempCampId,
+                                              status: "active"
+                                            };
+                                            setPlannedSessions([...plannedSessions, newSession]);
+                                            return Promise.resolve(newSession);
+                                          },
+                                          deleteSession: (sessionId) => {
+                                            setPlannedSessions(plannedSessions.filter(s => s.id !== sessionId));
+                                            return Promise.resolve(true);
+                                          }
+                                        }}
+                                      />
+                                      
+                                      <div className="mt-4 text-sm text-muted-foreground">
+                                        <p className="font-medium">How to use the calendar:</p>
+                                        <ol className="list-decimal pl-5 space-y-1 mt-2">
+                                          <li>Select a date on the calendar</li>
+                                          <li>Set the start and end times</li>
+                                          <li>Click "Add Session at Selected Times"</li>
+                                          <li>Your sessions will be created when you submit the camp</li>
+                                        </ol>
                                       </div>
                                     </div>
                                   </div>
