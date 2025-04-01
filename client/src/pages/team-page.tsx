@@ -226,8 +226,16 @@ function DeleteButton({ invitation, organizationId }: { invitation: Invitation; 
         "DELETE",
         `/api/organizations/${organizationId}/invitations/${invitation.id}`
       );
-
-      return await res.json();
+      
+      // Check if response is empty, which is common for DELETE operations
+      const text = await res.text();
+      if (!text) return { success: true };
+      
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        return { success: true, message: "Invitation deleted" };
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/organizations/${organizationId}/invitations`] });
