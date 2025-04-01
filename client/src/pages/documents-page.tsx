@@ -53,13 +53,7 @@ export default function DocumentsPage() {
   // Mutation for creating a new document
   const createDocumentMutation = useMutation({
     mutationFn: async (formData: { title: string; description: string; content: string; type: string; status: string; }) => {
-      return apiRequest('/api/documents', {
-        method: 'POST',
-        body: JSON.stringify(formData),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      return apiRequest('POST', '/api/documents', formData);
     },
     onSuccess: () => {
       toast({
@@ -81,9 +75,7 @@ export default function DocumentsPage() {
   // Mutation for deleting a document
   const deleteDocumentMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/documents/${id}`, {
-        method: 'DELETE',
-      });
+      return apiRequest('DELETE', `/api/documents/${id}`);
     },
     onSuccess: () => {
       toast({
