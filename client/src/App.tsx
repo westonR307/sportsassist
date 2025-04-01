@@ -103,6 +103,7 @@ function Router() {
       />
       {/* Document-related routes */}
       <ProtectedRoute path="/documents" component={DocumentsPage} />
+      <ProtectedRoute path="/documents/view/:id" component={DocumentViewPage} />
       <ProtectedRoute path="/documents/:id" component={DocumentViewPage} />
       <ProtectedRoute path="/documents/:id/edit" component={DocumentEditPage} />
       <Route path="/sign/:token" component={SignaturePage} />
