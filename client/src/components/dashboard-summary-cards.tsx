@@ -1,6 +1,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient"; 
 import { 
   CalendarDays, 
   Calendar, 
@@ -74,6 +75,25 @@ function DashboardSummaryCards() {
     console.log('Dashboard cards - Camp Stats:', campStats);
     console.log('Dashboard cards - Registrations Data:', registrationsData);
     console.log('Dashboard cards - Recent Registrations:', recentRegistrations);
+    
+    // Force refetch if data is null
+    if (!todaySessions || !campStats || !registrationsData || !recentRegistrations) {
+      const retry = async () => {
+        try {
+          await queryClient.refetchQueries({ queryKey: ["/api/dashboard/today-sessions"] });
+          await queryClient.refetchQueries({ queryKey: ["/api/dashboard/camp-stats"] });
+          await queryClient.refetchQueries({ queryKey: ["/api/dashboard/registrations-count"] });
+          await queryClient.refetchQueries({ queryKey: ["/api/dashboard/recent-registrations"] });
+          console.log("Forced dashboard data refetch");
+        } catch (error) {
+          console.error("Error refetching dashboard data:", error);
+        }
+      };
+      
+      // Only retry once
+      const timer = setTimeout(retry, 1000);
+      return () => clearTimeout(timer);
+    }
   }, [todaySessions, campStats, registrationsData, recentRegistrations]);
   
   // Get active camps count

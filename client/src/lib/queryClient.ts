@@ -45,20 +45,15 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
-      refetchInterval: false,
-      refetchOnWindowFocus: true, // Enable refetch on window focus
-      staleTime: 60000, // Set stale time to 1 minute instead of Infinity
-      retry: false,
+      refetchInterval: 30000, // Automatically refetch every 30 seconds
+      refetchOnWindowFocus: true,
+      staleTime: 5000, // Very short stale time - 5 seconds
+      retry: 3, // Retry failed requests up to 3 times
+      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+      cacheTime: 300000, // Cache for 5 minutes
     },
     mutations: {
-      retry: false,
+      retry: 2,
     },
   },
-  logger: {
-    log: console.log,
-    warn: console.warn,
-    error: (error) => {
-      console.error("React Query Error:", error);
-    }
-  }
 });

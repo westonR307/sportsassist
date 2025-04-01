@@ -3,6 +3,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { format, isSameDay } from "date-fns";
 
 // Type for the camp session data
@@ -35,9 +36,25 @@ function DashboardCalendar() {
     refetchInterval: 60000, // Refetch every minute
   });
   
-  // Debug log
+  // Debug log and force refetch if needed
   React.useEffect(() => {
     console.log('Dashboard calendar - All Sessions:', allSessions);
+    
+    // Force refetch if data is null
+    if (!allSessions) {
+      const retry = async () => {
+        try {
+          await queryClient.refetchQueries({ queryKey: ["/api/dashboard/sessions"] });
+          console.log("Forced dashboard sessions refetch");
+        } catch (error) {
+          console.error("Error refetching dashboard sessions:", error);
+        }
+      };
+      
+      // Only retry once
+      const timer = setTimeout(retry, 1000);
+      return () => clearTimeout(timer);
+    }
   }, [allSessions]);
   
   // Calculate dates that have sessions
