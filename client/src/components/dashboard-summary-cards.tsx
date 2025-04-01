@@ -36,25 +36,41 @@ function DashboardSummaryCards() {
   const { data: todaySessions, isLoading: todayLoading } = useQuery<CampSession[]>({
     queryKey: ["/api/dashboard/today-sessions"],
     staleTime: 60000, // 1 minute
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
   
   // Fetch camp statistics
   const { data: campStats, isLoading: statsLoading } = useQuery<CampStats[]>({
     queryKey: ["/api/dashboard/camp-stats"],
     staleTime: 60000, // 1 minute
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
   
   // Fetch total registrations count
   const { data: registrationsData, isLoading: registrationsLoading } = useQuery<{ count: number }>({
     queryKey: ["/api/dashboard/registrations-count"],
     staleTime: 60000, // 1 minute
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
   
   // Fetch recent registrations (last 48 hours)
   const { data: recentRegistrations, isLoading: recentLoading } = useQuery<any[]>({
     queryKey: ["/api/dashboard/recent-registrations"],
     staleTime: 60000, // 1 minute
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
+  
+  // Log received data for debugging
+  React.useEffect(() => {
+    console.log('Dashboard cards - Today Sessions:', todaySessions);
+    console.log('Dashboard cards - Camp Stats:', campStats);
+    console.log('Dashboard cards - Registrations Data:', registrationsData);
+    console.log('Dashboard cards - Recent Registrations:', recentRegistrations);
+  }, [todaySessions, campStats, registrationsData, recentRegistrations]);
   
   // Get active camps count
   const activeCampsCount = React.useMemo(() => {

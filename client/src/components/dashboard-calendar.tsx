@@ -30,7 +30,14 @@ function DashboardCalendar() {
   const { data: allSessions, isLoading: sessionsLoading } = useQuery<CampSession[]>({
     queryKey: ["/api/dashboard/sessions"],
     staleTime: 60000, // 1 minute
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
+  
+  // Debug log
+  React.useEffect(() => {
+    console.log('Dashboard calendar - All Sessions:', allSessions);
+  }, [allSessions]);
   
   // Calculate dates that have sessions
   const sessionDays = React.useMemo(() => {
