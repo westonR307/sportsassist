@@ -82,7 +82,7 @@ function DashboardSidebar() {
   };
   
   return (
-    <div className="hidden md:flex w-64 border-r h-full flex-col">
+    <div className="h-full flex flex-col">
       <div className="p-4 border-b">
         <h2 className="font-bold text-lg">SportsAssist.io</h2>
         <div className="text-sm text-muted-foreground mt-1">
@@ -345,9 +345,11 @@ function MobileNavigation() {
 // Layout component
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen bg-background">
-      {/* Sidebar - always shown on desktop, hidden on mobile */}
-      <DashboardSidebar />
+    <div className="flex h-screen overflow-hidden bg-background">
+      {/* Sidebar for desktop */}
+      <aside className="w-64 hidden md:block border-r shrink-0">
+        <DashboardSidebar />
+      </aside>
       
       <div className="flex-1 flex flex-col overflow-hidden">
         <main className="flex-1 overflow-y-auto p-6 pb-20 md:pb-6">
