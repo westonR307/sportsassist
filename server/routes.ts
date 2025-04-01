@@ -22,17 +22,38 @@ function registerPublicRoutes(app: Express) {
     try {
       const camps = await storage.listCamps();
       
-      // For public camps, add location field combining address, city, state
-      const formattedCamps = camps.map(camp => ({
-        ...camp,
-        location: [camp.streetAddress, camp.city, camp.state, camp.zipCode]
-          .filter(Boolean)
-          .join(", "),
-        // Include the campSports for filtering
-        campSports: camp.campSports || []
+      // Process each camp to include full sport details
+      const processedCamps = await Promise.all(camps.map(async (camp) => {
+        // Get the sports related to this camp
+        const campSportsData = await db.select().from(campSports)
+          .where(eq(campSports.campId, camp.id));
+        
+        // Get the sport details for these sports
+        const sportIds = campSportsData.map(cs => cs.sportId);
+        const sportsData = sportIds.length > 0 
+          ? await db.select().from(sports).where(inArray(sports.id, sportIds))
+          : [];
+        
+        // Combine the data
+        const campSportsWithDetails = campSportsData.map(cs => {
+          const sportInfo = sportsData.find(s => s.id === cs.sportId) || null;
+          return {
+            ...cs,
+            sport: sportInfo,
+            sportName: sportInfo?.name || "Unknown Sport"
+          };
+        });
+        
+        return {
+          ...camp,
+          location: [camp.streetAddress, camp.city, camp.state, camp.zipCode]
+            .filter(Boolean)
+            .join(", "),
+          campSports: campSportsWithDetails
+        };
       }));
       
-      res.json(formattedCamps);
+      res.json(processedCamps);
     } catch (error) {
       logError("GET /api/public/camps", error);
       res.status(500).json({ error: "Failed to fetch camps" });
