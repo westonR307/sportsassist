@@ -157,8 +157,11 @@ export function AddCampDialog({
         const sportId = parseInt(selectedSport) || 1;
         const mappedSkillLevel = skillLevelMap[skillLevel] || "beginner";
 
+        // Extract and remove defaultStartTime and defaultEndTime from data
+        const { defaultStartTime, defaultEndTime, ...dataWithoutDefaults } = data;
+        
         const requestData = {
-          ...data,
+          ...dataWithoutDefaults,
           startDate: formatDateForPostgres(data.startDate),
           endDate: formatDateForPostgres(data.endDate),
           registrationStartDate: formatDateForPostgres(data.registrationStartDate),
@@ -176,8 +179,8 @@ export function AddCampDialog({
           schedules: [
             {
               dayOfWeek: 0, // Sunday as default
-              startTime: form.watch('defaultStartTime'),
-              endTime: form.watch('defaultEndTime')
+              startTime: defaultStartTime || "09:00",
+              endTime: defaultEndTime || "17:00"
             }
           ]
         };
@@ -355,27 +358,33 @@ export function AddCampDialog({
       return;
     }
 
+    // Extract defaultStartTime/defaultEndTime when logging for first call
+    const { defaultStartTime: defStart, defaultEndTime: defEnd, ...submittingData } = data;
+
     console.log("Submitting form with data:", { 
-      ...data, 
+      ...submittingData, 
       // Create at least one schedule entry based on the default times
       schedules: [
         {
           dayOfWeek: 0, // Sunday as default
-          startTime: data.defaultStartTime,
-          endTime: data.defaultEndTime
+          startTime: defStart,
+          endTime: defEnd
         }
       ],
       sportId: parseInt(selectedSport) || 1,
       skillLevel: skillLevelMap[skillLevel] 
     });
 
+    // Extract defaultStartTime/defaultEndTime when logging to avoid confusion
+    const { defaultStartTime, defaultEndTime, ...dataForLog } = data;
+    
     console.log("About to call mutation with data", { 
-      ...data, 
+      ...dataForLog, 
       schedules: [
         {
           dayOfWeek: 0, // Sunday as default
-          startTime: data.defaultStartTime,
-          endTime: data.defaultEndTime
+          startTime: defaultStartTime,
+          endTime: defaultEndTime
         }
       ],
       sport: selectedSport,
