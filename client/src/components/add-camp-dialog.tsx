@@ -95,6 +95,7 @@ export function AddCampDialog({
   const [submitting, setSubmitting] = useState(false); // Added for loading state
   const [tempCampId, setTempCampId] = useState(-1); // Temporary ID for calendar scheduler
   const [plannedSessions, setPlannedSessions] = useState<any[]>([]); // Sessions to be created
+  const [selectedDocumentId, setSelectedDocumentId] = useState<number | null>(null); // For document agreement
 
   // Get default dates
   const today = new Date();
@@ -221,8 +222,27 @@ export function AddCampDialog({
         setSubmitting(false); // Set submitting to false after API call, regardless of success or failure
       }
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       console.log("Camp created successfully with data:", data);
+      
+      // If a document was selected for agreement, save that relationship
+      if (selectedDocumentId && data.id) {
+        try {
+          console.log(`Setting document agreement ${selectedDocumentId} for camp ${data.id}`);
+          await apiRequest('PUT', `/api/camps/${data.id}/agreements`, {
+            documentId: selectedDocumentId
+          });
+          console.log("Document agreement saved successfully");
+        } catch (error) {
+          console.error("Error saving document agreement:", error);
+          toast({
+            title: "Warning",
+            description: "Camp created but there was an issue saving the document agreement.",
+            variant: "destructive",
+          });
+        }
+      }
+      
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
       onOpenChange(false);
       form.reset();
@@ -230,6 +250,7 @@ export function AddCampDialog({
       setSelectedSport(null);
       setSkillLevel("Beginner");
       setPlannedSessions([]); // Reset planned sessions
+      setSelectedDocumentId(null); // Reset selected document
       toast({
         title: "Success",
         description: "Camp created successfully",
@@ -1111,8 +1132,12 @@ export function AddCampDialog({
                       Select a document that participants must sign when registering for this camp.
                     </p>
                     
-                    {/* We use the temporary ID for new camps */}
-                    <DocumentAgreementsSelector campId={tempCampId} />
+                    {/* We use the isNewCamp flag to prevent API calls and store the selection */}
+                    <DocumentAgreementsSelector 
+                      campId={tempCampId}
+                      isNewCamp={true}
+                      onDocumentSelect={setSelectedDocumentId}
+                    />
                   </div>
 
                   <div className="flex justify-between pt-4">

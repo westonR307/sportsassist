@@ -20,9 +20,15 @@ import DocumentPreviewDialog from "./document-preview-dialog";
 
 interface DocumentAgreementsSelectorProps {
   campId: number;
+  onDocumentSelect?: (documentId: number) => void;
+  isNewCamp?: boolean;
 }
 
-export function DocumentAgreementsSelector({ campId }: DocumentAgreementsSelectorProps) {
+export function DocumentAgreementsSelector({ 
+  campId, 
+  onDocumentSelect,
+  isNewCamp = false
+}: DocumentAgreementsSelectorProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedDocumentId, setSelectedDocumentId] = useState<number | null>(null);
@@ -35,18 +41,22 @@ export function DocumentAgreementsSelector({ campId }: DocumentAgreementsSelecto
     enabled: true,
   });
 
-  // Fetch current camp agreement
+  // Fetch current camp agreement only if this is an existing camp
   const { data: campAgreements, isLoading: isLoadingAgreements, error: agreementsError } = useQuery({
     queryKey: [`/api/camps/${campId}/agreements`],
-    enabled: !!campId,
+    enabled: !!campId && campId > 0 && !isNewCamp,
   });
 
   // Set selected document when camp agreements are loaded
   useEffect(() => {
     if (campAgreements && campAgreements.length > 0) {
       setSelectedDocumentId(campAgreements[0].documentId);
+      // If there's an external handler, call it
+      if (onDocumentSelect) {
+        onDocumentSelect(campAgreements[0].documentId);
+      }
     }
-  }, [campAgreements]);
+  }, [campAgreements, onDocumentSelect]);
   
   // Handle opening preview dialog
   const handleOpenPreview = (documentId: number) => {
@@ -84,16 +94,30 @@ export function DocumentAgreementsSelector({ campId }: DocumentAgreementsSelecto
   // Handle document selection
   const handleDocumentSelect = (documentId: number) => {
     setSelectedDocumentId(documentId);
+    
+    // If there's an external handler, call it
+    if (onDocumentSelect) {
+      onDocumentSelect(documentId);
+    }
   };
 
   // Save selected document as camp agreement
   const saveSelectedDocument = () => {
     if (selectedDocumentId) {
-      updateAgreementMutation.mutate(selectedDocumentId);
+      // Only send the API request if this is for an existing camp
+      if (!isNewCamp && campId > 0) {
+        updateAgreementMutation.mutate(selectedDocumentId);
+      } else if (onDocumentSelect) {
+        // For new camps, we just notify the parent component
+        toast({
+          title: 'Agreement selected',
+          description: 'The agreement will be saved when you create the camp.',
+        });
+      }
     }
   };
 
-  if (isLoadingDocuments || isLoadingAgreements) {
+  if (isLoadingDocuments || (!isNewCamp && isLoadingAgreements)) {
     return <div className="space-y-2">
       <Skeleton className="h-10 w-full" />
       <Skeleton className="h-24 w-full" />
@@ -102,7 +126,7 @@ export function DocumentAgreementsSelector({ campId }: DocumentAgreementsSelecto
     </div>;
   }
 
-  if (documentsError || agreementsError) {
+  if (documentsError || (!isNewCamp && agreementsError)) {
     return (
       <div className="p-4 border rounded-md bg-red-50 text-red-700">
         <AlertCircle className="h-5 w-5 mb-2" />
@@ -112,7 +136,7 @@ export function DocumentAgreementsSelector({ campId }: DocumentAgreementsSelecto
     );
   }
 
-  const isAgreementActive = campAgreements && campAgreements.length > 0;
+  const isAgreementActive = !isNewCamp && campAgreements && campAgreements.length > 0;
   
   // Find the current agreement document details
   const currentAgreementDocument = isAgreementActive && documents ? 
@@ -151,7 +175,9 @@ export function DocumentAgreementsSelector({ campId }: DocumentAgreementsSelecto
       )}
 
       <div className="border rounded-md p-4 space-y-4">
-        <h4 className="text-sm font-medium">Select a Different Agreement</h4>
+        <h4 className="text-sm font-medium">
+          {isNewCamp ? "Select an Agreement" : "Select a Different Agreement"}
+        </h4>
         
         {documents && documents.length > 0 ? (
           <>
@@ -206,10 +232,10 @@ export function DocumentAgreementsSelector({ campId }: DocumentAgreementsSelecto
 
             <Button 
               onClick={saveSelectedDocument} 
-              disabled={!selectedDocumentId || updateAgreementMutation.isPending}
+              disabled={!selectedDocumentId || (!isNewCamp && updateAgreementMutation.isPending)}
               className="mt-4"
             >
-              {updateAgreementMutation.isPending ? (
+              {!isNewCamp && updateAgreementMutation.isPending ? (
                 <>Saving...</>
               ) : (
                 <>Save Agreement Selection</>
