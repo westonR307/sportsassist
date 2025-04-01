@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import {
   users,
   camps,
@@ -311,7 +312,7 @@ export class DatabaseStorage implements IStorage {
 
     // Function to generate a random slug
     const generateSlug = () => {
-      const crypto = require('crypto');
+      // Using the crypto module imported at the top of the file
       return crypto.randomBytes(12).toString('hex');
     };
     
@@ -1699,7 +1700,7 @@ export class DatabaseStorage implements IStorage {
   async createDocument(document: InsertDocument): Promise<Document> {
     try {
       // Generate a document hash for verification
-      const crypto = require('crypto');
+      // Using the crypto module imported at the top of the file
       const hash = crypto.createHash('sha256')
         .update(JSON.stringify({
           title: document.title,
@@ -1757,7 +1758,7 @@ export class DatabaseStorage implements IStorage {
           throw new Error(`Document with ID ${id} not found`);
         }
         
-        const crypto = require('crypto');
+        // Using the crypto module imported at the top of the file
         hash = crypto.createHash('sha256')
           .update(JSON.stringify({
             title: data.title || document.title,
