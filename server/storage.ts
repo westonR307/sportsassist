@@ -1735,7 +1735,11 @@ export class DatabaseStorage implements IStorage {
   
   async getDocumentsByOrganization(organizationId: number): Promise<Document[]> {
     try {
-      return await db.select().from(documents).where(eq(documents.organizationId, organizationId));
+      // Log the generated SQL for debugging
+      const query = db.select().from(documents).where(eq(documents.organizationId, organizationId));
+      console.log("Generated SQL:", query.toSQL());
+      
+      return await query;
     } catch (error: any) {
       console.error(`Error getting documents for organization ${organizationId}:`, error);
       throw new Error(`Failed to get organization documents: ${error.message}`);

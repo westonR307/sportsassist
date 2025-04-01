@@ -19,7 +19,7 @@ export default function documentRoutes(storage: IStorage) {
       // Validate document data
       const documentData = insertDocumentSchema.parse({
         ...req.body,
-        createdBy: req.user.id,
+        authorId: req.user.id,
         organizationId: req.user.organizationId
       });
       

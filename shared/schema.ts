@@ -288,10 +288,9 @@ export const insertDocumentSchema = createInsertSchema(documents).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
-  archivedAt: true,
   hash: true,
 }).extend({
-  documentType: z.enum(["waiver", "agreement", "consent", "policy", "custom"]),
+  type: z.enum(["waiver", "agreement", "consent", "policy", "custom"]),
   status: z.enum(["draft", "active", "inactive", "archived"]).default("draft"),
 });
 

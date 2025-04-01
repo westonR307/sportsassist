@@ -255,19 +255,20 @@ export const attendanceRecords = pgTable("attendance_records", {
 // Document management tables
 export const documents = pgTable("documents", {
   id: serial("id").primaryKey(),
-  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
-  createdBy: integer("created_by").references(() => users.id).notNull(),
   title: text("title").notNull(),
   description: text("description"),
-  fileUrl: text("file_url"), // URL to the stored PDF document (null if it's a rich text document)
   content: text("content"), // Rich text content (null if it's a PDF upload)
-  documentType: text("document_type").$type<DocumentType>().notNull(),
-  status: text("status").$type<DocumentStatus>().notNull().default("draft"),
   version: integer("version").notNull().default(1),
+  status: text("status").$type<DocumentStatus>().notNull().default("draft"),
+  type: text("type").$type<DocumentType>().notNull().default("waiver"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-  archivedAt: timestamp("archived_at"),
-  hash: text("hash"), // SHA-256 hash of the document for integrity verification
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
+  authorId: integer("author_id").references(() => users.id),
+  filePath: text("file_path"), // URL to the stored PDF document (null if it's a rich text document)
+  fileType: text("file_type"),
+  fileSize: integer("file_size"),
+  hash: text("hash") // SHA-256 hash of the document for integrity verification
 });
 
 export const documentFields = pgTable("document_fields", {
