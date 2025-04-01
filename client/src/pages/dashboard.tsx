@@ -272,16 +272,29 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 interface CampWithPermissions extends Camp {
   permissions?: {
     canManage: boolean;
-  }
+  };
+  schedules?: any[]; // Add schedules property for the CampScheduleSummary component
 }
 
 function CampsDashboard() {
   const [showAddCampDialog, setShowAddCampDialog] = React.useState(false);
   const { user } = useAuth();
-  const { data: camps, isLoading } = useQuery<CampWithPermissions[]>({
+  
+  // Make the setShowAddCampDialog function available globally for quick links
+  React.useEffect(() => {
+    // Expose the function to the window object
+    (window as any).setShowAddCampDialog = setShowAddCampDialog;
+    
+    // Clean up when component unmounts
+    return () => {
+      delete (window as any).setShowAddCampDialog;
+    };
+  }, []);
+  
+  const { data: camps = [], isLoading } = useQuery<CampWithPermissions[], Error, CampWithPermissions[]>({
     queryKey: ["/api/camps"],
     staleTime: 5000, // Only refetch after 5 seconds
-    refetchOnMount: "if-stale",
+    refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
   const [location, navigate] = useWouterLocation();
@@ -610,7 +623,14 @@ function Dashboard() {
                     variant="outline" 
                     className="w-full justify-start"
                     onClick={() => {
-                      (window as any).showAddCampDialog?.();
+                      // Navigate to the camps page and trigger create camp dialog
+                      const setShowAddCampDialogFn = (window as any).setShowAddCampDialog;
+                      if (typeof setShowAddCampDialogFn === 'function') {
+                        setShowAddCampDialogFn(true);
+                      } else {
+                        // Fallback: Navigate to camps page where they can click the Create Camp button
+                        window.location.href = '/dashboard/camps';
+                      }
                     }}
                   >
                     <Plus className="mr-2 h-4 w-4" />
@@ -619,7 +639,7 @@ function Dashboard() {
                   <Button 
                     variant="outline" 
                     className="w-full justify-start"
-                    onClick={() => window.location.href = '/reports'}
+                    onClick={() => window.location.href = '/dashboard/reports'}
                   >
                     <BarChart3 className="mr-2 h-4 w-4" />
                     View Reports
