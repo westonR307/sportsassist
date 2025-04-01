@@ -58,6 +58,21 @@ function DashboardCalendar() {
     }
   }, [allSessions, sessionsLoading]);
   
+  // Function to normalize date to UTC without time component to avoid timezone issues
+  const normalizeDate = (date: Date | string): string => {
+    let d: Date;
+    
+    if (typeof date === 'string') {
+      d = new Date(date);
+    } else {
+      d = date;
+    }
+    
+    // Create a date string in format YYYY-MM-DD which preserves the actual date
+    // regardless of timezone differences
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+  };
+  
   // Calculate dates that have sessions
   const sessionDays = React.useMemo(() => {
     if (!allSessions || allSessions.length === 0) return new Set<string>();
@@ -66,19 +81,14 @@ function DashboardCalendar() {
     allSessions.forEach(session => {
       try {
         // Handle different date formats
-        let date;
-        if (typeof session.sessionDate === 'string') {
-          date = new Date(session.sessionDate);
-        } else if (session.sessionDate instanceof Date) {
-          date = session.sessionDate;
+        if (session.sessionDate) {
+          const normalizedDate = normalizeDate(session.sessionDate);
+          dates.add(normalizedDate);
+          
+          // Debug log
+          console.log(`Adding normalized date: ${normalizedDate} from session date: ${session.sessionDate}`);
         } else {
           console.warn("Invalid session date format:", session.sessionDate);
-          return; // Skip this session
-        }
-        
-        // Make sure the date is valid before adding
-        if (!isNaN(date.getTime())) {
-          dates.add(date.toISOString().split('T')[0]);
         }
       } catch (error) {
         console.error("Error parsing date:", error, session);
@@ -92,25 +102,20 @@ function DashboardCalendar() {
   const selectedDateSessions = React.useMemo(() => {
     if (!allSessions || !selectedDate) return [];
     
+    // Normalize the selected date for comparison
+    const normalizedSelectedDate = normalizeDate(selectedDate);
+    console.log(`Finding sessions for normalized selected date: ${normalizedSelectedDate}`);
+    
     return allSessions.filter(session => {
       try {
-        // Handle different date formats
-        let sessionDate;
-        if (typeof session.sessionDate === 'string') {
-          sessionDate = new Date(session.sessionDate);
-        } else if (session.sessionDate instanceof Date) {
-          sessionDate = session.sessionDate;
-        } else {
-          console.warn("Invalid session date format in filter:", session.sessionDate);
-          return false; // Skip this session
-        }
+        // Normalize the session date
+        const normalizedSessionDate = normalizeDate(session.sessionDate);
         
-        // Make sure the date is valid before comparing
-        if (isNaN(sessionDate.getTime())) {
-          return false;
-        }
+        // Debug logging
+        console.log(`Comparing session date ${normalizedSessionDate} with selected date ${normalizedSelectedDate}`);
         
-        return isSameDay(sessionDate, selectedDate);
+        // Compare normalized dates as strings
+        return normalizedSessionDate === normalizedSelectedDate;
       } catch (error) {
         console.error("Error comparing dates:", error, session);
         return false;
@@ -132,8 +137,14 @@ function DashboardCalendar() {
   
   // Function to render the calendar cell, adding dots for days with sessions
   const renderCalendarCell = (day: Date) => {
-    const dayStr = day.toISOString().split('T')[0];
-    const hasSession = sessionDays.has(dayStr);
+    // Normalize the date to match our format in the sessionDays Set
+    const normalizedDayStr = normalizeDate(day);
+    const hasSession = sessionDays.has(normalizedDayStr);
+    
+    // Debug logging
+    if (hasSession) {
+      console.log(`Cell date ${normalizedDayStr} has a session`);
+    }
     
     return (
       <div className="relative">
