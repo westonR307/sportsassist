@@ -87,7 +87,7 @@ export default function CampsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {camps.map((camp) => {
             // Check if user can manage this specific camp
             const canManageCamp = camp.permissions?.canManage || false;
@@ -320,9 +320,9 @@ export default function CampsPage() {
   
   return (
     <DashboardLayout>
-      <div className="p-1">
+      <main className="container mx-auto px-6 py-8">
         {campsContent}
-      </div>
+      </main>
     </DashboardLayout>
   );
 }
