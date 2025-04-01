@@ -339,7 +339,7 @@ export const campDocumentAgreements = pgTable("camp_document_agreements", {
   documentId: integer("document_id").references(() => documents.id).notNull(),
   required: boolean("required").notNull().default(true), // Whether this document is required before participation
   sendOnRegistration: boolean("send_on_registration").notNull().default(true), // Whether to automatically send upon registration
-  order: integer("order").notNull().default(0), // Order to display documents
+  displayOrder: integer("display_order").notNull().default(0), // Order to display documents
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
