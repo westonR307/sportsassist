@@ -106,7 +106,9 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
     error: schedulesError 
   } = useQuery({
     queryKey: ['/api/camps', campId, 'schedules'],
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    staleTime: 5000, // Short stale time of 5 seconds
     queryFn: async () => {
       const res = await fetch(`/api/camps/${campId}/schedules`);
       if (!res.ok) {
@@ -123,7 +125,9 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
     error: exceptionsError 
   } = useQuery({
     queryKey: ['/api/camps', campId, 'schedule-exceptions'],
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    staleTime: 5000, // Short stale time of 5 seconds
     queryFn: async () => {
       const res = await fetch(`/api/camps/${campId}/schedule-exceptions`);
       if (!res.ok) {
@@ -140,7 +144,9 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
     error: patternsError
   } = useQuery({
     queryKey: ['/api/camps', campId, 'recurrence-patterns'],
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    staleTime: 5000, // Short stale time of 5 seconds
     queryFn: async () => {
       try {
         const res = await fetch(`/api/camps/${campId}/recurrence-patterns`);
@@ -162,7 +168,9 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
     error: sessionsError
   } = useQuery({
     queryKey: ['/api/camps', campId, 'sessions'],
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    staleTime: 5000, // Short stale time of 5 seconds
     queryFn: async () => {
       try {
         const res = await fetch(`/api/camps/${campId}/sessions`);

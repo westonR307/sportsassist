@@ -113,7 +113,14 @@ export function ScheduleExceptionDialog({
         title: "Schedule exception created",
         description: "The schedule exception has been created successfully.",
       });
+      // Invalidate all related queries to ensure UI updates immediately
       queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'schedule-exceptions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'recurrence-patterns'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'schedules'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/today-sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/camp-stats'] });
       onOpenChange(false);
     },
     onError: (error: Error) => {
@@ -142,7 +149,14 @@ export function ScheduleExceptionDialog({
         title: "Schedule exception updated",
         description: "The schedule exception has been updated successfully.",
       });
+      // Invalidate all related queries to ensure UI updates immediately
       queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'schedule-exceptions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'recurrence-patterns'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'schedules'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/today-sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/camp-stats'] });
       onOpenChange(false);
     },
     onError: (error: Error) => {
@@ -170,7 +184,14 @@ export function ScheduleExceptionDialog({
         title: "Schedule exception deleted",
         description: "The schedule exception has been deleted successfully.",
       });
+      // Invalidate all related queries to ensure UI updates immediately
       queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'schedule-exceptions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'recurrence-patterns'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'schedules'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/today-sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/camp-stats'] });
       onOpenChange(false);
     },
     onError: (error: Error) => {
