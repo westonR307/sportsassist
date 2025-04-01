@@ -88,7 +88,7 @@ export default function CampsPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {camps.map((camp) => {
+          {camps.map((camp, index) => {
             // Check if user can manage this specific camp
             const canManageCamp = camp.permissions?.canManage || false;
             
@@ -299,12 +299,13 @@ export default function CampsPage() {
             
             // Return the flip card with both sides defined
             return (
-              <FlipCard 
-                key={camp.id}
-                front={frontCard}
-                back={backCard}
-                className="h-full"
-              />
+              <div key={`camp-${camp.id}`} className="h-[220px]">
+                <FlipCard
+                  front={frontCard}
+                  back={backCard}
+                  className={`rounded-md overflow-hidden transition-all duration-200 h-full ${!canManageCamp ? "opacity-90" : ""}`}
+                />
+              </div>
             );
           })}
         </div>
