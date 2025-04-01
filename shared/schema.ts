@@ -37,6 +37,33 @@ import {
 
 export const publicRoles = ["camp_creator", "parent", "athlete"] as const;
 
+// Common UTC-safe date transformation function to ensure consistency
+const createUtcSafeDateTransformer = (fieldName: string) => {
+  return z.string().or(z.date()).transform(val => {
+    console.log(`[${fieldName} Debug] Processing ${fieldName}: ${String(val)}`);
+    
+    if (val instanceof Date) {
+      console.log(`[${fieldName} Debug] Value is Date object: ${val.toISOString()}`);
+      return val;
+    }
+    
+    // Handle YYYY-MM-DD format without timezone issues
+    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = val.split('-').map(Number);
+      
+      // Create a date in UTC at noon to avoid date shifts
+      const utcDate = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+      console.log(`[${fieldName} Debug] Parsed YYYY-MM-DD string: ${val} → UTC date: ${utcDate.toISOString()}`);
+      return utcDate;
+    }
+    
+    // For other string formats, parse using UTC to avoid timezone shifts
+    const date = new Date(val);
+    console.log(`[${fieldName} Debug] Fallback parsing: ${String(val)} → ${date.toISOString()}`);
+    return date;
+  });
+};
+
 // Define schemas
 export const insertUserSchema = createInsertSchema(users, {
   passwordHash: z.string().optional(), // Make it optional in schema since we'll set it in the backend
@@ -100,34 +127,14 @@ export const insertCampSessionSchema = createInsertSchema(campSessions).omit({
   createdAt: true,
   updatedAt: true
 }).extend({
-  sessionDate: z.string().or(z.date()).transform(val => {
-    if (val instanceof Date) return val;
-    
-    // Handle YYYY-MM-DD format without timezone issues
-    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const [year, month, day] = val.split('-').map(Number);
-      // Create a date using local date components (with noon time to avoid any timezone shifts)
-      return new Date(year, month - 1, day, 12, 0, 0);
-    }
-    
-    return new Date(val);
-  }),
+  sessionDate: createUtcSafeDateTransformer('sessionDate'),
   startTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format"),
   endTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format"),
   status: z.enum(["active", "cancelled", "rescheduled"]),
-  rescheduledDate: z.string().or(z.date()).transform(val => {
-    if (val === null || val === undefined) return null;
-    if (val instanceof Date) return val;
-    
-    // Handle YYYY-MM-DD format without timezone issues
-    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const [year, month, day] = val.split('-').map(Number);
-      // Create a date using local date components (with noon time to avoid any timezone shifts)
-      return new Date(year, month - 1, day, 12, 0, 0);
-    }
-    
-    return new Date(val);
-  }).nullable().optional(),
+  rescheduledDate: z.preprocess(
+    (val) => val === null || val === undefined ? null : val,
+    z.union([z.null(), createUtcSafeDateTransformer('rescheduledDate')])
+  ).optional(),
   rescheduledStartTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format").nullable().optional(),
   rescheduledEndTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format").nullable().optional(),
   rescheduledStatus: z.enum(["confirmed", "tbd"]).nullable().optional(),
@@ -139,30 +146,8 @@ export const insertRecurrencePatternSchema = createInsertSchema(recurrencePatter
   createdAt: true,
   updatedAt: true
 }).extend({
-  startDate: z.string().or(z.date()).transform(val => {
-    if (val instanceof Date) return val;
-    
-    // Handle YYYY-MM-DD format without timezone issues
-    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const [year, month, day] = val.split('-').map(Number);
-      // Create a date using local date components (with noon time to avoid any timezone shifts)
-      return new Date(year, month - 1, day, 12, 0, 0);
-    }
-    
-    return new Date(val);
-  }),
-  endDate: z.string().or(z.date()).transform(val => {
-    if (val instanceof Date) return val;
-    
-    // Handle YYYY-MM-DD format without timezone issues
-    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const [year, month, day] = val.split('-').map(Number);
-      // Create a date using local date components (with noon time to avoid any timezone shifts)
-      return new Date(year, month - 1, day, 12, 0, 0);
-    }
-    
-    return new Date(val);
-  }),
+  startDate: createUtcSafeDateTransformer('patternStartDate'),
+  endDate: createUtcSafeDateTransformer('patternEndDate'),
   daysOfWeek: z.array(z.number().min(0).max(6)),
   startTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format"),
   endTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format")
@@ -171,18 +156,7 @@ export const insertRecurrencePatternSchema = createInsertSchema(recurrencePatter
 export const insertScheduleExceptionSchema = z.object({
   campId: z.number(),
   originalScheduleId: z.number().optional(),
-  exceptionDate: z.string().or(z.date()).transform(val => {
-    if (val instanceof Date) return val;
-    
-    // Handle YYYY-MM-DD format without timezone issues
-    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const [year, month, day] = val.split('-').map(Number);
-      // Create a date using local date components (with noon time to avoid any timezone shifts)
-      return new Date(year, month - 1, day, 12, 0, 0);
-    }
-    
-    return new Date(val);
-  }),
+  exceptionDate: createUtcSafeDateTransformer('exceptionDate'),
   dayOfWeek: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
   startTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format"),
   endTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format"),
@@ -198,54 +172,10 @@ export const insertCampSchema = z.object({
   state: z.string().length(2, "Please use 2-letter state code"),
   zipCode: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format"),
   additionalLocationDetails: z.string().optional().nullable(),
-  startDate: z.string().or(z.date()).transform(val => {
-    if (val instanceof Date) return val;
-    
-    // Handle YYYY-MM-DD format without timezone issues
-    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const [year, month, day] = val.split('-').map(Number);
-      // Create a date using local date components (with noon time to avoid any timezone shifts)
-      return new Date(year, month - 1, day, 12, 0, 0);
-    }
-    
-    return new Date(val);
-  }),
-  endDate: z.string().or(z.date()).transform(val => {
-    if (val instanceof Date) return val;
-    
-    // Handle YYYY-MM-DD format without timezone issues
-    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const [year, month, day] = val.split('-').map(Number);
-      // Create a date using local date components (with noon time to avoid any timezone shifts)
-      return new Date(year, month - 1, day, 12, 0, 0);
-    }
-    
-    return new Date(val);
-  }),
-  registrationStartDate: z.string().or(z.date()).transform(val => {
-    if (val instanceof Date) return val;
-    
-    // Handle YYYY-MM-DD format without timezone issues
-    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const [year, month, day] = val.split('-').map(Number);
-      // Create a date using local date components (with noon time to avoid any timezone shifts)
-      return new Date(year, month - 1, day, 12, 0, 0);
-    }
-    
-    return new Date(val);
-  }),
-  registrationEndDate: z.string().or(z.date()).transform(val => {
-    if (val instanceof Date) return val;
-    
-    // Handle YYYY-MM-DD format without timezone issues
-    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const [year, month, day] = val.split('-').map(Number);
-      // Create a date using local date components (with noon time to avoid any timezone shifts)
-      return new Date(year, month - 1, day, 12, 0, 0);
-    }
-    
-    return new Date(val);
-  }),
+  startDate: createUtcSafeDateTransformer('startDate'),
+  endDate: createUtcSafeDateTransformer('endDate'),
+  registrationStartDate: createUtcSafeDateTransformer('registrationStartDate'),
+  registrationEndDate: createUtcSafeDateTransformer('registrationEndDate'),
   price: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
   capacity: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
   organizationId: z.number().or(z.string().transform(val => parseInt(String(val), 10))),

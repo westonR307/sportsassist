@@ -72,28 +72,78 @@ export function CalendarScheduler({
     setSessions(initialSessions);
   }, [initialSessions]);
 
-  // Custom function to normalize dates to YYYY-MM-DD format 
-  // to avoid timezone issues when comparing dates
+  // Debug timezone info
+  React.useEffect(() => {
+    const now = new Date();
+    console.log("User timezone information:");
+    console.log("- Browser timezone:", Intl.DateTimeFormat().resolvedOptions().timeZone);
+    console.log("- Timezone offset:", now.getTimezoneOffset(), "minutes");
+    console.log("- Current date/time:", now.toString());
+    console.log("- UTC date/time:", now.toUTCString());
+    console.log("- ISO date/time:", now.toISOString());
+  }, []);
+
+  // Enhanced function to normalize dates to YYYY-MM-DD format with more comprehensive debugging and handling
   const normalizeDate = (date: Date | string): string => {
     let d: Date;
+    let originalDateString = typeof date === 'string' ? date : date.toString();
     
-    if (typeof date === 'string') {
-      // For ISO string dates like "2025-04-02T00:00:00.000Z"
-      if (date.includes('T')) {
+    // For ISO string dates like "2025-04-02T00:00:00.000Z"
+    if (typeof date === 'string' && date.includes('T')) {
+      try {
+        // Extract the date part directly from ISO string to avoid timezone issues
         const datePart = date.split('T')[0];
+        console.log(`[NormalizeDate] ISO string detected: ${date} → extracted date part: ${datePart}`);
         return datePart;
+      } catch (error) {
+        console.error(`[NormalizeDate] Error parsing ISO string: ${date}`, error);
       }
-      d = new Date(date);
-    } else {
-      d = date;
     }
     
-    // Format as YYYY-MM-DD in local timezone
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    
-    return `${year}-${month}-${day}`;
+    try {
+      // For all other cases, parse the date and then extract components in UTC
+      if (typeof date === 'string') {
+        // Check for simple YYYY-MM-DD format
+        if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+          console.log(`[NormalizeDate] Simple YYYY-MM-DD format detected: ${date}, returning as is`);
+          return date;
+        }
+        
+        d = new Date(date);
+        console.log(`[NormalizeDate] Parsed string date: ${date} → Date object: ${d.toString()}`);
+      } else {
+        d = date;
+        console.log(`[NormalizeDate] Using Date object directly: ${d.toString()}`);
+      }
+      
+      // Create a stable UTC date at noon to avoid any DST or timezone shifts
+      // This is crucial for consistent date representation regardless of local timezone
+      const utcDate = new Date(Date.UTC(
+        d.getFullYear(),
+        d.getMonth(),
+        d.getDate(),
+        12, 0, 0 // Use noon to avoid any daylight saving time issues
+      ));
+      
+      // Format as YYYY-MM-DD based on UTC values
+      const year = utcDate.getUTCFullYear();
+      const month = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(utcDate.getUTCDate()).padStart(2, '0');
+      
+      const result = `${year}-${month}-${day}`;
+      console.log(`[NormalizeDate] Final result: ${originalDateString} → UTC date: ${utcDate.toISOString()} → Normalized: ${result}`);
+      return result;
+    } catch (error) {
+      console.error(`[NormalizeDate] Error normalizing date: ${originalDateString}`, error);
+      // In case of error, try to return something reasonable rather than crashing
+      if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) {
+        // If it starts with YYYY-MM-DD pattern, return just that part
+        return date.substring(0, 10);
+      }
+      // Last resort fallback to today's date
+      const today = new Date();
+      return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    }
   };
   
   // Update selected date sessions when date or sessions change
@@ -136,17 +186,25 @@ export function CalendarScheduler({
 
     try {
       setIsLoading(true);
-
-      // Create the sessionDate ensuring it preserves the correct date 
-      // regardless of timezone by using a consistent format with noon time
-      const year = selectedDate.getFullYear();
-      const month = selectedDate.getMonth() + 1; // Months are 0-indexed in JS
-      const day = selectedDate.getDate();
+      
+      // Use our enhanced normalization function for consistent date formatting
+      const formattedDate = normalizeDate(selectedDate);
+      
+      console.log(`[AddSession] Creating session with normalized date: ${formattedDate}`);
+      console.log(`[AddSession] Original selected date: ${selectedDate.toString()}`);
+      console.log(`[AddSession] Selected date timezone info:`, {
+        year: selectedDate.getFullYear(),
+        month: selectedDate.getMonth() + 1,
+        day: selectedDate.getDate(),
+        hours: selectedDate.getHours(),
+        minutes: selectedDate.getMinutes(),
+        timezoneOffset: selectedDate.getTimezoneOffset()
+      });
       
       // Format the date as YYYY-MM-DD with no time component to avoid timezone issues
       const sessionData = {
         campId: campId,
-        sessionDate: `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`,
+        sessionDate: formattedDate,
         startTime,
         endTime,
         status: "active",
