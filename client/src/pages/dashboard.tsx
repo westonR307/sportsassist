@@ -178,14 +178,29 @@ function MobileNavigation() {
         <span className="text-xs">Camps</span>
       </Button>
       
-      <Button
-        variant="ghost"
-        className={`flex-1 flex-col h-16 rounded-none ${isActive("/dashboard/participants")}`}
-        onClick={() => navigate("/dashboard/participants")}
-      >
-        <Users className="h-5 w-5 mb-1" />
-        <span className="text-xs">People</span>
-      </Button>
+      {/* Only show participants tab for camp creators and managers */}
+      {user && ["camp_creator", "manager", "admin"].includes(user.role) && (
+        <Button
+          variant="ghost"
+          className={`flex-1 flex-col h-16 rounded-none ${isActive("/dashboard/participants")}`}
+          onClick={() => navigate("/dashboard/participants")}
+        >
+          <Users className="h-5 w-5 mb-1" />
+          <span className="text-xs">People</span>
+        </Button>
+      )}
+      
+      {/* Only show parent tab for parent users */}
+      {user && user.role === "parent" && (
+        <Button
+          variant="ghost"
+          className={`flex-1 flex-col h-16 rounded-none ${isActive("/dashboard/parent")}`}
+          onClick={() => navigate("/dashboard/parent")}
+        >
+          <Users className="h-5 w-5 mb-1" />
+          <span className="text-xs">My Kids</span>
+        </Button>
+      )}
       
       {user && ["admin", "manager"].includes(user.role) && (
         <Button
