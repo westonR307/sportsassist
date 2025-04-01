@@ -2,9 +2,12 @@ import React from "react";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { format, isSameDay } from "date-fns";
+import { useLocation } from "wouter";
+import { Eye } from "lucide-react";
 
 // Type for the camp session data
 interface CampSession {
@@ -26,6 +29,7 @@ interface CampSession {
 function DashboardCalendar() {
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(new Date());
   const [calendarOpen, setCalendarOpen] = React.useState(true);
+  const [, navigate] = useLocation();
   
   // Fetch all sessions for the organization
   const { data: allSessions, isLoading: sessionsLoading } = useQuery<CampSession[]>({
@@ -211,17 +215,46 @@ function DashboardCalendar() {
                           {formatTime(session.startTime)} - {formatTime(session.endTime)}
                         </p>
                       </div>
-                      <Badge 
-                        className={
-                          session.status === 'active'
-                            ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                            : session.status === 'cancelled'
-                              ? 'bg-red-100 text-red-800 hover:bg-red-200'
-                              : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                        }
-                      >
-                        {session.status}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          onClick={() => {
+                            // Get camp slug by querying camps API endpoint to navigate to the camp detail page
+                            fetch(`/api/camps/${session.camp.id}`)
+                              .then(res => res.json())
+                              .then(campData => {
+                                if (campData.slug) {
+                                  console.log(`Navigating to camp with slug: ${campData.slug}`);
+                                  navigate(`/camps/${campData.slug}`);
+                                } else {
+                                  // Fallback to id-based URL if no slug
+                                  console.log(`Navigating to camp with ID: ${session.camp.id}`);
+                                  navigate(`/camps/${session.camp.id}`);
+                                }
+                              })
+                              .catch(err => {
+                                console.error("Error fetching camp details:", err);
+                                // Fallback to ID-based URL on error
+                                navigate(`/camps/${session.camp.id}`);
+                              });
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Badge 
+                          className={
+                            session.status === 'active'
+                              ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                              : session.status === 'cancelled'
+                                ? 'bg-red-100 text-red-800 hover:bg-red-200'
+                                : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                          }
+                        >
+                          {session.status}
+                        </Badge>
+                      </div>
                     </div>
                     
                     {session.notes && (
