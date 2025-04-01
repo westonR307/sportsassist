@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Document, DocumentField } from "../../../shared/schema";
+import { SignatureFieldType, DynamicFieldSource } from "../../../shared/document-types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,7 +41,17 @@ export default function DocumentEditPage() {
     type: 'waiver',
   });
   const [isAddingField, setIsAddingField] = useState(false);
-  const [newField, setNewField] = useState({
+  const [newField, setNewField] = useState<{
+    label: string;
+    fieldType: SignatureFieldType;
+    required: boolean;
+    xPosition: number;
+    yPosition: number;
+    pageNumber: number;
+    width: number;
+    height: number;
+    dataSource?: DynamicFieldSource | null;
+  }>({
     label: '',
     fieldType: 'signature',
     required: true,
@@ -49,6 +60,7 @@ export default function DocumentEditPage() {
     pageNumber: 1,
     width: 200,
     height: 50,
+    dataSource: null, // For dynamic fields
   });
   
   // Query to fetch document
@@ -112,9 +124,12 @@ export default function DocumentEditPage() {
       return apiRequest('POST', `/api/documents/${documentId}/fields`, data);
     },
     onSuccess: () => {
+      const fieldTypeLabel = newField.fieldType === 'dynamic_field' 
+        ? 'dynamic field' 
+        : newField.fieldType;
       toast({
         title: "Field added",
-        description: "The signature field was added successfully.",
+        description: `The ${fieldTypeLabel} field was added successfully.`,
       });
       setIsAddingField(false);
       setNewField({
@@ -126,6 +141,7 @@ export default function DocumentEditPage() {
         pageNumber: 1,
         width: 200,
         height: 50,
+        dataSource: null,
       });
       refetchFields();
     },
@@ -146,7 +162,7 @@ export default function DocumentEditPage() {
     onSuccess: () => {
       toast({
         title: "Field deleted",
-        description: "The signature field was deleted successfully.",
+        description: "The field was deleted successfully.",
       });
       refetchFields();
     },
@@ -331,9 +347,9 @@ export default function DocumentEditPage() {
             <TabsContent value="fields" className="py-4">
               <div className="flex justify-between items-center mb-4">
                 <div>
-                  <h3 className="text-lg font-medium">Signature Fields</h3>
+                  <h3 className="text-lg font-medium">Document Fields</h3>
                   <p className="text-sm text-muted-foreground">
-                    Add and manage signature fields for this document.
+                    Add and manage fields for this document (signatures, text inputs, dates, etc.).
                   </p>
                 </div>
                 <Button onClick={() => setIsAddingField(true)}>
@@ -350,7 +366,7 @@ export default function DocumentEditPage() {
               ) : !fields || fields.length === 0 ? (
                 <div className="text-center py-8 border rounded-lg bg-muted/50">
                   <p className="text-muted-foreground">
-                    No signature fields added to this document yet.
+                    No fields added to this document yet.
                   </p>
                   <Button className="mt-4" onClick={() => setIsAddingField(true)}>
                     <Plus className="mr-2 h-4 w-4" />
@@ -401,9 +417,9 @@ export default function DocumentEditPage() {
               <Dialog open={isAddingField} onOpenChange={setIsAddingField}>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Add Signature Field</DialogTitle>
+                    <DialogTitle>Add Document Field</DialogTitle>
                     <DialogDescription>
-                      Define a new signature or input field for your document.
+                      Define a new field for your document (signature, text, date, or dynamic data).
                     </DialogDescription>
                   </DialogHeader>
                   <form onSubmit={handleAddField}>
@@ -438,9 +454,42 @@ export default function DocumentEditPage() {
                             <SelectItem value="date">Date</SelectItem>
                             <SelectItem value="text">Text</SelectItem>
                             <SelectItem value="checkbox">Checkbox</SelectItem>
+                            <SelectItem value="dynamic_field">Dynamic Field</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
+                      {newField.fieldType === 'dynamic_field' && (
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="field-data-source" className="text-right">
+                            Data Source
+                          </Label>
+                          <Select
+                            value={newField.dataSource as string || ""}
+                            onValueChange={(value) => handleNewFieldChange('dataSource', value as DynamicFieldSource)}
+                          >
+                            <SelectTrigger className="col-span-3">
+                              <SelectValue placeholder="Select data source" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="athlete_name">Athlete Name</SelectItem>
+                              <SelectItem value="athlete_dob">Date of Birth</SelectItem>
+                              <SelectItem value="athlete_gender">Gender</SelectItem>
+                              <SelectItem value="athlete_emergency_contact">Emergency Contact</SelectItem>
+                              <SelectItem value="athlete_emergency_phone">Emergency Phone</SelectItem>
+                              <SelectItem value="athlete_emergency_relation">Emergency Contact Relation</SelectItem>
+                              <SelectItem value="athlete_allergies">Allergies</SelectItem>
+                              <SelectItem value="athlete_medical_conditions">Medical Conditions</SelectItem>
+                              <SelectItem value="parent_name">Parent Name</SelectItem>
+                              <SelectItem value="parent_email">Parent Email</SelectItem>
+                              <SelectItem value="parent_phone">Parent Phone</SelectItem>
+                              <SelectItem value="camp_name">Camp Name</SelectItem>
+                              <SelectItem value="camp_dates">Camp Dates</SelectItem>
+                              <SelectItem value="camp_location">Camp Location</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      
                       <div className="grid grid-cols-4 items-center gap-4">
                         <div className="text-right">
                           <Label htmlFor="field-required">Required</Label>
