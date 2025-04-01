@@ -532,6 +532,7 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
                           <option value="beginner">Beginner</option>
                           <option value="intermediate">Intermediate</option>
                           <option value="advanced">Advanced</option>
+                          <option value="all_levels">All Skill Levels</option>
                         </select>
                       </div>
                     </div>

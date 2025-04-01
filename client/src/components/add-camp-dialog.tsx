@@ -39,7 +39,7 @@ const skillLevelMap: Record<string, string> = {
   Beginner: "beginner",
   Intermediate: "intermediate",
   Advanced: "advanced",
-  "All Levels": "beginner", // Default to beginner for "All Levels"
+  "All Levels": "all_levels", // Map to all_levels for "All Levels"
 };
 
 interface Schedule {
