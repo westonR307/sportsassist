@@ -30,6 +30,7 @@ import {
   Award,
   ClipboardList,
   Clipboard,
+  Tent,
   X,
 } from "lucide-react";
 import { useLocation as useWouterLocation } from "wouter";
@@ -146,6 +147,19 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
             }`}
           >
             <Calendar className="h-5 w-5 flex-shrink-0" />
+            <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Dashboard</span>
+          </button>
+          <button
+            onClick={() => {
+              navigate("/dashboard/camps");
+              // Close sidebar on mobile after navigation
+              if (window.innerWidth < 1024) setSidebarOpen(false);
+            }}
+            className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
+              wouterLocation === "/dashboard/camps" ? "bg-gray-100" : ""
+            }`}
+          >
+            <Tent className="h-5 w-5 flex-shrink-0" />
             <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Camps</span>
           </button>
           <button

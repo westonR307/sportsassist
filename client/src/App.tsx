@@ -22,6 +22,7 @@ import CustomFieldsPage from "@/pages/custom-fields-page";
 import MyAthletesPage from "@/pages/my-athletes-page";
 import RegistrationsPage from "@/pages/registrations-page";
 import AvailableCampsPage from "@/pages/available-camps-page";
+import CampsPage from "@/pages/camps";
 import FindCampsPage from "@/pages/find-camps-page";
 import { ProtectedRoute } from "./lib/protected-route";
 
@@ -78,7 +79,7 @@ function Router() {
       <ProtectedRoute path="/dashboard" component={DashboardRouter} />
       <ProtectedRoute path="/dashboard/my-athletes" component={MyAthletesPage} />
       <ProtectedRoute path="/dashboard/registrations" component={RegistrationsPage} />
-      <ProtectedRoute path="/dashboard/camps" component={AvailableCampsPage} />
+      <ProtectedRoute path="/dashboard/camps" component={CampsPage} />
       <ProtectedRoute path="/dashboard/camps/:id" component={CampViewPage} />
       <ProtectedRoute path="/camp/:id" component={CampViewPage} />
       <ProtectedRoute path="/dashboard/reports" component={ReportsPage} />
