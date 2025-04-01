@@ -72,12 +72,42 @@ export function CalendarScheduler({
     setSessions(initialSessions);
   }, [initialSessions]);
 
+  // Custom function to normalize dates to YYYY-MM-DD format 
+  // to avoid timezone issues when comparing dates
+  const normalizeDate = (date: Date | string): string => {
+    let d: Date;
+    
+    if (typeof date === 'string') {
+      // For ISO string dates like "2025-04-02T00:00:00.000Z"
+      if (date.includes('T')) {
+        const datePart = date.split('T')[0];
+        return datePart;
+      }
+      d = new Date(date);
+    } else {
+      d = date;
+    }
+    
+    // Format as YYYY-MM-DD in local timezone
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
+  };
+  
   // Update selected date sessions when date or sessions change
   useEffect(() => {
     if (selectedDate && sessions.length > 0) {
-      const sessionsOnSelectedDate = sessions.filter(session => 
-        isSameDay(new Date(session.sessionDate), selectedDate)
-      );
+      // Instead of using isSameDay which can have timezone issues,
+      // normalize both dates to YYYY-MM-DD strings and compare
+      const selectedDateStr = normalizeDate(selectedDate);
+      
+      const sessionsOnSelectedDate = sessions.filter(session => {
+        const sessionDateStr = normalizeDate(session.sessionDate);
+        return sessionDateStr === selectedDateStr;
+      });
+      
       setSelectedDateSessions(sessionsOnSelectedDate);
     } else {
       setSelectedDateSessions([]);
@@ -260,9 +290,13 @@ export function CalendarScheduler({
 
   // Function to render the cell content with session indicators
   const renderDayContent = (day: Date) => {
-    const sessionsOnDay = sessions.filter(session => 
-      isSameDay(new Date(session.sessionDate), day)
-    );
+    // Use our normalized date approach for consistent date comparison
+    const dayStr = normalizeDate(day);
+    
+    const sessionsOnDay = sessions.filter(session => {
+      const sessionDateStr = normalizeDate(session.sessionDate);
+      return sessionDateStr === dayStr;
+    });
     
     if (sessionsOnDay.length > 0) {
       return (
