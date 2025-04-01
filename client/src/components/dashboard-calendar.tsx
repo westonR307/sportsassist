@@ -22,6 +22,7 @@ interface CampSession {
     id: number;
     name: string;
     type: string;
+    slug: string;
     // Add other camp fields as needed
   };
 }
@@ -44,6 +45,13 @@ function DashboardCalendar() {
   React.useEffect(() => {
     console.log('Dashboard calendar - All Sessions:', allSessions);
     console.log('Dashboard calendar - Loading state:', sessionsLoading);
+    
+    // Add detailed logging for camp slugs
+    if (allSessions && allSessions.length > 0) {
+      allSessions.forEach(session => {
+        console.log(`Session ID: ${session.id}, Camp ID: ${session.campId}, Camp Name: ${session.camp.name}, Camp Slug: ${session.camp.slug}`);
+      });
+    }
     
     // Only try to refetch if not already loading and we got null (not an empty array)
     if (!sessionsLoading && allSessions === null) {
@@ -221,24 +229,17 @@ function DashboardCalendar() {
                           size="icon" 
                           className="h-8 w-8 text-muted-foreground hover:text-foreground"
                           onClick={() => {
-                            // Get camp slug by querying camps API endpoint to navigate to the camp detail page
-                            fetch(`/api/camps/${session.camp.id}`)
-                              .then(res => res.json())
-                              .then(campData => {
-                                if (campData.slug) {
-                                  console.log(`Navigating to camp with slug: ${campData.slug}`);
-                                  navigate(`/camps/${campData.slug}`);
-                                } else {
-                                  // Fallback to id-based URL if no slug
-                                  console.log(`Navigating to camp with ID: ${session.camp.id}`);
-                                  navigate(`/camps/${session.camp.id}`);
-                                }
-                              })
-                              .catch(err => {
-                                console.error("Error fetching camp details:", err);
-                                // Fallback to ID-based URL on error
-                                navigate(`/camps/${session.camp.id}`);
-                              });
+                            // The session data already includes the camp data with the slug
+                            const campSlug = session.camp.slug;
+                            
+                            if (campSlug) {
+                              console.log(`Navigating to camp with slug: ${campSlug}`);
+                              navigate(`/camps/${campSlug}`);
+                            } else {
+                              // Fallback to id-based URL if no slug
+                              console.log(`Navigating to camp with ID: ${session.camp.id}`);
+                              navigate(`/camps/${session.camp.id}`);
+                            }
                           }}
                         >
                           <Eye className="h-4 w-4" />
