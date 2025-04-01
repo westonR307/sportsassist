@@ -25,6 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { DashboardLayout } from "./dashboard";
 import { Switch } from "@/components/ui/switch";
 import { 
   Command,
@@ -37,6 +38,14 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export default function DocumentEditPage() {
+  return (
+    <DashboardLayout>
+      <DocumentEditPageContent />
+    </DashboardLayout>
+  );
+}
+
+function DocumentEditPageContent() {
   const params = useParams<{ id: string }>();
   const documentId = parseInt(params.id);
   const { toast } = useToast();

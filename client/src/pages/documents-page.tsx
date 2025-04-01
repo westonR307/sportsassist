@@ -30,8 +30,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { Document } from "../../../shared/schema";
+import { DashboardLayout } from "./dashboard";
 
-export default function DocumentsPage() {
+export function DocumentsPageContent() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -115,7 +116,7 @@ export default function DocumentsPage() {
   };
 
   return (
-    <div className="container mx-auto py-6">
+    <div>
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold">Documents</h1>
@@ -299,5 +300,13 @@ export default function DocumentsPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function DocumentsPage() {
+  return (
+    <DashboardLayout>
+      <DocumentsPageContent />
+    </DashboardLayout>
   );
 }

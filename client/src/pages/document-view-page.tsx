@@ -24,8 +24,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { DashboardLayout } from "./dashboard";
 
-export default function DocumentViewPage() {
+export function DocumentViewPageContent() {
   const params = useParams<{ id: string }>();
   const documentId = parseInt(params.id);
   const { toast } = useToast();
@@ -235,5 +236,13 @@ export default function DocumentViewPage() {
         </>
       ) : null}
     </div>
+  );
+}
+
+export default function DocumentViewPage() {
+  return (
+    <DashboardLayout>
+      <DocumentViewPageContent />
+    </DashboardLayout>
   );
 }
