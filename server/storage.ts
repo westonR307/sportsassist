@@ -691,6 +691,25 @@ export class DatabaseStorage implements IStorage {
       .from(invitations)
       .where(eq(invitations.organizationId, organizationId));
   }
+  
+  async deleteInvitation(invitationId: number, organizationId: number): Promise<Invitation | undefined> {
+    // First check if the invitation exists and belongs to the organization
+    const [invitation] = await db.select()
+      .from(invitations)
+      .where(and(
+        eq(invitations.id, invitationId),
+        eq(invitations.organizationId, organizationId)
+      ));
+    
+    if (!invitation) return undefined;
+    
+    // Delete the invitation
+    const [deletedInvitation] = await db.delete(invitations)
+      .where(eq(invitations.id, invitationId))
+      .returning();
+    
+    return deletedInvitation;
+  }
   async getChildrenByParent(parentId: number): Promise<Child[]> {
     console.log(`[Storage] Getting children for parent ID: ${parentId}`);
     

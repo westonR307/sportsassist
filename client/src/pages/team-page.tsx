@@ -217,6 +217,65 @@ function ResendButton({ invitation, organizationId }: { invitation: Invitation; 
   );
 }
 
+function DeleteButton({ invitation, organizationId }: { invitation: Invitation; organizationId: number }) {
+  const { toast } = useToast();
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest(
+        "DELETE",
+        `/api/organizations/${organizationId}/invitations/${invitation.id}`
+      );
+
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/organizations/${organizationId}/invitations`] });
+      toast({
+        title: "Success",
+        description: "Invitation deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      // Extract the error message from the API response if available
+      let errorMessage = error.message;
+      try {
+        // Check if the error message is a JSON string containing more detailed error info
+        const errorData = JSON.parse(errorMessage);
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      } catch (e) {
+        // If parsing fails, use the original error message
+      }
+      
+      toast({
+        title: "Error deleting invitation",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
+
+  return (
+    <Button
+      variant="destructive"
+      size="sm"
+      onClick={() => deleteMutation.mutate()}
+      disabled={deleteMutation.isPending}
+    >
+      {deleteMutation.isPending ? (
+        <>
+          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+          Deleting...
+        </>
+      ) : (
+        'Delete'
+      )}
+    </Button>
+  );
+}
+
 function TeamPage() {
   const { user } = useAuth();
 
@@ -278,10 +337,16 @@ function TeamPage() {
                         <p className="font-medium">{invitation.email}</p>
                         <p className="text-sm text-gray-500">{invitation.role}</p>
                       </div>
-                      <ResendButton 
-                        invitation={invitation} 
-                        organizationId={user?.organizationId || 0} 
-                      />
+                      <div className="flex space-x-2">
+                        <ResendButton 
+                          invitation={invitation} 
+                          organizationId={user?.organizationId || 0} 
+                        />
+                        <DeleteButton
+                          invitation={invitation}
+                          organizationId={user?.organizationId || 0}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>

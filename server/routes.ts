@@ -459,6 +459,33 @@ export async function registerRoutes(app: Express) {
     const invitations = await storage.listOrganizationInvitations(orgId);
     res.json(invitations);
   });
+  
+  // Delete an invitation
+  app.delete("/api/organizations/:orgId/invitations/:id", async (req, res) => {
+    if (!req.user || req.user.role !== "camp_creator") {
+      return res.status(403).json({ message: "Only organization owners can delete invitations" });
+    }
+
+    const orgId = parseInt(req.params.orgId);
+    const invitationId = parseInt(req.params.id);
+    
+    if (req.user.organizationId !== orgId) {
+      return res.status(403).json({ message: "Not authorized for this organization" });
+    }
+
+    try {
+      const deletedInvitation = await storage.deleteInvitation(invitationId, orgId);
+      
+      if (!deletedInvitation) {
+        return res.status(404).json({ message: "Invitation not found" });
+      }
+      
+      res.json({ message: "Invitation deleted successfully", invitation: deletedInvitation });
+    } catch (error) {
+      console.error("Error deleting invitation:", error);
+      res.status(500).json({ message: "Failed to delete invitation" });
+    }
+  });
 
   app.post("/api/invitations/:token/accept", async (req, res) => {
     const invitation = await storage.getInvitation(req.params.token);
