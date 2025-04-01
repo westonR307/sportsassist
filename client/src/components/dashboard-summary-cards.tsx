@@ -35,33 +35,37 @@ function DashboardSummaryCards() {
   // Fetch today's sessions
   const { data: todaySessions, isLoading: todayLoading } = useQuery<CampSession[]>({
     queryKey: ["/api/dashboard/today-sessions"],
-    staleTime: 60000, // 1 minute
+    staleTime: 30000, // 30 seconds
     refetchOnMount: true,
     refetchOnWindowFocus: true,
+    refetchInterval: 60000, // Refetch every minute
   });
   
   // Fetch camp statistics
   const { data: campStats, isLoading: statsLoading } = useQuery<CampStats[]>({
     queryKey: ["/api/dashboard/camp-stats"],
-    staleTime: 60000, // 1 minute
+    staleTime: 30000, // 30 seconds
     refetchOnMount: true,
     refetchOnWindowFocus: true,
+    refetchInterval: 60000, // Refetch every minute
   });
   
   // Fetch total registrations count
   const { data: registrationsData, isLoading: registrationsLoading } = useQuery<{ count: number }>({
     queryKey: ["/api/dashboard/registrations-count"],
-    staleTime: 60000, // 1 minute
+    staleTime: 30000, // 30 seconds
     refetchOnMount: true,
     refetchOnWindowFocus: true,
+    refetchInterval: 60000, // Refetch every minute
   });
   
   // Fetch recent registrations (last 48 hours)
   const { data: recentRegistrations, isLoading: recentLoading } = useQuery<any[]>({
     queryKey: ["/api/dashboard/recent-registrations"],
-    staleTime: 60000, // 1 minute
+    staleTime: 30000, // 30 seconds
     refetchOnMount: true,
     refetchOnWindowFocus: true,
+    refetchInterval: 60000, // Refetch every minute
   });
   
   // Log received data for debugging

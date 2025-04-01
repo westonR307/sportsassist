@@ -29,9 +29,10 @@ function DashboardCalendar() {
   // Fetch all sessions for the organization
   const { data: allSessions, isLoading: sessionsLoading } = useQuery<CampSession[]>({
     queryKey: ["/api/dashboard/sessions"],
-    staleTime: 60000, // 1 minute
+    staleTime: 30000, // 30 seconds
     refetchOnMount: true,
     refetchOnWindowFocus: true,
+    refetchInterval: 60000, // Refetch every minute
   });
   
   // Debug log
