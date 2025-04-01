@@ -171,10 +171,15 @@ export function AddCampDialog({
           repeatCount: Number(data.repeatCount) || 0,
           sportId: sportId, // Use the sportId from the selected sport
           skillLevel: mappedSkillLevel,
-          defaultStartTime: form.watch('defaultStartTime'),
-          defaultEndTime: form.watch('defaultEndTime'),
-          // Using empty schedules since we're using enhanced calendar scheduling
-          schedules: []
+          // Create at least one schedule entry based on the default times
+          // This will satisfy the schema requirement while we transition to enhanced scheduling
+          schedules: [
+            {
+              dayOfWeek: 0, // Sunday as default
+              startTime: form.watch('defaultStartTime'),
+              endTime: form.watch('defaultEndTime')
+            }
+          ]
         };
 
         console.log("Creating camp with data:", JSON.stringify(requestData, null, 2));
@@ -352,12 +357,30 @@ export function AddCampDialog({
 
     console.log("Submitting form with data:", { 
       ...data, 
-      schedules: [], // Using empty schedules with the enhanced scheduling approach
+      // Create at least one schedule entry based on the default times
+      schedules: [
+        {
+          dayOfWeek: 0, // Sunday as default
+          startTime: data.defaultStartTime,
+          endTime: data.defaultEndTime
+        }
+      ],
       sportId: parseInt(selectedSport) || 1,
       skillLevel: skillLevelMap[skillLevel] 
     });
 
-    console.log("About to call mutation with data", { ...data, schedules: [], sport: selectedSport, level: skillLevel });
+    console.log("About to call mutation with data", { 
+      ...data, 
+      schedules: [
+        {
+          dayOfWeek: 0, // Sunday as default
+          startTime: data.defaultStartTime,
+          endTime: data.defaultEndTime
+        }
+      ],
+      sport: selectedSport,
+      level: skillLevel
+    });
     try {
       // Extract defaultStartTime and defaultEndTime fields, then pass the rest to the mutation
       const { defaultStartTime, defaultEndTime, ...campData } = data;
@@ -377,7 +400,14 @@ export function AddCampDialog({
         endDate: campData.endDate instanceof Date 
           ? campData.endDate.toISOString().split('T')[0] 
           : campData.endDate,
-        schedules: [] // Using empty schedules since we're using enhanced scheduling
+        // Create at least one schedule entry based on the default times
+        schedules: [
+          {
+            dayOfWeek: 0, // Sunday as default
+            startTime: defaultStartTime,
+            endTime: defaultEndTime
+          }
+        ]
       };
       
       createCampMutation.mutate(formattedData);
