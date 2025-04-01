@@ -26,10 +26,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, Plus, X, Calendar as CalendarIcon } from "lucide-react";
+import { Loader2, Plus, X, Calendar as CalendarIcon, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/api";
 import { CalendarScheduler } from "@/components/calendar-scheduler";
+import { DocumentAgreementsSelector } from "@/components/document-agreements-selector";
 
 // Map UI skill levels to schema skill levels
 const uiSkillLevels = ["Beginner", "Intermediate", "Advanced", "All Levels"];
@@ -1100,6 +1101,19 @@ export function AddCampDialog({
                       )}
                     />
                   )}
+
+                  <div className="border-t pt-4 mt-6 mb-4">
+                    <h3 className="text-lg font-medium mb-4 flex items-center">
+                      <FileText className="mr-2 h-5 w-5" /> 
+                      Document Agreements
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Select a document that participants must sign when registering for this camp.
+                    </p>
+                    
+                    {/* We use the temporary ID for new camps */}
+                    <DocumentAgreementsSelector campId={tempCampId} />
+                  </div>
 
                   <div className="flex justify-between pt-4">
                     <Button
