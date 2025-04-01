@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FlipCard } from "@/components/ui/flip-card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { CampScheduleSummary } from "@/components/camp-schedule";
 import {
   Plus,
@@ -31,6 +32,11 @@ import {
   X,
   ClipboardList,
   Clipboard,
+  ChevronRight,
+  List,
+  User,
+  UserPlus,
+  Building,
 } from "lucide-react";
 import { useLocation as useWouterLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -52,13 +58,27 @@ function DashboardSidebar() {
   const { user, logoutMutation } = useAuth();
   const [location, navigate] = useWouterLocation();
   
-  const isActive = (path: string) => {
-    return location.startsWith(path) ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground";
-  };
-  
   // Create a logout handler
   const handleLogout = () => {
     logoutMutation.mutate();
+  };
+  
+  // State for collapsible sections
+  const [openSections, setOpenSections] = React.useState({
+    camps: true,
+    team: true,
+    settings: true
+  });
+  
+  const toggleSection = (section: 'camps' | 'team' | 'settings') => {
+    setOpenSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+  
+  const isActive = (path: string) => {
+    return location.startsWith(path) ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground";
   };
   
   return (
@@ -70,7 +90,7 @@ function DashboardSidebar() {
         </div>
       </div>
       
-      <div className="flex-1 py-4">
+      <div className="flex-1 py-4 overflow-y-auto">
         <nav className="space-y-1 px-2">
           <Button
             variant="ghost"
@@ -81,37 +101,88 @@ function DashboardSidebar() {
             Dashboard
           </Button>
           
-          <Button
-            variant="ghost"
-            className={`w-full justify-start ${isActive("/dashboard/schedule")}`}
-            onClick={() => navigate("/dashboard/schedule")}
-          >
-            <Calendar className="h-4 w-4 mr-2" />
-            Schedule
-          </Button>
+          {/* Camps Section */}
+          <Collapsible open={openSections.camps} className="px-1 py-1">
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" className="w-full justify-between items-center">
+                <div className="flex items-center">
+                  <ClipboardList className="h-4 w-4 mr-2" />
+                  <span>Camps</span>
+                </div>
+                <ChevronRight className={`h-4 w-4 transition-transform ${openSections.camps ? 'rotate-90' : ''}`} />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pl-6 pt-2 space-y-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`w-full justify-start ${isActive("/dashboard/camps")}`}
+                onClick={() => navigate("/dashboard/camps")}
+              >
+                <List className="h-4 w-4 mr-2" />
+                All Camps
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`w-full justify-start ${isActive("/dashboard/schedule")}`}
+                onClick={() => navigate("/dashboard/schedule")}
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Schedule
+              </Button>
+              {user && ["camp_creator", "manager", "admin"].includes(user.role) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`w-full justify-start ${isActive("/dashboard/create-camp")}`}
+                  onClick={() => navigate("/dashboard")}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Camp
+                </Button>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
           
-          <Button
-            variant="ghost"
-            className={`w-full justify-start ${isActive("/dashboard/camps")}`}
-            onClick={() => navigate("/dashboard/camps")}
-          >
-            <ClipboardList className="h-4 w-4 mr-2" />
-            Manage Camps
-          </Button>
-          
-          {/* Only show participants tab for camp creators and managers */}
+          {/* Team Section */}
           {user && ["camp_creator", "manager", "admin"].includes(user.role) && (
-            <Button
-              variant="ghost"
-              className={`w-full justify-start ${isActive("/dashboard/participants")}`}
-              onClick={() => navigate("/dashboard/participants")}
-            >
-              <Users className="h-4 w-4 mr-2" />
-              Participants
-            </Button>
+            <Collapsible open={openSections.team} className="px-1 py-1">
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-between items-center">
+                  <div className="flex items-center">
+                    <Users className="h-4 w-4 mr-2" />
+                    <span>Team</span>
+                  </div>
+                  <ChevronRight className={`h-4 w-4 transition-transform ${openSections.team ? 'rotate-90' : ''}`} />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pl-6 pt-2 space-y-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`w-full justify-start ${isActive("/dashboard/participants")}`}
+                  onClick={() => navigate("/dashboard/participants")}
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Participants
+                </Button>
+                {user && ["admin", "manager"].includes(user.role) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`w-full justify-start ${isActive("/dashboard/staff")}`}
+                    onClick={() => navigate("/dashboard/staff")}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Staff
+                  </Button>
+                )}
+              </CollapsibleContent>
+            </Collapsible>
           )}
           
-          {/* Only show parent tab for parent users */}
+          {/* Parent section for parent users */}
           {user && user.role === "parent" && (
             <Button
               variant="ghost"
@@ -123,23 +194,58 @@ function DashboardSidebar() {
             </Button>
           )}
           
-          {user && ["admin", "manager"].includes(user.role) && (
-            <Button
-              variant="ghost"
-              className={`w-full justify-start ${isActive("/dashboard/organization")}`}
-              onClick={() => navigate("/dashboard/organization")}
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Organization
-            </Button>
-          )}
+          {/* Settings Section */}
+          <Collapsible open={openSections.settings} className="px-1 py-1">
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" className="w-full justify-between items-center">
+                <div className="flex items-center">
+                  <Settings className="h-4 w-4 mr-2" />
+                  <span>Settings</span>
+                </div>
+                <ChevronRight className={`h-4 w-4 transition-transform ${openSections.settings ? 'rotate-90' : ''}`} />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pl-6 pt-2 space-y-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`w-full justify-start ${isActive("/dashboard/profile")}`}
+                onClick={() => navigate("/dashboard/profile")}
+              >
+                <User className="h-4 w-4 mr-2" />
+                Profile
+              </Button>
+              {user && ["admin", "manager"].includes(user.role) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`w-full justify-start ${isActive("/dashboard/organization")}`}
+                  onClick={() => navigate("/dashboard/organization")}
+                >
+                  <Building className="h-4 w-4 mr-2" />
+                  Organization
+                </Button>
+              )}
+              {user && ["admin", "manager"].includes(user.role) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`w-full justify-start ${isActive("/dashboard/custom-fields")}`}
+                  onClick={() => navigate("/dashboard/custom-fields")}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Custom Fields
+                </Button>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
         </nav>
       </div>
       
       <div className="p-4 border-t">
         <div className="flex items-center mb-4">
           <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mr-2">
-            {user?.first_name?.[0]?.toUpperCase() || "U"}
+            {user?.first_name?.[0]?.toUpperCase() || user?.username?.[0]?.toUpperCase() || "U"}
           </div>
           <div>
             <div className="text-sm font-medium">
