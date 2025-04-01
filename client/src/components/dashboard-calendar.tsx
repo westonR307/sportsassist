@@ -58,7 +58,7 @@ function DashboardCalendar() {
     }
   }, [allSessions, sessionsLoading]);
   
-  // Function to normalize date to UTC without time component to avoid timezone issues
+  // Function to normalize date with specific adjustment for Mountain Time (UTC-7)
   const normalizeDate = (date: Date | string): string => {
     let d: Date;
     
@@ -68,9 +68,13 @@ function DashboardCalendar() {
       d = date;
     }
     
-    // Create a date string in format YYYY-MM-DD which preserves the actual date
-    // regardless of timezone differences
-    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+    // Adjust for Mountain Time by adding 7 hours to the UTC time
+    // This ensures dates are aligned with the server's interpretation
+    // For proper Mountain Time (GMT-7) adjustment
+    const mountainTimeDate = new Date(d.getTime() + 7 * 60 * 60 * 1000);
+    
+    // Format the adjusted date as YYYY-MM-DD
+    return `${mountainTimeDate.getUTCFullYear()}-${String(mountainTimeDate.getUTCMonth() + 1).padStart(2, '0')}-${String(mountainTimeDate.getUTCDate()).padStart(2, '0')}`;
   };
   
   // Calculate dates that have sessions
