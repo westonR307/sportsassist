@@ -96,6 +96,13 @@ export interface IStorage {
   updateCampSession(id: number, sessionData: Partial<Omit<CampSession, "id" | "createdAt" | "updatedAt">>): Promise<CampSession>;
   deleteCampSession(id: number): Promise<void>;
   
+  // Dashboard data methods
+  getAllCampSessions(organizationId: number): Promise<(CampSession & { camp: Camp })[]>;
+  getTodaySessions(organizationId: number): Promise<(CampSession & { camp: Camp })[]>;
+  getRecentRegistrations(organizationId: number, hours?: number): Promise<Registration[]>;
+  getTotalRegistrationsCount(organizationId: number): Promise<number>;
+  getCampCountsByStatus(organizationId: number): Promise<{ status: string; count: number }[]>;
+  
   // Recurrence Pattern methods
   createRecurrencePattern(pattern: InsertRecurrencePattern): Promise<RecurrencePattern>;
   getRecurrencePatterns(campId: number): Promise<RecurrencePattern[]>;
@@ -1629,6 +1636,184 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error getting registrations with child info:", error);
       throw new Error("Failed to get registrations with child info");
+    }
+  }
+
+  // Dashboard data methods
+  async getAllCampSessions(organizationId: number): Promise<(CampSession & { camp: Camp })[]> {
+    try {
+      // Get all camps for the organization
+      const orgCamps = await db.select().from(camps).where(
+        and(
+          eq(camps.organizationId, organizationId),
+          eq(camps.isDeleted, false)
+        )
+      );
+      
+      if (!orgCamps.length) {
+        return [];
+      }
+      
+      const campIds = orgCamps.map(camp => camp.id);
+      
+      // Get all sessions for these camps
+      const sessions = await db.select().from(campSessions).where(
+        inArray(campSessions.campId, campIds)
+      );
+      
+      // Create a map of camp id to camp object for quick lookup
+      const campsMap = new Map(orgCamps.map(camp => [camp.id, camp]));
+      
+      // Combine the sessions with their camp data
+      return sessions.map(session => ({
+        ...session,
+        camp: campsMap.get(session.campId)!
+      }));
+    } catch (error) {
+      console.error("Error getting all camp sessions:", error);
+      throw new Error(`Failed to get all camp sessions: ${error.message}`);
+    }
+  }
+  
+  async getTodaySessions(organizationId: number): Promise<(CampSession & { camp: Camp })[]> {
+    try {
+      // Get today's date
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+      
+      // Get all sessions for today
+      const allSessions = await this.getAllCampSessions(organizationId);
+      
+      // Filter for today's sessions only
+      return allSessions.filter(session => {
+        const sessionDate = new Date(session.sessionDate);
+        return sessionDate.toISOString().split('T')[0] === todayStr;
+      });
+    } catch (error) {
+      console.error("Error getting today's sessions:", error);
+      throw new Error(`Failed to get today's sessions: ${error.message}`);
+    }
+  }
+  
+  async getRecentRegistrations(organizationId: number, hours = 48): Promise<Registration[]> {
+    try {
+      // Calculate the cutoff time (default 48 hours ago)
+      const cutoffTime = new Date();
+      cutoffTime.setHours(cutoffTime.getHours() - hours);
+      
+      // Get all camps for the organization
+      const orgCamps = await db.select().from(camps).where(
+        and(
+          eq(camps.organizationId, organizationId),
+          eq(camps.isDeleted, false)
+        )
+      );
+      
+      if (!orgCamps.length) {
+        return [];
+      }
+      
+      const campIds = orgCamps.map(camp => camp.id);
+      
+      // Get recent registrations for these camps
+      return await db.select().from(registrations)
+        .where(
+          and(
+            inArray(registrations.campId, campIds),
+            gte(registrations.registeredAt, cutoffTime)
+          )
+        );
+    } catch (error) {
+      console.error("Error getting recent registrations:", error);
+      throw new Error(`Failed to get recent registrations: ${error.message}`);
+    }
+  }
+  
+  async getTotalRegistrationsCount(organizationId: number): Promise<number> {
+    try {
+      // Get all camps for the organization
+      const orgCamps = await db.select().from(camps).where(
+        and(
+          eq(camps.organizationId, organizationId),
+          eq(camps.isDeleted, false)
+        )
+      );
+      
+      if (!orgCamps.length) {
+        return 0;
+      }
+      
+      const campIds = orgCamps.map(camp => camp.id);
+      
+      // Count all registrations for these camps
+      const result = await db.select({ 
+        count: sql<number>`COUNT(*)` 
+      }).from(registrations)
+        .where(inArray(registrations.campId, campIds));
+      
+      return result[0]?.count || 0;
+    } catch (error) {
+      console.error("Error getting total registrations count:", error);
+      throw new Error(`Failed to get total registrations count: ${error.message}`);
+    }
+  }
+  
+  async getCampCountsByStatus(organizationId: number): Promise<{ status: string; count: number }[]> {
+    try {
+      // Get current date
+      const today = new Date();
+      
+      // Get all non-deleted camps for the organization
+      const orgCamps = await db.select().from(camps).where(
+        and(
+          eq(camps.organizationId, organizationId),
+          eq(camps.isDeleted, false)
+        )
+      );
+      
+      // Categorize camps by status
+      const statusCounts = {
+        registrationOpen: 0,
+        registrationClosed: 0,
+        active: 0,
+        completed: 0,
+        cancelled: 0
+      };
+      
+      for (const camp of orgCamps) {
+        const regStartDate = new Date(camp.registrationStartDate);
+        const regEndDate = new Date(camp.registrationEndDate);
+        const campStartDate = new Date(camp.startDate);
+        const campEndDate = new Date(camp.endDate);
+        
+        if (camp.isCancelled) {
+          statusCounts.cancelled++;
+        } else if (today < regStartDate) {
+          // Registration hasn't opened yet
+          statusCounts.registrationClosed++;
+        } else if (today >= regStartDate && today <= regEndDate) {
+          // Registration is open
+          statusCounts.registrationOpen++;
+        } else if (today > regEndDate && today < campStartDate) {
+          // Registration is closed but camp hasn't started
+          statusCounts.registrationClosed++;
+        } else if (today >= campStartDate && today <= campEndDate) {
+          // Camp is active
+          statusCounts.active++;
+        } else if (today > campEndDate) {
+          // Camp is completed
+          statusCounts.completed++;
+        }
+      }
+      
+      // Convert to array format
+      return Object.entries(statusCounts).map(([status, count]) => ({
+        status,
+        count
+      }));
+    } catch (error) {
+      console.error("Error getting camp counts by status:", error);
+      throw new Error(`Failed to get camp counts by status: ${error.message}`);
     }
   }
 }

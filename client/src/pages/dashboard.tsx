@@ -36,6 +36,8 @@ import { useLocation as useWouterLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { type Camp } from "@shared/schema";
 import { AddCampDialog } from "@/components/add-camp-dialog";
+import DashboardCalendar from "@/components/dashboard-calendar";
+import DashboardSummaryCards from "@/components/dashboard-summary-cards";
 
 
 // Organization interface
@@ -553,6 +555,7 @@ function CampsDashboard() {
 
 function Dashboard() {
   const { user } = useAuth();
+  const [showCalendar, setShowCalendar] = React.useState(true);
 
   if (!user) {
     return (
@@ -569,6 +572,59 @@ function Dashboard() {
   // All user types can see the dashboard, with appropriate permissions
   return (
     <DashboardLayout>
+      {/* Display the DashboardSummaryCards and DashboardCalendar only for users with organizationId */}
+      {user.organizationId ? (
+        <>
+          {/* Import directly from the components */}
+          <React.Suspense fallback={<div className="p-4 text-center">Loading summary cards...</div>}>
+            <DashboardSummaryCards />
+          </React.Suspense>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div className="lg:col-span-2">
+              <React.Suspense fallback={<div className="p-4 text-center">Loading calendar...</div>}>
+                <DashboardCalendar />
+              </React.Suspense>
+            </div>
+            <div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Quick Links</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => {
+                      (window as any).showAddCampDialog?.();
+                    }}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create New Camp
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => window.location.href = '/reports'}
+                  >
+                    <BarChart3 className="mr-2 h-4 w-4" />
+                    View Reports
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => window.location.href = '/dashboard/team'}
+                  >
+                    <Users className="mr-2 h-4 w-4" />
+                    Manage Team
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </>
+      ) : null}
+      
       <CampsDashboard />
     </DashboardLayout>
   );

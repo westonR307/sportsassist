@@ -2375,6 +2375,110 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ message: "Failed to fetch children" });
     }
   });
+  
+  // Dashboard API routes
+  app.get("/api/dashboard/sessions", async (req: Request, res: Response) => {
+    try {
+      // User must be authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const organizationId = req.user?.organizationId;
+      if (!organizationId) {
+        return res.status(403).json({ error: "User is not part of an organization" });
+      }
+      
+      const allSessions = await storage.getAllCampSessions(organizationId);
+      return res.json(allSessions);
+    } catch (error: any) {
+      console.error("Error getting all sessions:", error);
+      res.status(500).json({ error: error.message || "Failed to get all sessions" });
+    }
+  });
+  
+  app.get("/api/dashboard/today-sessions", async (req: Request, res: Response) => {
+    try {
+      // User must be authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const organizationId = req.user?.organizationId;
+      if (!organizationId) {
+        return res.status(403).json({ error: "User is not part of an organization" });
+      }
+      
+      const todaySessions = await storage.getTodaySessions(organizationId);
+      return res.json(todaySessions);
+    } catch (error: any) {
+      console.error("Error getting today's sessions:", error);
+      res.status(500).json({ error: error.message || "Failed to get today's sessions" });
+    }
+  });
+  
+  app.get("/api/dashboard/recent-registrations", async (req: Request, res: Response) => {
+    try {
+      // User must be authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const organizationId = req.user?.organizationId;
+      if (!organizationId) {
+        return res.status(403).json({ error: "User is not part of an organization" });
+      }
+      
+      // Get hours parameter from query string, default to 48
+      const hours = req.query.hours ? parseInt(req.query.hours as string) : 48;
+      
+      const recentRegistrations = await storage.getRecentRegistrations(organizationId, hours);
+      return res.json(recentRegistrations);
+    } catch (error: any) {
+      console.error("Error getting recent registrations:", error);
+      res.status(500).json({ error: error.message || "Failed to get recent registrations" });
+    }
+  });
+  
+  app.get("/api/dashboard/registrations-count", async (req: Request, res: Response) => {
+    try {
+      // User must be authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const organizationId = req.user?.organizationId;
+      if (!organizationId) {
+        return res.status(403).json({ error: "User is not part of an organization" });
+      }
+      
+      const totalCount = await storage.getTotalRegistrationsCount(organizationId);
+      return res.json({ count: totalCount });
+    } catch (error: any) {
+      console.error("Error getting total registrations count:", error);
+      res.status(500).json({ error: error.message || "Failed to get total registrations count" });
+    }
+  });
+  
+  app.get("/api/dashboard/camp-stats", async (req: Request, res: Response) => {
+    try {
+      // User must be authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const organizationId = req.user?.organizationId;
+      if (!organizationId) {
+        return res.status(403).json({ error: "User is not part of an organization" });
+      }
+      
+      const campStats = await storage.getCampCountsByStatus(organizationId);
+      return res.json(campStats);
+    } catch (error: any) {
+      console.error("Error getting camp statistics:", error);
+      res.status(500).json({ error: error.message || "Failed to get camp statistics" });
+    }
+  });
 
   return createServer(app);
 }
