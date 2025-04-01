@@ -44,6 +44,7 @@ export default function DocumentEditPage() {
   const [, navigate] = useLocation();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showFieldMenu, setShowFieldMenu] = useState(false);
+  const [showSignatureMenu, setShowSignatureMenu] = useState(false);
   const [cursorPosition, setCursorPosition] = useState(0);
   const [formData, setFormData] = useState({
     title: '',
@@ -238,25 +239,76 @@ export default function DocumentEditPage() {
     // Store cursor position
     setCursorPosition(e.target.selectionStart);
     
-    // Check if the user just typed a '#'
+    // Check if the user just typed a trigger character
     const lastChar = e.target.value.charAt(e.target.selectionStart - 1);
     if (lastChar === '#') {
       setShowFieldMenu(true);
-    } else if (showFieldMenu) {
-      // Close menu if user types something else after opening it
+      setShowSignatureMenu(false);
+    } else if (lastChar === '@') {
+      setShowSignatureMenu(true);
       setShowFieldMenu(false);
+    } else if (showFieldMenu || showSignatureMenu) {
+      // Close menus if user types something else after opening them
+      setShowFieldMenu(false);
+      setShowSignatureMenu(false);
     }
   };
   
   // Handle keydown events in the content textarea
   const handleContentKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Close field menu on escape
-    if (e.key === 'Escape' && showFieldMenu) {
-      setShowFieldMenu(false);
-      e.preventDefault();
+    // Close menus on escape
+    if (e.key === 'Escape') {
+      if (showFieldMenu) {
+        setShowFieldMenu(false);
+        e.preventDefault();
+      }
+      if (showSignatureMenu) {
+        setShowSignatureMenu(false);
+        e.preventDefault();
+      }
     }
   };
   
+  // Insert signature field at cursor position
+  const insertSignatureField = (fieldType: SignatureFieldType, label: string) => {
+    if (!textareaRef.current) return;
+    
+    // Create appropriate signature field tag based on type
+    const fieldTag = `{{@${fieldType}:${label}}}`;
+    
+    // Get current content and cursor position
+    const content = formData.content;
+    const pos = cursorPosition;
+    
+    // Remove the @ character that triggered the menu
+    const newContent = content.substring(0, pos - 1) + fieldTag + content.substring(pos);
+    
+    // Update content
+    setFormData((prev) => ({
+      ...prev,
+      content: newContent,
+    }));
+    
+    // Close signature menu
+    setShowSignatureMenu(false);
+    
+    // Focus back on textarea and set cursor after the inserted field
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        const newCursorPos = pos - 1 + fieldTag.length;
+        textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+        setCursorPosition(newCursorPos);
+      }
+    }, 0);
+    
+    toast({
+      title: "Signature field added",
+      description: `Added ${label} field to the document.`,
+      duration: 2000,
+    });
+  };
+
   // Insert dynamic field at cursor position
   const insertDynamicField = (fieldType: DynamicFieldSource) => {
     if (!textareaRef.current) return;
@@ -271,6 +323,10 @@ export default function DocumentEditPage() {
       athlete_emergency_relation: "Emergency Contact Relation",
       athlete_allergies: "Allergies",
       athlete_medical_conditions: "Medical Conditions",
+      athlete_medications: "Medications",
+      athlete_special_needs: "Special Needs",
+      athlete_jersey_size: "Jersey Size",
+      athlete_shoe_size: "Shoe Size",
       parent_name: "Parent Name",
       parent_email: "Parent Email",
       parent_phone: "Parent Phone",
@@ -433,7 +489,7 @@ export default function DocumentEditPage() {
                           value={formData.content}
                           onChange={handleContentChange}
                           onKeyDown={handleContentKeyDown}
-                          placeholder="Enter the document text here. Type # to insert dynamic fields."
+                          placeholder="Enter the document text here. Type # for dynamic fields or @ for signature fields."
                           rows={15}
                           className="font-mono"
                         />
@@ -551,10 +607,55 @@ export default function DocumentEditPage() {
                             </div>
                           </div>
                         )}
+                        
+                        {showSignatureMenu && (
+                          <div 
+                            className="absolute z-10 w-64 max-h-64 bg-background border rounded-md shadow-md overflow-y-auto"
+                            style={{ bottom: '100%', marginBottom: '5px' }}
+                          >
+                            <div className="p-2">
+                              <input
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                placeholder="Search signature fields..."
+                              />
+                            </div>
+                            <div className="max-h-[300px] overflow-y-auto p-1">
+                              <div className="pb-2">
+                                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                                  Signature Fields
+                                </div>
+                                <button
+                                  className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                  onClick={() => insertSignatureField("signature", "Parent Signature")}
+                                >
+                                  Parent Signature
+                                </button>
+                                <button
+                                  className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                  onClick={() => insertSignatureField("signature", "Guardian Signature")}
+                                >
+                                  Guardian Signature
+                                </button>
+                                <button
+                                  className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                  onClick={() => insertSignatureField("initial", "Parent Initial")}
+                                >
+                                  Parent Initial
+                                </button>
+                                <button
+                                  className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                  onClick={() => insertSignatureField("date", "Date Signed")}
+                                >
+                                  Date Signed
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground">
                         Enter the text of your document. Type <strong>#</strong> to add dynamic fields that will automatically 
-                        populate with athlete information.
+                        populate with athlete information. Type <strong>@</strong> to add signature fields.
                       </p>
                     </div>
                   </div>
