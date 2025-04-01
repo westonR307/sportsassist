@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
+import DocumentPreviewDialog from "./document-preview-dialog";
 
 interface DocumentAgreementsSelectorProps {
   campId: number;
@@ -25,6 +26,8 @@ export function DocumentAgreementsSelector({ campId }: DocumentAgreementsSelecto
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedDocumentId, setSelectedDocumentId] = useState<number | null>(null);
+  const [previewDocumentId, setPreviewDocumentId] = useState<number | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   
   // Fetch available documents
   const { data: documents, isLoading: isLoadingDocuments, error: documentsError } = useQuery({
@@ -44,6 +47,12 @@ export function DocumentAgreementsSelector({ campId }: DocumentAgreementsSelecto
       setSelectedDocumentId(campAgreements[0].documentId);
     }
   }, [campAgreements]);
+  
+  // Handle opening preview dialog
+  const handleOpenPreview = (documentId: number) => {
+    setPreviewDocumentId(documentId);
+    setIsPreviewOpen(true);
+  };
 
   // Update camp agreement mutation
   const updateAgreementMutation = useMutation({
@@ -111,6 +120,13 @@ export function DocumentAgreementsSelector({ campId }: DocumentAgreementsSelecto
 
   return (
     <div className="space-y-4">
+      {/* Document Preview Dialog */}
+      <DocumentPreviewDialog 
+        documentId={previewDocumentId} 
+        isOpen={isPreviewOpen} 
+        onOpenChange={setIsPreviewOpen} 
+      />
+      
       {isAgreementActive && currentAgreementDocument && (
         <div className="bg-green-50 p-4 rounded-md border border-green-200 flex items-start gap-3">
           <Check className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
@@ -120,12 +136,15 @@ export function DocumentAgreementsSelector({ campId }: DocumentAgreementsSelecto
               {currentAgreementDocument.title}
             </p>
             <div className="flex gap-2 mt-2">
-              <Link href={`/documents/view/${currentAgreementDocument.id}`}>
-                <Button size="sm" variant="outline" className="h-8">
-                  <FileText className="h-4 w-4 mr-1" />
-                  View
-                </Button>
-              </Link>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="h-8" 
+                onClick={() => handleOpenPreview(currentAgreementDocument.id)}
+              >
+                <FileText className="h-4 w-4 mr-1" />
+                View
+              </Button>
             </div>
           </div>
         </div>
@@ -171,11 +190,14 @@ export function DocumentAgreementsSelector({ campId }: DocumentAgreementsSelecto
                         <Clock className="h-3 w-3 mr-1" />
                         {new Date(doc.updatedAt).toLocaleDateString()}
                       </div>
-                      <Link href={`/documents/view/${doc.id}`}>
-                        <Button variant="ghost" size="sm" className="h-7 px-2">
-                          Preview <ChevronRight className="h-4 w-4 ml-1" />
-                        </Button>
-                      </Link>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 px-2"
+                        onClick={() => handleOpenPreview(doc.id)}
+                      >
+                        Preview <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
                     </div>
                   </div>
                 </div>
