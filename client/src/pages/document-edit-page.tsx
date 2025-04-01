@@ -439,60 +439,113 @@ export default function DocumentEditPage() {
                         />
                         {showFieldMenu && (
                           <div className="absolute z-10 w-64 max-h-64 bg-background border rounded-md shadow-md overflow-y-auto">
-                            <Command>
-                              <CommandInput placeholder="Search fields..." />
-                              <CommandList>
-                                <CommandEmpty>No fields found.</CommandEmpty>
-                                <CommandGroup heading="Athlete Information">
-                                  <CommandItem onSelect={() => insertDynamicField("athlete_name")}>
-                                    Athlete Name
-                                  </CommandItem>
-                                  <CommandItem onSelect={() => insertDynamicField("athlete_dob")}>
-                                    Date of Birth
-                                  </CommandItem>
-                                  <CommandItem onSelect={() => insertDynamicField("athlete_gender")}>
-                                    Gender
-                                  </CommandItem>
-                                  <CommandItem onSelect={() => insertDynamicField("athlete_emergency_contact")}>
-                                    Emergency Contact
-                                  </CommandItem>
-                                  <CommandItem onSelect={() => insertDynamicField("athlete_emergency_phone")}>
-                                    Emergency Phone
-                                  </CommandItem>
-                                  <CommandItem onSelect={() => insertDynamicField("athlete_emergency_relation")}>
-                                    Emergency Contact Relation
-                                  </CommandItem>
-                                  <CommandItem onSelect={() => insertDynamicField("athlete_allergies")}>
-                                    Allergies
-                                  </CommandItem>
-                                  <CommandItem onSelect={() => insertDynamicField("athlete_medical_conditions")}>
-                                    Medical Conditions
-                                  </CommandItem>
-                                </CommandGroup>
-                                <CommandGroup heading="Parent Information">
-                                  <CommandItem onSelect={() => insertDynamicField("parent_name")}>
-                                    Parent Name
-                                  </CommandItem>
-                                  <CommandItem onSelect={() => insertDynamicField("parent_email")}>
-                                    Parent Email
-                                  </CommandItem>
-                                  <CommandItem onSelect={() => insertDynamicField("parent_phone")}>
-                                    Parent Phone
-                                  </CommandItem>
-                                </CommandGroup>
-                                <CommandGroup heading="Camp Information">
-                                  <CommandItem onSelect={() => insertDynamicField("camp_name")}>
-                                    Camp Name
-                                  </CommandItem>
-                                  <CommandItem onSelect={() => insertDynamicField("camp_dates")}>
-                                    Camp Dates
-                                  </CommandItem>
-                                  <CommandItem onSelect={() => insertDynamicField("camp_location")}>
-                                    Camp Location
-                                  </CommandItem>
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
+                            <div className="p-2">
+                              <input
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                placeholder="Search fields..."
+                              />
+                            </div>
+                            <div className="max-h-[300px] overflow-y-auto p-1">
+                              <div className="pb-2">
+                                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                                  Athlete Information
+                                </div>
+                                <button
+                                  className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                  onClick={() => insertDynamicField("athlete_name")}
+                                >
+                                  Athlete Name
+                                </button>
+                                <button
+                                  className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                  onClick={() => insertDynamicField("athlete_dob")}
+                                >
+                                  Date of Birth
+                                </button>
+                                <button
+                                  className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                  onClick={() => insertDynamicField("athlete_gender")}
+                                >
+                                  Gender
+                                </button>
+                                <button
+                                  className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                  onClick={() => insertDynamicField("athlete_emergency_contact")}
+                                >
+                                  Emergency Contact
+                                </button>
+                                <button
+                                  className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                  onClick={() => insertDynamicField("athlete_emergency_phone")}
+                                >
+                                  Emergency Phone
+                                </button>
+                                <button
+                                  className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                  onClick={() => insertDynamicField("athlete_emergency_relation")}
+                                >
+                                  Emergency Contact Relation
+                                </button>
+                                <button
+                                  className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                  onClick={() => insertDynamicField("athlete_allergies")}
+                                >
+                                  Allergies
+                                </button>
+                                <button
+                                  className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                  onClick={() => insertDynamicField("athlete_medical_conditions")}
+                                >
+                                  Medical Conditions
+                                </button>
+                              </div>
+                              <div className="pb-2">
+                                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                                  Parent Information
+                                </div>
+                                <button
+                                  className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                  onClick={() => insertDynamicField("parent_name")}
+                                >
+                                  Parent Name
+                                </button>
+                                <button
+                                  className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                  onClick={() => insertDynamicField("parent_email")}
+                                >
+                                  Parent Email
+                                </button>
+                                <button
+                                  className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                  onClick={() => insertDynamicField("parent_phone")}
+                                >
+                                  Parent Phone
+                                </button>
+                              </div>
+                              <div className="pb-2">
+                                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                                  Camp Information
+                                </div>
+                                <button
+                                  className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                  onClick={() => insertDynamicField("camp_name")}
+                                >
+                                  Camp Name
+                                </button>
+                                <button
+                                  className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                  onClick={() => insertDynamicField("camp_dates")}
+                                >
+                                  Camp Dates
+                                </button>
+                                <button
+                                  className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                  onClick={() => insertDynamicField("camp_location")}
+                                >
+                                  Camp Location
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>
