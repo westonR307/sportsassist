@@ -38,16 +38,10 @@ export default function SignaturePage() {
   // Mutation for signing document
   const signDocumentMutation = useMutation({
     mutationFn: async (signatureData: any) => {
-      return apiRequest(`/api/signature-requests/${data?.signatureRequest.id}/sign`, {
-        method: 'POST',
-        body: JSON.stringify({
-          token: token,
-          signature: signatureData.signature,
-          fieldValues: signatureData.fieldValues || {}
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      return apiRequest('POST', `/api/signature-requests/${data?.signatureRequest.id}/sign`, {
+        token: token,
+        signature: signatureData.signature,
+        fieldValues: signatureData.fieldValues || {}
       });
     },
     onSuccess: () => {
@@ -71,12 +65,8 @@ export default function SignaturePage() {
   // Mutation for declining document
   const declineDocumentMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest(`/api/signature-requests/${data?.signatureRequest.id}/decline`, {
-        method: 'PUT',
-        body: JSON.stringify({ token }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      return apiRequest('PUT', `/api/signature-requests/${data?.signatureRequest.id}/decline`, {
+        token
       });
     },
     onSuccess: () => {

@@ -88,13 +88,7 @@ export default function DocumentEditPage() {
   // Mutation for updating document
   const updateDocumentMutation = useMutation({
     mutationFn: async (data: Partial<Document>) => {
-      return apiRequest(`/api/documents/${documentId}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      return apiRequest('PUT', `/api/documents/${documentId}`, data);
     },
     onSuccess: () => {
       toast({
@@ -115,13 +109,7 @@ export default function DocumentEditPage() {
   // Mutation for adding field
   const addFieldMutation = useMutation({
     mutationFn: async (data: Partial<DocumentField>) => {
-      return apiRequest(`/api/documents/${documentId}/fields`, {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      return apiRequest('POST', `/api/documents/${documentId}/fields`, data);
     },
     onSuccess: () => {
       toast({
@@ -153,9 +141,7 @@ export default function DocumentEditPage() {
   // Mutation for deleting field
   const deleteFieldMutation = useMutation({
     mutationFn: async (fieldId: number) => {
-      return apiRequest(`/api/documents/fields/${fieldId}`, {
-        method: 'DELETE',
-      });
+      return apiRequest('DELETE', `/api/documents/fields/${fieldId}`);
     },
     onSuccess: () => {
       toast({

@@ -58,15 +58,9 @@ export default function DocumentViewPage() {
   // Mutation for sending signature request
   const sendSignatureRequestMutation = useMutation({
     mutationFn: async (data: { email: string }) => {
-      return apiRequest(`/api/documents/${documentId}/signature-requests`, {
-        method: 'POST',
-        body: JSON.stringify({
-          requestedForEmail: data.email,
-          message: "Please sign this document at your earliest convenience."
-        }),
-        headers: {
-          'Content-Type': 'application/json'
-        }
+      return apiRequest('POST', `/api/documents/${documentId}/signature-requests`, {
+        requestedForEmail: data.email,
+        message: "Please sign this document at your earliest convenience."
       });
     },
     onSuccess: () => {
