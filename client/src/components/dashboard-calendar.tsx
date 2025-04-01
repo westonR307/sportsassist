@@ -234,11 +234,11 @@ function DashboardCalendar() {
                             
                             if (campSlug) {
                               console.log(`Navigating to camp with slug: ${campSlug}`);
-                              navigate(`/camps/${campSlug}`);
+                              navigate(`/dashboard/camps/${campSlug}`);
                             } else {
                               // Fallback to id-based URL if no slug
                               console.log(`Navigating to camp with ID: ${session.camp.id}`);
-                              navigate(`/camps/${session.camp.id}`);
+                              navigate(`/dashboard/camps/${session.camp.id}`);
                             }
                           }}
                         >
