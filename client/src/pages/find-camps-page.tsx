@@ -215,17 +215,20 @@ export default function FindCampsPage() {
     setShowVirtualOnly(false);
   };
 
-  const handleRegisterClick = (campId: number) => {
-    // Ensure campId is converted to string
-    const campIdString = String(campId);
-    console.log("Navigating to camp details with ID:", campIdString);
+  const handleRegisterClick = (campId: number, campSlug?: string | null) => {
+    console.log("Navigating to camp details with:", campSlug ? `slug: ${campSlug}` : `ID: ${campId}`);
+    
+    // Determine the URL path based on whether we have a slug
+    const campPath = campSlug 
+      ? `/dashboard/camps/slug/${campSlug}`
+      : `/dashboard/camps/${campId}`;
     
     if (!user) {
       // Redirect to auth page with return URL
-      setLocation(`/auth?returnTo=/dashboard/camps/${campIdString}`);
+      setLocation(`/auth?returnTo=${campPath}`);
     } else {
       // Directly go to camp details
-      setLocation(`/dashboard/camps/${campIdString}`);
+      setLocation(campPath);
     }
   };
 
@@ -862,7 +865,7 @@ export default function FindCampsPage() {
                   <CampCard 
                     key={camp.id} 
                     camp={camp} 
-                    onRegisterClick={() => handleRegisterClick(camp.id)}
+                    onRegisterClick={() => handleRegisterClick(camp.id, camp.slug)}
                     isAuthenticated={!!user}
                     onViewDetails={() => setSelectedCamp(camp)}
                   />
@@ -874,7 +877,7 @@ export default function FindCampsPage() {
                   <CampListItem 
                     key={camp.id} 
                     camp={camp} 
-                    onRegisterClick={() => handleRegisterClick(camp.id)}
+                    onRegisterClick={() => handleRegisterClick(camp.id, camp.slug)}
                     isAuthenticated={!!user}
                     onViewDetails={() => setSelectedCamp(camp)}
                   />
@@ -981,7 +984,7 @@ export default function FindCampsPage() {
                   <div className="mt-6 pt-4 border-t flex justify-between items-center">
                     <p className="text-xl font-bold">${selectedCamp.price}</p>
                     <Button onClick={() => {
-                      handleRegisterClick(selectedCamp.id);
+                      handleRegisterClick(selectedCamp.id, selectedCamp.slug);
                       setSelectedCamp(null);
                     }}>
                       Register Now

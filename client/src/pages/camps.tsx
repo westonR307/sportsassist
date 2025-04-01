@@ -287,7 +287,9 @@ export default function CampsPage() {
                     <div className="col-span-2 mt-1">
                       <Button 
                         className="w-full text-xs h-7"
-                        onClick={() => navigate(`/dashboard/camps/${camp.id}`)}
+                        onClick={() => navigate(camp.slug 
+                          ? `/dashboard/camps/slug/${camp.slug}` 
+                          : `/dashboard/camps/${camp.id}`)}
                       >
                         View Details
                       </Button>

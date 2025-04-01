@@ -81,7 +81,9 @@ function Router() {
       <ProtectedRoute path="/dashboard/registrations" component={RegistrationsPage} />
       <ProtectedRoute path="/dashboard/camps" component={CampsPage} />
       <ProtectedRoute path="/dashboard/camps/:id" component={CampViewPage} />
+      <ProtectedRoute path="/dashboard/camps/slug/:id" component={CampViewPage} />
       <ProtectedRoute path="/camp/:id" component={CampViewPage} />
+      <ProtectedRoute path="/camp/slug/:id" component={CampViewPage} />
       <ProtectedRoute path="/dashboard/reports" component={ReportsPage} />
       <ProtectedRoute path="/dashboard/team" component={TeamPage} />
       <ProtectedRoute 

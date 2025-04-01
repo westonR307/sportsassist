@@ -69,6 +69,7 @@ export const camps = pgTable("camps", {
   cancelledAt: timestamp("cancelled_at"),
   cancelReason: text("cancel_reason"),
   repeatCount: integer("repeat_count").notNull().default(0),
+  slug: text("slug").unique(),
 });
 
 export const campSchedules = pgTable("camp_schedules", {

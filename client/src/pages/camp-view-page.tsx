@@ -114,22 +114,29 @@ interface RegistrationsResponse {
 }
 
 // Custom hook to fetch camp data
-const useCampData = (id: string | undefined) => {
+const useCampData = (idOrSlug: string | undefined) => {
   const queryClient = useQueryClient();
   const { data: camp, isLoading, error: campError } = useQuery<CampWithPermissions>({
-    queryKey: ['camp', id],
+    queryKey: ['camp', idOrSlug],
     queryFn: async () => {
-      if (!id) throw new Error('No camp ID provided');
-      console.log("Fetching camp with ID:", id);
+      if (!idOrSlug) throw new Error('No camp identifier provided');
+      console.log("Fetching camp with identifier:", idOrSlug);
 
-      // Make sure ID is properly handled - we might get "undefined" as a string
-      if (id === 'undefined' || id === 'null') {
-        throw new Error('Invalid camp ID: ' + id);
+      // Make sure identifier is properly handled - we might get "undefined" as a string
+      if (idOrSlug === 'undefined' || idOrSlug === 'null') {
+        throw new Error('Invalid camp identifier: ' + idOrSlug);
       }
 
-      const url = `/api/camps/${id}`;
+      // Determine if we're dealing with a numeric ID or a slug
+      const isNumericId = /^\d+$/.test(idOrSlug);
+      
+      // Construct the URL based on whether we have a numeric ID or a slug
+      const url = isNumericId
+        ? `/api/camps/${idOrSlug}`
+        : `/api/camps/slug/${idOrSlug}`;
+        
       console.log("Full API URL:", url);
-      console.log("URL params check - id type:", typeof id, "value:", id);
+      console.log("Using slug-based URL:", !isNumericId);
 
       try {
         const response = await fetch(url);
@@ -149,7 +156,7 @@ const useCampData = (id: string | undefined) => {
         throw fetchError;
       }
     },
-    enabled: !!id && id !== 'undefined' && id !== 'null',
+    enabled: !!idOrSlug && idOrSlug !== 'undefined' && idOrSlug !== 'null',
     retry: 1,
     onError: (error) => {
       console.error("Error fetching camp details:", error);

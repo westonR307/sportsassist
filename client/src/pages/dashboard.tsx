@@ -547,7 +547,9 @@ function CampsDashboard() {
                     className="w-full text-xs h-8"
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(`/dashboard/camps/${camp.id}`);
+                      navigate(camp.slug 
+                        ? `/dashboard/camps/slug/${camp.slug}` 
+                        : `/dashboard/camps/${camp.id}`);
                     }}
                   >
                     View Details

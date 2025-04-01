@@ -736,6 +736,42 @@ export async function registerRoutes(app: Express) {
   });
   
   // Route to get a camp by ID (detailed version with better error handling and authorization)
+  // Get camp by slug (must be before the :id route to avoid conflicts)
+  app.get("/api/camps/slug/:slug", async (req, res) => {
+    try {
+      console.log(`Fetching details for camp with slug: ${req.params.slug}`);
+      
+      const camp = await storage.getCampBySlug(req.params.slug);
+      
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+
+      // If the camp is private, check if the user is authenticated and belongs to the camp's organization
+      if (camp.visibility === "private" && (!req.user || req.user.organizationId !== camp.organizationId)) {
+        return res.status(403).json({ message: "You do not have permission to view this camp" });
+      }
+      
+      // Add permissions for the frontend to know what actions to show
+      let canManage = false;
+      if (req.user) {
+        canManage = req.user.organizationId === camp.organizationId;
+      }
+      
+      const campWithPermissions = {
+        ...camp,
+        permissions: {
+          canManage
+        }
+      };
+      
+      return res.json(campWithPermissions);
+    } catch (error) {
+      console.error("Error fetching camp by slug:", error);
+      return res.status(500).json({ message: "An error occurred" });
+    }
+  });
+
   app.get("/api/camps/:id", async (req, res) => {
     try {
       console.log(`Fetching details for camp ID: ${req.params.id}`);

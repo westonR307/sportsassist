@@ -65,6 +65,7 @@ export interface IStorage {
   updateCamp(id: number, campData: Partial<Omit<Camp, "id" | "organizationId">>): Promise<Camp>;
   listCamps(organizationId?: number): Promise<(Camp & { campSports?: any[], defaultStartTime?: string | null, defaultEndTime?: string | null })[]>;
   getCamp(id: number): Promise<Camp | undefined>;
+  getCampBySlug(slug: string): Promise<Camp | undefined>;
   getRegistrationsByCamp(campId: number): Promise<Registration[]>;
   createRegistration(registration: Omit<Registration, "id">): Promise<Registration>;
   getRegistration(id: number): Promise<Registration | undefined>;
@@ -265,6 +266,15 @@ export class DatabaseStorage implements IStorage {
       throw new Error(`Sport with ID ${campData.sportId} does not exist`);
     }
 
+    // Function to generate a random slug
+    const generateSlug = () => {
+      const crypto = require('crypto');
+      return crypto.randomBytes(12).toString('hex');
+    };
+    
+    // Generate a unique slug for the camp
+    const slug = generateSlug();
+    console.log("Generated slug for new camp:", slug);
 
     return await db.transaction(async (trx) => {
       // Create the camp
@@ -289,7 +299,8 @@ export class DatabaseStorage implements IStorage {
         minAge: parseInt(String(campData.minAge), 10),
         maxAge: parseInt(String(campData.maxAge), 10),
         repeatType: campData.repeatType || "none",
-        repeatCount: parseInt(String(campData.repeatCount || '0'), 10)
+        repeatCount: parseInt(String(campData.repeatCount || '0'), 10),
+        slug: slug // Add the unique slug
       }).returning();
 
       console.log("2. Created camp:", JSON.stringify(newCamp, null, 2));
@@ -422,6 +433,44 @@ export class DatabaseStorage implements IStorage {
       return result;
     } catch (error) {
       console.error("Error getting camp details:", error);
+      throw error;
+    }
+  }
+  
+  async getCampBySlug(slug: string): Promise<Camp | undefined> {
+    try {
+      console.log(`Fetching camp details for slug: ${slug}`);
+      
+      // First get the basic camp information
+      const [camp] = await db.select().from(camps).where(eq(camps.slug, slug));
+      
+      if (!camp) {
+        console.log(`No camp found with slug: ${slug}`);
+        return undefined;
+      }
+      
+      // Get the camp sports information
+      const campSportsList = await db.select()
+        .from(campSports)
+        .where(eq(campSports.campId, camp.id));
+      
+      if (campSportsList.length > 0) {
+        console.log(`Found ${campSportsList.length} sports for camp with slug: ${slug}`);
+      } else {
+        console.log(`No sports found for camp with slug: ${slug}`);
+      }
+      
+      // Attach the sports information to the camp object
+      const result = {
+        ...camp,
+        campSports: campSportsList,
+        defaultStartTime: await this.getDefaultStartTimeForCamp(camp.id),
+        defaultEndTime: await this.getDefaultEndTimeForCamp(camp.id)
+      };
+      
+      return result;
+    } catch (error) {
+      console.error("Error getting camp details by slug:", error);
       throw error;
     }
   }
