@@ -75,15 +75,40 @@ function DashboardSummaryCards() {
     console.log('Dashboard cards - Camp Stats:', campStats);
     console.log('Dashboard cards - Registrations Data:', registrationsData);
     console.log('Dashboard cards - Recent Registrations:', recentRegistrations);
+    console.log('Dashboard cards - Loading states:', {
+      todayLoading, statsLoading, registrationsLoading, recentLoading
+    });
     
-    // Force refetch if data is null
-    if (!todaySessions || !campStats || !registrationsData || !recentRegistrations) {
+    // Only retry if we got null (not an empty array) and are not already loading
+    const needsRetry = (
+      (!todayLoading && todaySessions === null) ||
+      (!statsLoading && campStats === null) ||
+      (!registrationsLoading && registrationsData === null) ||
+      (!recentLoading && recentRegistrations === null)
+    );
+    
+    if (needsRetry) {
       const retry = async () => {
         try {
-          await queryClient.refetchQueries({ queryKey: ["/api/dashboard/today-sessions"] });
-          await queryClient.refetchQueries({ queryKey: ["/api/dashboard/camp-stats"] });
-          await queryClient.refetchQueries({ queryKey: ["/api/dashboard/registrations-count"] });
-          await queryClient.refetchQueries({ queryKey: ["/api/dashboard/recent-registrations"] });
+          const promises = [];
+          
+          if (todaySessions === null) {
+            promises.push(queryClient.refetchQueries({ queryKey: ["/api/dashboard/today-sessions"] }));
+          }
+          
+          if (campStats === null) {
+            promises.push(queryClient.refetchQueries({ queryKey: ["/api/dashboard/camp-stats"] }));
+          }
+          
+          if (registrationsData === null) {
+            promises.push(queryClient.refetchQueries({ queryKey: ["/api/dashboard/registrations-count"] }));
+          }
+          
+          if (recentRegistrations === null) {
+            promises.push(queryClient.refetchQueries({ queryKey: ["/api/dashboard/recent-registrations"] }));
+          }
+          
+          await Promise.all(promises);
           console.log("Forced dashboard data refetch");
         } catch (error) {
           console.error("Error refetching dashboard data:", error);
@@ -94,7 +119,10 @@ function DashboardSummaryCards() {
       const timer = setTimeout(retry, 1000);
       return () => clearTimeout(timer);
     }
-  }, [todaySessions, campStats, registrationsData, recentRegistrations]);
+  }, [
+    todaySessions, campStats, registrationsData, recentRegistrations,
+    todayLoading, statsLoading, registrationsLoading, recentLoading
+  ]);
   
   // Get active camps count
   const activeCampsCount = React.useMemo(() => {

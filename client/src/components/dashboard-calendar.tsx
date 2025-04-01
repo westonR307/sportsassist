@@ -36,12 +36,13 @@ function DashboardCalendar() {
     refetchInterval: 60000, // Refetch every minute
   });
   
-  // Debug log and force refetch if needed
+  // Debug log and fetch state
   React.useEffect(() => {
     console.log('Dashboard calendar - All Sessions:', allSessions);
+    console.log('Dashboard calendar - Loading state:', sessionsLoading);
     
-    // Force refetch if data is null
-    if (!allSessions) {
+    // Only try to refetch if not already loading and we got null (not an empty array)
+    if (!sessionsLoading && allSessions === null) {
       const retry = async () => {
         try {
           await queryClient.refetchQueries({ queryKey: ["/api/dashboard/sessions"] });
@@ -55,7 +56,7 @@ function DashboardCalendar() {
       const timer = setTimeout(retry, 1000);
       return () => clearTimeout(timer);
     }
-  }, [allSessions]);
+  }, [allSessions, sessionsLoading]);
   
   // Calculate dates that have sessions
   const sessionDays = React.useMemo(() => {
