@@ -1642,6 +1642,8 @@ export class DatabaseStorage implements IStorage {
   // Dashboard data methods
   async getAllCampSessions(organizationId: number): Promise<(CampSession & { camp: Camp })[]> {
     try {
+      console.log(`Storage - Getting all camp sessions for organization ${organizationId}`);
+      
       // Get all camps for the organization
       const orgCamps = await db.select().from(camps).where(
         and(
@@ -1650,25 +1652,47 @@ export class DatabaseStorage implements IStorage {
         )
       );
       
+      console.log(`Storage - Found ${orgCamps.length} camps for organization ${organizationId}`);
+      
       if (!orgCamps.length) {
+        console.log("Storage - No camps found, returning empty sessions array");
         return [];
       }
       
       const campIds = orgCamps.map(camp => camp.id);
+      console.log(`Storage - Camp IDs: ${campIds.join(', ')}`);
       
       // Get all sessions for these camps
       const sessions = await db.select().from(campSessions).where(
         inArray(campSessions.campId, campIds)
       );
       
+      console.log(`Storage - Found ${sessions.length} sessions for these camps`);
+      if (sessions.length > 0) {
+        console.log(`Storage - Sample session data:`, JSON.stringify(sessions[0]));
+      }
+      
+      // If no sessions found, let's check the database directly to see what's in there
+      if (sessions.length === 0) {
+        const allSessions = await db.select().from(campSessions);
+        console.log(`Storage - Total sessions in database: ${allSessions.length}`);
+        if (allSessions.length > 0) {
+          console.log(`Storage - Sample session from all sessions:`, JSON.stringify(allSessions[0]));
+          console.log(`Storage - Session camp IDs in database:`, allSessions.map(s => s.campId).join(', '));
+        }
+      }
+      
       // Create a map of camp id to camp object for quick lookup
       const campsMap = new Map(orgCamps.map(camp => [camp.id, camp]));
       
       // Combine the sessions with their camp data
-      return sessions.map(session => ({
+      const result = sessions.map(session => ({
         ...session,
         camp: campsMap.get(session.campId)!
       }));
+      
+      console.log(`Storage - Returning ${result.length} combined sessions`);
+      return result;
     } catch (error) {
       console.error("Error getting all camp sessions:", error);
       throw new Error(`Failed to get all camp sessions: ${error.message}`);
