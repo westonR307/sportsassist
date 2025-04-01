@@ -63,6 +63,19 @@ const formatDateForPostgres = (dateStr: string) => {
   return date.toISOString().slice(0, 19).replace('T', ' ');
 };
 
+// Format a time string from 24-hour to 12-hour format (e.g., "09:00" to "9:00 AM")
+const formatTimeFor12Hour = (timeStr: string): string => {
+  try {
+    const [hours, minutes] = timeStr.split(":");
+    const hoursNum = parseInt(hours, 10);
+    const suffix = hoursNum >= 12 ? "PM" : "AM";
+    const hours12 = hoursNum % 12 === 0 ? 12 : hoursNum % 12;
+    return `${hours12}:${minutes} ${suffix}`;
+  } catch (e) {
+    return timeStr;
+  }
+};
+
 export function AddCampDialog({
   open,
   onOpenChange,
@@ -717,7 +730,7 @@ export function AddCampDialog({
                                     <div className="text-center py-4 mb-4">
                                       <p>Schedule your camp sessions using the calendar below.</p>
                                       <p className="mt-2 text-sm">
-                                        The default session time will be from {form.watch('defaultStartTime') || '09:00'} to {form.watch('defaultEndTime') || '17:00'} for days you select.
+                                        The default session time will be from {formatTimeFor12Hour(form.watch('defaultStartTime') || '09:00')} to {formatTimeFor12Hour(form.watch('defaultEndTime') || '17:00')} for days you select.
                                       </p>
                                     </div>
                                     
