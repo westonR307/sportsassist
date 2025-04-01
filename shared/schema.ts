@@ -102,6 +102,14 @@ export const insertCampSessionSchema = createInsertSchema(campSessions).omit({
 }).extend({
   sessionDate: z.string().or(z.date()).transform(val => {
     if (val instanceof Date) return val;
+    
+    // Handle YYYY-MM-DD format without timezone issues
+    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = val.split('-').map(Number);
+      // Create a date using local date components (with noon time to avoid any timezone shifts)
+      return new Date(year, month - 1, day, 12, 0, 0);
+    }
+    
     return new Date(val);
   }),
   startTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format"),
@@ -110,6 +118,14 @@ export const insertCampSessionSchema = createInsertSchema(campSessions).omit({
   rescheduledDate: z.string().or(z.date()).transform(val => {
     if (val === null || val === undefined) return null;
     if (val instanceof Date) return val;
+    
+    // Handle YYYY-MM-DD format without timezone issues
+    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = val.split('-').map(Number);
+      // Create a date using local date components (with noon time to avoid any timezone shifts)
+      return new Date(year, month - 1, day, 12, 0, 0);
+    }
+    
     return new Date(val);
   }).nullable().optional(),
   rescheduledStartTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format").nullable().optional(),
@@ -125,10 +141,26 @@ export const insertRecurrencePatternSchema = createInsertSchema(recurrencePatter
 }).extend({
   startDate: z.string().or(z.date()).transform(val => {
     if (val instanceof Date) return val;
+    
+    // Handle YYYY-MM-DD format without timezone issues
+    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = val.split('-').map(Number);
+      // Create a date using local date components (with noon time to avoid any timezone shifts)
+      return new Date(year, month - 1, day, 12, 0, 0);
+    }
+    
     return new Date(val);
   }),
   endDate: z.string().or(z.date()).transform(val => {
     if (val instanceof Date) return val;
+    
+    // Handle YYYY-MM-DD format without timezone issues
+    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = val.split('-').map(Number);
+      // Create a date using local date components (with noon time to avoid any timezone shifts)
+      return new Date(year, month - 1, day, 12, 0, 0);
+    }
+    
     return new Date(val);
   }),
   daysOfWeek: z.array(z.number().min(0).max(6)),
@@ -141,6 +173,14 @@ export const insertScheduleExceptionSchema = z.object({
   originalScheduleId: z.number().optional(),
   exceptionDate: z.string().or(z.date()).transform(val => {
     if (val instanceof Date) return val;
+    
+    // Handle YYYY-MM-DD format without timezone issues
+    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = val.split('-').map(Number);
+      // Create a date using local date components (with noon time to avoid any timezone shifts)
+      return new Date(year, month - 1, day, 12, 0, 0);
+    }
+    
     return new Date(val);
   }),
   dayOfWeek: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
@@ -160,18 +200,50 @@ export const insertCampSchema = z.object({
   additionalLocationDetails: z.string().optional().nullable(),
   startDate: z.string().or(z.date()).transform(val => {
     if (val instanceof Date) return val;
+    
+    // Handle YYYY-MM-DD format without timezone issues
+    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = val.split('-').map(Number);
+      // Create a date using local date components (with noon time to avoid any timezone shifts)
+      return new Date(year, month - 1, day, 12, 0, 0);
+    }
+    
     return new Date(val);
   }),
   endDate: z.string().or(z.date()).transform(val => {
     if (val instanceof Date) return val;
+    
+    // Handle YYYY-MM-DD format without timezone issues
+    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = val.split('-').map(Number);
+      // Create a date using local date components (with noon time to avoid any timezone shifts)
+      return new Date(year, month - 1, day, 12, 0, 0);
+    }
+    
     return new Date(val);
   }),
   registrationStartDate: z.string().or(z.date()).transform(val => {
     if (val instanceof Date) return val;
+    
+    // Handle YYYY-MM-DD format without timezone issues
+    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = val.split('-').map(Number);
+      // Create a date using local date components (with noon time to avoid any timezone shifts)
+      return new Date(year, month - 1, day, 12, 0, 0);
+    }
+    
     return new Date(val);
   }),
   registrationEndDate: z.string().or(z.date()).transform(val => {
     if (val instanceof Date) return val;
+    
+    // Handle YYYY-MM-DD format without timezone issues
+    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = val.split('-').map(Number);
+      // Create a date using local date components (with noon time to avoid any timezone shifts)
+      return new Date(year, month - 1, day, 12, 0, 0);
+    }
+    
     return new Date(val);
   }),
   price: z.number().or(z.string().transform(val => parseInt(String(val), 10))),

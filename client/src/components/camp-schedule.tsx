@@ -14,28 +14,39 @@ import { useLocation } from 'wouter';
 import { DAYS_OF_WEEK } from "@/pages/constants";
 
 // Parses a date string safely, handling various formats from the backend
+// with special timezone handling to ensure dates don't shift days
 const parseDate = (dateString: string | Date): Date => {
   if (dateString instanceof Date) {
     return dateString;
   }
   
   try {
-    // Try standard ISO parsing first
-    const parsedDate = new Date(dateString);
-    
-    // Check if valid date was returned
-    if (isValid(parsedDate)) {
-      return parsedDate;
-    }
-    
-    // Try alternate formats if needed
+    // Special handling for ISO-8601 strings to avoid timezone issues
+    // If it has a T format like "2025-04-28T00:00:00.000Z"
     if (dateString.includes('T')) {
+      // Extract the year-month-day part only
+      const datePart = dateString.split('T')[0];
+      if (datePart.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [year, month, day] = datePart.split('-').map(Number);
+        // Create date using local components (noon time to avoid any timezone issues)
+        return new Date(year, month - 1, day, 12, 0, 0);
+      }
+      
+      // Fallback to standard parsing but risk timezone issues
       return parseISO(dateString);
     }
     
-    // Try parsing YYYY-MM-DD format
+    // Try parsing direct YYYY-MM-DD format
     if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      return parse(dateString, 'yyyy-MM-dd', new Date());
+      const [year, month, day] = dateString.split('-').map(Number);
+      // Use noon time to avoid timezone-related date shifts
+      return new Date(year, month - 1, day, 12, 0, 0);
+    }
+    
+    // Standard parsing as fallback
+    const parsedDate = new Date(dateString);
+    if (isValid(parsedDate)) {
+      return parsedDate;
     }
     
     console.warn(`Unable to parse date string: ${dateString}, using current date as fallback`);

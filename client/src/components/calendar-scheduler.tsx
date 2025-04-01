@@ -107,9 +107,16 @@ export function CalendarScheduler({
     try {
       setIsLoading(true);
 
+      // Create the sessionDate ensuring it preserves the correct date 
+      // regardless of timezone by using a consistent format with noon time
+      const year = selectedDate.getFullYear();
+      const month = selectedDate.getMonth() + 1; // Months are 0-indexed in JS
+      const day = selectedDate.getDate();
+      
+      // Format the date as YYYY-MM-DD with no time component to avoid timezone issues
       const sessionData = {
         campId: campId,
-        sessionDate: format(selectedDate, 'yyyy-MM-dd'),
+        sessionDate: `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`,
         startTime,
         endTime,
         status: "active",
