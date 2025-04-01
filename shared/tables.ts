@@ -1,10 +1,13 @@
-import { pgTable, text, serial, integer, boolean, timestamp, time, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, time, json, jsonb, varchar } from "drizzle-orm/pg-core";
 import { 
   type CampType, type CampVisibility, type RepeatType, 
   type Role, type Gender, type ContactMethod, 
   type SportLevel, type StaffRole,
   type FieldType, type ValidationType,
-  type CampStatus, type RecurrencePattern
+  type CampStatus, type RecurrencePattern,
+  type DocumentType, type DocumentStatus, 
+  type SignatureStatus, type SignatureFieldType,
+  type AuditAction
 } from "./types";
 
 // Define the table structure for the new enhanced camp session scheduling
@@ -247,4 +250,82 @@ export const attendanceRecords = pgTable("attendance_records", {
   recordedBy: integer("recorded_by").references(() => users.id).notNull(), // Staff member who recorded this
   recordedAt: timestamp("recorded_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Document management tables
+export const documents = pgTable("documents", {
+  id: serial("id").primaryKey(),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
+  createdBy: integer("created_by").references(() => users.id).notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  fileUrl: text("file_url"), // URL to the stored PDF document (null if it's a rich text document)
+  content: text("content"), // Rich text content (null if it's a PDF upload)
+  documentType: text("document_type").$type<DocumentType>().notNull(),
+  status: text("status").$type<DocumentStatus>().notNull().default("draft"),
+  version: integer("version").notNull().default(1),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  archivedAt: timestamp("archived_at"),
+  hash: text("hash"), // SHA-256 hash of the document for integrity verification
+});
+
+export const documentFields = pgTable("document_fields", {
+  id: serial("id").primaryKey(),
+  documentId: integer("document_id").references(() => documents.id).notNull(),
+  fieldType: text("field_type").$type<SignatureFieldType>().notNull(),
+  label: text("label").notNull(),
+  required: boolean("required").notNull().default(true),
+  pageNumber: integer("page_number").notNull().default(1), // For multi-page PDFs
+  xPosition: integer("x_position").notNull(), // X coordinate for positioning (0-100% of page width)
+  yPosition: integer("y_position").notNull(), // Y coordinate for positioning (0-100% of page height)
+  width: integer("width").notNull().default(200), // Width in pixels
+  height: integer("height").notNull().default(50), // Height in pixels
+  order: integer("order").notNull().default(0), // Order of fields for sequential signing
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const signatureRequests = pgTable("signature_requests", {
+  id: serial("id").primaryKey(),
+  documentId: integer("document_id").references(() => documents.id).notNull(),
+  requestedBy: integer("requested_by").references(() => users.id).notNull(),
+  requestedForId: integer("requested_for_id").references(() => users.id), // If this is for a specific user
+  requestedForEmail: text("requested_for_email"), // If sending to an email that's not a user yet
+  campId: integer("camp_id").references(() => camps.id), // If associated with a camp
+  registrationId: integer("registration_id").references(() => registrations.id), // If associated with a registration
+  status: text("status").$type<SignatureStatus>().notNull().default("pending"),
+  token: text("token").notNull().unique(), // Secure token for signing link
+  message: text("message"), // Optional message to the signer
+  expiresAt: timestamp("expires_at"), // When the signature request expires
+  sentAt: timestamp("sent_at").notNull().defaultNow(),
+  viewedAt: timestamp("viewed_at"), // When the document was first viewed
+  completedAt: timestamp("completed_at"), // When signing was completed
+  reminderSentAt: timestamp("reminder_sent_at"), // Last time a reminder was sent
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const signatures = pgTable("signatures", {
+  id: serial("id").primaryKey(),
+  signatureRequestId: integer("signature_request_id").references(() => signatureRequests.id).notNull(),
+  documentId: integer("document_id").references(() => documents.id).notNull(),
+  documentFieldId: integer("document_field_id").references(() => documentFields.id).notNull(),
+  signatureData: text("signature_data").notNull(), // The actual signature data (image data URI, text value, etc.)
+  signedAt: timestamp("signed_at").notNull().defaultNow(),
+  ipAddress: text("ip_address").notNull(), // Signer's IP address
+  userAgent: text("user_agent").notNull(), // Browser user agent
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const documentAuditTrail = pgTable("document_audit_trail", {
+  id: serial("id").primaryKey(),
+  documentId: integer("document_id").references(() => documents.id).notNull(),
+  signatureRequestId: integer("signature_request_id").references(() => signatureRequests.id),
+  userId: integer("user_id").references(() => users.id), // User who performed the action (null for non-authenticated actions)
+  action: text("action").$type<AuditAction>().notNull(),
+  details: jsonb("details"), // Additional details about the action
+  ipAddress: text("ip_address"), // IP address where the action was performed
+  userAgent: text("user_agent"), // Browser user agent
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
 });

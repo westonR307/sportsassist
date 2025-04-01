@@ -15,6 +15,11 @@ import {
   attendanceRecords,
   campSessions,
   recurrencePatterns,
+  documents,
+  documentFields,
+  signatureRequests,
+  signatures,
+  documentAuditTrail,
   type User,
   type InsertUser,
   type Organization,
@@ -40,6 +45,16 @@ import {
   type InsertCampSession,
   type RecurrencePattern,
   type InsertRecurrencePattern,
+  type Document,
+  type InsertDocument,
+  type DocumentField,
+  type InsertDocumentField,
+  type SignatureRequest,
+  type InsertSignatureRequest,
+  type Signature,
+  type InsertSignature,
+  type DocumentAuditTrail,
+  type InsertDocumentAuditTrail,
   insertCampSchema,
   sports
 } from "@shared/schema";
@@ -144,6 +159,34 @@ export interface IStorage {
   
   // Enhanced registration methods
   getRegistrationsWithChildInfo(campId: number): Promise<(Registration & { child: Child })[]>;
+  
+  // Document management
+  createDocument(document: InsertDocument): Promise<Document>;
+  getDocument(id: number): Promise<Document | undefined>;
+  getDocumentsByOrganization(organizationId: number): Promise<Document[]>;
+  updateDocument(id: number, data: Partial<Omit<Document, "id" | "createdAt" | "updatedAt" | "hash">>): Promise<Document>;
+  deleteDocument(id: number): Promise<void>;
+  
+  // Document fields (signature locations)
+  createDocumentField(field: InsertDocumentField): Promise<DocumentField>;
+  getDocumentFields(documentId: number): Promise<DocumentField[]>;
+  updateDocumentField(id: number, data: Partial<Omit<DocumentField, "id" | "createdAt" | "updatedAt">>): Promise<DocumentField>;
+  deleteDocumentField(id: number): Promise<void>;
+  
+  // Signature requests
+  createSignatureRequest(request: InsertSignatureRequest & { token: string }): Promise<SignatureRequest>;
+  getSignatureRequest(token: string): Promise<SignatureRequest | undefined>;
+  getSignatureRequestsByDocument(documentId: number): Promise<SignatureRequest[]>;
+  getSignatureRequestsByUser(userId: number): Promise<SignatureRequest[]>;
+  updateSignatureRequest(id: number, data: Partial<Omit<SignatureRequest, "id" | "token" | "createdAt" | "updatedAt">>): Promise<SignatureRequest>;
+  
+  // Signatures
+  createSignature(signature: InsertSignature): Promise<Signature>;
+  getSignatures(signatureRequestId: number): Promise<Signature[]>;
+  
+  // Document audit trail
+  createAuditTrailEntry(entry: InsertDocumentAuditTrail): Promise<DocumentAuditTrail>;
+  getAuditTrail(documentId: number): Promise<DocumentAuditTrail[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1650,6 +1693,308 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Enhanced registration methods
+  getRegistrationsWithChildInfo(campId: number): Promise<(Registration & { child: Child })[]>;
+  
+  // Document management methods
+  async createDocument(document: InsertDocument): Promise<Document> {
+    try {
+      // Generate a document hash for verification
+      const crypto = require('crypto');
+      const hash = crypto.createHash('sha256')
+        .update(JSON.stringify({
+          title: document.title,
+          content: document.content,
+          organizationId: document.organizationId,
+          createdAt: new Date().toISOString(),
+        }))
+        .digest('hex');
+      
+      const [newDocument] = await db.insert(documents).values({
+        ...document,
+        hash,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }).returning();
+      
+      return newDocument;
+    } catch (error: any) {
+      console.error("Error creating document:", error);
+      throw new Error(`Failed to create document: ${error.message}`);
+    }
+  }
+  
+  async getDocument(id: number): Promise<Document | undefined> {
+    try {
+      const [document] = await db.select().from(documents).where(eq(documents.id, id));
+      return document;
+    } catch (error: any) {
+      console.error(`Error getting document ${id}:`, error);
+      throw new Error(`Failed to get document: ${error.message}`);
+    }
+  }
+  
+  async getDocumentsByOrganization(organizationId: number): Promise<Document[]> {
+    try {
+      return await db.select().from(documents).where(eq(documents.organizationId, organizationId));
+    } catch (error: any) {
+      console.error(`Error getting documents for organization ${organizationId}:`, error);
+      throw new Error(`Failed to get organization documents: ${error.message}`);
+    }
+  }
+  
+  async updateDocument(id: number, data: Partial<Omit<Document, "id" | "createdAt" | "updatedAt" | "hash">>): Promise<Document> {
+    try {
+      // If content is updated, regenerate the hash
+      let hash = undefined;
+      
+      if (data.content) {
+        const document = await this.getDocument(id);
+        if (!document) {
+          throw new Error(`Document with ID ${id} not found`);
+        }
+        
+        const crypto = require('crypto');
+        hash = crypto.createHash('sha256')
+          .update(JSON.stringify({
+            title: data.title || document.title,
+            content: data.content,
+            organizationId: document.organizationId,
+            createdAt: document.createdAt.toISOString(),
+          }))
+          .digest('hex');
+      }
+      
+      const [updatedDocument] = await db.update(documents)
+        .set({
+          ...data,
+          ...(hash && { hash }),
+          updatedAt: new Date()
+        })
+        .where(eq(documents.id, id))
+        .returning();
+      
+      return updatedDocument;
+    } catch (error: any) {
+      console.error(`Error updating document ${id}:`, error);
+      throw new Error(`Failed to update document: ${error.message}`);
+    }
+  }
+  
+  async deleteDocument(id: number): Promise<void> {
+    try {
+      await db.delete(documents).where(eq(documents.id, id));
+    } catch (error: any) {
+      console.error(`Error deleting document ${id}:`, error);
+      throw new Error(`Failed to delete document: ${error.message}`);
+    }
+  }
+  
+  // Document fields (signature locations)
+  async createDocumentField(field: InsertDocumentField): Promise<DocumentField> {
+    try {
+      const [newField] = await db.insert(documentFields).values({
+        ...field,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }).returning();
+      
+      return newField;
+    } catch (error: any) {
+      console.error("Error creating document field:", error);
+      throw new Error(`Failed to create document field: ${error.message}`);
+    }
+  }
+  
+  async getDocumentFields(documentId: number): Promise<DocumentField[]> {
+    try {
+      return await db.select().from(documentFields).where(eq(documentFields.documentId, documentId));
+    } catch (error: any) {
+      console.error(`Error getting fields for document ${documentId}:`, error);
+      throw new Error(`Failed to get document fields: ${error.message}`);
+    }
+  }
+  
+  async updateDocumentField(id: number, data: Partial<Omit<DocumentField, "id" | "createdAt" | "updatedAt">>): Promise<DocumentField> {
+    try {
+      const [updatedField] = await db.update(documentFields)
+        .set({
+          ...data,
+          updatedAt: new Date()
+        })
+        .where(eq(documentFields.id, id))
+        .returning();
+      
+      return updatedField;
+    } catch (error: any) {
+      console.error(`Error updating document field ${id}:`, error);
+      throw new Error(`Failed to update document field: ${error.message}`);
+    }
+  }
+  
+  async deleteDocumentField(id: number): Promise<void> {
+    try {
+      await db.delete(documentFields).where(eq(documentFields.id, id));
+    } catch (error: any) {
+      console.error(`Error deleting document field ${id}:`, error);
+      throw new Error(`Failed to delete document field: ${error.message}`);
+    }
+  }
+  
+  // Signature requests
+  async createSignatureRequest(request: InsertSignatureRequest & { token: string }): Promise<SignatureRequest> {
+    try {
+      const [newRequest] = await db.insert(signatureRequests).values({
+        ...request,
+        status: request.status || "pending",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }).returning();
+      
+      // Create an audit entry for request creation
+      await this.createAuditTrailEntry({
+        documentId: request.documentId,
+        userId: request.requestedById,
+        action: "sent",
+        ipAddress: request.ipAddress || null,
+        userAgent: request.userAgent || null,
+        timestamp: new Date()
+      });
+      
+      return newRequest;
+    } catch (error: any) {
+      console.error("Error creating signature request:", error);
+      throw new Error(`Failed to create signature request: ${error.message}`);
+    }
+  }
+  
+  async getSignatureRequest(token: string): Promise<SignatureRequest | undefined> {
+    try {
+      const [request] = await db.select().from(signatureRequests)
+        .where(eq(signatureRequests.token, token));
+      return request;
+    } catch (error: any) {
+      console.error(`Error getting signature request with token ${token}:`, error);
+      throw new Error(`Failed to get signature request: ${error.message}`);
+    }
+  }
+  
+  async getSignatureRequestsByDocument(documentId: number): Promise<SignatureRequest[]> {
+    try {
+      return await db.select().from(signatureRequests)
+        .where(eq(signatureRequests.documentId, documentId));
+    } catch (error: any) {
+      console.error(`Error getting signature requests for document ${documentId}:`, error);
+      throw new Error(`Failed to get document signature requests: ${error.message}`);
+    }
+  }
+  
+  async getSignatureRequestsByUser(userId: number): Promise<SignatureRequest[]> {
+    try {
+      return await db.select().from(signatureRequests)
+        .where(eq(signatureRequests.requestedToId, userId));
+    } catch (error: any) {
+      console.error(`Error getting signature requests for user ${userId}:`, error);
+      throw new Error(`Failed to get user signature requests: ${error.message}`);
+    }
+  }
+  
+  async updateSignatureRequest(id: number, data: Partial<Omit<SignatureRequest, "id" | "token" | "createdAt" | "updatedAt">>): Promise<SignatureRequest> {
+    try {
+      const [updatedRequest] = await db.update(signatureRequests)
+        .set({
+          ...data,
+          updatedAt: new Date()
+        })
+        .where(eq(signatureRequests.id, id))
+        .returning();
+      
+      // Create an audit entry for status changes
+      if (data.status) {
+        let action: "viewed" | "signed" | "expired" | "declined" | "revoked";
+        switch(data.status) {
+          case "signed": action = "signed"; break;
+          case "expired": action = "expired"; break;
+          case "declined": action = "declined"; break;
+          case "revoked": action = "revoked"; break;
+          default: action = "viewed"; break;
+        }
+        
+        await this.createAuditTrailEntry({
+          documentId: updatedRequest.documentId,
+          userId: updatedRequest.requestedToId,
+          action,
+          ipAddress: data.ipAddress || null,
+          userAgent: data.userAgent || null,
+          timestamp: new Date()
+        });
+      }
+      
+      return updatedRequest;
+    } catch (error: any) {
+      console.error(`Error updating signature request ${id}:`, error);
+      throw new Error(`Failed to update signature request: ${error.message}`);
+    }
+  }
+  
+  // Signatures
+  async createSignature(signature: InsertSignature): Promise<Signature> {
+    try {
+      const [newSignature] = await db.insert(signatures).values({
+        ...signature,
+        createdAt: new Date(),
+      }).returning();
+      
+      // Update the signature request status
+      await this.updateSignatureRequest(signature.signatureRequestId, { 
+        status: "signed", 
+        completedAt: new Date(),
+        ipAddress: signature.ipAddress,
+        userAgent: signature.userAgent
+      });
+      
+      return newSignature;
+    } catch (error: any) {
+      console.error("Error creating signature:", error);
+      throw new Error(`Failed to create signature: ${error.message}`);
+    }
+  }
+  
+  async getSignatures(signatureRequestId: number): Promise<Signature[]> {
+    try {
+      return await db.select().from(signatures)
+        .where(eq(signatures.signatureRequestId, signatureRequestId));
+    } catch (error: any) {
+      console.error(`Error getting signatures for request ${signatureRequestId}:`, error);
+      throw new Error(`Failed to get signatures: ${error.message}`);
+    }
+  }
+  
+  // Document audit trail
+  async createAuditTrailEntry(entry: InsertDocumentAuditTrail): Promise<DocumentAuditTrail> {
+    try {
+      const [newEntry] = await db.insert(documentAuditTrail).values({
+        ...entry,
+        timestamp: entry.timestamp || new Date(),
+      }).returning();
+      
+      return newEntry;
+    } catch (error: any) {
+      console.error("Error creating audit trail entry:", error);
+      throw new Error(`Failed to create audit trail entry: ${error.message}`);
+    }
+  }
+  
+  async getAuditTrail(documentId: number): Promise<DocumentAuditTrail[]> {
+    try {
+      return await db.select().from(documentAuditTrail)
+        .where(eq(documentAuditTrail.documentId, documentId))
+        .orderBy(documentAuditTrail.timestamp);
+    } catch (error: any) {
+      console.error(`Error getting audit trail for document ${documentId}:`, error);
+      throw new Error(`Failed to get document audit trail: ${error.message}`);
+    }
+  }
+  
   async getRegistrationsWithChildInfo(campId: number): Promise<(Registration & { child: Child })[]> {
     try {
       // Get all registrations for the camp

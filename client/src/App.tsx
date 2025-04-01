@@ -24,6 +24,10 @@ import RegistrationsPage from "@/pages/registrations-page";
 import AvailableCampsPage from "@/pages/available-camps-page";
 import CampsPage from "@/pages/camps";
 import FindCampsPage from "@/pages/find-camps-page";
+import DocumentsPage from "@/pages/documents-page";
+import DocumentViewPage from "@/pages/document-view-page";
+import DocumentEditPage from "@/pages/document-edit-page";
+import SignaturePage from "@/pages/signature-page";
 import { ProtectedRoute } from "./lib/protected-route";
 
 // Component to handle dashboard routing based on user role
@@ -97,6 +101,11 @@ function Router() {
         path="/athlete-dashboard" 
         component={Dashboard} // Temporarily use the regular dashboard - we'll create a dedicated page later
       />
+      {/* Document-related routes */}
+      <ProtectedRoute path="/documents" component={DocumentsPage} />
+      <ProtectedRoute path="/documents/:id" component={DocumentViewPage} />
+      <ProtectedRoute path="/documents/:id/edit" component={DocumentEditPage} />
+      <Route path="/sign/:token" component={SignaturePage} />
       <Route component={NotFound} />
     </Switch>
   );

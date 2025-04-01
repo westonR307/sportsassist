@@ -18,7 +18,12 @@ import {
   customFieldResponses,
   attendanceRecords,
   campSessions,
-  recurrencePatterns
+  recurrencePatterns,
+  documents,
+  documentFields,
+  signatureRequests,
+  signatures,
+  documentAuditTrail
 } from "./tables";
 
 // Import types
@@ -278,6 +283,61 @@ export const insertAttendanceRecordSchema = createInsertSchema(attendanceRecords
 });
 export type InsertAttendanceRecord = z.infer<typeof insertAttendanceRecordSchema>;
 
+// Document management schemas
+export const insertDocumentSchema = createInsertSchema(documents).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  archivedAt: true,
+  hash: true,
+}).extend({
+  documentType: z.enum(["waiver", "agreement", "consent", "policy", "custom"]),
+  status: z.enum(["draft", "active", "inactive", "archived"]).default("draft"),
+});
+
+export const insertDocumentFieldSchema = createInsertSchema(documentFields).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertSignatureRequestSchema = createInsertSchema(signatureRequests).omit({
+  id: true,
+  token: true,
+  createdAt: true, 
+  updatedAt: true,
+  sentAt: true,
+  viewedAt: true,
+  completedAt: true,
+  reminderSentAt: true,
+}).extend({
+  status: z.enum(["pending", "signed", "expired", "declined", "revoked"]).default("pending"),
+  expiresAt: z.date().optional(),
+});
+
+export const insertSignatureSchema = createInsertSchema(signatures).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertDocumentAuditTrailSchema = createInsertSchema(documentAuditTrail).omit({
+  id: true,
+  timestamp: true,
+});
+
+// Export document types
+export type Document = typeof documents.$inferSelect;
+export type DocumentField = typeof documentFields.$inferSelect;
+export type SignatureRequest = typeof signatureRequests.$inferSelect;
+export type Signature = typeof signatures.$inferSelect;
+export type DocumentAuditTrail = typeof documentAuditTrail.$inferSelect;
+
+export type InsertDocument = z.infer<typeof insertDocumentSchema>;
+export type InsertDocumentField = z.infer<typeof insertDocumentFieldSchema>;
+export type InsertSignatureRequest = z.infer<typeof insertSignatureRequestSchema>;
+export type InsertSignature = z.infer<typeof insertSignatureSchema>;
+export type InsertDocumentAuditTrail = z.infer<typeof insertDocumentAuditTrailSchema>;
+
 // Re-export tables
 export {
   organizations,
@@ -297,7 +357,12 @@ export {
   customFieldResponses,
   attendanceRecords,
   campSessions,
-  recurrencePatterns
+  recurrencePatterns,
+  documents,
+  documentFields,
+  signatureRequests,
+  signatures,
+  documentAuditTrail
 };
 
 export const predefinedSports = [

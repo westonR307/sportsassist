@@ -88,6 +88,7 @@ import { eq } from "drizzle-orm";
 import Stripe from "stripe";
 import { hashPassword, comparePasswords } from "./utils";
 import { registerParentRoutes } from "./parent-routes";
+import documentRoutes from "./document-routes";
 import { randomBytes } from "crypto";
 import { db } from "./db";
 import passport from "passport";
@@ -2409,6 +2410,9 @@ export async function registerRoutes(app: Express) {
   
   // Register parent-specific routes
   registerParentRoutes(app);
+  
+  // Register document routes
+  app.use(documentRoutes(storage));
   
   // Catchall route for /api/children to properly filter by parent
   app.get("/api/children", async (req, res) => {
