@@ -2390,7 +2390,15 @@ export async function registerRoutes(app: Express) {
       }
       
       const allSessions = await storage.getAllCampSessions(organizationId);
-      return res.json(allSessions);
+      console.log(`API /api/dashboard/sessions: Found ${allSessions.length} sessions`);
+      
+      // Log some example sessions if available
+      if (allSessions.length > 0) {
+        console.log("Sample session data:", JSON.stringify(allSessions[0]));
+      }
+      
+      // Clear response and return an array even if empty
+      return res.json(allSessions || []);
     } catch (error: any) {
       console.error("Error getting all sessions:", error);
       res.status(500).json({ error: error.message || "Failed to get all sessions" });
@@ -2410,7 +2418,10 @@ export async function registerRoutes(app: Express) {
       }
       
       const todaySessions = await storage.getTodaySessions(organizationId);
-      return res.json(todaySessions);
+      console.log(`API /api/dashboard/today-sessions: Found ${todaySessions.length} sessions for today`);
+      
+      // Return empty array if no sessions found
+      return res.json(todaySessions || []);
     } catch (error: any) {
       console.error("Error getting today's sessions:", error);
       res.status(500).json({ error: error.message || "Failed to get today's sessions" });
@@ -2453,6 +2464,8 @@ export async function registerRoutes(app: Express) {
       }
       
       const totalCount = await storage.getTotalRegistrationsCount(organizationId);
+      console.log(`API /api/dashboard/registrations-count: Found ${totalCount} registrations`);
+      
       return res.json({ count: totalCount });
     } catch (error: any) {
       console.error("Error getting total registrations count:", error);

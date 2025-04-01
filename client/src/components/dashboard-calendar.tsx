@@ -60,12 +60,29 @@ function DashboardCalendar() {
   
   // Calculate dates that have sessions
   const sessionDays = React.useMemo(() => {
-    if (!allSessions) return new Set<string>();
+    if (!allSessions || allSessions.length === 0) return new Set<string>();
     
     const dates = new Set<string>();
     allSessions.forEach(session => {
-      const date = new Date(session.sessionDate);
-      dates.add(date.toISOString().split('T')[0]);
+      try {
+        // Handle different date formats
+        let date;
+        if (typeof session.sessionDate === 'string') {
+          date = new Date(session.sessionDate);
+        } else if (session.sessionDate instanceof Date) {
+          date = session.sessionDate;
+        } else {
+          console.warn("Invalid session date format:", session.sessionDate);
+          return; // Skip this session
+        }
+        
+        // Make sure the date is valid before adding
+        if (!isNaN(date.getTime())) {
+          dates.add(date.toISOString().split('T')[0]);
+        }
+      } catch (error) {
+        console.error("Error parsing date:", error, session);
+      }
     });
     
     return dates;
@@ -75,9 +92,30 @@ function DashboardCalendar() {
   const selectedDateSessions = React.useMemo(() => {
     if (!allSessions || !selectedDate) return [];
     
-    return allSessions.filter(session => 
-      isSameDay(new Date(session.sessionDate), selectedDate)
-    ).sort((a, b) => {
+    return allSessions.filter(session => {
+      try {
+        // Handle different date formats
+        let sessionDate;
+        if (typeof session.sessionDate === 'string') {
+          sessionDate = new Date(session.sessionDate);
+        } else if (session.sessionDate instanceof Date) {
+          sessionDate = session.sessionDate;
+        } else {
+          console.warn("Invalid session date format in filter:", session.sessionDate);
+          return false; // Skip this session
+        }
+        
+        // Make sure the date is valid before comparing
+        if (isNaN(sessionDate.getTime())) {
+          return false;
+        }
+        
+        return isSameDay(sessionDate, selectedDate);
+      } catch (error) {
+        console.error("Error comparing dates:", error, session);
+        return false;
+      }
+    }).sort((a, b) => {
       // Sort by start time
       return a.startTime.localeCompare(b.startTime);
     });
