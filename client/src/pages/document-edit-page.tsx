@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { Document, DocumentField } from "../../../shared/schema";
 import { SignatureFieldType, DynamicFieldSource } from "../../../shared/document-types";
@@ -26,6 +26,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import { 
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export default function DocumentEditPage() {
   const params = useParams<{ id: string }>();
@@ -33,6 +42,9 @@ export default function DocumentEditPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [showFieldMenu, setShowFieldMenu] = useState(false);
+  const [cursorPosition, setCursorPosition] = useState(0);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -215,6 +227,93 @@ export default function DocumentEditPage() {
   const handleStatusChange = (status: string) => {
     updateDocumentMutation.mutate({ status });
   };
+  
+  // Handle content changes with support for dynamic field insertion
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setFormData((prev) => ({
+      ...prev,
+      content: e.target.value,
+    }));
+    
+    // Store cursor position
+    setCursorPosition(e.target.selectionStart);
+    
+    // Check if the user just typed a '#'
+    const lastChar = e.target.value.charAt(e.target.selectionStart - 1);
+    if (lastChar === '#') {
+      setShowFieldMenu(true);
+    } else if (showFieldMenu) {
+      // Close menu if user types something else after opening it
+      setShowFieldMenu(false);
+    }
+  };
+  
+  // Handle keydown events in the content textarea
+  const handleContentKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Close field menu on escape
+    if (e.key === 'Escape' && showFieldMenu) {
+      setShowFieldMenu(false);
+      e.preventDefault();
+    }
+  };
+  
+  // Insert dynamic field at cursor position
+  const insertDynamicField = (fieldType: DynamicFieldSource) => {
+    if (!textareaRef.current) return;
+    
+    // Get field display name
+    const fieldDisplayNames: Record<DynamicFieldSource, string> = {
+      athlete_name: "Athlete Name",
+      athlete_dob: "Date of Birth",
+      athlete_gender: "Gender",
+      athlete_emergency_contact: "Emergency Contact",
+      athlete_emergency_phone: "Emergency Phone",
+      athlete_emergency_relation: "Emergency Contact Relation",
+      athlete_allergies: "Allergies",
+      athlete_medical_conditions: "Medical Conditions",
+      parent_name: "Parent Name",
+      parent_email: "Parent Email",
+      parent_phone: "Parent Phone",
+      camp_name: "Camp Name",
+      camp_dates: "Camp Dates",
+      camp_location: "Camp Location"
+    };
+    
+    const displayName = fieldDisplayNames[fieldType];
+    const fieldTag = `{{${fieldType}}}`;
+    
+    // Get current content and cursor position
+    const content = formData.content;
+    const pos = cursorPosition;
+    
+    // Remove the # character that triggered the menu
+    const newContent = content.substring(0, pos - 1) + fieldTag + content.substring(pos);
+    
+    // Update content
+    setFormData((prev) => ({
+      ...prev,
+      content: newContent,
+    }));
+    
+    // Close field menu
+    setShowFieldMenu(false);
+    
+    // Focus back on textarea and set cursor after the inserted field
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        const newCursorPos = pos - 1 + fieldTag.length;
+        textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+        setCursorPosition(newCursorPos);
+      }
+    }, 0);
+    
+    toast({
+      title: "Dynamic field added",
+      description: `Added ${displayName} field to the document.`,
+      duration: 2000,
+    });
+  };
 
   return (
     <div className="container mx-auto py-6">
@@ -326,17 +425,80 @@ export default function DocumentEditPage() {
                     
                     <div className="space-y-2">
                       <Label htmlFor="content">Document Content</Label>
-                      <Textarea
-                        id="content"
-                        name="content"
-                        value={formData.content}
-                        onChange={handleInputChange}
-                        placeholder="Enter the document text here"
-                        rows={15}
-                        className="font-mono"
-                      />
+                      <div className="relative">
+                        <Textarea
+                          id="content"
+                          name="content"
+                          ref={textareaRef}
+                          value={formData.content}
+                          onChange={handleContentChange}
+                          onKeyDown={handleContentKeyDown}
+                          placeholder="Enter the document text here. Type # to insert dynamic fields."
+                          rows={15}
+                          className="font-mono"
+                        />
+                        {showFieldMenu && (
+                          <div className="absolute z-10 w-64 max-h-64 bg-background border rounded-md shadow-md overflow-y-auto">
+                            <Command>
+                              <CommandInput placeholder="Search fields..." />
+                              <CommandList>
+                                <CommandEmpty>No fields found.</CommandEmpty>
+                                <CommandGroup heading="Athlete Information">
+                                  <CommandItem onSelect={() => insertDynamicField("athlete_name")}>
+                                    Athlete Name
+                                  </CommandItem>
+                                  <CommandItem onSelect={() => insertDynamicField("athlete_dob")}>
+                                    Date of Birth
+                                  </CommandItem>
+                                  <CommandItem onSelect={() => insertDynamicField("athlete_gender")}>
+                                    Gender
+                                  </CommandItem>
+                                  <CommandItem onSelect={() => insertDynamicField("athlete_emergency_contact")}>
+                                    Emergency Contact
+                                  </CommandItem>
+                                  <CommandItem onSelect={() => insertDynamicField("athlete_emergency_phone")}>
+                                    Emergency Phone
+                                  </CommandItem>
+                                  <CommandItem onSelect={() => insertDynamicField("athlete_emergency_relation")}>
+                                    Emergency Contact Relation
+                                  </CommandItem>
+                                  <CommandItem onSelect={() => insertDynamicField("athlete_allergies")}>
+                                    Allergies
+                                  </CommandItem>
+                                  <CommandItem onSelect={() => insertDynamicField("athlete_medical_conditions")}>
+                                    Medical Conditions
+                                  </CommandItem>
+                                </CommandGroup>
+                                <CommandGroup heading="Parent Information">
+                                  <CommandItem onSelect={() => insertDynamicField("parent_name")}>
+                                    Parent Name
+                                  </CommandItem>
+                                  <CommandItem onSelect={() => insertDynamicField("parent_email")}>
+                                    Parent Email
+                                  </CommandItem>
+                                  <CommandItem onSelect={() => insertDynamicField("parent_phone")}>
+                                    Parent Phone
+                                  </CommandItem>
+                                </CommandGroup>
+                                <CommandGroup heading="Camp Information">
+                                  <CommandItem onSelect={() => insertDynamicField("camp_name")}>
+                                    Camp Name
+                                  </CommandItem>
+                                  <CommandItem onSelect={() => insertDynamicField("camp_dates")}>
+                                    Camp Dates
+                                  </CommandItem>
+                                  <CommandItem onSelect={() => insertDynamicField("camp_location")}>
+                                    Camp Location
+                                  </CommandItem>
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </div>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground">
-                        Enter the text of your document. You can use simple formatting like line breaks for paragraphs.
+                        Enter the text of your document. Type <strong>#</strong> to add dynamic fields that will automatically 
+                        populate with athlete information.
                       </p>
                     </div>
                   </div>
