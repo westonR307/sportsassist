@@ -438,7 +438,10 @@ export default function DocumentEditPage() {
                           className="font-mono"
                         />
                         {showFieldMenu && (
-                          <div className="absolute z-10 w-64 max-h-64 bg-background border rounded-md shadow-md overflow-y-auto">
+                          <div 
+                            className="absolute z-10 w-64 max-h-64 bg-background border rounded-md shadow-md overflow-y-auto"
+                            style={{ bottom: '100%', marginBottom: '5px' }}
+                          >
                             <div className="p-2">
                               <input
                                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
