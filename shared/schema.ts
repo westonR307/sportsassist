@@ -75,7 +75,7 @@ export const insertChildSchema = createInsertSchema(children)
     sportsInterests: z.array(
       z.object({
         sportId: z.number(),
-        skillLevel: z.enum(["beginner", "intermediate", "advanced"]),
+        skillLevel: z.enum(["beginner", "intermediate", "advanced", "all_levels"]),
         preferredPositions: z.array(z.string()).optional(),
         currentTeam: z.string().optional(),
       })
@@ -195,7 +195,7 @@ export const insertCampSchema = z.object({
     endTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format")
   })).min(1, "At least one schedule is required"),
   sportId: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
-  skillLevel: z.enum(["beginner", "intermediate", "advanced"])
+  skillLevel: z.enum(["beginner", "intermediate", "advanced", "all_levels"])
 }).strict();
 
 export const insertRegistrationSchema = createInsertSchema(registrations);

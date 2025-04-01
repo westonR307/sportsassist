@@ -161,14 +161,16 @@ export const sportsById: Record<number, string> = Object.fromEntries(
 export const skillLevels = [
   "beginner", 
   "intermediate", 
-  "advanced"
+  "advanced",
+  "all_levels"
 ];
 
 // Skill level display names
 export const skillLevelNames: Record<string, string> = {
   "beginner": "Beginner - Just starting out",
   "intermediate": "Intermediate - Some experience",
-  "advanced": "Advanced - Significant experience"
+  "advanced": "Advanced - Significant experience",
+  "all_levels": "All Skill Levels - Open to everyone"
 };
 
 // Jersey size options
