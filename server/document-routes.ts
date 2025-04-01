@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import { IStorage } from './storage';
-import { insertDocumentSchema, insertDocumentFieldSchema, insertSignatureRequestSchema, insertSignatureSchema } from '../shared/schema';
+import { insertDocumentSchema, insertDocumentFieldSchema, insertSignatureRequestSchema, insertSignatureSchema, insertCampDocumentAgreementSchema } from '../shared/schema';
 import { z } from 'zod';
 
 export default function documentRoutes(storage: IStorage) {
@@ -740,6 +740,218 @@ export default function documentRoutes(storage: IStorage) {
       return res.json(requestsWithDocuments);
     } catch (error: any) {
       console.error(`Error getting user signature requests:`, error);
+      return res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Camp Document Agreement routes
+  router.post('/api/camps/:campId/agreements', async (req, res) => {
+    try {
+      // Ensure user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+      
+      const campId = parseInt(req.params.campId);
+      if (isNaN(campId)) {
+        return res.status(400).json({ error: 'Invalid camp ID' });
+      }
+      
+      // Validate agreement data
+      const agreementData = insertCampDocumentAgreementSchema.parse({
+        ...req.body,
+        campId: campId
+      });
+      
+      // Create the agreement
+      const agreement = await storage.createCampDocumentAgreement(agreementData);
+      
+      return res.status(201).json(agreement);
+    } catch (error: any) {
+      console.error(`Error creating camp document agreement for camp ${req.params.campId}:`, error);
+      return res.status(400).json({ error: error.message });
+    }
+  });
+
+  router.get('/api/camps/:campId/agreements', async (req, res) => {
+    try {
+      // Ensure user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+      
+      const campId = parseInt(req.params.campId);
+      if (isNaN(campId)) {
+        return res.status(400).json({ error: 'Invalid camp ID' });
+      }
+      
+      // Get all agreements for the camp
+      const agreements = await storage.getCampDocumentAgreements(campId);
+      
+      // Get document details for each agreement
+      const agreementsWithDocuments = await Promise.all(
+        agreements.map(async (agreement) => {
+          const document = await storage.getDocument(agreement.documentId);
+          return {
+            ...agreement,
+            document: document
+          };
+        })
+      );
+      
+      return res.json(agreementsWithDocuments);
+    } catch (error: any) {
+      console.error(`Error getting camp document agreements for camp ${req.params.campId}:`, error);
+      return res.status(500).json({ error: error.message });
+    }
+  });
+
+  router.get('/api/camps/:campId/agreements/active', async (req, res) => {
+    try {
+      // Ensure user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+      
+      const campId = parseInt(req.params.campId);
+      if (isNaN(campId)) {
+        return res.status(400).json({ error: 'Invalid camp ID' });
+      }
+      
+      // Get all agreements for the camp
+      const agreements = await storage.getCampDocumentAgreements(campId);
+      
+      // Return the first agreement as the active one (if any)
+      if (agreements.length === 0) {
+        return res.status(404).json({ error: 'No active agreement found for this camp' });
+      }
+      
+      const agreement = agreements[0];
+      
+      // Get document details
+      const document = await storage.getDocument(agreement.documentId);
+      
+      return res.json({
+        ...agreement,
+        document: document
+      });
+    } catch (error: any) {
+      console.error(`Error getting active camp document agreement for camp ${req.params.campId}:`, error);
+      return res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Add a simpler version that just takes the documentId and updates or creates an agreement
+  router.put('/api/camps/:campId/agreements', async (req, res) => {
+    try {
+      // Ensure user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+      
+      const campId = parseInt(req.params.campId);
+      if (isNaN(campId)) {
+        return res.status(400).json({ error: 'Invalid camp ID' });
+      }
+      
+      // Validate agreement data
+      const { documentId } = req.body;
+      if (!documentId) {
+        return res.status(400).json({ error: 'Document ID is required' });
+      }
+      
+      // Get existing agreements
+      const agreements = await storage.getCampDocumentAgreements(campId);
+      
+      let result;
+      
+      if (agreements.length > 0) {
+        // Update existing agreement
+        result = await storage.updateCampDocumentAgreement(agreements[0].id, {
+          documentId,
+          campId
+        });
+      } else {
+        // Create new agreement
+        result = await storage.createCampDocumentAgreement({
+          documentId,
+          campId,
+          required: true
+        });
+      }
+      
+      // Get the document for the response
+      const document = await storage.getDocument(documentId);
+      
+      return res.json({
+        ...result,
+        document
+      });
+    } catch (error: any) {
+      console.error(`Error updating camp document agreement for camp ${req.params.campId}:`, error);
+      return res.status(500).json({ error: error.message });
+    }
+  });
+  
+  router.put('/api/camps/:campId/agreements/:agreementId', async (req, res) => {
+    try {
+      // Ensure user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+      
+      const campId = parseInt(req.params.campId);
+      if (isNaN(campId)) {
+        return res.status(400).json({ error: 'Invalid camp ID' });
+      }
+      
+      const agreementId = parseInt(req.params.agreementId);
+      if (isNaN(agreementId)) {
+        return res.status(400).json({ error: 'Invalid agreement ID' });
+      }
+      
+      // Validate update data
+      const updateSchema = z.object({
+        isActive: z.boolean().optional(),
+        documentId: z.number().optional(),
+        requiredBeforeRegistration: z.boolean().optional(),
+      });
+      
+      const updateData = updateSchema.parse(req.body);
+      
+      // Update the agreement
+      const updatedAgreement = await storage.updateCampDocumentAgreement(agreementId, updateData);
+      
+      return res.json(updatedAgreement);
+    } catch (error: any) {
+      console.error(`Error updating camp document agreement ${req.params.agreementId}:`, error);
+      return res.status(400).json({ error: error.message });
+    }
+  });
+
+  router.delete('/api/camps/:campId/agreements/:agreementId', async (req, res) => {
+    try {
+      // Ensure user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+      
+      const campId = parseInt(req.params.campId);
+      if (isNaN(campId)) {
+        return res.status(400).json({ error: 'Invalid camp ID' });
+      }
+      
+      const agreementId = parseInt(req.params.agreementId);
+      if (isNaN(agreementId)) {
+        return res.status(400).json({ error: 'Invalid agreement ID' });
+      }
+      
+      // Delete the agreement
+      await storage.deleteCampDocumentAgreement(agreementId);
+      
+      return res.status(204).send();
+    } catch (error: any) {
+      console.error(`Error deleting camp document agreement ${req.params.agreementId}:`, error);
       return res.status(500).json({ error: error.message });
     }
   });

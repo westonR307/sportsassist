@@ -25,12 +25,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, Calendar, MapPin, DollarSign, Dumbbell, Plus, Trash2 } from "lucide-react";
+import { Loader2, Calendar, MapPin, DollarSign, Dumbbell, Plus, Trash2, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { Camp } from "@shared/schema";
 import { sportsMap, sportsList, skillLevelNames } from "@shared/sports-utils";
+import { DocumentAgreementsSelector } from "./document-agreements-selector";
 
 // Define the form schema for editing a camp
 const editCampSchema = z.object({
@@ -183,7 +184,7 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <Tabs value={activeTab} onValueChange={handleTabChange}>
-              <TabsList className="grid grid-cols-4 mb-4">
+              <TabsList className="grid grid-cols-5 mb-4">
                 <TabsTrigger value="basic">
                   <Calendar className="h-4 w-4 mr-2" />
                   Basic Info
@@ -199,6 +200,10 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
                 <TabsTrigger value="sports">
                   <Dumbbell className="h-4 w-4 mr-2" />
                   Sports
+                </TabsTrigger>
+                <TabsTrigger value="agreements">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Agreements
                 </TabsTrigger>
               </TabsList>
 
@@ -594,6 +599,27 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
                       <Plus className="h-4 w-4 mr-2" />
                       Add Sport
                     </Button>
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="agreements" className="space-y-4">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Camp Agreements</h3>
+                  
+                  {/* List of documents that can be used as agreements */}
+                  <div className="border rounded-md p-4 bg-muted/30 space-y-4">
+                    <h4 className="text-sm font-medium">Select a Document as Agreement</h4>
+                    
+                    <DocumentAgreementsSelector campId={camp.id} />
+                  </div>
+                  
+                  <div className="rounded-md bg-blue-50 p-4 text-sm text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+                    <p>
+                      <strong>Note:</strong> Selected agreement documents will be sent to parents/athletes 
+                      when they register for this camp. They will be required to sign the agreement 
+                      before their registration is complete.
+                    </p>
                   </div>
                 </div>
               </TabsContent>

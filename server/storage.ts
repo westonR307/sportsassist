@@ -197,6 +197,7 @@ export interface IStorage {
   getCampDocumentAgreements(campId: number): Promise<(CampDocumentAgreement & { document: Document })[]>;
   deleteCampDocumentAgreement(id: number): Promise<void>;
   getCampDocumentAgreementsByCampId(campId: number): Promise<CampDocumentAgreement[]>;
+  updateCampDocumentAgreement(id: number, data: Partial<Omit<CampDocumentAgreement, 'id' | 'createdAt' | 'updatedAt'>>): Promise<CampDocumentAgreement>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2092,6 +2093,29 @@ export class DatabaseStorage implements IStorage {
     } catch (error: any) {
       console.error(`Error getting document agreements for camp ${campId}:`, error);
       throw new Error(`Failed to get document agreements for camp: ${error.message}`);
+    }
+  }
+  
+  async updateCampDocumentAgreement(
+    id: number, 
+    data: Partial<Omit<CampDocumentAgreement, 'id' | 'createdAt' | 'updatedAt'>>
+  ): Promise<CampDocumentAgreement> {
+    try {
+      console.log(`Updating camp document agreement ${id} with data:`, data);
+      
+      const [updatedAgreement] = await db.update(campDocumentAgreements)
+        .set({
+          ...data,
+          updatedAt: new Date()
+        })
+        .where(eq(campDocumentAgreements.id, id))
+        .returning();
+      
+      console.log(`Updated camp document agreement ${id} successfully`);
+      return updatedAgreement;
+    } catch (error: any) {
+      console.error(`Error updating camp document agreement ${id}:`, error);
+      throw new Error(`Failed to update camp document agreement: ${error.message}`);
     }
   }
   
