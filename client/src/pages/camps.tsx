@@ -87,7 +87,7 @@ export default function CampsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {camps.map((camp) => {
             // Check if user can manage this specific camp
             const canManageCamp = camp.permissions?.canManage || false;
@@ -129,48 +129,48 @@ export default function CampsPage() {
            
             // We'll create two cards - one for the front and one for the back of the flip card
             const frontCard = (
-              <Card className="h-full border hover:border-primary/50 transition-colors duration-300">
+              <Card className="h-full border-0 shadow-none">
                 <div className={`h-2 w-full ${campStatus === 'active' ? 'bg-green-500' : campStatus === 'upcoming' ? 'bg-blue-500' : 'bg-gray-400'}`} />
                 
-                <CardHeader className="p-4 pb-2">
+                <CardHeader className="p-3 pb-1">
                   <div className="space-y-1">
                     <div className="flex justify-between items-start">
-                      <CardTitle className="text-lg truncate">{camp.name}</CardTitle>
+                      <CardTitle className="text-base truncate">{camp.name}</CardTitle>
                       {canManageCamp ? (
                         <Badge className="h-5 text-xs bg-green-100 text-green-800 hover:bg-green-200">
                           Manager
                         </Badge>
                       ) : null}
                     </div>
-                    <CardDescription className="line-clamp-2 text-sm">
+                    <CardDescription className="line-clamp-1 text-xs">
                       {camp.description}
                     </CardDescription>
                   </div>
                 </CardHeader>
                 
-                <CardContent className="p-4 pt-0 space-y-3 text-sm">
+                <CardContent className="p-3 pt-0 space-y-2 text-xs">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
-                      <CalendarRange className="h-4 w-4 text-muted-foreground" />
+                      <CalendarRange className="h-3.5 w-3.5 text-muted-foreground" />
                       <span>{campDays} day{campDays !== 1 ? 's' : ''}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Users2 className="h-4 w-4 text-muted-foreground" />
+                      <Users2 className="h-3.5 w-3.5 text-muted-foreground" />
                       <span>{camp.capacity}</span>
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <span className="truncate">{camp.city}, {camp.state}</span>
                   </div>
                   
                   <div className="flex items-center gap-1">
-                    <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <span className="truncate text-muted-foreground">Click card to see schedule</span>
+                    <CalendarDays className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="truncate text-muted-foreground">Click to see schedule</span>
                   </div>
                   
-                  <div className="flex items-center justify-between mt-2">
+                  <div className="flex items-center justify-between">
                     <Badge 
                       className={
                         regStatus === 'open'
@@ -182,7 +182,7 @@ export default function CampsPage() {
                     >
                       {regStatus === 'open' ? 'Registration Open' : regStatus === 'upcoming' ? 'Opening Soon' : 'Closed'}
                     </Badge>
-                    <span className="text-sm font-medium">${camp.price}</span>
+                    <span className="text-xs">${camp.price}</span>
                   </div>
                 </CardContent>
                 
@@ -193,12 +193,12 @@ export default function CampsPage() {
             );
             
             const backCard = (
-              <Card className="h-full border hover:border-primary/50 transition-colors duration-300 overflow-y-auto">
+              <Card className="h-full border-0 shadow-none overflow-y-auto">
                 <div className={`h-2 w-full ${campStatus === 'active' ? 'bg-green-500' : campStatus === 'upcoming' ? 'bg-blue-500' : 'bg-gray-400'}`} />
                 
-                <CardHeader className="p-4 pb-2">
+                <CardHeader className="p-3 pb-1">
                   <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg">{camp.name}</CardTitle>
+                    <CardTitle className="text-base">{camp.name}</CardTitle>
                     <Badge 
                       variant={camp.visibility === 'public' ? 'default' : 'outline'}
                       className="capitalize h-5 text-xs"
@@ -208,27 +208,27 @@ export default function CampsPage() {
                   </div>
                 </CardHeader>
                 
-                <CardContent className="p-4 text-sm space-y-4">
+                <CardContent className="p-3 text-xs space-y-3">
                   <p className="text-muted-foreground">{camp.description}</p>
                   
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <div className="flex items-center gap-1.5 font-medium">
-                      <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                      <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
                       <span>Camp Period</span>
                     </div>
-                    <div className="ml-5 flex justify-between">
+                    <div className="ml-4 flex justify-between">
                       <span>{startDate.toLocaleDateString()}</span>
                       <span>to</span>
                       <span>{endDate.toLocaleDateString()}</span>
                     </div>
                   </div>
                   
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <div className="flex items-center gap-1.5 font-medium">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
                       <span>Registration</span>
                     </div>
-                    <div className="ml-5 flex justify-between">
+                    <div className="ml-4 flex justify-between">
                       <span>{regStartDate.toLocaleDateString()}</span>
                       <span>to</span>
                       <span>{regEndDate.toLocaleDateString()}</span>
@@ -236,12 +236,12 @@ export default function CampsPage() {
                   </div>
                   
                   {/* Camp Schedule Summary */}
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <div className="flex items-center gap-1.5 font-medium">
-                      <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                      <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
                       <span>Schedule</span>
                     </div>
-                    <div className="ml-5 text-sm">
+                    <div className="ml-4 text-xs">
                       <div className="flex items-center gap-2">
                         <CampScheduleSummary 
                           schedules={camp.schedules || []} 
@@ -250,24 +250,24 @@ export default function CampsPage() {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
                       <div className="flex items-center gap-1.5">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
                         <span className="font-medium">Location</span>
                       </div>
-                      <div className="ml-5 text-muted-foreground">
-                        <div>{camp.streetAddress}</div>
-                        <div>{camp.city}, {camp.state} {camp.zipCode}</div>
+                      <div className="ml-4 text-muted-foreground">
+                        <div className="truncate">{camp.streetAddress}</div>
+                        <div>{camp.city}, {camp.state}</div>
                       </div>
                     </div>
                     
                     <div className="space-y-1">
                       <div className="flex items-center gap-1.5">
-                        <Tag className="h-4 w-4 text-muted-foreground" />
+                        <Tag className="h-3.5 w-3.5 text-muted-foreground" />
                         <span className="font-medium">Details</span>
                       </div>
-                      <div className="ml-5 space-y-0.5 text-muted-foreground">
+                      <div className="ml-4 space-y-0.5 text-muted-foreground">
                         <div className="flex justify-between">
                           <span>Type:</span>
                           <span>{formatCampType(camp.type)}</span>
@@ -284,9 +284,9 @@ export default function CampsPage() {
                     </div>
                     
                     {/* View Camp Button */}
-                    <div className="col-span-2 mt-2">
+                    <div className="col-span-2 mt-1">
                       <Button 
-                        className="w-full"
+                        className="w-full text-xs h-7"
                         onClick={() => navigate(`/dashboard/camps/${camp.id}`)}
                       >
                         View Details
