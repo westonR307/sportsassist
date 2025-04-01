@@ -733,7 +733,7 @@ function CampViewPage(props: { id?: string }) {
                     )}
                   </CardHeader>
                   <CardContent>
-                    <CampScheduleDisplay campId={parseInt(id)} />
+                    <CampScheduleDisplay campId={camp.id} />
                   </CardContent>
                 </Card>
               </div>
