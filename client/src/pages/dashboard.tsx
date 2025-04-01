@@ -49,11 +49,16 @@ interface Organization {
 
 // Sidebar component for dashboard layout
 function DashboardSidebar() {
-  const { user, logout } = useAuth();
+  const { user, logoutMutation } = useAuth();
   const [location, navigate] = useWouterLocation();
   
   const isActive = (path: string) => {
     return location.startsWith(path) ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground";
+  };
+  
+  // Create a logout handler
+  const handleLogout = () => {
+    logoutMutation.mutate();
   };
   
   return (
@@ -94,14 +99,29 @@ function DashboardSidebar() {
             Manage Camps
           </Button>
           
-          <Button
-            variant="ghost"
-            className={`w-full justify-start ${isActive("/dashboard/participants")}`}
-            onClick={() => navigate("/dashboard/participants")}
-          >
-            <Users className="h-4 w-4 mr-2" />
-            Participants
-          </Button>
+          {/* Only show participants tab for camp creators and managers */}
+          {user && ["camp_creator", "manager", "admin"].includes(user.role) && (
+            <Button
+              variant="ghost"
+              className={`w-full justify-start ${isActive("/dashboard/participants")}`}
+              onClick={() => navigate("/dashboard/participants")}
+            >
+              <Users className="h-4 w-4 mr-2" />
+              Participants
+            </Button>
+          )}
+          
+          {/* Only show parent tab for parent users */}
+          {user && user.role === "parent" && (
+            <Button
+              variant="ghost"
+              className={`w-full justify-start ${isActive("/dashboard/parent")}`}
+              onClick={() => navigate("/dashboard/parent")}
+            >
+              <Users className="h-4 w-4 mr-2" />
+              My Kids
+            </Button>
+          )}
           
           {user && ["admin", "manager"].includes(user.role) && (
             <Button
@@ -131,7 +151,7 @@ function DashboardSidebar() {
           </div>
         </div>
         
-        <Button variant="outline" className="w-full" onClick={logout}>
+        <Button variant="outline" className="w-full" onClick={handleLogout}>
           <LogOut className="h-4 w-4 mr-2" />
           Logout
         </Button>
