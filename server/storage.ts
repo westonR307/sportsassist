@@ -21,6 +21,7 @@ import {
   signatureRequests,
   signatures,
   documentAuditTrail,
+  campDocumentAgreements,
   type User,
   type InsertUser,
   type Organization,
@@ -56,6 +57,8 @@ import {
   type InsertSignature,
   type DocumentAuditTrail,
   type InsertDocumentAuditTrail,
+  type CampDocumentAgreement,
+  type InsertCampDocumentAgreement,
   insertCampSchema,
   sports
 } from "@shared/schema";
