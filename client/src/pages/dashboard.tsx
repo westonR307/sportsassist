@@ -30,9 +30,9 @@ import {
   Award,
   ClipboardList,
   Clipboard,
-  Tent,
   X,
 } from "lucide-react";
+import { GiBaseballBat } from "react-icons/gi";
 import { useLocation as useWouterLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { type Camp } from "@shared/schema";
@@ -159,7 +159,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
               wouterLocation === "/dashboard/camps" ? "bg-gray-100" : ""
             }`}
           >
-            <Tent className="h-5 w-5 flex-shrink-0" />
+            <GiBaseballBat className="h-5 w-5 flex-shrink-0" />
             <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Camps</span>
           </button>
           <button

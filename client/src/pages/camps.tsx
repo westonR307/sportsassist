@@ -17,7 +17,8 @@ import {
   CalendarDays,
   RefreshCw,
 } from "lucide-react";
-import { useLocation as useWouterLocation } from "wouter";
+import { GiBaseballBat } from "react-icons/gi";
+import { useLocation as useWouterLocation, useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { type Camp } from "@shared/schema";
 import { AddCampDialog } from "@/components/add-camp-dialog";
@@ -29,7 +30,7 @@ interface CampWithPermissions extends Camp {
   }
 }
 
-export function CampsPage() {
+export default function CampsPage() {
   const [showAddCampDialog, setShowAddCampDialog] = React.useState(false);
   const { user } = useAuth();
   const { data: camps, isLoading } = useQuery<CampWithPermissions[]>({
@@ -45,7 +46,10 @@ export function CampsPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">All Camps</h1>
+        <div className="flex items-center gap-2">
+          <GiBaseballBat className="h-6 w-6 text-primary" />
+          <h1 className="text-2xl font-bold">Camps</h1>
+        </div>
         {canCreateCamps ? (
           <Button onClick={() => setShowAddCampDialog(true)}>
             <Plus className="h-4 w-4 mr-2" />
@@ -81,7 +85,7 @@ export function CampsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {camps.map((camp) => {
             // Check if user can manage this specific camp
             const canManageCamp = camp.permissions?.canManage || false;
@@ -123,48 +127,48 @@ export function CampsPage() {
            
             // We'll create two cards - one for the front and one for the back of the flip card
             const frontCard = (
-              <Card className="h-full border-0 shadow-none">
+              <Card className="h-full border hover:border-primary/50 transition-colors duration-300">
                 <div className={`h-2 w-full ${campStatus === 'active' ? 'bg-green-500' : campStatus === 'upcoming' ? 'bg-blue-500' : 'bg-gray-400'}`} />
                 
-                <CardHeader className="p-3 pb-1">
+                <CardHeader className="p-4 pb-2">
                   <div className="space-y-1">
                     <div className="flex justify-between items-start">
-                      <CardTitle className="text-base truncate">{camp.name}</CardTitle>
+                      <CardTitle className="text-lg truncate">{camp.name}</CardTitle>
                       {canManageCamp ? (
                         <Badge className="h-5 text-xs bg-green-100 text-green-800 hover:bg-green-200">
                           Manager
                         </Badge>
                       ) : null}
                     </div>
-                    <CardDescription className="line-clamp-1 text-xs">
+                    <CardDescription className="line-clamp-2 text-sm">
                       {camp.description}
                     </CardDescription>
                   </div>
                 </CardHeader>
                 
-                <CardContent className="p-3 pt-0 space-y-2 text-xs">
+                <CardContent className="p-4 pt-0 space-y-3 text-sm">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
-                      <CalendarRange className="h-3.5 w-3.5 text-muted-foreground" />
+                      <CalendarRange className="h-4 w-4 text-muted-foreground" />
                       <span>{campDays} day{campDays !== 1 ? 's' : ''}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Users2 className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Users2 className="h-4 w-4 text-muted-foreground" />
                       <span>{camp.capacity}</span>
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-1">
-                    <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
                     <span className="truncate">{camp.city}, {camp.state}</span>
                   </div>
                   
                   <div className="flex items-center gap-1">
-                    <CalendarDays className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
                     <span className="truncate text-muted-foreground">Click card to see schedule</span>
                   </div>
                   
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mt-2">
                     <Badge 
                       className={
                         regStatus === 'open'
@@ -176,7 +180,7 @@ export function CampsPage() {
                     >
                       {regStatus === 'open' ? 'Registration Open' : regStatus === 'upcoming' ? 'Opening Soon' : 'Closed'}
                     </Badge>
-                    <span className="text-xs">${camp.price}</span>
+                    <span className="text-sm font-medium">${camp.price}</span>
                   </div>
                 </CardContent>
                 
@@ -187,12 +191,12 @@ export function CampsPage() {
             );
             
             const backCard = (
-              <Card className="h-full border-0 shadow-none overflow-y-auto">
+              <Card className="h-full border hover:border-primary/50 transition-colors duration-300 overflow-y-auto">
                 <div className={`h-2 w-full ${campStatus === 'active' ? 'bg-green-500' : campStatus === 'upcoming' ? 'bg-blue-500' : 'bg-gray-400'}`} />
                 
-                <CardHeader className="p-3 pb-1">
+                <CardHeader className="p-4 pb-2">
                   <div className="flex justify-between items-start">
-                    <CardTitle className="text-base">{camp.name}</CardTitle>
+                    <CardTitle className="text-lg">{camp.name}</CardTitle>
                     <Badge 
                       variant={camp.visibility === 'public' ? 'default' : 'outline'}
                       className="capitalize h-5 text-xs"
@@ -202,12 +206,12 @@ export function CampsPage() {
                   </div>
                 </CardHeader>
                 
-                <CardContent className="p-3 text-xs space-y-3">
+                <CardContent className="p-4 text-sm space-y-4">
                   <p className="text-muted-foreground">{camp.description}</p>
                   
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-1.5 font-medium">
-                      <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+                      <CalendarDays className="h-4 w-4 text-muted-foreground" />
                       <span>Camp Period</span>
                     </div>
                     <div className="ml-5 flex justify-between">
@@ -219,7 +223,7 @@ export function CampsPage() {
                   
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-1.5 font-medium">
-                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Clock className="h-4 w-4 text-muted-foreground" />
                       <span>Registration</span>
                     </div>
                     <div className="ml-5 flex justify-between">
@@ -232,10 +236,10 @@ export function CampsPage() {
                   {/* Camp Schedule Summary */}
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-1.5 font-medium">
-                      <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+                      <CalendarDays className="h-4 w-4 text-muted-foreground" />
                       <span>Schedule</span>
                     </div>
-                    <div className="ml-5 text-xs">
+                    <div className="ml-5 text-sm">
                       <div className="flex items-center gap-2">
                         <CampScheduleSummary 
                           schedules={camp.schedules || []} 
@@ -244,10 +248,10 @@ export function CampsPage() {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <div className="flex items-center gap-1.5">
-                        <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
                         <span className="font-medium">Location</span>
                       </div>
                       <div className="ml-5 text-muted-foreground">
@@ -258,7 +262,7 @@ export function CampsPage() {
                     
                     <div className="space-y-1">
                       <div className="flex items-center gap-1.5">
-                        <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+                        <Tag className="h-4 w-4 text-muted-foreground" />
                         <span className="font-medium">Details</span>
                       </div>
                       <div className="ml-5 space-y-0.5 text-muted-foreground">
@@ -267,47 +271,48 @@ export function CampsPage() {
                           <span>{formatCampType(camp.type)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Ages:</span>
-                          <span>{camp.minAge}-{camp.maxAge}</span>
+                          <span>Capacity:</span>
+                          <span>{camp.capacity}</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Price:</span>
                           <span>${camp.price}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span>Capacity:</span>
-                          <span>{camp.capacity}</span>
-                        </div>
                       </div>
                     </div>
+                    
+                    {/* View Camp Button */}
+                    <div className="col-span-2 mt-2">
+                      <Button 
+                        className="w-full"
+                        onClick={() => navigate(`/dashboard/camps/${camp.id}`)}
+                      >
+                        View Details
+                      </Button>
+                    </div>
                   </div>
-                  
-                  <Button 
-                    variant="default" 
-                    size="sm" 
-                    className="w-full mt-2"
-                    onClick={() => navigate(`/camps/${camp.id}`)}
-                  >
-                    View Camp Details
-                  </Button>
                 </CardContent>
               </Card>
             );
             
+            // Return the flip card with both sides defined
             return (
-              <FlipCard key={camp.id} front={frontCard} back={backCard} />
+              <FlipCard 
+                key={camp.id}
+                frontCard={frontCard}
+                backCard={backCard}
+                className="h-full"
+              />
             );
           })}
         </div>
       )}
       
-      {/* Add camp dialog */}
-      <AddCampDialog 
-        open={showAddCampDialog} 
-        onOpenChange={setShowAddCampDialog} 
+      {/* Add Camp Dialog Component */}
+      <AddCampDialog
+        open={showAddCampDialog}
+        onOpenChange={setShowAddCampDialog}
       />
     </div>
   );
 }
-
-export default CampsPage;
