@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,6 +32,7 @@ import { apiRequest } from "@/lib/api";
 import { CalendarScheduler } from "@/components/calendar-scheduler";
 import { DocumentAgreementsSelector } from "@/components/document-agreements-selector";
 import { AddCampCustomFieldButtonDialog } from "@/components/custom-fields/add-camp-custom-field-button-dialog";
+import { BasicInfoMetaFields, BasicInfoMetaFieldsRef } from "@/components/custom-fields/basic-info-meta-fields";
 
 
 // Map UI skill levels to schema skill levels
@@ -100,6 +101,7 @@ export function AddCampDialog({
   const [selectedDocumentId, setSelectedDocumentId] = useState<number | null>(null); // For document agreement
   const [selectedCustomFields, setSelectedCustomFields] = useState<number[]>([]); // Store selected custom field IDs
   const [customFieldDetails, setCustomFieldDetails] = useState<{ [id: number]: {label: string, isInternal: boolean} }>({});
+  const metaFieldsRef = useRef<BasicInfoMetaFieldsRef>(null);
 
   // Get default dates
   const today = new Date();
@@ -229,6 +231,24 @@ export function AddCampDialog({
     onSuccess: async (data) => {
       console.log("Camp created successfully with data:", data);
       
+      // Save custom meta fields
+      if (data.id) {
+        if (metaFieldsRef.current) {
+          try {
+            // Set the campId for the meta fields component and save
+            metaFieldsRef.current.setCampId(data.id);
+            await metaFieldsRef.current.saveFieldsIfNeeded();
+          } catch (error) {
+            console.error("Error saving meta fields:", error);
+            toast({
+              title: "Warning",
+              description: "Camp created but there was an issue saving custom meta fields.",
+              variant: "destructive",
+            });
+          }
+        }
+      }
+      
       // If a document was selected for agreement, save that relationship
       if (selectedDocumentId && data.id) {
         try {
@@ -352,7 +372,7 @@ export function AddCampDialog({
       });
       setCurrentTab("basic");
       return;
-    }
+    };
 
     // Validate default start and end times for enhanced scheduling
     if (!data.defaultStartTime || !data.defaultEndTime) {
@@ -759,6 +779,18 @@ export function AddCampDialog({
                       )}
                     />
                   </div>
+                  
+                  {/* Add the custom meta fields component */}
+                  <div className="mt-8 border-t pt-6">
+                    <h3 className="text-base font-medium mb-4">Custom Information Fields</h3>
+                    {user?.organizationId && (
+                      <BasicInfoMetaFields
+                        ref={metaFieldsRef}
+                        organizationId={user.organizationId}
+                      />
+                    )}
+                  </div>
+                  
                   <div className="flex justify-end space-x-2 pt-4">
                     <Button
                       type="button"
