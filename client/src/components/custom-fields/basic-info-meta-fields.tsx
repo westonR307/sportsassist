@@ -37,10 +37,14 @@ interface BasicInfoMetaFieldsProps {
   organizationId: number;
 }
 
-export function BasicInfoMetaFields({
+export interface BasicInfoMetaFieldsRef {
+  saveFieldsIfNeeded: () => Promise<void>;
+}
+
+export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, BasicInfoMetaFieldsProps>(({
   campId,
   organizationId,
-}: BasicInfoMetaFieldsProps) {
+}, ref) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const form = useFormContext();
@@ -196,18 +200,21 @@ export function BasicInfoMetaFields({
     }
   };
 
-  // Register form submit handler to parent form
-  useEffect(() => {
-    const unsubscribe = form.registerSubmitSuccessHandler(async () => {
-      if (campId && addedFields.length > 0) {
-        await saveMetaFields();
-      }
-    });
-    
-    return () => {
-      unsubscribe();
-    };
-  }, [form, campId, addedFields]);
+  // Watch for form submission event
+  // We'll expose a saveFields method that can be called by the parent component
+  const saveFieldsIfNeeded = async () => {
+    if (campId && addedFields.length > 0) {
+      await saveMetaFields();
+    }
+  };
+  
+  // Expose the save method to parent via ref if needed
+  React.useImperativeHandle(
+    form?.formState ? { current: { saveFieldsIfNeeded } } : null,
+    () => ({
+      saveFieldsIfNeeded
+    })
+  );
 
   const isLoading = isLoadingFields || isLoadingMeta;
   const filteredAvailableFields = getFilteredAvailableFields();
@@ -330,8 +337,8 @@ export function BasicInfoMetaFields({
         </div>
       )}
 
-      {/* Add Field button */}
-      <div className="flex justify-center">
+      {/* Add Field and Save buttons */}
+      <div className="flex justify-center gap-4">
         <Button 
           variant="outline" 
           size="sm"
@@ -342,6 +349,19 @@ export function BasicInfoMetaFields({
           <Plus className="h-4 w-4 mr-2" />
           Add Custom Field
         </Button>
+        
+        {addedFields.length > 0 && campId && (
+          <Button 
+            variant="secondary" 
+            size="sm"
+            onClick={saveMetaFields}
+            className="mt-2"
+            disabled={isLoading}
+          >
+            <Save className="h-4 w-4 mr-2" />
+            Save Fields
+          </Button>
+        )}
       </div>
 
       {/* Field selection dialog */}
@@ -408,4 +428,4 @@ export function BasicInfoMetaFields({
       </Dialog>
     </div>
   );
-}
+});

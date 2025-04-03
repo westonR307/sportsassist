@@ -310,7 +310,7 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
                   </p>
                   <BasicInfoMetaFields 
                     campId={camp.id} 
-                    organizationId={camp.organizationId} 
+                    organizationId={camp.organizationId}
                   />
                 </div>
               </TabsContent>
