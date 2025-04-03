@@ -238,6 +238,17 @@ export const customFieldResponses = pgTable("custom_field_responses", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// Custom field responses for camps (meta information for camps)
+export const campMetaFields = pgTable("camp_meta_fields", {
+  id: serial("id").primaryKey(),
+  campId: integer("camp_id").references(() => camps.id).notNull(),
+  customFieldId: integer("custom_field_id").references(() => customFields.id).notNull(),
+  response: text("response"), // String response for short_text, long_text
+  responseArray: json("response_array").$type<string[]>(), // For multi-select fields
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // Attendance records for camp participants
 export const attendanceRecords = pgTable("attendance_records", {
   id: serial("id").primaryKey(),

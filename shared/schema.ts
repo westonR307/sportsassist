@@ -16,6 +16,7 @@ import {
   customFields,
   campCustomFields,
   customFieldResponses,
+  campMetaFields,
   attendanceRecords,
   campSessions,
   recurrencePatterns,
@@ -238,6 +239,16 @@ export const insertCustomFieldResponseSchema = createInsertSchema(customFieldRes
   responseArray: z.array(z.string()).optional(),
 });
 
+// Schema for camp meta fields (custom field values for camps)
+export const insertCampMetaFieldSchema = createInsertSchema(campMetaFields).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  response: z.string().optional(),
+  responseArray: z.array(z.string()).optional(),
+});
+
 // Export types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -267,9 +278,11 @@ export type InsertRecurrencePattern = z.infer<typeof insertRecurrencePatternSche
 export type CustomField = typeof customFields.$inferSelect;
 export type CampCustomField = typeof campCustomFields.$inferSelect; 
 export type CustomFieldResponse = typeof customFieldResponses.$inferSelect;
+export type CampMetaField = typeof campMetaFields.$inferSelect;
 export type InsertCustomField = z.infer<typeof insertCustomFieldSchema>;
 export type InsertCampCustomField = z.infer<typeof insertCampCustomFieldSchema>;
 export type InsertCustomFieldResponse = z.infer<typeof insertCustomFieldResponseSchema>;
+export type InsertCampMetaField = z.infer<typeof insertCampMetaFieldSchema>;
 export type AttendanceRecord = typeof attendanceRecords.$inferSelect;
 
 // Type for attendance status
@@ -375,6 +388,7 @@ export {
   customFields,
   campCustomFields,
   customFieldResponses,
+  campMetaFields,
   attendanceRecords,
   campSessions,
   recurrencePatterns,

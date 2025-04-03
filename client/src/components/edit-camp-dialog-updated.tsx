@@ -25,13 +25,14 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, Calendar, MapPin, DollarSign, Clock, Plus, X } from "lucide-react";
+import { Loader2, Calendar, MapPin, DollarSign, Clock, Settings, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { Camp, CampSchedule } from "@shared/schema";
 import { DAYS_OF_WEEK } from "@/pages/constants";
 import { ScheduleCalendar } from "./schedule-calendar";
+import { EditCampMetaFields } from "./edit-camp-meta-fields";
 
 interface Schedule {
   dayOfWeek: number;
@@ -69,7 +70,7 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [currentTab, setCurrentTab] = React.useState<"details" | "schedule" | "location" | "pricing">("details");
+  const [currentTab, setCurrentTab] = React.useState<"details" | "schedule" | "location" | "pricing" | "customFields">("details");
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -257,10 +258,10 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
             <Tabs
               defaultValue="details"
               value={currentTab}
-              onValueChange={(value) => setCurrentTab(value as "details" | "schedule" | "location" | "pricing")}
+              onValueChange={(value) => setCurrentTab(value as "details" | "schedule" | "location" | "pricing" | "customFields")}
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger
                   value="details"
                   className={cn(
@@ -304,6 +305,17 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
                 >
                   <DollarSign className="h-4 w-4" />
                   <span>Settings</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="customFields"
+                  className={cn(
+                    "flex items-center gap-2",
+                    currentTab === "customFields" &&
+                      "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                  )}
+                >
+                  <Settings className="h-4 w-4" />
+                  <span>Custom Fields</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -647,6 +659,10 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
                     )}
                   />
                 </div>
+              </TabsContent>
+              
+              <TabsContent value="customFields" className="space-y-4">
+                <EditCampMetaFields campId={camp.id} />
               </TabsContent>
             </Tabs>
 

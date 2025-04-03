@@ -13,6 +13,7 @@ import {
   customFields,
   campCustomFields,
   customFieldResponses,
+  campMetaFields,
   attendanceRecords,
   campSessions,
   recurrencePatterns,
@@ -41,6 +42,8 @@ import {
   type InsertCampCustomField,
   type CustomFieldResponse,
   type InsertCustomFieldResponse,
+  type CampMetaField,
+  type InsertCampMetaField,
   type AttendanceRecord,
   type InsertAttendanceRecord,
   type CampSession,
@@ -150,6 +153,12 @@ export interface IStorage {
   createCustomFieldResponse(response: InsertCustomFieldResponse): Promise<CustomFieldResponse>;
   getCustomFieldResponses(registrationId: number): Promise<(CustomFieldResponse & { field: CustomField })[]>;
   updateCustomFieldResponse(id: number, response: Partial<Omit<CustomFieldResponse, "id">>): Promise<CustomFieldResponse>;
+  
+  // Camp meta fields methods (custom field values for camps)
+  createCampMetaField(field: InsertCampMetaField): Promise<CampMetaField>;
+  getCampMetaFields(campId: number): Promise<(CampMetaField & { field: CustomField })[]>;
+  updateCampMetaField(id: number, field: Partial<Omit<CampMetaField, "id">>): Promise<CampMetaField>;
+  deleteCampMetaField(id: number): Promise<void>;
   
   // Camp soft delete and cancellation methods
   softDeleteCamp(campId: number): Promise<Camp>;
@@ -1533,6 +1542,74 @@ export class DatabaseStorage implements IStorage {
       return updatedResponse;
     } catch (error) {
       console.error("Error updating custom field response:", error);
+      throw error;
+    }
+  }
+  
+  // Camp meta fields methods (custom field values for camps)
+  async createCampMetaField(field: InsertCampMetaField): Promise<CampMetaField> {
+    try {
+      const [newField] = await db.insert(campMetaFields).values({
+        campId: field.campId,
+        customFieldId: field.customFieldId,
+        response: field.response,
+        responseArray: field.responseArray,
+      }).returning();
+      
+      return newField;
+    } catch (error) {
+      console.error("Error creating camp meta field:", error);
+      throw error;
+    }
+  }
+
+  async getCampMetaFields(campId: number): Promise<(CampMetaField & { field: CustomField })[]> {
+    try {
+      const results = await db.select({
+        id: campMetaFields.id,
+        campId: campMetaFields.campId,
+        customFieldId: campMetaFields.customFieldId,
+        response: campMetaFields.response,
+        responseArray: campMetaFields.responseArray,
+        createdAt: campMetaFields.createdAt,
+        updatedAt: campMetaFields.updatedAt,
+        field: customFields
+      })
+      .from(campMetaFields)
+      .innerJoin(customFields, eq(campMetaFields.customFieldId, customFields.id))
+      .where(eq(campMetaFields.campId, campId));
+      
+      return results;
+    } catch (error) {
+      console.error("Error getting camp meta fields:", error);
+      return [];
+    }
+  }
+
+  async updateCampMetaField(id: number, field: Partial<Omit<CampMetaField, "id">>): Promise<CampMetaField> {
+    try {
+      const [updatedField] = await db.update(campMetaFields)
+        .set({
+          ...(field.response !== undefined && { response: field.response }),
+          ...(field.responseArray !== undefined && { responseArray: field.responseArray }),
+          updatedAt: new Date()
+        })
+        .where(eq(campMetaFields.id, id))
+        .returning();
+      
+      return updatedField;
+    } catch (error) {
+      console.error("Error updating camp meta field:", error);
+      throw error;
+    }
+  }
+
+  async deleteCampMetaField(id: number): Promise<void> {
+    try {
+      await db.delete(campMetaFields)
+        .where(eq(campMetaFields.id, id));
+    } catch (error) {
+      console.error("Error deleting camp meta field:", error);
       throw error;
     }
   }

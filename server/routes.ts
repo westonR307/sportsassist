@@ -2214,6 +2214,87 @@ export async function registerRoutes(app: Express) {
     }
   });
   
+  // Camp meta fields routes
+  // Create camp meta field (custom field values for camps)
+  app.post("/api/camps/:campId/meta-fields", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    
+    const campId = parseInt(req.params.campId, 10);
+    
+    try {
+      // Verify camp exists
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if user has permission to modify this camp's meta fields
+      if (req.user.organizationId !== camp.organizationId && !publicRoles.includes(req.user.role)) {
+        return res.status(403).json({ message: "You don't have permission to modify this camp's meta fields" });
+      }
+      
+      const metaFieldData = {
+        ...req.body,
+        campId,
+      };
+      
+      const newMetaField = await storage.createCampMetaField(metaFieldData);
+      res.status(201).json(newMetaField);
+    } catch (error) {
+      logError("Create camp meta field", error);
+      res.status(500).json({ message: "Failed to create camp meta field" });
+    }
+  });
+  
+  // Get camp meta fields
+  app.get("/api/camps/:campId/meta-fields", async (req, res) => {
+    const campId = parseInt(req.params.campId, 10);
+    
+    try {
+      const metaFields = await storage.getCampMetaFields(campId);
+      res.json(metaFields);
+    } catch (error) {
+      logError("Get camp meta fields", error);
+      res.status(500).json({ message: "Failed to fetch camp meta fields" });
+    }
+  });
+  
+  // Update a camp meta field
+  app.patch("/api/camp-meta-fields/:id", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    
+    const metaFieldId = parseInt(req.params.id, 10);
+    
+    try {
+      const updatedMetaField = await storage.updateCampMetaField(metaFieldId, req.body);
+      res.json(updatedMetaField);
+    } catch (error) {
+      logError("Update camp meta field", error);
+      res.status(500).json({ message: "Failed to update camp meta field" });
+    }
+  });
+  
+  // Delete a camp meta field
+  app.delete("/api/camp-meta-fields/:id", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    
+    const metaFieldId = parseInt(req.params.id, 10);
+    
+    try {
+      await storage.deleteCampMetaField(metaFieldId);
+      res.status(204).end();
+    } catch (error) {
+      logError("Delete camp meta field", error);
+      res.status(500).json({ message: "Failed to delete camp meta field" });
+    }
+  });
+  
   // Camp registration endpoint
   app.post("/api/camps/:id/register", async (req, res) => {
     if (!req.user) {
