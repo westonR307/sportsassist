@@ -439,46 +439,24 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
             <div className="py-4">
               <ScrollArea className="h-[300px] pr-4">
                 <div className="space-y-4">
-                  <Select 
-                    onValueChange={(value) => {
-                      setSelectedFieldId(Number(value));
-                    }}
-                    onOpenChange={(open) => {
-                      // This prevents the event from closing the parent dialog when opening/closing the select
-                      if (open) {
-                        setTimeout(() => {
-                          const selectPopover = document.querySelector('[role="listbox"]');
-                          if (selectPopover) {
-                            selectPopover.addEventListener('click', (e) => {
-                              e.stopPropagation();
-                            }, { capture: true });
-                          }
-                        }, 0);
-                      }
-                    }}
-                  >
-                    <SelectTrigger onClick={(e) => e.stopPropagation()}>
-                      <SelectValue placeholder="Select a field to add" />
-                    </SelectTrigger>
-                    <SelectContent onClick={(e) => e.stopPropagation()}>
+                  {/* Simplified to a standard select element */}
+                  <div className="mb-3">
+                    <Label htmlFor="field-selector">Select a field to add</Label>
+                    <select 
+                      id="field-selector"
+                      className="w-full mt-1 px-3 py-2 border rounded-md" 
+                      onChange={(e) => setSelectedFieldId(Number(e.target.value))}
+                      value={selectedFieldId || ""}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <option value="">-- Select a field --</option>
                       {filteredAvailableFields.map((field: any) => (
-                        <SelectItem 
-                          key={field.id} 
-                          value={field.id.toString()}
-                          onSelect={(e) => e.stopPropagation()}
-                        >
-                          <div className="flex items-center">
-                            <span>{field.label}</span>
-                            {field.isInternal && (
-                              <Badge variant="secondary" className="ml-2 text-xs">
-                                Internal
-                              </Badge>
-                            )}
-                          </div>
-                        </SelectItem>
+                        <option key={field.id} value={field.id}>
+                          {field.label} {field.isInternal ? '(Internal)' : ''}
+                        </option>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </select>
+                  </div>
                 </div>
               </ScrollArea>
             </div>
