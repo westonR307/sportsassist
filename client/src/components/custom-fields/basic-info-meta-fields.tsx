@@ -383,9 +383,14 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
         <Button 
           variant="outline" 
           size="sm"
-          onClick={() => setDialogOpen(true)}
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            setDialogOpen(true);
+          }}
           className="mt-2"
           disabled={isLoading || filteredAvailableFields.length === 0}
+          type="button"
         >
           <Plus className="h-4 w-4 mr-2" />
           Add Custom Field
@@ -395,9 +400,14 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
           <Button 
             variant="secondary" 
             size="sm"
-            onClick={saveMetaFields}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              saveMetaFields();
+            }}
             className="mt-2"
             disabled={isLoading}
+            type="button"
           >
             <Save className="h-4 w-4 mr-2" />
             Save Fields
@@ -406,8 +416,10 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
       </div>
 
       {/* Field selection dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen} modal={true}>
+        <DialogContent className="sm:max-w-[500px]" onInteractOutside={(e) => {
+          e.preventDefault(); // Prevent any clicks outside from closing parent dialogs
+        }}>
           <DialogHeader>
             <DialogTitle>Add Custom Field</DialogTitle>
           </DialogHeader>
@@ -427,13 +439,34 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
             <div className="py-4">
               <ScrollArea className="h-[300px] pr-4">
                 <div className="space-y-4">
-                  <Select onValueChange={(value) => setSelectedFieldId(Number(value))}>
-                    <SelectTrigger>
+                  <Select 
+                    onValueChange={(value) => {
+                      setSelectedFieldId(Number(value));
+                    }}
+                    onOpenChange={(open) => {
+                      // This prevents the event from closing the parent dialog when opening/closing the select
+                      if (open) {
+                        setTimeout(() => {
+                          const selectPopover = document.querySelector('[role="listbox"]');
+                          if (selectPopover) {
+                            selectPopover.addEventListener('click', (e) => {
+                              e.stopPropagation();
+                            }, { capture: true });
+                          }
+                        }, 0);
+                      }
+                    }}
+                  >
+                    <SelectTrigger onClick={(e) => e.stopPropagation()}>
                       <SelectValue placeholder="Select a field to add" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent onClick={(e) => e.stopPropagation()}>
                       {filteredAvailableFields.map((field: any) => (
-                        <SelectItem key={field.id} value={field.id.toString()}>
+                        <SelectItem 
+                          key={field.id} 
+                          value={field.id.toString()}
+                          onSelect={(e) => e.stopPropagation()}
+                        >
                           <div className="flex items-center">
                             <span>{field.label}</span>
                             {field.isInternal && (
@@ -454,13 +487,23 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setDialogOpen(false)}
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                setDialogOpen(false);
+              }}
+              type="button"
             >
               Cancel
             </Button>
             <Button
-              onClick={handleAddField}
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                handleAddField();
+              }}
               disabled={!selectedFieldId}
+              type="button"
             >
               Add Field
             </Button>
