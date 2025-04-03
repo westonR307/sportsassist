@@ -139,7 +139,7 @@ export interface IStorage {
   // Custom fields methods
   createCustomField(field: InsertCustomField): Promise<CustomField>;
   getCustomField(id: number): Promise<CustomField | undefined>;
-  listCustomFields(organizationId: number): Promise<CustomField[]>;
+  listCustomFields(organizationId: number, fieldSource?: "registration" | "camp"): Promise<CustomField[]>;
   updateCustomField(id: number, field: Partial<Omit<CustomField, "id" | "organizationId">>): Promise<CustomField>;
   deleteCustomField(id: number): Promise<void>;
   
