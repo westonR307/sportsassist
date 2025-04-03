@@ -33,7 +33,7 @@ import { Badge } from "@/components/ui/badge";
 
 // Schema for form validation
 const customFieldSchema = z.object({
-  name: z.string().min(1, "Field name is required"),
+  // Remove name field from schema since it will be auto-generated
   label: z.string().min(1, "Field label is required"),
   description: z.string().optional(),
   fieldType: z.enum(["short_text", "long_text", "dropdown", "single_select", "multi_select"] as const),
@@ -67,7 +67,7 @@ interface CustomFieldFormProps {
   fieldSource?: 'registration' | 'camp';
   customField?: {
     id: number;
-    name: string;
+    name?: string; // Name is optional, will be auto-generated from label
     label: string;
     description?: string;
     fieldType: FieldType;
@@ -95,7 +95,6 @@ export function CustomFieldForm({
   const form = useForm<CustomFieldFormValues>({
     resolver: zodResolver(customFieldSchema),
     defaultValues: {
-      name: customField?.name || "",
       label: customField?.label || "",
       description: customField?.description || "",
       fieldType: customField?.fieldType || "short_text",
@@ -193,41 +192,22 @@ export function CustomFieldForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Field Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g. medical_info" {...field} />
-                </FormControl>
-                <FormDescription>
-                  Unique identifier for this field (no spaces)
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="label"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Display Label</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g. Medical Information" {...field} />
-                </FormControl>
-                <FormDescription>
-                  This is what users will see on the form
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="label"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Field Label</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g. Medical Information" {...field} />
+              </FormControl>
+              <FormDescription>
+                This is what users will see on the form and what the system will use to generate a unique field identifier
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}

@@ -1974,8 +1974,19 @@ export async function registerRoutes(app: Express) {
       // Ensure the field source is set properly (registration or camp)
       const fieldSource = req.query.source as "registration" | "camp" || req.body.fieldSource;
       
+      // Generate field name from label if not provided
+      let fieldName = req.body.name;
+      if (!fieldName && req.body.label) {
+        // Convert label to snake_case for the name
+        fieldName = req.body.label
+          .toLowerCase()
+          .replace(/[^\w\s]/g, '') // Remove special characters
+          .replace(/\s+/g, '_');   // Replace spaces with underscores
+      }
+      
       const validationData = {
         ...req.body,
+        name: fieldName, // Use the auto-generated name
         organizationId: orgId,
         fieldSource: fieldSource || "registration" // Default to "registration" if not specified
       };
@@ -2042,7 +2053,17 @@ export async function registerRoutes(app: Express) {
         return res.status(403).json({ message: "You don't have permission to modify this custom field" });
       }
 
-      const updatedField = await storage.updateCustomField(fieldId, req.body);
+      // Generate field name from label if not provided but label changed
+      let updatedData = { ...req.body };
+      if (updatedData.label && updatedData.label !== customField.label && !updatedData.name) {
+        // Convert label to snake_case for the name
+        updatedData.name = updatedData.label
+          .toLowerCase()
+          .replace(/[^\w\s]/g, '') // Remove special characters
+          .replace(/\s+/g, '_');   // Replace spaces with underscores
+      }
+
+      const updatedField = await storage.updateCustomField(fieldId, updatedData);
       res.json(updatedField);
     } catch (error) {
       logError("Update custom field", error);
