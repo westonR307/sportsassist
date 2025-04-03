@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -6,7 +6,7 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { CampMetaFieldsEditor } from "@/components/custom-fields/camp-meta-fields-editor";
-import { BasicInfoMetaFields } from "@/components/custom-fields/basic-info-meta-fields";
+import { BasicInfoMetaFields, BasicInfoMetaFieldsRef } from "@/components/custom-fields/basic-info-meta-fields";
 import {
   Dialog,
   DialogContent,
@@ -70,6 +70,9 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
   // For sport and skill level management
   const [selectedSport, setSelectedSport] = useState("");
   const [skillLevel, setSkillLevel] = useState<string>("beginner");
+  
+  // Create a ref for the BasicInfoMetaFields component
+  const metaFieldsRef = useRef<BasicInfoMetaFieldsRef>(null);
   
   // Fetch camp sports data
   const { data: campSports, isLoading: isLoadingSports, error: sportsError } = useQuery({
@@ -164,7 +167,24 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
   });
 
   // Form submission handler
-  const onSubmit = (values: FormValues) => {
+  const onSubmit = async (values: FormValues) => {
+    // First save the meta fields if any are present
+    console.log("Saving meta fields before camp update...");
+    if (metaFieldsRef.current) {
+      try {
+        const metaFieldsSaved = await metaFieldsRef.current.saveFieldsIfNeeded();
+        console.log("Meta fields save result:", metaFieldsSaved);
+      } catch (error) {
+        console.error("Error saving meta fields:", error);
+        toast({
+          title: "Warning",
+          description: "There was an issue saving some custom fields",
+          variant: "destructive",
+        });
+      }
+    }
+    
+    // Now update the camp itself
     updateCampMutation.mutate(values);
   };
 
@@ -309,6 +329,7 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
                     Add custom fields to provide more details about your camp.
                   </p>
                   <BasicInfoMetaFields 
+                    ref={metaFieldsRef}
                     campId={camp.id} 
                     organizationId={camp.organizationId}
                   />

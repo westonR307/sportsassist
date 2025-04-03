@@ -143,21 +143,29 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
   // Save all meta fields to the server
   const saveMetaFields = async () => {
     const currentCampId = internalCampId || campId;
-    if (!currentCampId) return;
+    if (!currentCampId) {
+      console.error("Cannot save meta fields: No camp ID available");
+      return;
+    }
+    
+    console.log(`Saving meta fields for camp ID ${currentCampId}, ${addedFields.length} fields to process`);
     
     try {
       // First, handle all adds and updates
       for (const field of addedFields) {
         if (field.isTemporary) {
           // New field to be created
+          console.log(`Creating new meta field: customFieldId=${field.customFieldId}`);
           await apiRequest("POST", `/api/camps/${currentCampId}/meta-fields`, {
             customFieldId: field.customFieldId,
+            campId: currentCampId, // Explicitly include the camp ID
             response: field.response,
             responseArray: field.responseArray,
           });
         } else {
-          // Existing field to be updated
-          await apiRequest("PUT", `/api/camps/${currentCampId}/meta-fields/${field.id}`, {
+          // Existing field to be updated - using PATCH instead of PUT
+          console.log(`Updating existing meta field: id=${field.id}`);
+          await apiRequest("PATCH", `/api/camp-meta-fields/${field.id}`, {
             response: field.response,
             responseArray: field.responseArray,
           });
@@ -172,9 +180,11 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
         // Find IDs that are in existingIds but not in currentIds (these have been removed)
         const deletedIds = existingIds.filter((id: number) => !currentIds.includes(id));
         
+        console.log(`Deleting ${deletedIds.length} removed meta fields`);
+        
         // Delete each removed field
         for (const id of deletedIds) {
-          await apiRequest("DELETE", `/api/camps/${currentCampId}/meta-fields/${id}`);
+          await apiRequest("DELETE", `/api/camp-meta-fields/${id}`);
         }
       }
       
@@ -192,6 +202,8 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
         ...field,
         isTemporary: false
       })));
+      
+      console.log("Meta fields saved successfully");
       
     } catch (error) {
       console.error("Error saving meta fields:", error);
@@ -213,8 +225,26 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
   // We'll expose a saveFields method that can be called by the parent component
   const saveFieldsIfNeeded = async () => {
     const currentCampId = internalCampId || campId;
-    if (currentCampId && addedFields.length > 0) {
-      await saveMetaFields();
+    if (!currentCampId) {
+      console.error("No camp ID available for saving meta fields");
+      return;
+    }
+    
+    console.log(`Checking if meta fields need to be saved for camp ID ${currentCampId}`);
+    
+    if (addedFields.length > 0) {
+      console.log(`Saving ${addedFields.length} meta fields for camp ${currentCampId}`);
+      try {
+        await saveMetaFields();
+        console.log("Meta fields saved successfully");
+        return true;
+      } catch (error) {
+        console.error("Error saving meta fields in saveFieldsIfNeeded:", error);
+        return false;
+      }
+    } else {
+      console.log("No meta fields to save");
+      return true;
     }
   };
   
