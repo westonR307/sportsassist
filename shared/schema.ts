@@ -225,6 +225,7 @@ export const insertCustomFieldSchema = createInsertSchema(customFields).omit({
   validationType: z.enum(["required", "email", "phone", "number", "date", "none"]).default("none"),
   options: z.array(z.string()).optional(),
   fieldSource: z.enum(["registration", "camp"]).default("registration"),
+  isInternal: z.boolean().default(false), // If true, only visible to organization members
 });
 
 export const insertCampCustomFieldSchema = createInsertSchema(campCustomFields).omit({

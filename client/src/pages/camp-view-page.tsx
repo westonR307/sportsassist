@@ -4,6 +4,7 @@ import { DashboardLayout } from "./dashboard";
 import { ParentSidebar } from "@/components/parent-sidebar";
 import { BackButton } from "@/components/back-button";
 import { ShareCampDialog } from "@/components/share-camp-dialog";
+import { CampMetaFieldsDisplay } from "@/components/camp-meta-fields-display";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -716,6 +717,13 @@ function CampViewPage(props: { id?: string }) {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Display custom meta fields */}
+                <CampMetaFieldsDisplay 
+                  campId={camp.id} 
+                  organizationId={camp.organizationId} 
+                  canManage={camp.permissions?.canManage || false} 
+                />
 
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">

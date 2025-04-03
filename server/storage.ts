@@ -1356,6 +1356,7 @@ export class DatabaseStorage implements IStorage {
         validationType: field.validationType || "none",
         options: field.options,
         fieldSource: field.fieldSource || "registration", // Use the provided source or default to "registration"
+        isInternal: field.isInternal ?? false, // Default to false if not provided (visible to everyone)
       }).returning();
       
       return newField;
@@ -1409,6 +1410,7 @@ export class DatabaseStorage implements IStorage {
           ...(field.required !== undefined && { required: field.required }),
           ...(field.validationType !== undefined && { validationType: field.validationType }),
           ...(field.options !== undefined && { options: field.options }),
+          ...(field.isInternal !== undefined && { isInternal: field.isInternal }),
           updatedAt: new Date(),
         })
         .where(eq(customFields.id, id))

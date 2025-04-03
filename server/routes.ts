@@ -2007,25 +2007,26 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Get all custom fields for an organization, optionally filtered by field source
+  // Get all custom fields for an organization, optionally filtered by field source and visibility
   app.get("/api/organizations/:orgId/custom-fields", async (req, res) => {
-    if (!req.user) {
-      return res.status(401).json({ message: "Authentication required" });
-    }
-
     const orgId = parseInt(req.params.orgId, 10);
     
-    // If querying another organization's custom fields, verify access
-    if (req.user.organizationId !== orgId) {
-      return res.status(403).json({ message: "Unauthorized access to organization" });
-    }
-
     try {
       // Get the field source from query parameter (if provided)
       const fieldSource = req.query.source as "registration" | "camp" | undefined;
       
+      // If user is authenticated and is from the same organization, show all fields
+      // Otherwise, only show non-internal fields
+      const showInternalFields = req.user && req.user.organizationId === orgId;
+      
       // Get the custom fields filtered by source if provided
-      const customFields = await storage.listCustomFields(orgId, fieldSource);
+      let customFields = await storage.listCustomFields(orgId, fieldSource);
+      
+      // Filter out internal fields for non-organization users
+      if (!showInternalFields) {
+        customFields = customFields.filter(field => !field.isInternal);
+      }
+      
       res.json(customFields);
     } catch (error) {
       logError("List custom fields", error);
@@ -2282,8 +2283,23 @@ export async function registerRoutes(app: Express) {
     const campId = parseInt(req.params.campId, 10);
     
     try {
+      // Check for camp's organization
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
       const metaFields = await storage.getCampMetaFields(campId);
-      res.json(metaFields);
+      
+      // Check if user has permission to see internal fields
+      const canManageFields = req.user?.organizationId === camp.organizationId;
+      
+      // If user cannot manage fields, filter out internal fields
+      const visibleMetaFields = canManageFields
+        ? metaFields
+        : metaFields.filter(field => !field.field.isInternal);
+      
+      res.json(visibleMetaFields);
     } catch (error) {
       logError("Get camp meta fields", error);
       res.status(500).json({ message: "Failed to fetch camp meta fields" });

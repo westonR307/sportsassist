@@ -66,11 +66,17 @@ export function CampMetaFields({ campId, readOnly = false }: CampMetaFieldsProps
   const [fieldDialogOpen, setFieldDialogOpen] = useState<boolean>(false);
   const [addFieldDialogOpen, setAddFieldDialogOpen] = useState<boolean>(false);
 
-  // Get all custom fields for the organization
+  // Get all custom fields for the organization, filtered for camp fields
   const { data: allCustomFields, isLoading: isLoadingFields } = useQuery({
-    queryKey: ["/api/custom-fields"],
+    queryKey: ["/api/organizations", "custom-fields", "camp"],
     queryFn: async () => {
-      const res = await fetch("/api/custom-fields");
+      // Get the organization ID from the camp
+      const campRes = await fetch(`/api/camps/${campId}`);
+      if (!campRes.ok) throw new Error("Failed to fetch camp");
+      const camp = await campRes.json();
+      
+      // Fetch custom fields for this organization, filtered to "camp" source
+      const res = await fetch(`/api/organizations/${camp.organizationId}/custom-fields?source=camp`);
       if (!res.ok) throw new Error("Failed to fetch custom fields");
       return res.json() as Promise<CustomField[]>;
     },
@@ -222,9 +228,14 @@ export function CampMetaFields({ campId, readOnly = false }: CampMetaFieldsProps
                           <p className="text-sm text-muted-foreground">
                             {field.description || field.name}
                           </p>
-                          <Badge variant="outline" className="mt-1">
-                            {field.fieldType}
-                          </Badge>
+                          <div className="flex gap-2 mt-1">
+                            <Badge variant="outline">
+                              {field.fieldType}
+                            </Badge>
+                            <Badge variant={field.isInternal ? "secondary" : "outline"}>
+                              {field.isInternal ? "Internal" : "Public"}
+                            </Badge>
+                          </div>
                         </div>
                         <Button size="sm" variant="ghost">
                           <Plus className="h-4 w-4" />
@@ -263,9 +274,14 @@ export function CampMetaFields({ campId, readOnly = false }: CampMetaFieldsProps
                     {campField.field.label}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">
-                      {campField.field.fieldType}
-                    </Badge>
+                    <div className="flex gap-2">
+                      <Badge variant="outline">
+                        {campField.field.fieldType}
+                      </Badge>
+                      {campField.field.isInternal && (
+                        <Badge variant="secondary">Internal</Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="max-w-[250px] truncate">
@@ -340,8 +356,13 @@ export function CampMetaFields({ campId, readOnly = false }: CampMetaFieldsProps
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <h3 className="font-medium">{selectedField.field.label}</h3>
-                  <p className="text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-medium">{selectedField.field.label}</h3>
+                    {selectedField.field.isInternal && (
+                      <Badge variant="secondary" className="text-xs">Internal</Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
                     {selectedField.field.description || selectedField.field.name}
                   </p>
                 </div>

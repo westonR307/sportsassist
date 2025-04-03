@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { CampMetaFieldsEditor } from "@/components/custom-fields/camp-meta-fields-editor";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +26,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, Calendar, MapPin, DollarSign, Dumbbell, Plus, Trash2, FileText } from "lucide-react";
+import { Loader2, Calendar, MapPin, DollarSign, Dumbbell, Plus, Trash2, FileText, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
@@ -184,7 +185,7 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <Tabs value={activeTab} onValueChange={handleTabChange}>
-              <TabsList className="grid grid-cols-5 mb-4">
+              <TabsList className="grid grid-cols-6 mb-4">
                 <TabsTrigger value="basic">
                   <Calendar className="h-4 w-4 mr-2" />
                   Basic Info
@@ -200,6 +201,10 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
                 <TabsTrigger value="sports">
                   <Dumbbell className="h-4 w-4 mr-2" />
                   Sports
+                </TabsTrigger>
+                <TabsTrigger value="custom">
+                  <Info className="h-4 w-4 mr-2" />
+                  Custom Fields
                 </TabsTrigger>
                 <TabsTrigger value="agreements">
                   <FileText className="h-4 w-4 mr-2" />
@@ -622,6 +627,10 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
                     </p>
                   </div>
                 </div>
+              </TabsContent>
+
+              <TabsContent value="custom" className="space-y-4">
+                <CampMetaFieldsEditor campId={camp.id} organizationId={user?.organizationId || 0} />
               </TabsContent>
             </Tabs>
 

@@ -215,6 +215,7 @@ export const customFields = pgTable("custom_fields", {
   validationType: text("validation_type").$type<ValidationType>().notNull().default("none"),
   options: json("options").$type<string[]>(), // For dropdown, single-select, and multi-select fields
   fieldSource: text("field_source").notNull().default("registration"), // Either 'registration' or 'camp'
+  isInternal: boolean("is_internal").notNull().default(false), // If true, only visible to organization members
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
