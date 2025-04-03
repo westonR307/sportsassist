@@ -26,11 +26,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, Plus, X, Calendar as CalendarIcon, FileText } from "lucide-react";
+import { Loader2, Plus, X, Calendar as CalendarIcon, FileText, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/api";
 import { CalendarScheduler } from "@/components/calendar-scheduler";
 import { DocumentAgreementsSelector } from "@/components/document-agreements-selector";
+import { CampMetaFields } from "@/components/custom-fields/camp-meta-fields";
 
 // Map UI skill levels to schema skill levels
 const uiSkillLevels = ["Beginner", "Intermediate", "Advanced", "All Levels"];
@@ -463,11 +464,15 @@ export function AddCampDialog({
                 value={currentTab}
                 onValueChange={setCurrentTab}
               >
-                <TabsList className="grid grid-cols-4 mb-4 sticky top-0 bg-background z-10">
+                <TabsList className="grid grid-cols-5 mb-4 sticky top-0 bg-background z-10">
                   <TabsTrigger value="basic">Information</TabsTrigger>
                   <TabsTrigger value="schedule">Schedule</TabsTrigger>
                   <TabsTrigger value="location">Location</TabsTrigger>
                   <TabsTrigger value="settings">Settings</TabsTrigger>
+                  <TabsTrigger value="customFields">
+                    <Layers className="h-4 w-4 mr-2" />
+                    Custom Fields
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="basic" className="space-y-4 mt-0">
@@ -1199,6 +1204,52 @@ export function AddCampDialog({
                         "Create Camp"
                       )}
                     </Button>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="customFields" className="space-y-4 mt-0">
+                  <div className="space-y-4">
+                    <div className="mb-4">
+                      <h3 className="text-lg font-medium">Custom Fields</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Add custom fields to collect additional camp information beyond the standard fields. 
+                        These fields are only visible to camp administrators.
+                      </p>
+                    </div>
+                    
+                    <div className="p-3 bg-muted rounded-md mb-4">
+                      <p className="text-sm">
+                        <strong>Note:</strong> You need to create the camp first before adding custom fields. 
+                        After creating your camp, you can return to this section to add and manage custom fields.
+                      </p>
+                    </div>
+                    
+                    <div className="flex justify-end space-x-2 pt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setCurrentTab("settings")}
+                      >
+                        Back
+                      </Button>
+                      <Button
+                        type="submit"
+                        onClick={async () => {
+                          // Submit the form
+                          form.handleSubmit(onSubmit)();
+                        }}
+                        disabled={createCampMutation.isPending || submitting}
+                      >
+                        {createCampMutation.isPending || submitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Creating...
+                          </>
+                        ) : (
+                          "Create Camp"
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </TabsContent>
               </Tabs>
