@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/api";
 import { CalendarScheduler } from "@/components/calendar-scheduler";
 import { DocumentAgreementsSelector } from "@/components/document-agreements-selector";
+import { AddCampCustomFieldButtonDialog } from "@/components/custom-fields/add-camp-custom-field-button-dialog";
 
 
 // Map UI skill levels to schema skill levels
@@ -97,6 +98,8 @@ export function AddCampDialog({
   const [tempCampId, setTempCampId] = useState(-1); // Temporary ID for calendar scheduler
   const [plannedSessions, setPlannedSessions] = useState<any[]>([]); // Sessions to be created
   const [selectedDocumentId, setSelectedDocumentId] = useState<number | null>(null); // For document agreement
+  const [selectedCustomFields, setSelectedCustomFields] = useState<number[]>([]); // Store selected custom field IDs
+  const [customFieldDetails, setCustomFieldDetails] = useState<{ [id: number]: {label: string, isInternal: boolean} }>({});
 
   // Get default dates
   const today = new Date();
@@ -243,6 +246,27 @@ export function AddCampDialog({
           });
         }
       }
+
+      // If custom fields were selected, associate them with the camp
+      if (selectedCustomFields.length > 0 && data.id) {
+        try {
+          console.log(`Setting ${selectedCustomFields.length} custom fields for camp ${data.id}`);
+          await Promise.all(selectedCustomFields.map(fieldId => 
+            apiRequest('POST', `/api/camps/${data.id}/custom-fields`, { 
+              customFieldId: fieldId,
+              required: true
+            })
+          ));
+          console.log("Custom fields associated successfully");
+        } catch (error) {
+          console.error("Error associating custom fields:", error);
+          toast({
+            title: "Warning",
+            description: "Camp created but there was an issue setting up custom fields.",
+            variant: "destructive",
+          });
+        }
+      }
       
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
       onOpenChange(false);
@@ -252,6 +276,7 @@ export function AddCampDialog({
       setSkillLevel("Beginner");
       setPlannedSessions([]); // Reset planned sessions
       setSelectedDocumentId(null); // Reset selected document
+      setSelectedCustomFields([]); // Reset selected custom fields
       toast({
         title: "Success",
         description: "Camp created successfully",
@@ -286,6 +311,33 @@ export function AddCampDialog({
     const newSchedules = [...schedules];
     newSchedules[index] = { ...newSchedules[index], [field]: value };
     setSchedules(newSchedules);
+  };
+  
+  // Handle adding a custom field to the registration form
+  const handleAddCustomField = async (fieldId: number) => {
+    // Check if the field is already selected
+    if (!selectedCustomFields.includes(fieldId)) {
+      setSelectedCustomFields([...selectedCustomFields, fieldId]);
+      
+      // If we don't have the field details, fetch them
+      if (!customFieldDetails[fieldId] && user?.organizationId) {
+        try {
+          const response = await fetch(`/api/organizations/${user.organizationId}/custom-fields/${fieldId}`);
+          if (response.ok) {
+            const fieldData = await response.json();
+            setCustomFieldDetails(prev => ({
+              ...prev,
+              [fieldId]: {
+                label: fieldData.label,
+                isInternal: fieldData.isInternal
+              }
+            }));
+          }
+        } catch (error) {
+          console.error("Error fetching field details:", error);
+        }
+      }
+    }
   };
 
   const onSubmit = async (data: ExtendedCampSchema) => {
@@ -1139,6 +1191,71 @@ export function AddCampDialog({
                       isNewCamp={true}
                       onDocumentSelect={setSelectedDocumentId}
                     />
+                  </div>
+                  
+                  <div className="border-t pt-4 mt-6 mb-4">
+                    <h3 className="text-lg font-medium mb-4 flex items-center">
+                      <Layers className="mr-2 h-5 w-5" /> 
+                      Registration Custom Fields
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Add custom fields for participants to fill out during registration.
+                    </p>
+                    
+                    {user?.organizationId && (
+                      <div>
+                        <div className="mb-4">
+                          <AddCampCustomFieldButtonDialog
+                            organizationId={user.organizationId}
+                            onFieldSelected={handleAddCustomField}
+                            variant="outline"
+                            label="Add Custom Registration Field"
+                            size="default"
+                          />
+                        </div>
+                        
+                        {selectedCustomFields.length > 0 ? (
+                          <div className="space-y-2 mt-4">
+                            <h4 className="text-sm font-medium">Selected Fields:</h4>
+                            <div className="grid gap-2">
+                              {selectedCustomFields.map((fieldId) => (
+                                <div 
+                                  key={fieldId} 
+                                  className="flex items-center justify-between bg-muted p-2 rounded-md"
+                                >
+                                  <div className="flex items-center flex-1">
+                                    <span className="text-sm">
+                                      {customFieldDetails[fieldId]?.label || `Custom Field #${fieldId}`}
+                                    </span>
+                                    {customFieldDetails[fieldId]?.isInternal && (
+                                      <Badge variant="secondary" className="ml-2 text-xs">
+                                        Internal
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedCustomFields(
+                                        selectedCustomFields.filter((id) => id !== fieldId)
+                                      );
+                                    }}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground italic">
+                            No custom fields selected yet. Click the button above to add fields.
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex justify-between pt-4">
