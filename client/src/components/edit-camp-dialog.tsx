@@ -628,9 +628,23 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
                   </div>
                 </div>
               </TabsContent>
-
+              
+              {/* Custom Fields Tab */}
               <TabsContent value="custom" className="space-y-4">
-                <CampMetaFieldsEditor campId={camp.id} organizationId={user?.organizationId || 0} />
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Custom Camp Information</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Add custom fields to provide additional information about this camp. 
+                    These fields can be marked as internal (only visible to organization members) 
+                    or public (visible to everyone).
+                  </p>
+                  
+                  {/* Camp Meta Fields Editor */}
+                  <CampMetaFieldsEditor 
+                    campId={camp.id} 
+                    organizationId={camp.organizationId} 
+                  />
+                </div>
               </TabsContent>
             </Tabs>
 

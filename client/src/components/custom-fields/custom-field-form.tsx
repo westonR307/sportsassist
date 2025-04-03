@@ -41,6 +41,7 @@ const customFieldSchema = z.object({
   required: z.boolean().default(false),
   options: z.array(z.string()).optional(),
   source: z.enum(["registration", "camp"]).optional(),
+  isInternal: z.boolean().default(false),
 });
 
 type CustomFieldFormValues = z.infer<typeof customFieldSchema>;
@@ -75,6 +76,7 @@ interface CustomFieldFormProps {
     required: boolean;
     options?: string[];
     source?: string;
+    isInternal?: boolean;
   };
   onSuccess?: () => void;
   onCancel?: () => void;
@@ -102,6 +104,7 @@ export function CustomFieldForm({
       required: customField?.required || false,
       options: customField?.options || [],
       source: customField?.source as 'registration' | 'camp' || fieldSource,
+      isInternal: customField?.isInternal || false,
     },
   });
 
@@ -304,6 +307,27 @@ export function CustomFieldForm({
                   {fieldSource === 'registration' 
                     ? "Make this field mandatory on registration forms" 
                     : "Make this field mandatory when creating/editing camps"}
+                </FormDescription>
+              </div>
+              <FormControl>
+                <Switch
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="isInternal"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <FormLabel className="text-base">Internal Field</FormLabel>
+                <FormDescription>
+                  Internal fields are only visible to organization members, not to participants or parents
                 </FormDescription>
               </div>
               <FormControl>
