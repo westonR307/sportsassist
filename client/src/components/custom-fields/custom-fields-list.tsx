@@ -3,6 +3,35 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { CustomField } from "@shared/schema";
+import { FieldType, ValidationType } from "@shared/types";
+
+// Define the form-compatible custom field type to match CustomFieldFormProps
+interface FormCompatibleCustomField {
+  id: number;
+  name: string;
+  label: string;
+  description?: string;
+  fieldType: FieldType;
+  validationType: ValidationType;
+  required: boolean;
+  options?: string[];
+  source?: string;
+}
+
+// Helper function to convert CustomField to FormCompatibleCustomField
+function convertToFormCompatibleField(field: CustomField, source: 'registration' | 'camp'): FormCompatibleCustomField {
+  return {
+    id: field.id,
+    name: field.name,
+    label: field.label,
+    description: field.description || undefined,
+    fieldType: field.fieldType,
+    validationType: field.validationType,
+    required: field.required,
+    options: field.options ? [...field.options] : undefined,
+    source: source
+  };
+}
 
 // UI components
 import {
@@ -45,22 +74,25 @@ import { CustomFieldForm } from "./custom-field-form";
 
 interface CustomFieldsListProps {
   organizationId: number;
+  fieldSource?: 'registration' | 'camp';
 }
 
-export function CustomFieldsList({ organizationId }: CustomFieldsListProps) {
+export function CustomFieldsList({ organizationId, fieldSource = 'registration' }: CustomFieldsListProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [editField, setEditField] = useState<CustomField | null>(null);
-  const [deleteField, setDeleteField] = useState<CustomField | null>(null);
+  const [editField, setEditField] = useState<FormCompatibleCustomField | null>(null);
+  const [deleteField, setDeleteField] = useState<FormCompatibleCustomField | null>(null);
 
-  // Fetch all custom fields
+  // Fetch custom fields based on source
   const { data: customFields, isLoading } = useQuery({
-    queryKey: [`/api/organizations/${organizationId}/custom-fields`],
+    queryKey: [`/api/organizations/${organizationId}/custom-fields`, fieldSource],
     queryFn: async () => {
-      const res = await fetch(`/api/organizations/${organizationId}/custom-fields`);
-      if (!res.ok) throw new Error("Failed to fetch custom fields");
-      return res.json() as Promise<CustomField[]>;
+      const url = `/api/organizations/${organizationId}/custom-fields?source=${fieldSource}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Failed to fetch ${fieldSource} custom fields`);
+      const fields = await res.json();
+      return fields as CustomField[];
     },
   });
 
@@ -78,7 +110,7 @@ export function CustomFieldsList({ organizationId }: CustomFieldsListProps) {
       
       // Invalidate and refetch
       queryClient.invalidateQueries({
-        queryKey: [`/api/organizations/${organizationId}/custom-fields`],
+        queryKey: [`/api/organizations/${organizationId}/custom-fields`, fieldSource],
       });
       
       setDeleteField(null);
@@ -125,13 +157,31 @@ export function CustomFieldsList({ organizationId }: CustomFieldsListProps) {
     );
   }
 
+  const getTitleText = () => {
+    return fieldSource === 'registration' 
+      ? "Registration Custom Fields" 
+      : "Camp Meta Fields";
+  };
+  
+  const getDescriptionText = () => {
+    return fieldSource === 'registration'
+      ? "Create reusable fields for your camp registration forms"
+      : "Create custom fields to store additional information about your camps";
+  };
+  
+  const getEmptyStateText = () => {
+    return fieldSource === 'registration'
+      ? "Create custom fields to collect specific information from camp participants during registration."
+      : "Create custom fields to store additional information about your camps.";
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">Custom Fields</h2>
+          <h2 className="text-2xl font-bold">{getTitleText()}</h2>
           <p className="text-muted-foreground">
-            Create reusable fields for your camp registration forms
+            {getDescriptionText()}
           </p>
         </div>
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
@@ -143,10 +193,11 @@ export function CustomFieldsList({ organizationId }: CustomFieldsListProps) {
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Create Custom Field</DialogTitle>
+              <DialogTitle>Create {fieldSource === 'camp' ? 'Camp Meta' : 'Custom'} Field</DialogTitle>
             </DialogHeader>
             <CustomFieldForm
               organizationId={organizationId}
+              fieldSource={fieldSource}
               onSuccess={() => setCreateDialogOpen(false)}
             />
           </DialogContent>
@@ -155,10 +206,9 @@ export function CustomFieldsList({ organizationId }: CustomFieldsListProps) {
 
       {customFields?.length === 0 ? (
         <div className="bg-muted/50 border rounded-lg p-8 text-center">
-          <h3 className="text-lg font-medium">No custom fields yet</h3>
+          <h3 className="text-lg font-medium">No {fieldSource} fields yet</h3>
           <p className="text-muted-foreground mt-2 max-w-md mx-auto">
-            Create custom fields to collect specific information from camp
-            participants during registration.
+            {getEmptyStateText()}
           </p>
           <Button
             className="mt-4"
@@ -187,14 +237,18 @@ export function CustomFieldsList({ organizationId }: CustomFieldsListProps) {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem
-                        onClick={() => setEditField(field)}
+                        onClick={() => {
+                          setEditField(convertToFormCompatibleField(field, fieldSource));
+                        }}
                         className="flex items-center gap-2"
                       >
                         <PenSquare className="h-4 w-4" />
                         Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => setDeleteField(field)}
+                        onClick={() => {
+                          setDeleteField(convertToFormCompatibleField(field, fieldSource));
+                        }}
                         className="flex items-center gap-2 text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -265,11 +319,12 @@ export function CustomFieldsList({ organizationId }: CustomFieldsListProps) {
         >
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Edit Custom Field</DialogTitle>
+              <DialogTitle>Edit {fieldSource === 'camp' ? 'Camp Meta' : 'Custom'} Field</DialogTitle>
             </DialogHeader>
             <CustomFieldForm
               organizationId={organizationId}
               customField={editField}
+              fieldSource={fieldSource}
               onSuccess={() => setEditField(null)}
             />
           </DialogContent>
@@ -285,7 +340,7 @@ export function CustomFieldsList({ organizationId }: CustomFieldsListProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the custom field "{deleteField?.label}".
+              This will permanently delete the {fieldSource === 'camp' ? 'camp meta' : 'custom'} field "{deleteField?.label}".
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>

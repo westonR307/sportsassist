@@ -40,6 +40,7 @@ const customFieldSchema = z.object({
   validationType: z.enum(["required", "email", "phone", "number", "date", "none"] as const),
   required: z.boolean().default(false),
   options: z.array(z.string()).optional(),
+  source: z.enum(["registration", "camp"]).optional(),
 });
 
 type CustomFieldFormValues = z.infer<typeof customFieldSchema>;
@@ -63,6 +64,7 @@ const validationTypeOptions = [
 
 interface CustomFieldFormProps {
   organizationId: number;
+  fieldSource?: 'registration' | 'camp';
   customField?: {
     id: number;
     name: string;
@@ -72,6 +74,7 @@ interface CustomFieldFormProps {
     validationType: ValidationType;
     required: boolean;
     options?: string[];
+    source?: string;
   };
   onSuccess?: () => void;
   onCancel?: () => void;
@@ -80,6 +83,7 @@ interface CustomFieldFormProps {
 export function CustomFieldForm({
   organizationId,
   customField,
+  fieldSource = 'registration',
   onSuccess,
   onCancel,
 }: CustomFieldFormProps) {
@@ -98,6 +102,7 @@ export function CustomFieldForm({
       validationType: customField?.validationType || "none",
       required: customField?.required || false,
       options: customField?.options || [],
+      source: customField?.source as 'registration' | 'camp' || fieldSource,
     },
   });
 
@@ -129,16 +134,16 @@ export function CustomFieldForm({
     onSuccess: () => {
       toast({
         title: customField
-          ? "Custom field updated"
-          : "Custom field created",
+          ? `${fieldSource === 'camp' ? 'Camp meta' : 'Custom'} field updated`
+          : `${fieldSource === 'camp' ? 'Camp meta' : 'Custom'} field created`,
         description: customField
-          ? "Your custom field has been updated successfully."
-          : "Your custom field has been created successfully.",
+          ? `Your ${fieldSource === 'camp' ? 'camp meta' : 'custom'} field has been updated successfully.`
+          : `Your ${fieldSource === 'camp' ? 'camp meta' : 'custom'} field has been created successfully.`,
       });
       
       // Invalidate queries
       queryClient.invalidateQueries({
-        queryKey: [`/api/organizations/${organizationId}/custom-fields`],
+        queryKey: [`/api/organizations/${organizationId}/custom-fields`, fieldSource],
       });
       
       if (onSuccess) onSuccess();
@@ -146,7 +151,7 @@ export function CustomFieldForm({
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: `Failed to ${customField ? "update" : "create"} custom field: ${error.message}`,
+        description: `Failed to ${customField ? "update" : "create"} ${fieldSource === 'camp' ? 'camp meta' : 'custom'} field: ${error.message}`,
         variant: "destructive",
       });
     },
@@ -154,6 +159,8 @@ export function CustomFieldForm({
 
   // Form submission
   const onSubmit = (values: CustomFieldFormValues) => {
+    // Ensure source field is set properly
+    values.source = values.source || fieldSource;
     mutation.mutate(values);
   };
 
@@ -314,7 +321,9 @@ export function CustomFieldForm({
               <div className="space-y-0.5">
                 <FormLabel className="text-base">Required Field</FormLabel>
                 <FormDescription>
-                  Make this field mandatory on registration forms
+                  {fieldSource === 'registration' 
+                    ? "Make this field mandatory on registration forms" 
+                    : "Make this field mandatory when creating/editing camps"}
                 </FormDescription>
               </div>
               <FormControl>
