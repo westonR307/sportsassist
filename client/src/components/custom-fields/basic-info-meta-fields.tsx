@@ -39,6 +39,7 @@ interface BasicInfoMetaFieldsProps {
 
 export interface BasicInfoMetaFieldsRef {
   saveFieldsIfNeeded: () => Promise<void>;
+  setCampId: (id: number) => void;
 }
 
 export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, BasicInfoMetaFieldsProps>(({
@@ -51,6 +52,7 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedFieldId, setSelectedFieldId] = useState<number | null>(null);
   const [addedFields, setAddedFields] = useState<any[]>([]);
+  const [internalCampId, setInternalCampId] = useState<number | undefined>(campId);
 
   // Fetch available custom fields for camps
   const { data: availableFields, isLoading: isLoadingFields } = useQuery({
@@ -140,21 +142,22 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
 
   // Save all meta fields to the server
   const saveMetaFields = async () => {
-    if (!campId) return;
+    const currentCampId = internalCampId || campId;
+    if (!currentCampId) return;
     
     try {
       // First, handle all adds and updates
       for (const field of addedFields) {
         if (field.isTemporary) {
           // New field to be created
-          await apiRequest("POST", `/api/camps/${campId}/meta-fields`, {
+          await apiRequest("POST", `/api/camps/${currentCampId}/meta-fields`, {
             customFieldId: field.customFieldId,
             response: field.response,
             responseArray: field.responseArray,
           });
         } else {
           // Existing field to be updated
-          await apiRequest("PUT", `/api/camps/${campId}/meta-fields/${field.id}`, {
+          await apiRequest("PUT", `/api/camps/${currentCampId}/meta-fields/${field.id}`, {
             response: field.response,
             responseArray: field.responseArray,
           });
@@ -171,12 +174,12 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
         
         // Delete each removed field
         for (const id of deletedIds) {
-          await apiRequest("DELETE", `/api/camps/${campId}/meta-fields/${id}`);
+          await apiRequest("DELETE", `/api/camps/${currentCampId}/meta-fields/${id}`);
         }
       }
       
       // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: [`/api/camps/${campId}/meta-fields`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/camps/${currentCampId}/meta-fields`] });
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
       
       toast({
@@ -200,19 +203,27 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
     }
   };
 
+  // Method to set the camp ID for use after camp creation
+  const setCampId = (id: number) => {
+    console.log(`Setting camp ID for meta fields to ${id}`);
+    setInternalCampId(id);
+  };
+
   // Watch for form submission event
   // We'll expose a saveFields method that can be called by the parent component
   const saveFieldsIfNeeded = async () => {
-    if (campId && addedFields.length > 0) {
+    const currentCampId = internalCampId || campId;
+    if (currentCampId && addedFields.length > 0) {
       await saveMetaFields();
     }
   };
   
-  // Expose the save method to parent via ref if needed
+  // Expose methods to parent via ref
   React.useImperativeHandle(
-    form?.formState ? { current: { saveFieldsIfNeeded } } : null,
+    ref,
     () => ({
-      saveFieldsIfNeeded
+      saveFieldsIfNeeded,
+      setCampId
     })
   );
 
@@ -350,7 +361,7 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
           Add Custom Field
         </Button>
         
-        {addedFields.length > 0 && campId && (
+        {addedFields.length > 0 && (campId || internalCampId) && (
           <Button 
             variant="secondary" 
             size="sm"
