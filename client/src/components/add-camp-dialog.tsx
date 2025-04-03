@@ -101,6 +101,7 @@ export function AddCampDialog({
   const [selectedDocumentId, setSelectedDocumentId] = useState<number | null>(null); // For document agreement
   const [selectedCustomFields, setSelectedCustomFields] = useState<number[]>([]); // Store selected custom field IDs
   const [customFieldDetails, setCustomFieldDetails] = useState<{ [id: number]: {label: string, isInternal: boolean} }>({});
+  const [duplicateData, setDuplicateData] = useState<any>(null);
   const metaFieldsRef = useRef<BasicInfoMetaFieldsRef>(null);
 
   // Get default dates
@@ -149,6 +150,78 @@ export function AddCampDialog({
       defaultEndTime: "17:00",
     },
   });
+  
+  // Effect to check for duplicate camp data from localStorage
+  useEffect(() => {
+    if (open) {
+      try {
+        const duplicateDataString = localStorage.getItem('duplicateCampData');
+        if (duplicateDataString) {
+          // Parse the data
+          const duplicateData = JSON.parse(duplicateDataString);
+          console.log("Found duplicate camp data:", duplicateData);
+          setDuplicateData(duplicateData);
+          
+          // Populate form with the duplicate camp data
+          if (duplicateData.camp) {
+            const campData = duplicateData.camp;
+            
+            // Set form values
+            form.reset({
+              ...form.getValues(),
+              name: campData.name,
+              description: campData.description,
+              streetAddress: campData.streetAddress,
+              city: campData.city,
+              state: campData.state,
+              zipCode: campData.zipCode,
+              price: campData.price,
+              capacity: campData.capacity,
+              type: campData.type,
+              visibility: campData.visibility,
+              waitlistEnabled: campData.waitlistEnabled,
+              minAge: campData.minAge,
+              maxAge: campData.maxAge,
+              repeatType: campData.repeatType,
+              repeatCount: campData.repeatCount,
+              registrationStartDate: new Date(campData.registrationStartDate).toISOString().split("T")[0],
+              registrationEndDate: new Date(campData.registrationEndDate).toISOString().split("T")[0],
+              startDate: new Date(campData.startDate).toISOString().split("T")[0],
+              endDate: new Date(campData.endDate).toISOString().split("T")[0],
+              defaultStartTime: "09:00", // Set default values
+              defaultEndTime: "17:00",
+            });
+            
+            // Set sport selection if available
+            if (campData.sportId) {
+              setSelectedSport(String(campData.sportId));
+            }
+            
+            // Set custom fields
+            if (duplicateData.customFields && duplicateData.customFields.length > 0) {
+              setSelectedCustomFields(duplicateData.customFields.map((field: any) => field.customFieldId));
+            }
+            
+            // Show success message
+            toast({
+              title: "Camp Data Loaded",
+              description: "Duplicated camp data has been loaded. You can now edit and save the new camp.",
+            });
+            
+            // Clear localStorage after loading
+            localStorage.removeItem('duplicateCampData');
+          }
+        }
+      } catch (error) {
+        console.error("Error loading duplicate camp data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load duplicated camp data. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
+  }, [open, form, toast]);
 
   const createCampMutation = useMutation({
     mutationFn: async (data: Omit<ExtendedCampSchema, 'defaultStartTime' | 'defaultEndTime'>) => {
@@ -238,6 +311,21 @@ export function AddCampDialog({
             // Set the campId for the meta fields component and save
             metaFieldsRef.current.setCampId(data.id);
             await metaFieldsRef.current.saveFieldsIfNeeded();
+            
+            // If we have duplicated meta fields, save those as well
+            if (duplicateData?.metaFields && duplicateData.metaFields.length > 0) {
+              console.log(`Duplicating ${duplicateData.metaFields.length} meta fields for new camp ${data.id}`);
+              const metaFieldPromises = duplicateData.metaFields.map((metaField: any) => {
+                // Copy the meta field but with the new camp ID
+                const { id, campId, ...metaFieldData } = metaField;
+                return apiRequest('POST', `/api/camps/${data.id}/meta-fields`, {
+                  ...metaFieldData,
+                  campId: data.id
+                });
+              });
+              await Promise.all(metaFieldPromises);
+              console.log("Duplicated meta fields saved successfully");
+            }
           } catch (error) {
             console.error("Error saving meta fields:", error);
             toast({

@@ -33,14 +33,28 @@ interface CampWithPermissions extends Camp {
 }
 
 export default function CampsPage() {
-  const [showAddCampDialog, setShowAddCampDialog] = React.useState(false);
+  // Check URL for showAddDialog parameter
+  const [, params] = useRoute('/dashboard/camps');
+  const urlParams = new URLSearchParams(window.location.search);
+  const shouldShowDialog = urlParams.get('showAddDialog') === 'true';
+  const [location, navigate] = useWouterLocation();
+  
+  const [showAddCampDialog, setShowAddCampDialog] = React.useState(shouldShowDialog);
+  
+  // Effect to clear the URL parameter after the dialog is shown
+  React.useEffect(() => {
+    if (shouldShowDialog) {
+      // Clear the URL parameter
+      navigate('/dashboard/camps', { replace: true });
+    }
+  }, [shouldShowDialog, navigate]);
+  
   const { user } = useAuth();
   const { data: camps, isLoading } = useQuery<CampWithPermissions[]>({
     queryKey: ["/api/camps"],
     staleTime: 5000, // Only refetch after 5 seconds
     refetchOnWindowFocus: false,
   });
-  const [location, navigate] = useWouterLocation();
   
   // Check if user is a camp creator or manager who can create camps
   const canCreateCamps = user && ['camp_creator', 'manager'].includes(user.role);

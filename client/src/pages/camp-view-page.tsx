@@ -5,6 +5,7 @@ import { ParentSidebar } from "@/components/parent-sidebar";
 import { BackButton } from "@/components/back-button";
 import { ShareCampDialog } from "@/components/share-camp-dialog";
 import { CampMetaFieldsDisplay } from "@/components/camp-meta-fields-display";
+import { DuplicateCampDialog } from "@/components/duplicate-camp-dialog";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -191,6 +192,7 @@ function CampViewPage(props: { id?: string }) {
   const [registering, setRegistering] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [showShareDialog, setShowShareDialog] = useState(false);
   const queryClient = useQueryClient();
@@ -504,6 +506,10 @@ function CampViewPage(props: { id?: string }) {
                   <Button variant="outline" onClick={() => setShowShareDialog(true)}>
                     <Share2 className="h-4 w-4 mr-2" />
                     Share
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowDuplicateDialog(true)}>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Duplicate
                   </Button>
                   <Button variant="outline">
                     <MessageSquare className="h-4 w-4 mr-2" />
@@ -1230,6 +1236,14 @@ function CampViewPage(props: { id?: string }) {
             onClose={() => setShowShareDialog(false)}
             campName={camp.name}
             campSlug={camp.slug || String(camp.id)}
+          />
+        )}
+
+        {camp && (
+          <DuplicateCampDialog
+            campId={camp.id}
+            open={showDuplicateDialog}
+            onOpenChange={setShowDuplicateDialog}
           />
         )}
       </div>
