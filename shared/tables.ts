@@ -214,6 +214,7 @@ export const customFields = pgTable("custom_fields", {
   organizationId: integer("organization_id").references(() => organizations.id).notNull(),
   validationType: text("validation_type").$type<ValidationType>().notNull().default("none"),
   options: json("options").$type<string[]>(), // For dropdown, single-select, and multi-select fields
+  fieldSource: text("field_source").notNull().default("registration"), // Either 'registration' or 'camp'
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

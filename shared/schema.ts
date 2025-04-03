@@ -224,6 +224,7 @@ export const insertCustomFieldSchema = createInsertSchema(customFields).omit({
   fieldType: z.enum(["short_text", "long_text", "dropdown", "single_select", "multi_select"]),
   validationType: z.enum(["required", "email", "phone", "number", "date", "none"]).default("none"),
   options: z.array(z.string()).optional(),
+  fieldSource: z.enum(["registration", "camp"]).default("registration"),
 });
 
 export const insertCampCustomFieldSchema = createInsertSchema(campCustomFields).omit({

@@ -1355,6 +1355,7 @@ export class DatabaseStorage implements IStorage {
         organizationId: field.organizationId,
         validationType: field.validationType || "none",
         options: field.options,
+        fieldSource: field.fieldSource || "registration", // Use the provided source or default to "registration"
       }).returning();
       
       return newField;
@@ -1377,12 +1378,20 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async listCustomFields(organizationId: number): Promise<CustomField[]> {
+  async listCustomFields(organizationId: number, fieldSource?: "registration" | "camp"): Promise<CustomField[]> {
     try {
-      return await db.select()
+      // Base query with organization filter
+      let query = db.select()
         .from(customFields)
-        .where(eq(customFields.organizationId, organizationId))
-        .orderBy(customFields.name);
+        .where(eq(customFields.organizationId, organizationId));
+      
+      // Add field source filter if provided
+      if (fieldSource) {
+        query = query.where(eq(customFields.fieldSource, fieldSource));
+      }
+      
+      // Execute the query with ordering
+      return await query.orderBy(customFields.name);
     } catch (error) {
       console.error("Error listing custom fields:", error);
       return [];

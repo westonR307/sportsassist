@@ -125,7 +125,7 @@ export function CustomFieldForm({
         // Create new field
         const res = await apiRequest(
           "POST",
-          `/api/organizations/${organizationId}/custom-fields`,
+          `/api/organizations/${organizationId}/custom-fields?source=${values.source || fieldSource}`,
           values
         );
         return await res.json();

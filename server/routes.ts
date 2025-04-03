@@ -1971,9 +1971,13 @@ export async function registerRoutes(app: Express) {
     }
 
     try {
+      // Ensure the field source is set properly (registration or camp)
+      const fieldSource = req.query.source as "registration" | "camp" || req.body.fieldSource;
+      
       const validationData = {
         ...req.body,
         organizationId: orgId,
+        fieldSource: fieldSource || "registration" // Default to "registration" if not specified
       };
 
       const parsed = insertCustomFieldSchema.safeParse(validationData);
@@ -1992,7 +1996,7 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Get all custom fields for an organization
+  // Get all custom fields for an organization, optionally filtered by field source
   app.get("/api/organizations/:orgId/custom-fields", async (req, res) => {
     if (!req.user) {
       return res.status(401).json({ message: "Authentication required" });
@@ -2006,7 +2010,11 @@ export async function registerRoutes(app: Express) {
     }
 
     try {
-      const customFields = await storage.listCustomFields(orgId);
+      // Get the field source from query parameter (if provided)
+      const fieldSource = req.query.source as "registration" | "camp" | undefined;
+      
+      // Get the custom fields filtered by source if provided
+      const customFields = await storage.listCustomFields(orgId, fieldSource);
       res.json(customFields);
     } catch (error) {
       logError("List custom fields", error);
