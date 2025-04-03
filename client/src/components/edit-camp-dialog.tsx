@@ -6,6 +6,7 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { CampMetaFieldsEditor } from "@/components/custom-fields/camp-meta-fields-editor";
+import { BasicInfoMetaFields } from "@/components/custom-fields/basic-info-meta-fields";
 import {
   Dialog,
   DialogContent,
@@ -298,6 +299,18 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
                         <FormMessage />
                       </FormItem>
                     )}
+                  />
+                </div>
+                
+                {/* Custom fields for basic information */}
+                <div className="mt-8 border-t pt-4">
+                  <h3 className="text-lg font-medium mb-2">Additional Information</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Add custom fields to provide more details about your camp.
+                  </p>
+                  <BasicInfoMetaFields 
+                    campId={camp.id} 
+                    organizationId={camp.organizationId} 
                   />
                 </div>
               </TabsContent>
