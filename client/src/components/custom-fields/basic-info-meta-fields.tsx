@@ -38,7 +38,7 @@ interface BasicInfoMetaFieldsProps {
 }
 
 export interface BasicInfoMetaFieldsRef {
-  saveFieldsIfNeeded: () => Promise<void>;
+  saveFieldsIfNeeded: () => Promise<boolean | undefined>;
   setCampId: (id: number) => void;
 }
 
