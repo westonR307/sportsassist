@@ -721,8 +721,8 @@ function CampViewPage(props: { id?: string }) {
                 {/* Display custom meta fields */}
                 <CampMetaFieldsDisplay 
                   campId={camp.id} 
-                  organizationId={camp.organizationId} 
                   canManage={camp.permissions?.canManage || false} 
+                  className="mb-6"
                 />
 
                 <Card>
