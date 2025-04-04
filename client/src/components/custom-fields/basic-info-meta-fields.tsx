@@ -263,12 +263,18 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
     }
   };
   
+  // Method to get the current fields for external use
+  const getFields = () => {
+    return addedFields;
+  };
+
   // Expose methods to parent via ref
   React.useImperativeHandle(
     ref,
     () => ({
       saveFieldsIfNeeded,
-      setCampId
+      setCampId,
+      getFields
     })
   );
 

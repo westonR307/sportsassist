@@ -326,8 +326,36 @@ export function AddCampDialog({
             // Set the campId for the meta fields component and save
             console.log(`Setting camp ID ${data.id} in metaFieldsRef`);
             metaFieldsRef.current.setCampId(data.id);
+            
+            // Force a small delay to ensure state updates properly
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // First make a direct API call to ensure we're working with the proper campId
+            const addedFields = metaFieldsRef.current.getFields?.() || [];
+            console.log(`Found ${addedFields.length} meta fields to save`, addedFields);
+            
+            // Save fields directly through API calls rather than relying on the component method
+            if (addedFields.length > 0) {
+              console.log(`Directly saving ${addedFields.length} meta fields for camp ${data.id}`);
+              for (const field of addedFields) {
+                try {
+                  await apiRequest("POST", `/api/camps/${data.id}/meta-fields`, {
+                    customFieldId: field.customFieldId,
+                    campId: data.id,
+                    response: field.response || null,
+                    responseArray: field.responseArray || null,
+                  });
+                  console.log(`Successfully saved field ${field.customFieldId} to camp ${data.id}`);
+                } catch (fieldError) {
+                  console.error(`Error saving individual field ${field.customFieldId}:`, fieldError);
+                }
+              }
+              console.log("All meta fields saved via direct API calls");
+            }
+            
+            // Also try the original method as a fallback
             const saveResult = await metaFieldsRef.current.saveFieldsIfNeeded();
-            console.log(`Meta fields save result: ${saveResult}`);
+            console.log(`Meta fields save result from component method: ${saveResult}`);
             
             // If we have duplicated meta fields, save those as well
             if (duplicateData?.metaFields && duplicateData.metaFields.length > 0) {
