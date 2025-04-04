@@ -2096,6 +2096,28 @@ export async function registerRoutes(app: Express) {
     }
   });
   
+  // Get all users in an organization (including camp creator)
+  app.get("/api/organizations/:orgId/users", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const orgId = parseInt(req.params.orgId);
+    if (req.user.organizationId !== orgId) {
+      return res.status(403).json({ message: "Not authorized for this organization" });
+    }
+
+    try {
+      console.log(`Fetching all users for organization ${orgId}`);
+      const users = await storage.getOrganizationUsers(orgId);
+      console.log(`Found ${users.length} users for organization ${orgId}`);
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching organization users:", error);
+      res.status(500).json({ message: "Failed to fetch organization users" });
+    }
+  });
+  
   // Update team member role - only camp_creator can do this
   app.patch("/api/organizations/:orgId/staff/:userId/role", async (req, res) => {
     if (!req.user) {
