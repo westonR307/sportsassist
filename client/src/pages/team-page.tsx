@@ -43,13 +43,11 @@ function InviteMemberDialog() {
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
       };
 
-      const res = await apiRequest(
+      return await apiRequest(
         "POST",
         `/api/organizations/${user.organizationId}/invitations`,
         formattedData
       );
-
-      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/organizations/${user?.organizationId}/invitations`] });
@@ -155,7 +153,7 @@ function ResendButton({ invitation, organizationId }: { invitation: Invitation; 
 
   const resendMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest(
+      return await apiRequest(
         "POST",
         `/api/organizations/${organizationId}/invitations`,
         {
@@ -165,8 +163,6 @@ function ResendButton({ invitation, organizationId }: { invitation: Invitation; 
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         }
       );
-
-      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/organizations/${organizationId}/invitations`] });
@@ -222,20 +218,13 @@ function DeleteButton({ invitation, organizationId }: { invitation: Invitation; 
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest(
+      const response = await apiRequest(
         "DELETE",
         `/api/organizations/${organizationId}/invitations/${invitation.id}`
       );
       
-      // Check if response is empty, which is common for DELETE operations
-      const text = await res.text();
-      if (!text) return { success: true };
-      
-      try {
-        return JSON.parse(text);
-      } catch (e) {
-        return { success: true, message: "Invitation deleted" };
-      }
+      // The apiRequest function will handle the response parsing
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/organizations/${organizationId}/invitations`] });
