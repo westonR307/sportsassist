@@ -2732,19 +2732,29 @@ export async function registerRoutes(app: Express) {
   // Update organization profile (requires authentication and ownership)
   app.patch("/api/organizations/:orgId/profile", async (req, res) => {
     try {
+      console.log('Organization profile update request received:', {
+        body: req.body,
+        params: req.params,
+        auth: req.isAuthenticated(),
+        user: req.user
+      });
+      
       if (!req.isAuthenticated()) {
+        console.log('User not authenticated for profile update');
         return res.status(401).json({ message: "Authentication required" });
       }
       
       const orgId = parseInt(req.params.orgId);
+      console.log(`Processing organization profile update for org ID: ${orgId}`);
       
       // Only allow camp creators who belong to this organization to update it
       if (req.user.organizationId !== orgId || req.user.role !== "camp_creator") {
+        console.log(`Authorization failure: User org ID: ${req.user.organizationId}, target org ID: ${orgId}, role: ${req.user.role}`);
         return res.status(403).json({ message: "Not authorized to update this organization's profile" });
       }
       
-      // Handle update with the new profile-specific fields
-      const updatedOrg = await storage.updateOrganizationProfile(orgId, {
+      // Prepare the update object with the request body data
+      const updateData = {
         name: req.body.name,
         description: req.body.description,
         primaryColor: req.body.primaryColor,
@@ -2755,8 +2765,14 @@ export async function registerRoutes(app: Express) {
         socialLinks: req.body.socialLinks,
         displayName: req.body.displayName,
         slug: req.body.slug
-      });
+      };
       
+      console.log('Update data to be sent to storage:', updateData);
+      
+      // Handle update with the new profile-specific fields
+      const updatedOrg = await storage.updateOrganizationProfile(orgId, updateData);
+      
+      console.log('Organization profile successfully updated:', updatedOrg);
       res.json(updatedOrg);
     } catch (error: any) {
       console.error("Error updating organization profile:", error);

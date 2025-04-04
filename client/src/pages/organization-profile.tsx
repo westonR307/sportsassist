@@ -354,7 +354,10 @@ export default function OrganizationProfilePage() {
         </TabsList>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={(e) => {
+            e.preventDefault(); // Prevent default form submission behavior
+            form.handleSubmit(onSubmit)(e);
+          }} className="space-y-6">
             <TabsContent value="basic-info" className="space-y-6">
               <Card>
                 <CardHeader>
@@ -420,6 +423,26 @@ export default function OrganizationProfilePage() {
                     )}
                   />
                 </CardContent>
+                <div className="p-6 pt-0 flex justify-end">
+                  <Button 
+                    type="button"
+                    onClick={() => onSubmit(form.getValues())}
+                    disabled={updateProfileMutation.isPending}
+                    className="w-full sm:w-auto"
+                  >
+                    {updateProfileMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="mr-2 h-4 w-4" />
+                        Save Basic Info
+                      </>
+                    )}
+                  </Button>
+                </div>
               </Card>
             </TabsContent>
 
@@ -553,6 +576,26 @@ export default function OrganizationProfilePage() {
                     </div>
                   </div>
                 </CardContent>
+                <div className="p-6 pt-0 flex justify-end">
+                  <Button 
+                    type="button"
+                    onClick={() => onSubmit(form.getValues())}
+                    disabled={updateProfileMutation.isPending}
+                    className="w-full sm:w-auto"
+                  >
+                    {updateProfileMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="mr-2 h-4 w-4" />
+                        Save Branding
+                      </>
+                    )}
+                  </Button>
+                </div>
               </Card>
             </TabsContent>
 
@@ -587,6 +630,26 @@ export default function OrganizationProfilePage() {
                     )}
                   />
                 </CardContent>
+                <div className="p-6 pt-0 flex justify-end">
+                  <Button 
+                    type="button"
+                    onClick={() => onSubmit(form.getValues())}
+                    disabled={updateProfileMutation.isPending}
+                    className="w-full sm:w-auto"
+                  >
+                    {updateProfileMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="mr-2 h-4 w-4" />
+                        Save About Section
+                      </>
+                    )}
+                  </Button>
+                </div>
               </Card>
             </TabsContent>
 
@@ -734,6 +797,26 @@ export default function OrganizationProfilePage() {
                     </div>
                   </div>
                 </CardContent>
+                <div className="p-6 pt-0 flex justify-end">
+                  <Button 
+                    type="button"
+                    onClick={() => onSubmit(form.getValues())}
+                    disabled={updateProfileMutation.isPending}
+                    className="w-full sm:w-auto"
+                  >
+                    {updateProfileMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="mr-2 h-4 w-4" />
+                        Save Contact Info
+                      </>
+                    )}
+                  </Button>
+                </div>
               </Card>
             </TabsContent>
 
