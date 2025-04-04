@@ -881,29 +881,11 @@ export function AddCampDialog({
                   
                   {/* Add the custom meta fields component */}
                   <div className="mt-8 border-t pt-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-base font-medium">Custom Information Fields</h3>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={async (e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (metaFieldsRef.current) {
-                            // Since we don't have a camp ID yet during creation, just
-                            // make the user aware their fields are acknowledged
-                            toast({
-                              title: "Fields Acknowledged",
-                              description: "Your custom fields will be saved when you create the camp.",
-                            });
-                          }
-                        }}
-                      >
-                        <Save className="h-4 w-4 mr-2" />
-                        Acknowledge Fields
-                      </Button>
-                    </div>
+                    <h3 className="text-lg font-medium mb-2">Additional Information</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Add custom fields to provide more details about your camp.
+                      Custom fields will be saved when you create the camp.
+                    </p>
                     {user?.organizationId && (
                       <BasicInfoMetaFields
                         ref={metaFieldsRef}
