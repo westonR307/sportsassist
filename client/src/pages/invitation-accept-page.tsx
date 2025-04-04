@@ -64,8 +64,7 @@ export default function InvitationAcceptPage() {
         setIsLoading(true);
         setError(null);
         
-        const response = await apiRequest("GET", `/api/invitations/${token}`);
-        const data = await response.json();
+        const data = await apiRequest("GET", `/api/invitations/${token}`);
         
         setInvitationData(data);
       } catch (error) {
@@ -90,7 +89,7 @@ export default function InvitationAcceptPage() {
     
     try {
       // Make API call to accept invitation with names
-      const response = await apiRequest("POST", `/api/invitations/${token}/accept`, {
+      await apiRequest("POST", `/api/invitations/${token}/accept`, {
         firstName: data.firstName,
         lastName: data.lastName,
         password: data.password,
