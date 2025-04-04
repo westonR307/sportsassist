@@ -14,6 +14,8 @@ import { queryClient } from "@/lib/queryClient";
 interface StaffMember {
   id: number;
   username: string;
+  first_name: string | null;
+  last_name: string | null;
   role: string;
 }
 
@@ -308,7 +310,11 @@ function TeamPage() {
                   {staff.map((member) => (
                     <div key={member.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
                       <div>
-                        <p className="font-medium">{member.username}</p>
+                        <p className="font-medium">
+                          {member.first_name && member.last_name 
+                            ? `${member.first_name} ${member.last_name}` 
+                            : member.username}
+                        </p>
                         <p className="text-sm text-gray-500">{member.role}</p>
                       </div>
                     </div>
