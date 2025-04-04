@@ -714,6 +714,47 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return invitation;
   }
+  
+  async acceptInvitationWithNames(token: string, firstName: string, lastName: string): Promise<Invitation> {
+    // First find the invitation to get email
+    const [invitationRecord] = await db.select()
+      .from(invitations)
+      .where(eq(invitations.token, token));
+      
+    if (!invitationRecord) {
+      throw new Error("Invitation not found");
+    }
+    
+    // Start a transaction to update the invitation and create or update the user
+    return await db.transaction(async (tx) => {
+      // Mark the invitation as accepted
+      const [updatedInvitation] = await tx.update(invitations)
+        .set({ accepted: true })
+        .where(eq(invitations.token, token))
+        .returning();
+        
+      // Check if a user with this email already exists
+      const [existingUser] = await tx.select()
+        .from(users)
+        .where(eq(users.email, invitationRecord.email));
+        
+      if (existingUser) {
+        // If user exists, update the first and last name if they are empty
+        if (!existingUser.first_name || !existingUser.last_name) {
+          await tx.update(users)
+            .set({ 
+              first_name: firstName,
+              last_name: lastName,
+              organizationId: invitationRecord.organizationId,
+              role: invitationRecord.role
+            })
+            .where(eq(users.id, existingUser.id));
+        }
+      }
+      
+      return updatedInvitation;
+    });
+  }
 
   async listOrganizationInvitations(organizationId: number): Promise<Invitation[]> {
     // Also filter out invitations that have expired

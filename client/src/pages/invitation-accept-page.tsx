@@ -1,148 +1,289 @@
-import React, { useEffect, useState } from "react";
-import { useRoute, useLocation } from "wouter";
+import React, { useState, useEffect } from "react";
+import { useParams, useLocation } from "wouter";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, CheckCircle, XCircle } from "lucide-react";
-import { apiRequest } from "@/lib/api";
+import { Input } from "@/components/ui/input";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Loader2, Check, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/api";
+import { useAuth } from "@/hooks/use-auth";
+
+// Schema for the invitation data from the server
+interface InvitationData {
+  email: string;
+  role: string;
+  organizationName: string;
+  expiresAt: string;
+  valid: boolean;
+  invitedBy?: string;
+}
+
+// Form schema that requires first and last name
+const acceptInvitationSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string(),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
+type AcceptInvitationData = z.infer<typeof acceptInvitationSchema>;
 
 export default function InvitationAcceptPage() {
-  const [, params] = useRoute("/invitations/:token/accept");
-  const [, navigate] = useLocation();
+  const { token } = useParams();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
-  const [message, setMessage] = useState<string>("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { loginMutation } = useAuth();
   
-  // Extract the invitation token from the URL
-  const token = params?.token;
+  const [invitationData, setInvitationData] = useState<InvitationData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [acceptSuccess, setAcceptSuccess] = useState(false);
   
-  // Validate the token on page load
+  // Form setup with Zod validation
+  const form = useForm<AcceptInvitationData>({
+    resolver: zodResolver(acceptInvitationSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      password: "",
+      confirmPassword: "",
+    },
+  });
+
+  // Fetch invitation data on component mount
   useEffect(() => {
-    if (!token) {
-      setStatus("error");
-      setMessage("Invalid invitation link.");
-      return;
-    }
-    
-    // Check if the invitation is valid but don't accept it yet
-    const checkInvitation = async () => {
+    const fetchInvitationData = async () => {
       try {
-        const res = await fetch(`/api/invitations/${token}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+        setIsLoading(true);
+        setError(null);
         
-        const data = await res.json();
+        const response = await apiRequest("GET", `/api/invitations/${token}`);
+        const data = await response.json();
         
-        if (!res.ok) {
-          setStatus("error");
-          setMessage(data.message || "This invitation is invalid or has expired.");
-        } else {
-          setStatus("success");
-          setMessage("Your invitation is valid. Click the button below to accept it and create your account.");
-        }
+        setInvitationData(data);
       } catch (error) {
-        console.error("Error checking invitation:", error);
-        setStatus("error");
-        setMessage("An error occurred while checking the invitation. Please try again later.");
+        console.error("Failed to fetch invitation:", error);
+        setError("The invitation link is invalid or has expired.");
+      } finally {
+        setIsLoading(false);
       }
     };
     
-    checkInvitation();
+    if (token) {
+      fetchInvitationData();
+    } else {
+      setError("Invalid invitation link.");
+      setIsLoading(false);
+    }
   }, [token]);
-  
-  // Handle the acceptance of the invitation
-  const handleAcceptInvitation = async () => {
-    if (!token || isSubmitting) return;
-    
-    setIsSubmitting(true);
+
+  // Handle form submission
+  const onSubmit = async (data: AcceptInvitationData) => {
+    if (!token) return;
     
     try {
-      const res = await apiRequest(
-        "POST",
-        `/api/invitations/${token}/accept`
-      );
+      // Make API call to accept invitation with names
+      const response = await apiRequest("POST", `/api/invitations/${token}/accept`, {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        password: data.password,
+      });
       
-      const data = await res.json();
+      // Show success message
+      toast({
+        title: "Invitation accepted",
+        description: "You've successfully joined the organization.",
+      });
       
-      if (res.ok) {
-        toast({
-          title: "Success",
-          description: "You have successfully accepted the invitation. You can now create your account or log in.",
-        });
-        
-        // Redirect to the login page
-        setTimeout(() => {
-          navigate("/auth", { replace: true });
-        }, 2000);
-      } else {
-        setStatus("error");
-        setMessage(data.message || "Failed to accept the invitation. It may have expired or already been used.");
-        setIsSubmitting(false);
-      }
+      setAcceptSuccess(true);
+      
+      // Auto login after 2 seconds
+      setTimeout(() => {
+        if (invitationData?.email) {
+          loginMutation.mutate({
+            email: invitationData.email,
+            password: data.password,
+          }, {
+            onSuccess: () => {
+              setLocation("/dashboard");
+            },
+            onError: (error) => {
+              console.error("Auto-login failed:", error);
+              // Still redirect to login page if auto-login fails
+              setLocation("/auth");
+            }
+          });
+        } else {
+          setLocation("/auth");
+        }
+      }, 2000);
+      
     } catch (error) {
-      console.error("Error accepting invitation:", error);
-      setStatus("error");
-      setMessage("An error occurred while accepting the invitation. Please try again later.");
-      setIsSubmitting(false);
+      console.error("Failed to accept invitation:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to accept invitation",
+        variant: "destructive",
+      });
     }
   };
-  
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
+          <p className="mt-4 text-lg">Verifying invitation...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error message
+  if (error || !invitationData || !invitationData.valid) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <AlertTriangle className="mx-auto mb-2 h-10 w-10 text-destructive" />
+            <CardTitle>Invalid Invitation</CardTitle>
+            <CardDescription>
+              {error || "This invitation link is invalid or has expired."}
+            </CardDescription>
+          </CardHeader>
+          <CardFooter className="flex justify-center">
+            <Button onClick={() => setLocation("/")}>Return to Home</Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show success message
+  if (acceptSuccess) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <Check className="mx-auto mb-2 h-10 w-10 text-green-500" />
+            <CardTitle>Invitation Accepted!</CardTitle>
+            <CardDescription>
+              You have successfully joined {invitationData.organizationName}. Redirecting to dashboard...
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show acceptance form
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <Card className="w-full max-w-md shadow-lg">
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold">Team Invitation</CardTitle>
-          <CardDescription>Join your organization's team</CardDescription>
+          <CardTitle>Accept Invitation</CardTitle>
+          <CardDescription>
+            You've been invited to join {invitationData.organizationName} as a {invitationData.role}.
+            Please complete your profile to accept.
+          </CardDescription>
         </CardHeader>
-        
         <CardContent>
-          {status === "loading" ? (
-            <div className="flex flex-col items-center justify-center py-8">
-              <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-              <p className="text-center text-muted-foreground">Checking invitation...</p>
-            </div>
-          ) : status === "success" ? (
-            <div className="flex flex-col items-center justify-center py-6">
-              <CheckCircle className="h-12 w-12 text-green-500 mb-4" />
-              <p className="text-center">{message}</p>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-6">
-              <XCircle className="h-12 w-12 text-red-500 mb-4" />
-              <p className="text-center text-red-500">{message}</p>
-            </div>
-          )}
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>First Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your first name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your last name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Create a password" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Must be at least 8 characters.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Confirm your password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="pt-4">
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={form.formState.isSubmitting}
+                >
+                  {form.formState.isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Accept Invitation"
+                  )}
+                </Button>
+              </div>
+            </form>
+          </Form>
         </CardContent>
-        
-        <CardFooter className="flex justify-center gap-4">
-          {status === "success" && (
-            <Button 
-              onClick={handleAcceptInvitation}
-              disabled={isSubmitting}
-              className="w-full"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Accepting...
-                </>
-              ) : (
-                "Accept & Create Account"
-              )}
-            </Button>
+        <CardFooter className="flex flex-col text-center text-sm text-muted-foreground">
+          <p>Invitation sent to: {invitationData.email}</p>
+          {invitationData.invitedBy && (
+            <p className="mt-1">Invited by: {invitationData.invitedBy}</p>
           )}
-          
-          <Button
-            variant="outline"
-            onClick={() => navigate("/")}
-            className={status === "success" ? "w-1/3" : "w-full"}
-          >
-            {status === "success" ? "Cancel" : "Go to Home"}
-          </Button>
+          <p className="mt-1">
+            Expires: {new Date(invitationData.expiresAt).toLocaleDateString()}
+          </p>
         </CardFooter>
       </Card>
     </div>

@@ -18,6 +18,7 @@ import ReportsPage from "@/pages/reports-page";
 import TeamPage from "@/pages/team-page";
 import SettingsPage from "@/pages/settings-page";
 import CampViewPage from "@/pages/camp-view-page";
+import InvitationAcceptPage from "@/pages/invitation-accept-page";
 import CustomFieldsPage from "@/pages/custom-fields-page";
 import MyAthletesPage from "@/pages/my-athletes-page";
 import RegistrationsPage from "@/pages/registrations-page";
@@ -30,7 +31,6 @@ import DocumentEditPage from "@/pages/document-edit-page";
 import SignaturePage from "@/pages/signature-page";
 import OrganizationProfilePage from "@/pages/organization-profile";
 import OrganizationPublicPage from "@/pages/organization";
-import InvitationAcceptPage from "@/pages/invitation-accept-page";
 import { ProtectedRoute } from "./lib/protected-route";
 
 // Component to handle dashboard routing based on user role

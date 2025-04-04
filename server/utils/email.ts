@@ -24,6 +24,7 @@ export async function sendInvitationEmail({
       html: `
         <h2>You've been invited!</h2>
         <p>You have been invited to join ${organizationName} as a ${role}.</p>
+        <p>When accepting this invitation, you'll need to provide your first and last name to complete your profile.</p>
         <p>Click the link below to accept the invitation:</p>
         <a href="${acceptUrl}" style="display: inline-block; background: #0070f3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">Accept Invitation</a>
         <p>This invitation will expire in 7 days.</p>

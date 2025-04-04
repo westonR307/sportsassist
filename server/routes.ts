@@ -266,6 +266,46 @@ export async function registerRoutes(app: Express) {
     }
   });
   
+  // Update user name fields (first name, last name)
+  app.patch("/api/user/profile", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      console.log("Not authenticated - user/profile name update");
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const { firstName, lastName } = req.body;
+      
+      if (!firstName || !lastName) {
+        return res.status(400).json({ 
+          message: "First name and last name are required" 
+        });
+      }
+      
+      // Update the user profile with just the name fields
+      const updatedUser = await storage.updateUserProfile(req.user!.id, {
+        first_name: firstName,
+        last_name: lastName,
+      });
+      
+      console.log("User name fields updated successfully");
+      return res.json({
+        message: "Profile updated successfully",
+        user: {
+          id: updatedUser.id,
+          username: updatedUser.username,
+          role: updatedUser.role,
+          email: updatedUser.email,
+          first_name: updatedUser.first_name,
+          last_name: updatedUser.last_name,
+        }
+      });
+    } catch (error) {
+      console.error("Error updating user profile name fields:", error);
+      return res.status(500).json({ message: "Failed to update user profile" });
+    }
+  });
+  
   app.post("/api/user/change-password", async (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Not authenticated" });
@@ -613,8 +653,15 @@ export async function registerRoutes(app: Express) {
       return res.status(400).json({ message: "Invitation expired" });
     }
 
+    // Validate first name and last name
+    const { firstName, lastName } = req.body;
+    if (!firstName || !lastName) {
+      return res.status(400).json({ message: "First name and last name are required" });
+    }
+
     try {
-      await storage.acceptInvitation(req.params.token);
+      // Accept invitation with the first name and last name
+      await storage.acceptInvitationWithNames(req.params.token, firstName, lastName);
       res.json({ message: "Invitation accepted" });
     } catch (error) {
       console.error("Invitation acceptance error:", error);
