@@ -73,18 +73,18 @@ export function setupAuth(app: Express) {
 
           // Enhanced password validation with better error handling
           try {
-            if (!user.password) {
+            if (!user.passwordHash) {
               console.log(`User ${email} has no password hash`);
               return done(null, false, { message: "Invalid email or password" });
             }
             
-            // Check if the password has the expected format (hash.salt)
-            if (!user.password.includes('.')) {
+            // Check if the passwordHash has the expected format (hash.salt)
+            if (!user.passwordHash.includes('.')) {
               console.log(`User ${email} has incorrectly formatted password hash`);
               return done(null, false, { message: "Invalid account configuration" });
             }
             
-            const isValid = await comparePasswords(password, user.password);
+            const isValid = await comparePasswords(password, user.passwordHash);
             console.log(`Password validation result for ${email}: ${isValid}`);
 
             if (!isValid) {
@@ -267,7 +267,8 @@ export function setupAuth(app: Express) {
       const userData = {
         username, // Use generated or provided username
         email,
-        password: hashedPassword,
+        password: "", // Set empty password
+        passwordHash: hashedPassword, // Store the hash in passwordHash field
         role: role || "parent",
         ...otherFields,
         ...(organizationId ? { organizationId } : {})

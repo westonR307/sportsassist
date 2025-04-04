@@ -82,6 +82,7 @@ function Router() {
       }} />
       
       <Route path="/auth" component={AuthPage} />
+      <Route path="/login" component={() => <Redirect to="/auth" />} />
       <Route path="/find-camps" component={FindCampsPage} />
       <Route path="/org/:slug" component={OrganizationPublicPage} />
       <Route path="/invitations/:token/accept" component={InvitationAcceptPage} />
