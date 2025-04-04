@@ -105,28 +105,50 @@ export default function OrganizationProfilePage() {
   // Query to fetch the organization data for the current user
   const { data: organization, isLoading } = useQuery<Organization>({
     queryKey: ['/api/organizations', user?.organizationId],
+    queryFn: async () => {
+      if (!user?.organizationId) {
+        throw new Error('No organization ID available');
+      }
+      console.log(`Fetching organization data for ID: ${user.organizationId}`);
+      const response = await fetch(`/api/organizations/${user.organizationId}`, {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch organization data: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Fetched organization data:', data);
+      return data;
+    },
     enabled: !!user && !!user.organizationId,
   });
 
   // Form setup with default values from the fetched organization data
+  const defaultFormValues = {
+    name: organization?.name || '',
+    displayName: organization?.displayName || '',
+    description: organization?.description || '',
+    primaryColor: organization?.primaryColor || '#3730a3',
+    secondaryColor: organization?.secondaryColor || '#1e3a8a',
+    aboutText: organization?.aboutText || '',
+    contactEmail: organization?.contactEmail || '',
+    websiteUrl: organization?.websiteUrl || '',
+    socialLinks: {
+      facebook: organization?.socialLinks?.facebook || '',
+      twitter: organization?.socialLinks?.twitter || '',
+      linkedin: organization?.socialLinks?.linkedin || '',
+      instagram: organization?.socialLinks?.instagram || '',
+    }
+  };
+  
+  console.log('Initial form values:', defaultFormValues);
+  
   const form = useForm<OrganizationProfileData>({
     resolver: zodResolver(organizationProfileSchema),
-    defaultValues: {
-      name: '',
-      displayName: '',
-      description: '',
-      primaryColor: '#3730a3',
-      secondaryColor: '#1e3a8a',
-      aboutText: '',
-      contactEmail: '',
-      websiteUrl: '',
-      socialLinks: {
-        facebook: '',
-        twitter: '',
-        linkedin: '',
-        instagram: '',
-      }
-    }
+    defaultValues: defaultFormValues,
+    values: defaultFormValues // Set values directly as well
   });
   
   // Update form values when organization data loads or changes
