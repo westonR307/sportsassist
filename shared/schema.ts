@@ -18,6 +18,9 @@ import {
   customFieldResponses,
   campMetaFields,
   attendanceRecords,
+  permissionSets,
+  permissions,
+  userPermissions,
   campSessions,
   recurrencePatterns,
   documents,
@@ -385,6 +388,31 @@ export const insertOrganizationMessageSchema = createInsertSchema(organizationMe
 export type OrganizationMessage = typeof organizationMessages.$inferSelect;
 export type InsertOrganizationMessage = z.infer<typeof insertOrganizationMessageSchema>;
 
+// Permission management schemas
+export const insertPermissionSetSchema = createInsertSchema(permissionSets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const insertPermissionSchema = createInsertSchema(permissions).omit({
+  id: true
+});
+
+export const insertUserPermissionSchema = createInsertSchema(userPermissions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+// Permission types
+export type PermissionSet = typeof permissionSets.$inferSelect;
+export type Permission = typeof permissions.$inferSelect;
+export type UserPermission = typeof userPermissions.$inferSelect;
+export type InsertPermissionSet = z.infer<typeof insertPermissionSetSchema>;
+export type InsertPermission = z.infer<typeof insertPermissionSchema>;
+export type InsertUserPermission = z.infer<typeof insertUserPermissionSchema>;
+
 // Re-export tables
 export {
   organizations,
@@ -412,7 +440,10 @@ export {
   signatures,
   documentAuditTrail,
   campDocumentAgreements,
-  organizationMessages
+  organizationMessages,
+  permissionSets,
+  permissions,
+  userPermissions
 };
 
 export const predefinedSports = [

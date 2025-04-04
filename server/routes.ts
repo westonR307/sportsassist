@@ -3206,5 +3206,486 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  // ====== Permission Management Routes ======
+  
+  // Get all permission sets for an organization
+  app.get("/api/organizations/:organizationId/permissions/sets", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Only org owners (camp creators) can view permission sets
+      if (req.user.role !== "camp_creator") {
+        return res.status(403).json({ message: "Not authorized to view permission sets" });
+      }
+      
+      const organizationId = parseInt(req.params.organizationId);
+      
+      // Verify the user is part of this organization
+      if (req.user.organizationId !== organizationId) {
+        return res.status(403).json({ message: "Not authorized to view permission sets for this organization" });
+      }
+      
+      const permissionSets = await storage.getPermissionSetsByOrganization(organizationId);
+      res.json(permissionSets);
+    } catch (error: any) {
+      console.error("Error fetching permission sets:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch permission sets" });
+    }
+  });
+  
+  // Get a specific permission set
+  app.get("/api/permissions/sets/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const setId = parseInt(req.params.id);
+      const permissionSet = await storage.getPermissionSet(setId);
+      
+      if (!permissionSet) {
+        return res.status(404).json({ message: "Permission set not found" });
+      }
+      
+      // Verify the user is part of this organization
+      if (req.user.organizationId !== permissionSet.organizationId) {
+        return res.status(403).json({ message: "Not authorized to view this permission set" });
+      }
+      
+      // Get the associated permissions
+      const permissions = await storage.getPermissionsBySet(setId);
+      
+      res.json({
+        ...permissionSet,
+        permissions
+      });
+    } catch (error: any) {
+      console.error("Error fetching permission set:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch permission set" });
+    }
+  });
+  
+  // Create a new permission set
+  app.post("/api/organizations/:organizationId/permissions/sets", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Only org owners (camp creators) can create permission sets
+      if (req.user.role !== "camp_creator") {
+        return res.status(403).json({ message: "Not authorized to create permission sets" });
+      }
+      
+      const organizationId = parseInt(req.params.organizationId);
+      
+      // Verify the user is part of this organization
+      if (req.user.organizationId !== organizationId) {
+        return res.status(403).json({ message: "Not authorized to create permission sets for this organization" });
+      }
+      
+      // Validate required fields
+      if (!req.body.name) {
+        return res.status(400).json({ message: "Permission set name is required" });
+      }
+      
+      const newPermissionSet = await storage.createPermissionSet({
+        name: req.body.name,
+        description: req.body.description || null,
+        organizationId,
+        isDefault: req.body.isDefault || false,
+        defaultForRole: req.body.defaultForRole || null
+      });
+      
+      res.status(201).json(newPermissionSet);
+    } catch (error: any) {
+      console.error("Error creating permission set:", error);
+      res.status(500).json({ message: error.message || "Failed to create permission set" });
+    }
+  });
+  
+  // Update a permission set
+  app.put("/api/permissions/sets/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Only org owners (camp creators) can update permission sets
+      if (req.user.role !== "camp_creator") {
+        return res.status(403).json({ message: "Not authorized to update permission sets" });
+      }
+      
+      const setId = parseInt(req.params.id);
+      const permissionSet = await storage.getPermissionSet(setId);
+      
+      if (!permissionSet) {
+        return res.status(404).json({ message: "Permission set not found" });
+      }
+      
+      // Verify the user is part of this organization
+      if (req.user.organizationId !== permissionSet.organizationId) {
+        return res.status(403).json({ message: "Not authorized to update this permission set" });
+      }
+      
+      // Update the permission set
+      const updatedSet = await storage.updatePermissionSet(setId, {
+        name: req.body.name,
+        description: req.body.description,
+        isDefault: req.body.isDefault,
+        defaultForRole: req.body.defaultForRole
+      });
+      
+      res.json(updatedSet);
+    } catch (error: any) {
+      console.error("Error updating permission set:", error);
+      res.status(500).json({ message: error.message || "Failed to update permission set" });
+    }
+  });
+  
+  // Delete a permission set
+  app.delete("/api/permissions/sets/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Only org owners (camp creators) can delete permission sets
+      if (req.user.role !== "camp_creator") {
+        return res.status(403).json({ message: "Not authorized to delete permission sets" });
+      }
+      
+      const setId = parseInt(req.params.id);
+      const permissionSet = await storage.getPermissionSet(setId);
+      
+      if (!permissionSet) {
+        return res.status(404).json({ message: "Permission set not found" });
+      }
+      
+      // Verify the user is part of this organization
+      if (req.user.organizationId !== permissionSet.organizationId) {
+        return res.status(403).json({ message: "Not authorized to delete this permission set" });
+      }
+      
+      // Check if this is a default permission set for a role
+      if (permissionSet.isDefault && permissionSet.defaultForRole) {
+        return res.status(400).json({ 
+          message: `Cannot delete the default permission set for role "${permissionSet.defaultForRole}"`
+        });
+      }
+      
+      // Delete the permission set (should cascade delete permissions)
+      await storage.deletePermissionSet(setId);
+      
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting permission set:", error);
+      res.status(500).json({ message: error.message || "Failed to delete permission set" });
+    }
+  });
+  
+  // Add permissions to a permission set
+  app.post("/api/permissions/sets/:id/permissions", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Only org owners (camp creators) can add permissions
+      if (req.user.role !== "camp_creator") {
+        return res.status(403).json({ message: "Not authorized to add permissions" });
+      }
+      
+      const setId = parseInt(req.params.id);
+      const permissionSet = await storage.getPermissionSet(setId);
+      
+      if (!permissionSet) {
+        return res.status(404).json({ message: "Permission set not found" });
+      }
+      
+      // Verify the user is part of this organization
+      if (req.user.organizationId !== permissionSet.organizationId) {
+        return res.status(403).json({ message: "Not authorized to add permissions to this set" });
+      }
+      
+      // Validate required fields
+      if (!req.body.resource || !req.body.action) {
+        return res.status(400).json({ message: "Resource and action are required" });
+      }
+      
+      // Create the permission
+      const newPermission = await storage.createPermission({
+        permissionSetId: setId,
+        resource: req.body.resource,
+        action: req.body.action,
+        scope: req.body.scope || "organization",
+        allowed: req.body.allowed !== undefined ? req.body.allowed : true
+      });
+      
+      res.status(201).json(newPermission);
+    } catch (error: any) {
+      console.error("Error adding permission:", error);
+      res.status(500).json({ message: error.message || "Failed to add permission" });
+    }
+  });
+  
+  // Update a permission
+  app.put("/api/permissions/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Only org owners (camp creators) can update permissions
+      if (req.user.role !== "camp_creator") {
+        return res.status(403).json({ message: "Not authorized to update permissions" });
+      }
+      
+      const permissionId = parseInt(req.params.id);
+      
+      // Get the permission to verify ownership
+      const permissions = await storage.getPermissionsBySet(req.body.permissionSetId);
+      const permission = permissions.find(p => p.id === permissionId);
+      
+      if (!permission) {
+        return res.status(404).json({ message: "Permission not found" });
+      }
+      
+      // Get the permission set to check organization
+      const permissionSet = await storage.getPermissionSet(permission.permissionSetId);
+      
+      if (!permissionSet) {
+        return res.status(404).json({ message: "Permission set not found" });
+      }
+      
+      // Verify the user is part of this organization
+      if (req.user.organizationId !== permissionSet.organizationId) {
+        return res.status(403).json({ message: "Not authorized to update this permission" });
+      }
+      
+      // Update the permission
+      const updatedPermission = await storage.updatePermission(permissionId, {
+        resource: req.body.resource,
+        action: req.body.action,
+        scope: req.body.scope,
+        allowed: req.body.allowed
+      });
+      
+      res.json(updatedPermission);
+    } catch (error: any) {
+      console.error("Error updating permission:", error);
+      res.status(500).json({ message: error.message || "Failed to update permission" });
+    }
+  });
+  
+  // Delete a permission
+  app.delete("/api/permissions/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Only org owners (camp creators) can delete permissions
+      if (req.user.role !== "camp_creator") {
+        return res.status(403).json({ message: "Not authorized to delete permissions" });
+      }
+      
+      const permissionId = parseInt(req.params.id);
+      
+      // Get all permissions and find the one to be deleted
+      // This is not optimal but we need to find the permission set ID
+      const allPermissionSets = await storage.getPermissionSetsByOrganization(req.user.organizationId);
+      let foundPermission = null;
+      let permissionSetId = null;
+      
+      for (const set of allPermissionSets) {
+        const permissions = await storage.getPermissionsBySet(set.id);
+        const permission = permissions.find(p => p.id === permissionId);
+        if (permission) {
+          foundPermission = permission;
+          permissionSetId = set.id;
+          break;
+        }
+      }
+      
+      if (!foundPermission || !permissionSetId) {
+        return res.status(404).json({ message: "Permission not found" });
+      }
+      
+      // Delete the permission
+      await storage.deletePermission(permissionId);
+      
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting permission:", error);
+      res.status(500).json({ message: error.message || "Failed to delete permission" });
+    }
+  });
+  
+  // Assign permission set to user
+  app.post("/api/users/:userId/permissions", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Only org owners (camp creators) can assign permissions
+      if (req.user.role !== "camp_creator") {
+        return res.status(403).json({ message: "Not authorized to assign permissions" });
+      }
+      
+      const userId = parseInt(req.params.userId);
+      
+      // Make sure we have a permission set ID
+      if (!req.body.permissionSetId) {
+        return res.status(400).json({ message: "Permission set ID is required" });
+      }
+      
+      const permissionSetId = parseInt(req.body.permissionSetId);
+      
+      // Get the user to verify they're in the same organization
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (user.organizationId !== req.user.organizationId) {
+        return res.status(403).json({ message: "Not authorized to assign permissions to this user" });
+      }
+      
+      // Get the permission set to verify it's in the same organization
+      const permissionSet = await storage.getPermissionSet(permissionSetId);
+      if (!permissionSet) {
+        return res.status(404).json({ message: "Permission set not found" });
+      }
+      
+      if (permissionSet.organizationId !== req.user.organizationId) {
+        return res.status(403).json({ message: "Not authorized to assign this permission set" });
+      }
+      
+      // Assign the permission set to the user
+      const userPermission = await storage.assignPermissionSetToUser({
+        userId,
+        permissionSetId
+      });
+      
+      res.status(201).json(userPermission);
+    } catch (error: any) {
+      console.error("Error assigning permission set to user:", error);
+      res.status(500).json({ message: error.message || "Failed to assign permission set" });
+    }
+  });
+  
+  // Get user permissions
+  app.get("/api/users/:userId/permissions", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const userId = parseInt(req.params.userId);
+      
+      // Users can view their own permissions, admins can view anyone's
+      if (req.user.id !== userId && req.user.role !== "camp_creator") {
+        return res.status(403).json({ message: "Not authorized to view this user's permissions" });
+      }
+      
+      // If admin is viewing another user, make sure they're in the same org
+      if (req.user.id !== userId) {
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+        
+        if (user.organizationId !== req.user.organizationId) {
+          return res.status(403).json({ message: "Not authorized to view this user's permissions" });
+        }
+      }
+      
+      // Get the user's permission sets with associated permissions
+      const userPermissionSets = await storage.getUserPermissionSets(userId);
+      
+      // For each permission set, get the permissions
+      const result = await Promise.all(userPermissionSets.map(async (up) => {
+        const permissions = await storage.getPermissionsBySet(up.permissionSetId);
+        return {
+          ...up,
+          permissions
+        };
+      }));
+      
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error fetching user permissions:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch user permissions" });
+    }
+  });
+  
+  // Remove permission set from user
+  app.delete("/api/users/:userId/permissions/:permissionId", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Only org owners (camp creators) can remove permissions
+      if (req.user.role !== "camp_creator") {
+        return res.status(403).json({ message: "Not authorized to remove permissions" });
+      }
+      
+      const userId = parseInt(req.params.userId);
+      const permissionId = parseInt(req.params.permissionId);
+      
+      // Get the user to verify they're in the same organization
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (user.organizationId !== req.user.organizationId) {
+        return res.status(403).json({ message: "Not authorized to remove permissions from this user" });
+      }
+      
+      // Remove the permission from the user
+      await storage.removeUserPermission(permissionId);
+      
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error removing permission from user:", error);
+      res.status(500).json({ message: error.message || "Failed to remove permission" });
+    }
+  });
+  
+  // Check if user has a specific permission
+  app.get("/api/permissions/check", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Required query parameters
+      const { resource, action, scope = "organization" } = req.query;
+      
+      if (!resource || !action) {
+        return res.status(400).json({ message: "Resource and action are required query parameters" });
+      }
+      
+      // Check if the user has the requested permission
+      const hasPermission = await storage.checkUserPermission(
+        req.user.id,
+        resource as string,
+        action as string,
+        scope as string
+      );
+      
+      res.json({ hasPermission });
+    } catch (error: any) {
+      console.error("Error checking permission:", error);
+      res.status(500).json({ message: error.message || "Failed to check permission" });
+    }
+  });
+
   return createServer(app);
 }

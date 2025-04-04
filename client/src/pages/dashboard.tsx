@@ -15,6 +15,7 @@ import {
   Loader2,
   Menu,
   ShieldAlert,
+  ShieldCheck,
   MapPin,
   Clock,
   DollarSign,
@@ -250,6 +251,23 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
             >
               <Users2 className="h-5 w-5 flex-shrink-0" />
               <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Organization Profile</span>
+            </button>
+          ) : null}
+          
+          {/* Permission Management Link - Only visible to camp creators */}
+          {user?.role === "camp_creator" ? (
+            <button
+              onClick={() => {
+                navigate("/dashboard/permissions");
+                // Close sidebar on mobile after navigation
+                if (window.innerWidth < 1024) setSidebarOpen(false);
+              }}
+              className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
+                wouterLocation === "/dashboard/permissions" ? "bg-gray-100" : ""
+              }`}
+            >
+              <ShieldCheck className="h-5 w-5 flex-shrink-0" />
+              <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Permissions</span>
             </button>
           ) : null}
           <Button

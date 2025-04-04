@@ -24,6 +24,9 @@ import {
   documentAuditTrail,
   campDocumentAgreements,
   organizationMessages,
+  permissionSets,
+  permissions,
+  userPermissions,
   type User,
   type InsertUser,
   type Organization,
@@ -65,6 +68,12 @@ import {
   type InsertDocumentAuditTrail,
   type CampDocumentAgreement,
   type InsertCampDocumentAgreement,
+  type PermissionSet,
+  type InsertPermissionSet,
+  type Permission,
+  type InsertPermission,
+  type UserPermission,
+  type InsertUserPermission,
   insertCampSchema,
   sports
 } from "@shared/schema";
@@ -229,6 +238,28 @@ export interface IStorage {
   getOrganizationMessages(organizationId: number): Promise<OrganizationMessage[]>;
   getUnreadOrganizationMessages(organizationId: number): Promise<OrganizationMessage[]>;
   markMessageAsRead(messageId: number): Promise<OrganizationMessage>;
+  
+  // Permission management methods
+  createPermissionSet(permissionSet: InsertPermissionSet): Promise<PermissionSet>;
+  getPermissionSet(id: number): Promise<PermissionSet | undefined>;
+  getPermissionSetsByOrganization(organizationId: number): Promise<PermissionSet[]>;
+  getDefaultPermissionSetForRole(organizationId: number, role: Role): Promise<PermissionSet | undefined>;
+  updatePermissionSet(id: number, data: Partial<Omit<PermissionSet, "id" | "createdAt" | "updatedAt">>): Promise<PermissionSet>;
+  deletePermissionSet(id: number): Promise<void>;
+  
+  // Permission methods
+  createPermission(permission: InsertPermission): Promise<Permission>;
+  getPermissionsBySet(permissionSetId: number): Promise<Permission[]>;
+  updatePermission(id: number, data: Partial<Omit<Permission, "id">>): Promise<Permission>;
+  deletePermission(id: number): Promise<void>;
+  
+  // User permission assignment methods
+  assignPermissionSetToUser(userPermission: InsertUserPermission): Promise<UserPermission>;
+  getUserPermissionSets(userId: number): Promise<(UserPermission & { permissionSet: PermissionSet })[]>;
+  removeUserPermission(id: number): Promise<void>;
+  
+  // Permission checking methods
+  checkUserPermission(userId: number, resource: string, action: string, scope?: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2837,6 +2868,265 @@ export class DatabaseStorage implements IStorage {
     } catch (error: any) {
       console.error(`Error marking message ${messageId} as read:`, error);
       throw new Error(`Failed to mark message as read: ${error.message}`);
+    }
+  }
+
+  // Permission Set methods
+  async createPermissionSet(permissionSet: InsertPermissionSet): Promise<PermissionSet> {
+    try {
+      console.log("Creating permission set:", permissionSet);
+      
+      const [newPermissionSet] = await db.insert(permissionSets).values({
+        name: permissionSet.name,
+        description: permissionSet.description,
+        organizationId: permissionSet.organizationId,
+        isDefault: permissionSet.isDefault || false,
+        defaultForRole: permissionSet.defaultForRole || null,
+      }).returning();
+      
+      console.log("Created permission set:", newPermissionSet);
+      return newPermissionSet;
+    } catch (error: any) {
+      console.error("Error creating permission set:", error);
+      throw new Error(`Failed to create permission set: ${error.message}`);
+    }
+  }
+  
+  async getPermissionSet(id: number): Promise<PermissionSet | undefined> {
+    try {
+      const [permissionSet] = await db.select().from(permissionSets).where(eq(permissionSets.id, id));
+      return permissionSet;
+    } catch (error: any) {
+      console.error(`Error getting permission set ${id}:`, error);
+      throw new Error(`Failed to get permission set: ${error.message}`);
+    }
+  }
+  
+  async getPermissionSetsByOrganization(organizationId: number): Promise<PermissionSet[]> {
+    try {
+      return await db.select().from(permissionSets).where(eq(permissionSets.organizationId, organizationId));
+    } catch (error: any) {
+      console.error(`Error getting permission sets for organization ${organizationId}:`, error);
+      throw new Error(`Failed to get permission sets: ${error.message}`);
+    }
+  }
+  
+  async getDefaultPermissionSetForRole(organizationId: number, role: Role): Promise<PermissionSet | undefined> {
+    try {
+      const [permissionSet] = await db.select().from(permissionSets)
+        .where(and(
+          eq(permissionSets.organizationId, organizationId),
+          eq(permissionSets.defaultForRole, role),
+          eq(permissionSets.isDefault, true)
+        ));
+      return permissionSet;
+    } catch (error: any) {
+      console.error(`Error getting default permission set for role ${role}:`, error);
+      throw new Error(`Failed to get default permission set: ${error.message}`);
+    }
+  }
+  
+  async updatePermissionSet(id: number, data: Partial<Omit<PermissionSet, "id" | "createdAt" | "updatedAt">>): Promise<PermissionSet> {
+    try {
+      console.log(`Updating permission set ${id} with data:`, data);
+      
+      const [updatedPermissionSet] = await db.update(permissionSets)
+        .set({
+          ...data,
+          updatedAt: new Date()
+        })
+        .where(eq(permissionSets.id, id))
+        .returning();
+      
+      return updatedPermissionSet;
+    } catch (error: any) {
+      console.error(`Error updating permission set ${id}:`, error);
+      throw new Error(`Failed to update permission set: ${error.message}`);
+    }
+  }
+  
+  async deletePermissionSet(id: number): Promise<void> {
+    try {
+      // This should cascade delete all associated permissions and user assignments
+      await db.delete(permissionSets).where(eq(permissionSets.id, id));
+    } catch (error: any) {
+      console.error(`Error deleting permission set ${id}:`, error);
+      throw new Error(`Failed to delete permission set: ${error.message}`);
+    }
+  }
+  
+  // Permission methods
+  async createPermission(permission: InsertPermission): Promise<Permission> {
+    try {
+      console.log("Creating permission:", permission);
+      
+      const [newPermission] = await db.insert(permissions).values({
+        permissionSetId: permission.permissionSetId,
+        resource: permission.resource,
+        action: permission.action,
+        scope: permission.scope || "organization",
+        allowed: permission.allowed
+      }).returning();
+      
+      return newPermission;
+    } catch (error: any) {
+      console.error("Error creating permission:", error);
+      throw new Error(`Failed to create permission: ${error.message}`);
+    }
+  }
+  
+  async getPermissionsBySet(permissionSetId: number): Promise<Permission[]> {
+    try {
+      return await db.select().from(permissions).where(eq(permissions.permissionSetId, permissionSetId));
+    } catch (error: any) {
+      console.error(`Error getting permissions for set ${permissionSetId}:`, error);
+      throw new Error(`Failed to get permissions: ${error.message}`);
+    }
+  }
+  
+  async updatePermission(id: number, data: Partial<Omit<Permission, "id">>): Promise<Permission> {
+    try {
+      console.log(`Updating permission ${id} with data:`, data);
+      
+      const [updatedPermission] = await db.update(permissions)
+        .set(data)
+        .where(eq(permissions.id, id))
+        .returning();
+      
+      return updatedPermission;
+    } catch (error: any) {
+      console.error(`Error updating permission ${id}:`, error);
+      throw new Error(`Failed to update permission: ${error.message}`);
+    }
+  }
+  
+  async deletePermission(id: number): Promise<void> {
+    try {
+      await db.delete(permissions).where(eq(permissions.id, id));
+    } catch (error: any) {
+      console.error(`Error deleting permission ${id}:`, error);
+      throw new Error(`Failed to delete permission: ${error.message}`);
+    }
+  }
+  
+  // User permission assignment methods
+  async assignPermissionSetToUser(userPermission: InsertUserPermission): Promise<UserPermission> {
+    try {
+      console.log("Assigning permission set to user:", userPermission);
+      
+      const [newUserPermission] = await db.insert(userPermissions).values({
+        userId: userPermission.userId,
+        permissionSetId: userPermission.permissionSetId
+      }).returning();
+      
+      return newUserPermission;
+    } catch (error: any) {
+      console.error("Error assigning permission set to user:", error);
+      throw new Error(`Failed to assign permission set: ${error.message}`);
+    }
+  }
+  
+  async getUserPermissionSets(userId: number): Promise<(UserPermission & { permissionSet: PermissionSet })[]> {
+    try {
+      // Get all user permission assignments
+      const userPerms = await db.select().from(userPermissions).where(eq(userPermissions.userId, userId));
+      
+      // For each assignment, fetch the associated permission set
+      const result = await Promise.all(userPerms.map(async (up) => {
+        const [permSet] = await db.select().from(permissionSets).where(eq(permissionSets.id, up.permissionSetId));
+        return {
+          ...up,
+          permissionSet: permSet
+        };
+      }));
+      
+      return result;
+    } catch (error: any) {
+      console.error(`Error getting permission sets for user ${userId}:`, error);
+      throw new Error(`Failed to get user permission sets: ${error.message}`);
+    }
+  }
+  
+  async removeUserPermission(id: number): Promise<void> {
+    try {
+      await db.delete(userPermissions).where(eq(userPermissions.id, id));
+    } catch (error: any) {
+      console.error(`Error removing user permission ${id}:`, error);
+      throw new Error(`Failed to remove user permission: ${error.message}`);
+    }
+  }
+  
+  // Permission checking
+  async checkUserPermission(userId: number, resource: string, action: string, scope: string = "organization"): Promise<boolean> {
+    try {
+      // First, get the user to determine their role
+      const user = await this.getUser(userId);
+      if (!user) {
+        console.log(`User ${userId} not found when checking permissions`);
+        return false;
+      }
+      
+      console.log(`Checking permission for user ${userId} (${user.role}): ${resource}.${action} in scope ${scope}`);
+      
+      // 1. First check if the user has any specific permission sets assigned
+      const userPermSets = await this.getUserPermissionSets(userId);
+      
+      // If the user has assigned permission sets, check them first
+      if (userPermSets.length > 0) {
+        console.log(`User ${userId} has ${userPermSets.length} assigned permission sets`);
+        
+        // For each permission set, check if it grants the requested permission
+        for (const userPermSet of userPermSets) {
+          const perms = await this.getPermissionsBySet(userPermSet.permissionSetId);
+          
+          // Find if any permissions match the resource, action, and scope
+          const matchingPerm = perms.find(p => 
+            p.resource === resource && 
+            p.action === action && 
+            (p.scope === scope || p.scope === "organization") // Organization scope is a superset of camp scope
+          );
+          
+          if (matchingPerm && matchingPerm.allowed) {
+            console.log(`User has explicit permission granted through set ${userPermSet.permissionSetId}`);
+            return true;
+          }
+        }
+      }
+      
+      // 2. If no explicit permission found, fall back to role-based permissions
+      if (user.organizationId) {
+        const defaultRolePermSet = await this.getDefaultPermissionSetForRole(user.organizationId, user.role);
+        
+        if (defaultRolePermSet) {
+          console.log(`Checking default permissions for role ${user.role}`);
+          
+          const rolePerms = await this.getPermissionsBySet(defaultRolePermSet.id);
+          
+          // Find if any permissions match the resource, action, and scope
+          const matchingPerm = rolePerms.find(p => 
+            p.resource === resource && 
+            p.action === action && 
+            (p.scope === scope || p.scope === "organization")
+          );
+          
+          if (matchingPerm && matchingPerm.allowed) {
+            console.log(`User has permission granted through role ${user.role}`);
+            return true;
+          }
+        }
+      }
+      
+      // 3. Special case: camp_creator role has all permissions
+      if (user.role === "camp_creator") {
+        console.log(`User is a camp_creator, granting permission by default`);
+        return true;
+      }
+      
+      console.log(`Permission denied for user ${userId}: ${resource}.${action}`);
+      return false;
+    } catch (error: any) {
+      console.error(`Error checking permission for user ${userId}:`, error);
+      throw new Error(`Failed to check permission: ${error.message}`);
     }
   }
 }

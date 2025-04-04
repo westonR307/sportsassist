@@ -9,6 +9,32 @@ export type RecurrencePattern = "all_days" | "weekdays" | "weekends" | "specific
 export type StaffRole = "manager" | "coach" | "volunteer";
 export type CampStatus = "active" | "cancelled" | "deleted";
 
+// Permission system types
+export type ResourceType = 
+  "camps" | 
+  "athletes" | 
+  "team" | 
+  "documents" | 
+  "settings" | 
+  "reports" | 
+  "communications" | 
+  "registrations" | 
+  "sessions" |
+  "schedules" |
+  "custom_fields";
+
+export type PermissionAction = 
+  "view" | 
+  "create" | 
+  "edit" | 
+  "delete" | 
+  "approve" | 
+  "assign" | 
+  "message";
+
+// Permission application scope
+export type PermissionScope = "organization" | "camp" | "self";
+
 // Custom registration field types
 export type FieldType = "short_text" | "long_text" | "dropdown" | "single_select" | "multi_select";
 

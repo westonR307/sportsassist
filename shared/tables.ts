@@ -7,7 +7,8 @@ import {
   type CampStatus, type RecurrencePattern,
   type DocumentType, type DocumentStatus, 
   type SignatureStatus, type SignatureFieldType,
-  type DynamicFieldSource, type AuditAction
+  type DynamicFieldSource, type AuditAction,
+  type ResourceType, type PermissionAction, type PermissionScope
 } from "./types";
 
 // Define the table structure for the new enhanced camp session scheduling
@@ -375,6 +376,39 @@ export const organizationMessages = pgTable("organization_messages", {
   senderEmail: text("sender_email"),
   content: text("content").notNull(),
   isRead: boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Permission management tables
+
+// Permission sets define named groups of permissions
+export const permissionSets = pgTable("permission_sets", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
+  isDefault: boolean("is_default").default(false),
+  defaultForRole: text("default_for_role").$type<Role>(), // If this set is the default for a role
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Permissions define specific resource-action pairs
+export const permissions = pgTable("permissions", {
+  id: serial("id").primaryKey(),
+  permissionSetId: integer("permission_set_id").references(() => permissionSets.id).notNull(),
+  resource: text("resource").$type<ResourceType>().notNull(),
+  action: text("action").$type<PermissionAction>().notNull(),
+  scope: text("scope").$type<PermissionScope>().default("organization").notNull(),
+  allowed: boolean("allowed").default(false).notNull(),
+});
+
+// User permission assignments link users to permission sets
+export const userPermissions = pgTable("user_permissions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  permissionSetId: integer("permission_set_id").references(() => permissionSets.id).notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
