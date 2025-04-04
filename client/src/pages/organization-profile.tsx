@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
@@ -109,38 +109,44 @@ export default function OrganizationProfilePage() {
   const form = useForm<OrganizationProfileData>({
     resolver: zodResolver(organizationProfileSchema),
     defaultValues: {
-      name: organization?.name || '',
-      displayName: organization?.displayName || '',
-      description: organization?.description || '',
-      primaryColor: organization?.primaryColor || '#3730a3',
-      secondaryColor: organization?.secondaryColor || '#1e3a8a',
-      aboutText: organization?.aboutText || '',
-      contactEmail: organization?.contactEmail || '',
-      websiteUrl: organization?.websiteUrl || '',
+      name: '',
+      displayName: '',
+      description: '',
+      primaryColor: '#3730a3',
+      secondaryColor: '#1e3a8a',
+      aboutText: '',
+      contactEmail: '',
+      websiteUrl: '',
       socialLinks: {
-        facebook: organization?.socialLinks?.facebook || '',
-        twitter: organization?.socialLinks?.twitter || '',
-        linkedin: organization?.socialLinks?.linkedin || '',
-        instagram: organization?.socialLinks?.instagram || '',
-      }
-    },
-    values: {
-      name: organization?.name || '',
-      displayName: organization?.displayName || '',
-      description: organization?.description || '',
-      primaryColor: organization?.primaryColor || '#3730a3',
-      secondaryColor: organization?.secondaryColor || '#1e3a8a',
-      aboutText: organization?.aboutText || '',
-      contactEmail: organization?.contactEmail || '',
-      websiteUrl: organization?.websiteUrl || '',
-      socialLinks: {
-        facebook: organization?.socialLinks?.facebook || '',
-        twitter: organization?.socialLinks?.twitter || '',
-        linkedin: organization?.socialLinks?.linkedin || '',
-        instagram: organization?.socialLinks?.instagram || '',
+        facebook: '',
+        twitter: '',
+        linkedin: '',
+        instagram: '',
       }
     }
   });
+  
+  // Update form values when organization data loads or changes
+  useEffect(() => {
+    if (organization) {
+      form.reset({
+        name: organization.name || '',
+        displayName: organization.displayName || '',
+        description: organization.description || '',
+        primaryColor: organization.primaryColor || '#3730a3',
+        secondaryColor: organization.secondaryColor || '#1e3a8a',
+        aboutText: organization.aboutText || '',
+        contactEmail: organization.contactEmail || '',
+        websiteUrl: organization.websiteUrl || '',
+        socialLinks: {
+          facebook: organization.socialLinks?.facebook || '',
+          twitter: organization.socialLinks?.twitter || '',
+          linkedin: organization.socialLinks?.linkedin || '',
+          instagram: organization.socialLinks?.instagram || '',
+        }
+      });
+    }
+  }, [organization, form]);
 
   // Mutation to update organization profile
   const updateProfileMutation = useMutation({
@@ -148,11 +154,24 @@ export default function OrganizationProfilePage() {
       if (!user?.organizationId) {
         throw new Error('No organization associated with this user');
       }
-      // Use apiRequest with options in the second parameter
-      return apiRequest(`/api/organizations/${user.organizationId}/profile`, 
-        'PATCH',
-        data
-      );
+      console.log('Submitting organization profile data:', data);
+      
+      // Make a direct fetch call to avoid format issues with apiRequest
+      const response = await fetch(`/api/organizations/${user.organizationId}/profile`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data),
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`${response.status}: ${errorText}`);
+      }
+      
+      return await response.json();
     },
     onSuccess: () => {
       if (user?.organizationId) {
