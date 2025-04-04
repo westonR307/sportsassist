@@ -31,7 +31,9 @@ import {
   Instagram,
   Check,
   X,
-  Loader2
+  Loader2,
+  RotateCcw,
+  Save
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
@@ -485,26 +487,7 @@ export default function OrganizationProfilePage() {
                     )}
                   />
                 </CardContent>
-                <div className="p-6 pt-0 flex justify-end">
-                  <Button 
-                    type="button"
-                    onClick={() => onSubmit(form.getValues())}
-                    disabled={updateProfileMutation.isPending}
-                    className="w-full sm:w-auto"
-                  >
-                    {updateProfileMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Check className="mr-2 h-4 w-4" />
-                        Save Basic Info
-                      </>
-                    )}
-                  </Button>
-                </div>
+
               </Card>
             </TabsContent>
 
@@ -638,26 +621,7 @@ export default function OrganizationProfilePage() {
                     </div>
                   </div>
                 </CardContent>
-                <div className="p-6 pt-0 flex justify-end">
-                  <Button 
-                    type="button"
-                    onClick={() => onSubmit(form.getValues())}
-                    disabled={updateProfileMutation.isPending}
-                    className="w-full sm:w-auto"
-                  >
-                    {updateProfileMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Check className="mr-2 h-4 w-4" />
-                        Save Branding
-                      </>
-                    )}
-                  </Button>
-                </div>
+
               </Card>
             </TabsContent>
 
@@ -692,26 +656,7 @@ export default function OrganizationProfilePage() {
                     )}
                   />
                 </CardContent>
-                <div className="p-6 pt-0 flex justify-end">
-                  <Button 
-                    type="button"
-                    onClick={() => onSubmit(form.getValues())}
-                    disabled={updateProfileMutation.isPending}
-                    className="w-full sm:w-auto"
-                  >
-                    {updateProfileMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Check className="mr-2 h-4 w-4" />
-                        Save About Section
-                      </>
-                    )}
-                  </Button>
-                </div>
+
               </Card>
             </TabsContent>
 
@@ -859,51 +804,36 @@ export default function OrganizationProfilePage() {
                     </div>
                   </div>
                 </CardContent>
-                <div className="p-6 pt-0 flex justify-end">
-                  <Button 
-                    type="button"
-                    onClick={() => onSubmit(form.getValues())}
-                    disabled={updateProfileMutation.isPending}
-                    className="w-full sm:w-auto"
-                  >
-                    {updateProfileMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Check className="mr-2 h-4 w-4" />
-                        Save Contact Info
-                      </>
-                    )}
-                  </Button>
-                </div>
+
               </Card>
             </TabsContent>
 
-            <div className="flex justify-end gap-4">
+            <div className="mt-8 flex flex-col sm:flex-row sm:justify-end gap-4">
               <Button 
                 type="button" 
                 variant="outline" 
                 disabled={updateProfileMutation.isPending}
                 onClick={() => form.reset()}
+                className="w-full sm:w-auto order-2 sm:order-1"
               >
-                Reset
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Reset All Changes
               </Button>
               <Button 
                 type="submit" 
                 disabled={updateProfileMutation.isPending || !form.formState.isDirty}
+                className="w-full sm:w-auto order-1 sm:order-2"
+                size="lg"
               >
                 {updateProfileMutation.isPending ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Saving Profile...
                   </>
                 ) : (
                   <>
-                    <Check className="mr-2 h-4 w-4" />
-                    Save Changes
+                    <Save className="mr-2 h-5 w-5" />
+                    Save Organization Profile
                   </>
                 )}
               </Button>
