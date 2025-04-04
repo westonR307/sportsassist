@@ -886,7 +886,8 @@ export function AddCampDialog({
                         <h3 className="text-lg font-medium">Additional Information</h3>
                         <p className="text-sm text-muted-foreground mt-1">
                           Add custom fields to provide more details about your camp.
-                          Custom fields will be automatically saved when you create the camp.
+                          Click "Save Fields" after adding your custom fields to save them temporarily. 
+                          They will be permanently attached to your camp when you create it.
                         </p>
                       </div>
                     </div>
@@ -894,9 +895,8 @@ export function AddCampDialog({
                       <BasicInfoMetaFields
                         ref={metaFieldsRef}
                         organizationId={user.organizationId}
-                        // Don't show the save button in creation mode because there's no campId yet
-                        // Fields will be saved after camp creation in the onSuccess handler
-                        showSaveButton={false}
+                        // Show the save button exactly like in edit camp dialog
+                        showSaveButton={true}
                       />
                     )}
                   </div>
