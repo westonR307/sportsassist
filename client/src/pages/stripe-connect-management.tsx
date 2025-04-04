@@ -19,6 +19,7 @@ const StripeConnectManagement = () => {
   const [feePassthrough, setFeePassthrough] = useState(false);
   const [platformFeePercent, setPlatformFeePercent] = useState("15");
   const [stripeApiKeyError, setStripeApiKeyError] = useState(false);
+  const [stripeApiKey, setStripeApiKey] = useState('');
 
   // Get the user's organization ID
   const { data: user, isLoading: userLoading } = useQuery({
@@ -169,8 +170,7 @@ const StripeConnectManagement = () => {
     </div>;
   }
 
-  // State for API key input
-  const [stripeApiKey, setStripeApiKey] = useState('');
+  // Submit API key function
 
   const submitStripeApiKey = async () => {
     if (!stripeApiKey.trim()) return;
