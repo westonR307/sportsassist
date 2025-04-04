@@ -716,9 +716,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async listOrganizationInvitations(organizationId: number): Promise<Invitation[]> {
+    // Also filter out invitations that have expired
+    const now = new Date();
     return await db.select()
       .from(invitations)
-      .where(eq(invitations.organizationId, organizationId));
+      .where(and(
+        eq(invitations.organizationId, organizationId),
+        gt(invitations.expiresAt, now) // Only return non-expired invitations
+      ));
   }
   
   async deleteInvitation(invitationId: number, organizationId: number): Promise<Invitation | undefined> {
