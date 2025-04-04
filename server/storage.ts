@@ -74,6 +74,7 @@ import { eq, sql, and, or, gte, lte, inArray, desc, gt, ne, isNull, count } from
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
+import { hashPassword } from "./utils";
 
 const PostgresSessionStore = connectPg(session);
 
@@ -736,7 +737,7 @@ export class DatabaseStorage implements IStorage {
     return invitation;
   }
   
-  async acceptInvitationWithNames(token: string, firstName: string, lastName: string): Promise<Invitation> {
+  async acceptInvitationWithNames(token: string, firstName: string, lastName: string, password?: string): Promise<{ invitation: Invitation, user: any }> {
     // First find the invitation to get email
     const [invitationRecord] = await db.select()
       .from(invitations)
@@ -744,6 +745,12 @@ export class DatabaseStorage implements IStorage {
       
     if (!invitationRecord) {
       throw new Error("Invitation not found");
+    }
+
+    // Prepare password hash if provided
+    let hashedPassword = '';
+    if (password) {
+      hashedPassword = await hashPassword(password);
     }
     
     // Start a transaction to update the invitation and create or update the user
@@ -758,6 +765,8 @@ export class DatabaseStorage implements IStorage {
       const [existingUser] = await tx.select()
         .from(users)
         .where(eq(users.email, invitationRecord.email));
+      
+      let user;
         
       if (existingUser) {
         // If user exists, update the first and last name if they are empty
@@ -771,6 +780,7 @@ export class DatabaseStorage implements IStorage {
             })
             .where(eq(users.id, existingUser.id));
         }
+        user = existingUser;
       } else {
         // If user doesn't exist, create a new user
         console.log("Creating new user from invitation:", {
@@ -785,24 +795,25 @@ export class DatabaseStorage implements IStorage {
         const emailParts = invitationRecord.email.split('@');
         const username = emailParts[0];
         
-        // Insert the new user - we'll let them set their password on first login
-        await tx.insert(users).values({
+        // Insert the new user with the password if provided
+        const [newUser] = await tx.insert(users).values({
           username,
           email: invitationRecord.email,
-          password: '', // Empty password that they'll need to set on first login
-          passwordHash: '', // Empty password hash that they'll need to set on first login
+          password: password || '', 
+          passwordHash: hashedPassword, 
           role: invitationRecord.role,
           organizationId: invitationRecord.organizationId,
           first_name: firstName,
           last_name: lastName,
           createdAt: new Date(),
           updatedAt: new Date()
-        });
+        }).returning();
         
         console.log(`New user created with username derived from email: ${username}`);
+        user = newUser;
       }
       
-      return updatedInvitation;
+      return { invitation: updatedInvitation, user };
     });
   }
 

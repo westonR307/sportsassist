@@ -659,15 +659,54 @@ export async function registerRoutes(app: Express) {
     }
 
     // Validate first name and last name
-    const { firstName, lastName } = req.body;
+    const { firstName, lastName, password } = req.body;
     if (!firstName || !lastName) {
       return res.status(400).json({ message: "First name and last name are required" });
     }
 
+    if (!password) {
+      return res.status(400).json({ message: "Password is required" });
+    }
+
     try {
-      // Accept invitation with the first name and last name
-      await storage.acceptInvitationWithNames(req.params.token, firstName, lastName);
-      res.json({ message: "Invitation accepted" });
+      // Accept invitation with the first name, last name, and password
+      const result = await storage.acceptInvitationWithNames(req.params.token, firstName, lastName, password);
+      
+      // If we have a valid user, log them in automatically
+      if (result.user) {
+        // Log the user in by creating a session
+        req.login(result.user, (err) => {
+          if (err) {
+            console.error("Error during automatic login:", err);
+            return res.status(200).json({ 
+              message: "Invitation accepted, but automatic login failed. Please log in manually.",
+              autoLoginSuccess: false
+            });
+          }
+          
+          console.log("Automatic login successful for new user:", {
+            id: result.user.id,
+            username: result.user.username,
+            role: result.user.role
+          });
+          
+          return res.status(200).json({ 
+            message: "Invitation accepted and logged in successfully",
+            autoLoginSuccess: true,
+            user: {
+              id: result.user.id,
+              username: result.user.username,
+              email: result.user.email,
+              first_name: result.user.first_name,
+              last_name: result.user.last_name,
+              role: result.user.role,
+              organizationId: result.user.organizationId
+            }
+          });
+        });
+      } else {
+        res.json({ message: "Invitation accepted", autoLoginSuccess: false });
+      }
     } catch (error) {
       console.error("Invitation acceptance error:", error);
       res.status(500).json({ message: "Failed to accept invitation" });

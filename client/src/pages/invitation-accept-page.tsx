@@ -10,6 +10,7 @@ import { z } from "zod";
 import { Loader2, Check, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/api";
+import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 
 // Schema for the invitation data from the server
@@ -88,8 +89,8 @@ export default function InvitationAcceptPage() {
     if (!token) return;
     
     try {
-      // Make API call to accept invitation with names
-      await apiRequest("POST", `/api/invitations/${token}/accept`, {
+      // Make API call to accept invitation with names and password
+      const response = await apiRequest("POST", `/api/invitations/${token}/accept`, {
         firstName: data.firstName,
         lastName: data.lastName,
         password: data.password,
@@ -103,26 +104,39 @@ export default function InvitationAcceptPage() {
       
       setAcceptSuccess(true);
       
-      // Auto login after 2 seconds
-      setTimeout(() => {
-        if (invitationData?.email) {
-          loginMutation.mutate({
-            email: invitationData.email,
-            password: data.password,
-          }, {
-            onSuccess: () => {
-              setLocation("/dashboard");
-            },
-            onError: (error) => {
-              console.error("Auto-login failed:", error);
-              // Still redirect to login page if auto-login fails
-              setLocation("/auth");
-            }
-          });
-        } else {
-          setLocation("/auth");
-        }
-      }, 2000);
+      // Check if auto-login was successful on the backend
+      if (response.autoLoginSuccess) {
+        console.log("Auto-login successful from the backend");
+        // User was automatically logged in by the server, update the client
+        queryClient.setQueryData(["/api/user"], response.user);
+        
+        // Redirect to dashboard after a brief delay to show success message
+        setTimeout(() => {
+          setLocation("/dashboard");
+        }, 2000);
+      } else {
+        // If server-side auto-login failed, try client-side login
+        console.log("Server auto-login not successful, trying client-side login");
+        setTimeout(() => {
+          if (invitationData?.email) {
+            loginMutation.mutate({
+              email: invitationData.email,
+              password: data.password,
+            }, {
+              onSuccess: () => {
+                setLocation("/dashboard");
+              },
+              onError: (error) => {
+                console.error("Auto-login failed:", error);
+                // Still redirect to login page if auto-login fails
+                setLocation("/auth");
+              }
+            });
+          } else {
+            setLocation("/auth");
+          }
+        }, 2000);
+      }
       
     } catch (error) {
       console.error("Failed to accept invitation:", error);
