@@ -1,4 +1,4 @@
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 
 // Types
 export interface PermissionSet {
@@ -34,53 +34,87 @@ export interface UserPermission {
 
 // Get all permission sets for an organization
 export const getPermissionSets = async (organizationId: number): Promise<PermissionSet[]> => {
-  const response = await apiRequest(`/api/organizations/${organizationId}/permissions/sets`, {
-    method: 'GET'
+  const response = await fetch(`/api/organizations/${organizationId}/permissions/sets`, {
+    method: 'GET',
+    credentials: 'include'
   });
   
-  return response;
+  if (!response.ok) {
+    throw new Error('Failed to fetch permission sets');
+  }
+  
+  return await response.json();
 };
 
 // Get a specific permission set with its permissions
 export const getPermissionSet = async (id: number): Promise<PermissionSet> => {
-  const response = await apiRequest(`/api/permissions/sets/${id}`, {
-    method: 'GET'
+  const response = await fetch(`/api/permissions/sets/${id}`, {
+    method: 'GET',
+    credentials: 'include'
   });
   
-  return response;
+  if (!response.ok) {
+    throw new Error('Failed to fetch permission set');
+  }
+  
+  return await response.json();
 };
 
 // Create a new permission set
 export const createPermissionSet = async (organizationId: number, data: Partial<PermissionSet>): Promise<PermissionSet> => {
-  const response = await apiRequest(`/api/organizations/${organizationId}/permissions/sets`, {
+  const response = await fetch(`/api/organizations/${organizationId}/permissions/sets`, {
     method: 'POST',
-    body: JSON.stringify(data)
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data),
+    credentials: 'include'
   });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Failed to create permission set');
+  }
   
   // Invalidate cache
   queryClient.invalidateQueries({ queryKey: [`/api/organizations/${organizationId}/permissions/sets`] });
   
-  return response;
+  return await response.json();
 };
 
 // Update a permission set
 export const updatePermissionSet = async (id: number, data: Partial<PermissionSet>): Promise<PermissionSet> => {
-  const response = await apiRequest(`/api/permissions/sets/${id}`, {
+  const response = await fetch(`/api/permissions/sets/${id}`, {
     method: 'PUT',
-    body: JSON.stringify(data)
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data),
+    credentials: 'include'
   });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Failed to update permission set');
+  }
   
   // Invalidate cache
   queryClient.invalidateQueries({ queryKey: [`/api/permissions/sets/${id}`] });
   
-  return response;
+  return await response.json();
 };
 
 // Delete a permission set
 export const deletePermissionSet = async (id: number, organizationId: number): Promise<void> => {
-  await apiRequest(`/api/permissions/sets/${id}`, {
-    method: 'DELETE'
+  const response = await fetch(`/api/permissions/sets/${id}`, {
+    method: 'DELETE',
+    credentials: 'include'
   });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Failed to delete permission set');
+  }
   
   // Invalidate cache
   queryClient.invalidateQueries({ queryKey: [`/api/organizations/${organizationId}/permissions/sets`] });
@@ -88,38 +122,62 @@ export const deletePermissionSet = async (id: number, organizationId: number): P
 
 // Add a permission to a permission set
 export const addPermission = async (permissionSetId: number, data: Partial<Permission>): Promise<Permission> => {
-  const response = await apiRequest(`/api/permissions/sets/${permissionSetId}/permissions`, {
+  const response = await fetch(`/api/permissions/sets/${permissionSetId}/permissions`, {
     method: 'POST',
-    body: JSON.stringify(data)
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data),
+    credentials: 'include'
   });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Failed to add permission');
+  }
   
   // Invalidate cache
   queryClient.invalidateQueries({ queryKey: [`/api/permissions/sets/${permissionSetId}`] });
   
-  return response;
+  return await response.json();
 };
 
 // Update a permission
 export const updatePermission = async (id: number, permissionSetId: number, data: Partial<Permission>): Promise<Permission> => {
-  const response = await apiRequest(`/api/permissions/${id}`, {
+  const response = await fetch(`/api/permissions/${id}`, {
     method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify({
       ...data,
       permissionSetId
-    })
+    }),
+    credentials: 'include'
   });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Failed to update permission');
+  }
   
   // Invalidate cache
   queryClient.invalidateQueries({ queryKey: [`/api/permissions/sets/${permissionSetId}`] });
   
-  return response;
+  return await response.json();
 };
 
 // Delete a permission
 export const deletePermission = async (id: number, permissionSetId: number): Promise<void> => {
-  await apiRequest(`/api/permissions/${id}`, {
-    method: 'DELETE'
+  const response = await fetch(`/api/permissions/${id}`, {
+    method: 'DELETE',
+    credentials: 'include'
   });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Failed to delete permission');
+  }
   
   // Invalidate cache
   queryClient.invalidateQueries({ queryKey: [`/api/permissions/sets/${permissionSetId}`] });
@@ -127,31 +185,52 @@ export const deletePermission = async (id: number, permissionSetId: number): Pro
 
 // Get user permissions
 export const getUserPermissions = async (userId: number): Promise<UserPermission[]> => {
-  const response = await apiRequest(`/api/users/${userId}/permissions`, {
-    method: 'GET'
+  const response = await fetch(`/api/users/${userId}/permissions`, {
+    method: 'GET',
+    credentials: 'include'
   });
   
-  return response;
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Failed to get user permissions');
+  }
+  
+  return await response.json();
 };
 
 // Assign a permission set to a user
 export const assignPermissionSetToUser = async (userId: number, permissionSetId: number): Promise<UserPermission> => {
-  const response = await apiRequest(`/api/users/${userId}/permissions`, {
+  const response = await fetch(`/api/users/${userId}/permissions`, {
     method: 'POST',
-    body: JSON.stringify({ permissionSetId })
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ permissionSetId }),
+    credentials: 'include'
   });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Failed to assign permission set to user');
+  }
   
   // Invalidate cache
   queryClient.invalidateQueries({ queryKey: [`/api/users/${userId}/permissions`] });
   
-  return response;
+  return await response.json();
 };
 
 // Remove a permission set from a user
 export const removeUserPermission = async (userId: number, permissionId: number): Promise<void> => {
-  await apiRequest(`/api/users/${userId}/permissions/${permissionId}`, {
-    method: 'DELETE'
+  const response = await fetch(`/api/users/${userId}/permissions/${permissionId}`, {
+    method: 'DELETE',
+    credentials: 'include'
   });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Failed to remove user permission');
+  }
   
   // Invalidate cache
   queryClient.invalidateQueries({ queryKey: [`/api/users/${userId}/permissions`] });
@@ -159,11 +238,18 @@ export const removeUserPermission = async (userId: number, permissionId: number)
 
 // Check if user has a specific permission
 export const checkPermission = async (resource: string, action: string, scope: string = 'organization'): Promise<boolean> => {
-  const response = await apiRequest(`/api/permissions/check?resource=${resource}&action=${action}&scope=${scope}`, {
-    method: 'GET'
+  const response = await fetch(`/api/permissions/check?resource=${resource}&action=${action}&scope=${scope}`, {
+    method: 'GET',
+    credentials: 'include'
   });
   
-  return response.hasPermission;
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Failed to check permission');
+  }
+  
+  const data = await response.json();
+  return data.hasPermission;
 };
 
 // Available resources
