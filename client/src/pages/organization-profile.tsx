@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import debounce from 'lodash.debounce';
 import { apiRequest } from '@/lib/queryClient';
 import { 
   Card, 
@@ -276,9 +277,70 @@ export default function OrganizationProfilePage() {
     }
   });
 
+  // Get only the changed fields to optimize updates
+  const getChangedFields = (data: OrganizationProfileData): Partial<OrganizationProfileData> => {
+    const changed: Partial<OrganizationProfileData> = {};
+    const original = organization || {} as Organization;
+    
+    // Only include fields that have changed
+    if (data.name !== original.name) changed.name = data.name;
+    if (data.displayName !== original.displayName) changed.displayName = data.displayName;
+    if (data.description !== original.description) changed.description = data.description;
+    if (data.primaryColor !== original.primaryColor) changed.primaryColor = data.primaryColor;
+    if (data.secondaryColor !== original.secondaryColor) changed.secondaryColor = data.secondaryColor;
+    if (data.aboutText !== original.aboutText) changed.aboutText = data.aboutText;
+    if (data.contactEmail !== original.contactEmail) changed.contactEmail = data.contactEmail;
+    if (data.websiteUrl !== original.websiteUrl) changed.websiteUrl = data.websiteUrl;
+    
+    // Handle social links
+    if (data.socialLinks) {
+      const originalSocialLinks = original.socialLinks || {} as NonNullable<Organization['socialLinks']>;
+      const changedSocialLinks: Record<string, string> = {};
+      let hasSocialChanges = false;
+      
+      if (data.socialLinks.facebook !== originalSocialLinks.facebook) {
+        changedSocialLinks.facebook = data.socialLinks.facebook || '';
+        hasSocialChanges = true;
+      }
+      if (data.socialLinks.twitter !== originalSocialLinks.twitter) {
+        changedSocialLinks.twitter = data.socialLinks.twitter || '';
+        hasSocialChanges = true;
+      }
+      if (data.socialLinks.linkedin !== originalSocialLinks.linkedin) {
+        changedSocialLinks.linkedin = data.socialLinks.linkedin || '';
+        hasSocialChanges = true;
+      }
+      if (data.socialLinks.instagram !== originalSocialLinks.instagram) {
+        changedSocialLinks.instagram = data.socialLinks.instagram || '';
+        hasSocialChanges = true;
+      }
+      
+      if (hasSocialChanges) {
+        changed.socialLinks = changedSocialLinks as typeof data.socialLinks;
+      }
+    }
+    
+    // If no changes detected, include at least the name to satisfy requirements
+    if (Object.keys(changed).length === 0) {
+      changed.name = data.name;
+    }
+    
+    return changed;
+  };
+
+  // Create a debounced version of the mutation function
+  const debouncedMutation = useCallback(
+    debounce((data: OrganizationProfileData) => {
+      const changedData = getChangedFields(data);
+      console.log('Submitting only changed fields:', changedData);
+      updateProfileMutation.mutate(changedData as OrganizationProfileData);
+    }, 500),
+    [organization, updateProfileMutation]
+  );
+
   // Handle form submission
   const onSubmit = (data: OrganizationProfileData) => {
-    updateProfileMutation.mutate(data);
+    debouncedMutation(data);
   };
 
   // Handle logo file change

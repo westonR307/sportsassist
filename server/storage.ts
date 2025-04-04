@@ -2550,12 +2550,27 @@ export class DatabaseStorage implements IStorage {
 
   async updateOrganizationProfile(id: number, profileData: Partial<Organization>): Promise<Organization> {
     try {
-      console.log(`Updating organization profile for ID ${id}:`, profileData);
+      // Remove undefined values to reduce payload size and avoid unnecessary updates
+      const cleanedData = Object.entries(profileData)
+        .filter(([_, value]) => value !== undefined)
+        .reduce((obj, [key, value]) => {
+          obj[key] = value;
+          return obj;
+        }, {} as Record<string, any>);
       
+      // Check if there's anything to update
+      if (Object.keys(cleanedData).length === 0) {
+        // If no update data, just return the current record
+        const org = await this.getOrganization(id);
+        if (!org) {
+          throw new Error(`Organization with ID ${id} not found`);
+        }
+        return org;
+      }
+      
+      // Perform the update with cleaned data
       const [updatedOrg] = await db.update(organizations)
-        .set({
-          ...profileData,
-        })
+        .set(cleanedData)
         .where(eq(organizations.id, id))
         .returning();
       

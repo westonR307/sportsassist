@@ -2732,47 +2732,44 @@ export async function registerRoutes(app: Express) {
   // Update organization profile (requires authentication and ownership)
   app.patch("/api/organizations/:orgId/profile", async (req, res) => {
     try {
-      console.log('Organization profile update request received:', {
-        body: req.body,
-        params: req.params,
-        auth: req.isAuthenticated(),
-        user: req.user
-      });
+      // Reduced logging to optimize performance
+      console.log(`Organization profile update for org ID: ${req.params.orgId}`);
       
       if (!req.isAuthenticated()) {
-        console.log('User not authenticated for profile update');
         return res.status(401).json({ message: "Authentication required" });
       }
       
       const orgId = parseInt(req.params.orgId);
-      console.log(`Processing organization profile update for org ID: ${orgId}`);
       
       // Only allow camp creators who belong to this organization to update it
       if (req.user.organizationId !== orgId || req.user.role !== "camp_creator") {
-        console.log(`Authorization failure: User org ID: ${req.user.organizationId}, target org ID: ${orgId}, role: ${req.user.role}`);
         return res.status(403).json({ message: "Not authorized to update this organization's profile" });
       }
       
-      // Prepare the update object with the request body data
-      const updateData = {
-        name: req.body.name,
-        description: req.body.description,
-        primaryColor: req.body.primaryColor,
-        secondaryColor: req.body.secondaryColor,
-        aboutText: req.body.aboutText,
-        contactEmail: req.body.contactEmail,
-        websiteUrl: req.body.websiteUrl,
-        socialLinks: req.body.socialLinks,
-        displayName: req.body.displayName,
-        slug: req.body.slug
-      };
+      // Filter request body to only allow specific fields for update
+      // This prevents sending unnecessary data to the database
+      const allowedFields = [
+        'name', 'description', 'primaryColor', 'secondaryColor', 
+        'aboutText', 'contactEmail', 'websiteUrl', 'socialLinks',
+        'displayName', 'slug'
+      ];
       
-      console.log('Update data to be sent to storage:', updateData);
+      // Create a clean update object with only allowed fields
+      const updateData = Object.keys(req.body)
+        .filter(key => allowedFields.includes(key) && req.body[key] !== undefined)
+        .reduce((obj, key) => {
+          obj[key as keyof typeof req.body] = req.body[key];
+          return obj;
+        }, {} as Record<string, any>);
       
-      // Handle update with the new profile-specific fields
+      // Make sure name is always included as it's required
+      if (!updateData.name && req.body.name) {
+        updateData.name = req.body.name;
+      }
+      
+      // Handle update with the cleaned fields
       const updatedOrg = await storage.updateOrganizationProfile(orgId, updateData);
       
-      console.log('Organization profile successfully updated:', updatedOrg);
       res.json(updatedOrg);
     } catch (error: any) {
       console.error("Error updating organization profile:", error);
