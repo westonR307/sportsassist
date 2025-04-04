@@ -276,6 +276,23 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
             </button>
           ) : null}
           
+          {/* Stripe Connect Link - Only visible to camp creators */}
+          {user?.role === "camp_creator" ? (
+            <button
+              onClick={() => {
+                navigate("/dashboard/stripe-connect");
+                // Close sidebar on mobile after navigation
+                if (window.innerWidth < 1024) setSidebarOpen(false);
+              }}
+              className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
+                wouterLocation === "/dashboard/stripe-connect" ? "bg-gray-100" : ""
+              }`}
+            >
+              <DollarSign className="h-5 w-5 flex-shrink-0" />
+              <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Stripe Connect</span>
+            </button>
+          ) : null}
+          
 
           <Button
             variant="ghost"
