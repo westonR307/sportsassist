@@ -1,9 +1,11 @@
 import { publicRoles } from "@shared/schema";
-import { Express, Request, Response, NextFunction } from "express";
-import { createServer, type Server } from "http";
+import { Request, Response, NextFunction } from "express";
+import type { Express } from "express";
+import { createServer } from "http";
 import { db } from "./db";
-import { eq, inArray } from "drizzle-orm";
-import { campSports, scheduleExceptions, campSchedules, insertScheduleExceptionSchema, sports } from "@shared/schema";
+import { eq, inArray, gt, and } from "drizzle-orm";
+import { scheduleExceptions, insertScheduleExceptionSchema, sports } from "@shared/schema";
+import { storage } from "./storage";
 import { upload } from "./utils/file-upload";
 // Import the scheduleExceptionSchema from our dialog component for validation
 import { scheduleExceptionSchema } from "../client/src/components/schedule-exception-dialog";
@@ -18,6 +20,66 @@ function logError(location: string, error: any) {
 
 // Function to register public routes that don't require authentication
 function registerPublicRoutes(app: Express) {
+  // Public organization profile endpoints
+  app.get("/api/organizations/public/:slug", async (req, res) => {
+    try {
+      const organizationSlug = req.params.slug;
+      console.log(`Fetching public org profile for slug: ${organizationSlug}`);
+      
+      // Get organization by slug
+      const organization = await storage.getOrganizationBySlug(organizationSlug);
+      
+      if (!organization) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+      
+      // Only expose fields that should be public
+      const publicOrgData = {
+        id: organization.id,
+        name: organization.name,
+        displayName: organization.displayName,
+        description: organization.description,
+        logoUrl: organization.logoUrl,
+        primaryColor: organization.primaryColor,
+        secondaryColor: organization.secondaryColor,
+        aboutText: organization.aboutText,
+        contactEmail: organization.contactEmail,
+        websiteUrl: organization.websiteUrl,
+        socialLinks: organization.socialLinks,
+        bannerImageUrl: organization.bannerImageUrl,
+        slug: organization.slug
+      };
+      
+      res.json(publicOrgData);
+    } catch (error) {
+      console.error("Error fetching public organization profile:", error);
+      res.status(500).json({ message: "Failed to fetch organization profile" });
+    }
+  });
+  
+  // Get public camps for an organization
+  app.get("/api/organizations/public/:slug/camps", async (req, res) => {
+    try {
+      const organizationSlug = req.params.slug;
+      console.log(`Fetching public camps for org slug: ${organizationSlug}`);
+      
+      // Get organization by slug
+      const organization = await storage.getOrganizationBySlug(organizationSlug);
+      
+      if (!organization) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+      
+      // Get only public, active camps for this organization
+      const camps = await storage.listPublicOrganizationCamps(organization.id);
+      
+      res.json(camps);
+    } catch (error) {
+      console.error("Error fetching organization camps:", error);
+      res.status(500).json({ message: "Failed to fetch organization camps" });
+    }
+  });
+  
   // Public camps endpoint for the homepage and public-facing pages
   app.get("/api/public/camps", async (req, res) => {
     try {
@@ -62,36 +124,29 @@ function registerPublicRoutes(app: Express) {
   });
 }
 
-import type { Express } from "express";
-import { createServer } from "http";
 import { setupAuth } from "./auth";
-import { storage } from "./storage";
 import { 
   insertCampSchema, 
   insertChildSchema, 
   insertRegistrationSchema, 
   insertOrganizationSchema, 
   insertInvitationSchema, 
-  insertScheduleExceptionSchema, 
   insertCustomFieldSchema,
   insertCampCustomFieldSchema,
   insertCustomFieldResponseSchema,
   insertCampSessionSchema,
   insertRecurrencePatternSchema,
-  sports, 
   children, 
   childSports,
   campSessions,
   recurrencePatterns
 } from "@shared/schema";
 import { campSchedules, campSports } from "@shared/tables";
-import { eq } from "drizzle-orm";
 import Stripe from "stripe";
 import { hashPassword, comparePasswords } from "./utils";
 import { registerParentRoutes } from "./parent-routes";
 import documentRoutes from "./document-routes";
 import { randomBytes } from "crypto";
-import { db } from "./db";
 import passport from "passport";
 import { sendInvitationEmail } from "./utils/email";
 import { uploadConfig, getFileUrl } from "./utils/file-upload";
@@ -415,14 +470,21 @@ export async function registerRoutes(app: Express) {
 
   // Update organization details
   app.patch("/api/organizations/:orgId", async (req, res) => {
-    if (!req.user) {
+    console.log(`Organization PATCH update received for org ID: ${req.params.orgId}`);
+    console.log('Request body:', JSON.stringify(req.body));
+    console.log('User authentication status:', req.isAuthenticated());
+    
+    if (!req.isAuthenticated()) {
+      console.log('Authentication required for organization update');
       return res.status(401).json({ message: "Authentication required" });
     }
-
+    
+    console.log('User info:', req.user);
     const orgId = parseInt(req.params.orgId);
     
     // Only allow camp creators who belong to this organization to update it
     if (req.user.organizationId !== orgId || req.user.role !== "camp_creator") {
+      console.log(`Authorization failed: user org ID ${req.user.organizationId}, requested org ID ${orgId}, user role ${req.user.role}`);
       return res.status(403).json({ message: "Not authorized to update this organization" });
     }
 
@@ -433,12 +495,36 @@ export async function registerRoutes(app: Express) {
         return res.status(404).json({ message: "Organization not found" });
       }
       
-      // Update the organization with the allowed fields
-      const updatedOrganization = await storage.updateOrganization(orgId, {
-        name: req.body.name,
-        description: req.body.description,
-        logoUrl: req.body.logoUrl
-      });
+      // Get a list of fields we're allowing to be updated
+      const allowedFields = [
+        'name', 'description', 'displayName', 'logoUrl', 
+        'primaryColor', 'secondaryColor', 'aboutText',
+        'contactEmail', 'websiteUrl', 'socialLinks', 'slug'
+      ];
+      
+      // Build an update object with only the fields that were provided
+      const updateObj: Record<string, any> = {};
+      for (const field of allowedFields) {
+        if (req.body[field] !== undefined) {
+          // Special handling for social links
+          if (field === 'socialLinks' && req.body[field]) {
+            // Make sure all social fields are defined
+            updateObj[field] = {
+              facebook: req.body[field].facebook || '',
+              twitter: req.body[field].twitter || '',
+              linkedin: req.body[field].linkedin || '',
+              instagram: req.body[field].instagram || ''
+            };
+          } else {
+            updateObj[field] = req.body[field];
+          }
+        }
+      }
+      
+      console.log('Updating organization with data:', JSON.stringify(updateObj, null, 2));
+      
+      // Update the organization with all the provided fields, using the right method
+      const updatedOrganization = await storage.updateOrganizationProfile(orgId, updateObj);
       
       res.json(updatedOrganization);
     } catch (error) {
@@ -2732,10 +2818,11 @@ export async function registerRoutes(app: Express) {
   // Update organization profile (requires authentication and ownership)
   app.patch("/api/organizations/:orgId/profile", async (req, res) => {
     try {
-      // Reduced logging to optimize performance
       console.log(`Organization profile update for org ID: ${req.params.orgId}`);
+      console.log('Request body received:', JSON.stringify(req.body));
       
       if (!req.isAuthenticated()) {
+        console.log('Authentication required for organization profile update');
         return res.status(401).json({ message: "Authentication required" });
       }
       
@@ -2754,13 +2841,29 @@ export async function registerRoutes(app: Express) {
         'displayName', 'slug'
       ];
       
+      console.log('Raw request body fields:', Object.keys(req.body));
+      console.log('Social links from request:', req.body.socialLinks);
+      
       // Create a clean update object with only allowed fields
       const updateData = Object.keys(req.body)
         .filter(key => allowedFields.includes(key) && req.body[key] !== undefined)
         .reduce((obj, key) => {
-          obj[key as keyof typeof req.body] = req.body[key];
+          // Special handling for socialLinks
+          if (key === 'socialLinks' && req.body[key]) {
+            // Ensure all social link fields exist
+            obj[key] = {
+              facebook: req.body[key].facebook || '',
+              twitter: req.body[key].twitter || '',
+              linkedin: req.body[key].linkedin || '',
+              instagram: req.body[key].instagram || ''
+            };
+          } else {
+            obj[key as keyof typeof req.body] = req.body[key];
+          }
           return obj;
         }, {} as Record<string, any>);
+      
+      console.log('Cleaned update data:', updateData);
       
       // Make sure name is always included as it's required
       if (!updateData.name && req.body.name) {

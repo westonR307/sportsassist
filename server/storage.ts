@@ -70,7 +70,7 @@ import {
 } from "@shared/schema";
 import { type Role, type SportLevel } from "@shared/types";
 import { db } from "./db";
-import { eq, sql, and, or, gte, lte, inArray, desc } from "drizzle-orm";
+import { eq, sql, and, or, gte, lte, inArray, desc, gt, ne, isNull, count } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -96,8 +96,11 @@ export interface IStorage {
   getRegistration(id: number): Promise<Registration | undefined>;
   createOrganization(org: InsertOrganization): Promise<Organization>;
   getOrganization(id: number): Promise<Organization | undefined>;
+  getOrganizationBySlug(slug: string): Promise<Organization | undefined>;
   updateOrganization(id: number, orgData: Partial<Omit<Organization, "id" | "createdAt">>): Promise<Organization>;
+  updateOrganizationProfile(id: number, profileData: Partial<Organization>): Promise<Organization>;
   getOrganizationUsers(orgId: number): Promise<User[]>;
+  listPublicOrganizationCamps(orgId: number): Promise<(Camp & { sportName?: string })[]>;
   createInvitation(invitation: InsertInvitation & { token: string }): Promise<Invitation>;
   getInvitation(token: string): Promise<Invitation | undefined>;
   acceptInvitation(token: string): Promise<Invitation>;
@@ -2498,6 +2501,77 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getOrganizationBySlug(slug: string): Promise<Organization | undefined> {
+    try {
+      console.log(`Looking up organization by slug: ${slug}`);
+      const [organization] = await db.select()
+        .from(organizations)
+        .where(eq(organizations.slug, slug));
+      
+      return organization;
+    } catch (error: any) {
+      console.error(`Error fetching organization by slug ${slug}:`, error);
+      return undefined;
+    }
+  }
+  
+  async listPublicOrganizationCamps(orgId: number): Promise<(Camp & { sportName?: string, registeredCount?: number })[]> {
+    try {
+      console.log(`Fetching public camps for organization ${orgId}`);
+      
+      // Get visible and active camps for this organization
+      const campsList = await db.select().from(camps)
+        .where(
+          and(
+            eq(camps.organizationId, orgId),
+            eq(camps.visibility, "public"),
+            eq(camps.isDeleted, false),
+            eq(camps.isCancelled, false),
+            gt(camps.endDate, new Date()) // Only future and current camps
+          )
+        );
+      
+      // Enrich with sports information
+      const enhancedCamps = await Promise.all(campsList.map(async (camp) => {
+        // Get the camp sports
+        const campSportsData = await db.select().from(campSports)
+          .where(eq(campSports.campId, camp.id))
+          .limit(1); // We just need one for basic listing
+        
+        let sportName = "Unlisted Sport";
+        
+        // If we have a sport, get its name
+        if (campSportsData.length > 0) {
+          const sportId = campSportsData[0].sportId;
+          const sportData = await db.select().from(sports)
+            .where(eq(sports.id, sportId))
+            .limit(1);
+          
+          if (sportData.length > 0) {
+            sportName = sportData[0].name;
+          }
+        }
+        
+        // Get registration count
+        const [{ count }] = await db.select({
+          count: count()
+        }).from(registrations)
+          .where(eq(registrations.campId, camp.id));
+        
+        return {
+          ...camp,
+          sportName,
+          registeredCount: Number(count) || 0
+        };
+      }));
+      
+      return enhancedCamps;
+    } catch (error: any) {
+      console.error("Error fetching public organization camps:", error);
+      return [];
+    }
+  }
+  
   async getOrganizationPublicProfile(organizationId: number): Promise<{
     organization: Organization, 
     activeCamps: (Camp & { campSports?: any[] })[]

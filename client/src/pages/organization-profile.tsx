@@ -160,7 +160,9 @@ export default function OrganizationProfilePage() {
       console.log('Submitting organization profile data:', data);
       
       // Make a direct fetch call to avoid format issues with apiRequest
-      const response = await fetch(`/api/organizations/${user.organizationId}/profile`, {
+      console.log(`Sending profile update to /api/organizations/${user.organizationId} with data:`, data);
+      
+      const response = await fetch(`/api/organizations/${user.organizationId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json'
@@ -169,12 +171,25 @@ export default function OrganizationProfilePage() {
         credentials: 'include'
       });
       
+      console.log('API response status:', response.status);
+      
+      // Clone the response to read it multiple times
+      const clonedResponse = response.clone();
+      const rawResponse = await clonedResponse.text();
+      console.log('Raw API response:', rawResponse);
+      
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`${response.status}: ${errorText}`);
+        console.error(`API Error: ${response.status}`, rawResponse);
+        throw new Error(`${response.status}: ${rawResponse}`);
       }
       
-      return await response.json();
+      // Parse the original response as JSON
+      try {
+        return JSON.parse(rawResponse);
+      } catch (error) {
+        console.error('Failed to parse API response as JSON:', error);
+        throw new Error(`Failed to parse server response: ${rawResponse}`);
+      }
     },
     onSuccess: () => {
       if (user?.organizationId) {
@@ -342,7 +357,33 @@ export default function OrganizationProfilePage() {
 
   // Handle form submission
   const onSubmit = (data: OrganizationProfileData) => {
-    debouncedMutation(data);
+    console.log('Form submitted with data:', data);
+    
+    // Ensure correct social links format
+    if (data.socialLinks) {
+      // Make sure all social links are defined with empty strings instead of undefined
+      data.socialLinks = {
+        facebook: data.socialLinks.facebook || '',
+        twitter: data.socialLinks.twitter || '',
+        linkedin: data.socialLinks.linkedin || '',
+        instagram: data.socialLinks.instagram || '',
+      };
+    }
+    
+    // Instead of debouncing, directly submit the data
+    const changedData = getChangedFields(data);
+    console.log('Submitting data to server:', changedData);
+    
+    try {
+      updateProfileMutation.mutate(changedData as OrganizationProfileData);
+    } catch (error) {
+      console.error('Error during mutation submission:', error);
+      toast({
+        title: 'Submission Error',
+        description: `There was an error submitting your changes: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: 'destructive',
+      });
+    }
   };
 
   // Handle logo file change
@@ -420,6 +461,8 @@ export default function OrganizationProfilePage() {
         <Form {...form}>
           <form onSubmit={(e) => {
             e.preventDefault(); // Prevent default form submission behavior
+            console.log('Form submission event:', e);
+            console.log('Form state before submit:', form.getValues());
             form.handleSubmit(onSubmit)(e);
           }} className="space-y-6">
             <TabsContent value="basic-info" className="space-y-6">
@@ -821,7 +864,7 @@ export default function OrganizationProfilePage() {
               </Button>
               <Button 
                 type="submit" 
-                disabled={updateProfileMutation.isPending || !form.formState.isDirty}
+                disabled={updateProfileMutation.isPending}
                 className="w-full sm:w-auto order-1 sm:order-2"
                 size="lg"
               >
