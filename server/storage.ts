@@ -23,10 +23,13 @@ import {
   signatures,
   documentAuditTrail,
   campDocumentAgreements,
+  organizationMessages,
   type User,
   type InsertUser,
   type Organization,
   type InsertOrganization,
+  type OrganizationMessage,
+  type InsertOrganizationMessage,
   type Invitation,
   type InsertInvitation,
   type Child,
@@ -67,7 +70,7 @@ import {
 } from "@shared/schema";
 import { type Role, type SportLevel } from "@shared/types";
 import { db } from "./db";
-import { eq, sql, and, or, gte, lte, inArray } from "drizzle-orm";
+import { eq, sql, and, or, gte, lte, inArray, desc } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -207,6 +210,20 @@ export interface IStorage {
   deleteCampDocumentAgreement(id: number): Promise<void>;
   getCampDocumentAgreementsByCampId(campId: number): Promise<CampDocumentAgreement[]>;
   updateCampDocumentAgreement(id: number, data: Partial<Omit<CampDocumentAgreement, 'id' | 'createdAt' | 'updatedAt'>>): Promise<CampDocumentAgreement>;
+  
+  // Organization profile methods
+  getOrganizationBySlug(slug: string): Promise<Organization | undefined>;
+  getOrganizationPublicProfile(organizationId: number): Promise<{
+    organization: Organization, 
+    activeCamps: (Camp & { campSports?: any[] })[]
+  }>;
+  updateOrganizationProfile(id: number, profileData: Partial<Organization>): Promise<Organization>;
+  
+  // Organization messaging methods
+  createOrganizationMessage(message: Omit<InsertOrganizationMessage, "id">): Promise<OrganizationMessage>;
+  getOrganizationMessages(organizationId: number): Promise<OrganizationMessage[]>;
+  getUnreadOrganizationMessages(organizationId: number): Promise<OrganizationMessage[]>;
+  markMessageAsRead(messageId: number): Promise<OrganizationMessage>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2463,6 +2480,166 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error getting camp counts by status:", error);
       throw new Error(`Failed to get camp counts by status: ${error.message}`);
+    }
+  }
+
+  // Organization profile methods
+  async getOrganizationBySlug(slug: string): Promise<Organization | undefined> {
+    try {
+      console.log(`Fetching organization with slug: ${slug}`);
+      const [organization] = await db.select()
+        .from(organizations)
+        .where(eq(organizations.slug, slug));
+      
+      return organization;
+    } catch (error: any) {
+      console.error(`Error fetching organization by slug ${slug}:`, error);
+      throw new Error(`Failed to fetch organization: ${error.message}`);
+    }
+  }
+
+  async getOrganizationPublicProfile(organizationId: number): Promise<{
+    organization: Organization, 
+    activeCamps: (Camp & { campSports?: any[] })[]
+  }> {
+    try {
+      console.log(`Fetching public profile for organization ${organizationId}`);
+      
+      // Get organization details
+      const [organization] = await db.select()
+        .from(organizations)
+        .where(eq(organizations.id, organizationId));
+      
+      if (!organization) {
+        throw new Error(`Organization with ID ${organizationId} not found`);
+      }
+      
+      // Get active camps (not deleted, not cancelled, registration end date not passed)
+      const now = new Date();
+      const activeCamps = await db.select()
+        .from(camps)
+        .where(
+          and(
+            eq(camps.organizationId, organizationId),
+            eq(camps.isDeleted, false),
+            eq(camps.isCancelled, false),
+            gte(camps.registrationEndDate, now),
+            eq(camps.visibility, 'public') // Only get public camps
+          )
+        )
+        .orderBy(camps.startDate);
+      
+      // For each camp, fetch the related camp sports
+      const enrichedCamps = await Promise.all(activeCamps.map(async (camp) => {
+        const sportsList = await db.select().from(campSports).where(eq(campSports.campId, camp.id));
+        return {
+          ...camp,
+          campSports: sportsList,
+        };
+      }));
+      
+      return {
+        organization,
+        activeCamps: enrichedCamps
+      };
+    } catch (error: any) {
+      console.error(`Error fetching organization profile for ID ${organizationId}:`, error);
+      throw new Error(`Failed to fetch organization profile: ${error.message}`);
+    }
+  }
+
+  async updateOrganizationProfile(id: number, profileData: Partial<Organization>): Promise<Organization> {
+    try {
+      console.log(`Updating organization profile for ID ${id}:`, profileData);
+      
+      const [updatedOrg] = await db.update(organizations)
+        .set({
+          ...profileData,
+        })
+        .where(eq(organizations.id, id))
+        .returning();
+      
+      return updatedOrg;
+    } catch (error: any) {
+      console.error(`Error updating organization profile for ID ${id}:`, error);
+      throw new Error(`Failed to update organization profile: ${error.message}`);
+    }
+  }
+  
+  // Organization messaging methods
+  async createOrganizationMessage(message: Omit<InsertOrganizationMessage, "id">): Promise<OrganizationMessage> {
+    try {
+      console.log(`Creating organization message for org ID ${message.organizationId}`);
+      
+      const [newMessage] = await db.insert(organizationMessages)
+        .values({
+          organizationId: message.organizationId,
+          senderId: message.senderId,
+          senderName: message.senderName,
+          senderEmail: message.senderEmail,
+          content: message.content,
+          isRead: false, // Always start as unread
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning();
+      
+      return newMessage;
+    } catch (error: any) {
+      console.error(`Error creating organization message:`, error);
+      throw new Error(`Failed to create organization message: ${error.message}`);
+    }
+  }
+
+  async getOrganizationMessages(organizationId: number): Promise<OrganizationMessage[]> {
+    try {
+      console.log(`Fetching all messages for organization ${organizationId}`);
+      
+      return await db.select()
+        .from(organizationMessages)
+        .where(eq(organizationMessages.organizationId, organizationId))
+        .orderBy(desc(organizationMessages.createdAt)); // Using desc from drizzle-orm
+    } catch (error: any) {
+      console.error(`Error fetching organization messages for org ID ${organizationId}:`, error);
+      throw new Error(`Failed to fetch organization messages: ${error.message}`);
+    }
+  }
+
+  async getUnreadOrganizationMessages(organizationId: number): Promise<OrganizationMessage[]> {
+    try {
+      console.log(`Fetching unread messages for organization ${organizationId}`);
+      
+      return await db.select()
+        .from(organizationMessages)
+        .where(
+          and(
+            eq(organizationMessages.organizationId, organizationId),
+            eq(organizationMessages.isRead, false)
+          )
+        )
+        .orderBy(desc(organizationMessages.createdAt)); // Using desc from drizzle-orm
+    } catch (error: any) {
+      console.error(`Error fetching unread organization messages for org ID ${organizationId}:`, error);
+      throw new Error(`Failed to fetch unread organization messages: ${error.message}`);
+    }
+  }
+
+  async markMessageAsRead(messageId: number): Promise<OrganizationMessage> {
+    try {
+      console.log(`Marking message ${messageId} as read`);
+      
+      const [updatedMessage] = await db.update(organizationMessages)
+        .set({
+          isRead: true,
+          updatedAt: new Date()
+        })
+        .where(eq(organizationMessages.id, messageId))
+        .returning();
+      
+      return updatedMessage;
+    } catch (error: any) {
+      console.error(`Error marking message ${messageId} as read:`, error);
+      throw new Error(`Failed to mark message as read: ${error.message}`);
     }
   }
 }

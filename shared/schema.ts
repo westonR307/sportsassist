@@ -25,7 +25,8 @@ import {
   signatureRequests,
   signatures,
   documentAuditTrail,
-  campDocumentAgreements
+  campDocumentAgreements,
+  organizationMessages
 } from "./tables";
 
 // Import types
@@ -373,6 +374,17 @@ export type InsertSignature = z.infer<typeof insertSignatureSchema>;
 export type InsertDocumentAuditTrail = z.infer<typeof insertDocumentAuditTrailSchema>;
 export type InsertCampDocumentAgreement = z.infer<typeof insertCampDocumentAgreementSchema>;
 
+// Organization messages
+export const insertOrganizationMessageSchema = createInsertSchema(organizationMessages).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  isRead: true
+});
+
+export type OrganizationMessage = typeof organizationMessages.$inferSelect;
+export type InsertOrganizationMessage = z.infer<typeof insertOrganizationMessageSchema>;
+
 // Re-export tables
 export {
   organizations,
@@ -399,7 +411,8 @@ export {
   signatureRequests,
   signatures,
   documentAuditTrail,
-  campDocumentAgreements
+  campDocumentAgreements,
+  organizationMessages
 };
 
 export const predefinedSports = [

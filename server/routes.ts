@@ -2707,5 +2707,149 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  // Organization profile API routes
+  // Public organization profile endpoint - accessible without auth
+  app.get("/api/public/organizations/:slug", async (req, res) => {
+    try {
+      const slug = req.params.slug;
+      const organization = await storage.getOrganizationBySlug(slug);
+      
+      if (!organization) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+      
+      // Get public profile data including active camps
+      const profileData = await storage.getOrganizationPublicProfile(organization.id);
+      
+      res.json(profileData);
+    } catch (error: any) {
+      console.error("Error fetching organization public profile:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch organization profile" });
+    }
+  });
+
+  // Update organization profile (requires authentication and ownership)
+  app.patch("/api/organizations/:orgId/profile", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const orgId = parseInt(req.params.orgId);
+      
+      // Only allow camp creators who belong to this organization to update it
+      if (req.user.organizationId !== orgId || req.user.role !== "camp_creator") {
+        return res.status(403).json({ message: "Not authorized to update this organization's profile" });
+      }
+      
+      // Handle update with the new profile-specific fields
+      const updatedOrg = await storage.updateOrganizationProfile(orgId, {
+        name: req.body.name,
+        description: req.body.description,
+        logoUrl: req.body.logoUrl,
+        primaryColor: req.body.primaryColor,
+        secondaryColor: req.body.secondaryColor,
+        aboutUs: req.body.aboutUs,
+        slug: req.body.slug
+      });
+      
+      res.json(updatedOrg);
+    } catch (error: any) {
+      console.error("Error updating organization profile:", error);
+      res.status(500).json({ message: error.message || "Failed to update organization profile" });
+    }
+  });
+
+  // Send a message to an organization (available to authenticated users)
+  app.post("/api/organizations/:orgId/messages", async (req, res) => {
+    try {
+      const orgId = parseInt(req.params.orgId);
+      const organization = await storage.getOrganization(orgId);
+      
+      if (!organization) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+      
+      // Create the message
+      const newMessage = await storage.createOrganizationMessage({
+        organizationId: orgId,
+        senderId: req.user?.id || null, // If authenticated, record the sender ID
+        senderName: req.body.senderName,
+        senderEmail: req.body.senderEmail,
+        content: req.body.content
+      });
+      
+      res.status(201).json({
+        success: true,
+        message: "Message sent successfully",
+        id: newMessage.id
+      });
+    } catch (error: any) {
+      console.error("Error sending message to organization:", error);
+      res.status(500).json({ message: error.message || "Failed to send message" });
+    }
+  });
+
+  // Get organization messages (requires authentication and ownership)
+  app.get("/api/organizations/:orgId/messages", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const orgId = parseInt(req.params.orgId);
+      
+      // Only allow camp creators who belong to this organization to view messages
+      if (req.user.organizationId !== orgId || req.user.role !== "camp_creator") {
+        return res.status(403).json({ message: "Not authorized to view this organization's messages" });
+      }
+      
+      const messages = await storage.getOrganizationMessages(orgId);
+      res.json(messages);
+    } catch (error: any) {
+      console.error("Error fetching organization messages:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch messages" });
+    }
+  });
+
+  // Get unread organization messages count (requires authentication and ownership)
+  app.get("/api/organizations/:orgId/messages/unread", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const orgId = parseInt(req.params.orgId);
+      
+      // Only allow camp creators who belong to this organization to view message stats
+      if (req.user.organizationId !== orgId || req.user.role !== "camp_creator") {
+        return res.status(403).json({ message: "Not authorized to view this organization's messages" });
+      }
+      
+      const unreadMessages = await storage.getUnreadOrganizationMessages(orgId);
+      res.json({ count: unreadMessages.length });
+    } catch (error: any) {
+      console.error("Error fetching unread message count:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch unread message count" });
+    }
+  });
+
+  // Mark message as read (requires authentication and ownership)
+  app.patch("/api/organizations/messages/:messageId/read", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || req.user.role !== "camp_creator") {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const messageId = parseInt(req.params.messageId);
+      const updatedMessage = await storage.markMessageAsRead(messageId);
+      
+      res.json(updatedMessage);
+    } catch (error: any) {
+      console.error("Error marking message as read:", error);
+      res.status(500).json({ message: error.message || "Failed to mark message as read" });
+    }
+  });
+
   return createServer(app);
 }

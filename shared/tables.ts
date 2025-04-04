@@ -104,6 +104,15 @@ export const organizations = pgTable("organizations", {
   stripeAccountId: text("stripe_account_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   logoUrl: text("logo_url"),
+  primaryColor: text("primary_color"),
+  secondaryColor: text("secondary_color"),
+  aboutText: text("about_text"),
+  contactEmail: text("contact_email"),
+  websiteUrl: text("website_url"),
+  socialLinks: jsonb("social_links"),
+  bannerImageUrl: text("banner_image_url"),
+  displayName: text("display_name"),
+  slug: text("slug"),
 });
 
 export const users = pgTable("users", {
@@ -353,6 +362,19 @@ export const campDocumentAgreements = pgTable("camp_document_agreements", {
   required: boolean("required").notNull().default(true), // Whether this document is required before participation
   sendOnRegistration: boolean("send_on_registration").notNull().default(true), // Whether to automatically send upon registration
   displayOrder: integer("display_order").notNull().default(0), // Order to display documents
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Table for organization messages (in-platform communication)
+export const organizationMessages = pgTable("organization_messages", {
+  id: serial("id").primaryKey(),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
+  senderId: integer("sender_id").references(() => users.id),
+  senderName: text("sender_name"),
+  senderEmail: text("sender_email"),
+  content: text("content").notNull(),
+  isRead: boolean("is_read").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
