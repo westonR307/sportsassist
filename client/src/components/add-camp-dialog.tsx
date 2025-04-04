@@ -27,7 +27,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, Plus, X, Calendar as CalendarIcon, FileText, Layers } from "lucide-react";
+import { Loader2, Plus, X, Calendar as CalendarIcon, FileText, Layers, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/api";
 import { CalendarScheduler } from "@/components/calendar-scheduler";
@@ -881,7 +881,29 @@ export function AddCampDialog({
                   
                   {/* Add the custom meta fields component */}
                   <div className="mt-8 border-t pt-6">
-                    <h3 className="text-base font-medium mb-4">Custom Information Fields</h3>
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-base font-medium">Custom Information Fields</h3>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (metaFieldsRef.current) {
+                            // Since we don't have a camp ID yet during creation, just
+                            // make the user aware their fields are acknowledged
+                            toast({
+                              title: "Fields Acknowledged",
+                              description: "Your custom fields will be saved when you create the camp.",
+                            });
+                          }
+                        }}
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        Acknowledge Fields
+                      </Button>
+                    </div>
                     {user?.organizationId && (
                       <BasicInfoMetaFields
                         ref={metaFieldsRef}
