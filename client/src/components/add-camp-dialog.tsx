@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -80,6 +81,18 @@ const formatTimeFor12Hour = (timeStr: string): string => {
   }
 };
 
+// Custom date input component to handle Date objects correctly
+const DateInput = ({ field, ...props }: { field: any }) => {
+  return (
+    <Input
+      type="date"
+      {...field}
+      {...props}
+      value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : field.value}
+    />
+  );
+};
+
 export function AddCampDialog({
   open,
   onOpenChange,
@@ -141,10 +154,10 @@ export function AddCampDialog({
       maxAge: 18,
       repeatType: "none",
       repeatCount: 0,
-      registrationStartDate: regStart.toISOString().split("T")[0],
-      registrationEndDate: regEnd.toISOString().split("T")[0],
-      startDate: campStart.toISOString().split("T")[0],
-      endDate: campEnd.toISOString().split("T")[0],
+      registrationStartDate: regStart,
+      registrationEndDate: regEnd,
+      startDate: campStart,
+      endDate: campEnd,
       schedules: [],
       defaultStartTime: "09:00",
       defaultEndTime: "17:00",
@@ -184,10 +197,10 @@ export function AddCampDialog({
               maxAge: campData.maxAge,
               repeatType: campData.repeatType,
               repeatCount: campData.repeatCount,
-              registrationStartDate: new Date(campData.registrationStartDate).toISOString().split("T")[0],
-              registrationEndDate: new Date(campData.registrationEndDate).toISOString().split("T")[0],
-              startDate: new Date(campData.startDate).toISOString().split("T")[0],
-              endDate: new Date(campData.endDate).toISOString().split("T")[0],
+              registrationStartDate: new Date(campData.registrationStartDate),
+              registrationEndDate: new Date(campData.registrationEndDate),
+              startDate: new Date(campData.startDate),
+              endDate: new Date(campData.endDate),
               defaultStartTime: "09:00", // Set default values
               defaultEndTime: "17:00",
             });
@@ -224,7 +237,7 @@ export function AddCampDialog({
   }, [open, form, toast]);
 
   const createCampMutation = useMutation({
-    mutationFn: async (data: Omit<ExtendedCampSchema, 'defaultStartTime' | 'defaultEndTime'>) => {
+    mutationFn: async (data: ExtendedCampSchema) => {
       setSubmitting(true); // Set submitting to true before API call
       try {
         if (!user?.organizationId) {
@@ -243,10 +256,10 @@ export function AddCampDialog({
         
         const requestData = {
           ...dataWithoutDefaults,
-          startDate: formatDateForPostgres(data.startDate),
-          endDate: formatDateForPostgres(data.endDate),
-          registrationStartDate: formatDateForPostgres(data.registrationStartDate),
-          registrationEndDate: formatDateForPostgres(data.registrationEndDate),
+          startDate: data.startDate,
+          endDate: data.endDate,
+          registrationStartDate: data.registrationStartDate,
+          registrationEndDate: data.registrationEndDate,
           organizationId: user.organizationId,
           price: Number(data.price) || 0,
           capacity: Number(data.capacity) || 20,
@@ -306,11 +319,15 @@ export function AddCampDialog({
       
       // Save custom meta fields
       if (data.id) {
+        console.log(`Camp creation successful - Starting meta fields save process for camp ID: ${data.id}`);
         if (metaFieldsRef.current) {
+          console.log("metaFieldsRef is available, proceeding with save...");
           try {
             // Set the campId for the meta fields component and save
+            console.log(`Setting camp ID ${data.id} in metaFieldsRef`);
             metaFieldsRef.current.setCampId(data.id);
-            await metaFieldsRef.current.saveFieldsIfNeeded();
+            const saveResult = await metaFieldsRef.current.saveFieldsIfNeeded();
+            console.log(`Meta fields save result: ${saveResult}`);
             
             // If we have duplicated meta fields, save those as well
             if (duplicateData?.metaFields && duplicateData.metaFields.length > 0) {
@@ -580,18 +597,12 @@ export function AddCampDialog({
       // Format dates as ISO strings
       const formattedData = {
         ...campData,
-        registrationStartDate: campData.registrationStartDate instanceof Date 
-          ? campData.registrationStartDate.toISOString().split('T')[0] 
-          : campData.registrationStartDate,
-        registrationEndDate: campData.registrationEndDate instanceof Date 
-          ? campData.registrationEndDate.toISOString().split('T')[0] 
-          : campData.registrationEndDate,
-        startDate: campData.startDate instanceof Date 
-          ? campData.startDate.toISOString().split('T')[0] 
-          : campData.startDate,
-        endDate: campData.endDate instanceof Date 
-          ? campData.endDate.toISOString().split('T')[0] 
-          : campData.endDate,
+        defaultStartTime,
+        defaultEndTime,
+        registrationStartDate: campData.registrationStartDate,
+        registrationEndDate: campData.registrationEndDate,
+        startDate: campData.startDate,
+        endDate: campData.endDate,
         // Create at least one schedule entry based on the default times
         schedules: [
           {
@@ -602,7 +613,7 @@ export function AddCampDialog({
         ]
       };
       
-      createCampMutation.mutate(formattedData);
+      createCampMutation.mutate(formattedData as ExtendedCampSchema);
       console.log("Mutation called successfully");
     } catch (error) {
       console.error("Error calling mutation:", error);
@@ -713,7 +724,7 @@ export function AddCampDialog({
                         <FormItem>
                           <FormLabel>Registration Start</FormLabel>
                           <FormControl>
-                            <Input type="date" {...field} />
+                            <DateInput field={field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -727,7 +738,7 @@ export function AddCampDialog({
                         <FormItem>
                           <FormLabel>Registration End</FormLabel>
                           <FormControl>
-                            <Input type="date" {...field} />
+                            <DateInput field={field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -743,7 +754,7 @@ export function AddCampDialog({
                         <FormItem>
                           <FormLabel>Camp Start Date</FormLabel>
                           <FormControl>
-                            <Input type="date" {...field} />
+                            <DateInput field={field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -757,7 +768,7 @@ export function AddCampDialog({
                         <FormItem>
                           <FormLabel>Camp End Date</FormLabel>
                           <FormControl>
-                            <Input type="date" {...field} />
+                            <DateInput field={field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1141,6 +1152,7 @@ export function AddCampDialog({
                           <Textarea
                             {...field}
                             placeholder="Any additional details about the location"
+                            value={field.value || ''}
                           />
                         </FormControl>
                         <FormMessage />
@@ -1421,8 +1433,12 @@ export function AddCampDialog({
                         // Call mutation manually - using empty schedules array
                         // This is just a placeholder since we're now using the enhanced scheduling
                         // The camp creation API still expects a schedules array
+                        const defaultStartTime = form.watch('defaultStartTime') || "09:00";
+                        const defaultEndTime = form.watch('defaultEndTime') || "17:00";
                         createCampMutation.mutate({ 
                           ...data, 
+                          defaultStartTime,
+                          defaultEndTime,
                           schedules: [] // We're not using regular schedules anymore
                         });
                       }}

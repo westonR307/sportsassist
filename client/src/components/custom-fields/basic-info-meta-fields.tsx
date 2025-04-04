@@ -145,10 +145,17 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
     const currentCampId = internalCampId || campId;
     if (!currentCampId) {
       console.error("Cannot save meta fields: No camp ID available");
-      return;
+      console.log("internalCampId:", internalCampId, "campId:", campId);
+      return false;
     }
     
     console.log(`Saving meta fields for camp ID ${currentCampId}, ${addedFields.length} fields to process`);
+    
+    // Skip if no fields to process
+    if (addedFields.length === 0) {
+      console.log("No meta fields to process, skipping save operation");
+      return true;
+    }
     
     try {
       // First, handle all adds and updates
@@ -164,8 +171,8 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
           });
         } else {
           // Existing field to be updated - using PATCH instead of PUT
-          console.log(`Updating existing meta field: id=${field.id}`);
-          await apiRequest("PATCH", `/api/camp-meta-fields/${field.id}`, {
+          console.log(`Updating existing meta field: id=${field.id}, campId=${currentCampId}`);
+          await apiRequest("PATCH", `/api/camps/${currentCampId}/meta-fields/${field.id}`, {
             response: field.response,
             responseArray: field.responseArray,
           });
@@ -184,7 +191,7 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
         
         // Delete each removed field
         for (const id of deletedIds) {
-          await apiRequest("DELETE", `/api/camp-meta-fields/${id}`);
+          await apiRequest("DELETE", `/api/camps/${currentCampId}/meta-fields/${id}`);
         }
       }
       
@@ -204,6 +211,7 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
       })));
       
       console.log("Meta fields saved successfully");
+      return true;
       
     } catch (error) {
       console.error("Error saving meta fields:", error);
@@ -212,6 +220,7 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
         description: "There was an error saving the camp meta fields",
         variant: "destructive",
       });
+      return false;
     }
   };
 
@@ -227,7 +236,8 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
     const currentCampId = internalCampId || campId;
     if (!currentCampId) {
       console.error("No camp ID available for saving meta fields");
-      return;
+      console.log("saveFieldsIfNeeded - internalCampId:", internalCampId, "campId:", campId);
+      return false;
     }
     
     console.log(`Checking if meta fields need to be saved for camp ID ${currentCampId}`);
@@ -235,9 +245,9 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
     if (addedFields.length > 0) {
       console.log(`Saving ${addedFields.length} meta fields for camp ${currentCampId}`);
       try {
-        await saveMetaFields();
-        console.log("Meta fields saved successfully");
-        return true;
+        const result = await saveMetaFields();
+        console.log("Meta fields save result:", result);
+        return result;
       } catch (error) {
         console.error("Error saving meta fields in saveFieldsIfNeeded:", error);
         return false;
