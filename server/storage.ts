@@ -771,6 +771,38 @@ export class DatabaseStorage implements IStorage {
             })
             .where(eq(users.id, existingUser.id));
         }
+      } else {
+        // If user doesn't exist, create a new user
+        console.log("Creating new user from invitation:", {
+          email: invitationRecord.email,
+          role: invitationRecord.role,
+          organizationId: invitationRecord.organizationId,
+          firstName,
+          lastName
+        });
+        
+        // Generate a random username based on their name
+        const usernameBase = `${firstName.toLowerCase()}${lastName.toLowerCase()}`;
+        const username = `${usernameBase}${Math.floor(Math.random() * 1000)}`;
+        
+        // Generate a random temporary password
+        const tempPassword = crypto.randomBytes(12).toString('hex');
+        
+        // Insert the new user
+        await tx.insert(users).values({
+          username,
+          email: invitationRecord.email,
+          password: tempPassword, // This is a temporary password that they'll need to change
+          passwordHash: tempPassword, // Match the password field for backward compatibility
+          role: invitationRecord.role,
+          organizationId: invitationRecord.organizationId,
+          first_name: firstName,
+          last_name: lastName,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+        
+        console.log(`New user created with username: ${username}`);
       }
       
       return updatedInvitation;
