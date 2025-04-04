@@ -2307,7 +2307,7 @@ export async function registerRoutes(app: Express) {
   });
   
   // Update a camp meta field
-  app.patch("/api/camp-meta-fields/:id", async (req, res) => {
+  app.patch("/api/camps/:campId/meta-fields/:id", async (req, res) => {
     if (!req.user) {
       return res.status(401).json({ message: "Authentication required" });
     }
@@ -2324,7 +2324,7 @@ export async function registerRoutes(app: Express) {
   });
   
   // Delete a camp meta field
-  app.delete("/api/camp-meta-fields/:id", async (req, res) => {
+  app.delete("/api/camps/:campId/meta-fields/:id", async (req, res) => {
     if (!req.user) {
       return res.status(401).json({ message: "Authentication required" });
     }

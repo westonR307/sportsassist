@@ -339,6 +339,13 @@ export function AddCampDialog({
               console.log(`Directly saving ${addedFields.length} meta fields for camp ${data.id}`);
               for (const field of addedFields) {
                 try {
+                  console.log(`Saving field data:`, {
+                    customFieldId: field.customFieldId,
+                    campId: data.id,
+                    response: field.response || null,
+                    responseArray: field.responseArray || null,
+                  });
+                  
                   await apiRequest("POST", `/api/camps/${data.id}/meta-fields`, {
                     customFieldId: field.customFieldId,
                     campId: data.id,
