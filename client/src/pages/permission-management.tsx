@@ -58,7 +58,7 @@ export function PermissionManagementPage() {
   
   // Fetch organization users (team members)
   const { data: teamData, isLoading: teamLoading } = useQuery({
-    queryKey: ['/api/organizations/users', organizationId],
+    queryKey: [`/api/organizations/${organizationId}/users`],
     queryFn: async () => {
       const response = await fetch(`/api/organizations/${organizationId}/users`);
       if (!response.ok) {
