@@ -886,8 +886,8 @@ export function AddCampDialog({
                         <h3 className="text-lg font-medium">Additional Information</h3>
                         <p className="text-sm text-muted-foreground mt-1">
                           Add custom fields to provide more details about your camp.
-                          Click "Save Fields" after adding your custom fields to save them temporarily. 
-                          They will be permanently attached to your camp when you create it.
+                          Click "Save Fields" after adding your custom fields. 
+                          They will be permanently saved when you create the camp.
                         </p>
                       </div>
                     </div>

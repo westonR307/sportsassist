@@ -146,9 +146,12 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
   const saveMetaFields = async () => {
     const currentCampId = internalCampId || campId;
     if (!currentCampId) {
-      console.error("Cannot save meta fields: No camp ID available");
-      console.log("internalCampId:", internalCampId, "campId:", campId);
-      return false;
+      // When creating a new camp, we can save the fields in temporary state until the camp is created
+      toast({
+        title: "Fields saved temporarily",
+        description: "Custom fields will be permanently saved when you create the camp",
+      });
+      return true;
     }
     
     console.log(`Saving meta fields for camp ID ${currentCampId}, ${addedFields.length} fields to process`);
@@ -237,9 +240,9 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
   const saveFieldsIfNeeded = async () => {
     const currentCampId = internalCampId || campId;
     if (!currentCampId) {
-      console.error("No camp ID available for saving meta fields");
-      console.log("saveFieldsIfNeeded - internalCampId:", internalCampId, "campId:", campId);
-      return false;
+      console.log("No camp ID available yet, will save fields when camp is created");
+      // Return true during camp creation since fields will be saved later
+      return true;
     }
     
     console.log(`Checking if meta fields need to be saved for camp ID ${currentCampId}`);
@@ -408,7 +411,7 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
           Add Custom Field
         </Button>
         
-        {addedFields.length > 0 && (campId || internalCampId) && showSaveButton && (
+        {addedFields.length > 0 && showSaveButton && (
           <Button 
             variant="secondary" 
             size="sm"
