@@ -98,6 +98,49 @@ export const scheduleExceptions = pgTable("schedule_exceptions", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Subscription plans table
+export const subscriptionPlans = pgTable("subscription_plans", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  price: integer("price").notNull(), // Monthly price in cents
+  annualPrice: integer("annual_price"), // Annual price in cents (optional discount)
+  platformFeePercent: integer("platform_fee_percent").notNull(), // Platform fee percentage for this plan
+  maxTeamMembers: integer("max_team_members").notNull(), // Maximum number of team members allowed
+  maxCamps: integer("max_camps").notNull(), // Maximum number of camps allowed
+  allowCustomizableForms: boolean("allow_customizable_forms").default(false), // Allow custom registration forms
+  allowCustomBranding: boolean("allow_custom_branding").default(false), // Allow custom branding
+  allowAdvancedReporting: boolean("allow_advanced_reporting").default(false), // Allow advanced reporting
+  allowApiAccess: boolean("allow_api_access").default(false), // Allow API access
+  allowMultiSport: boolean("allow_multi_sport").default(false), // Allow multiple sports
+  allowCustomPermissions: boolean("allow_custom_permissions").default(false), // Allow custom permission sets
+  isActive: boolean("is_active").default(true), // Whether this plan is currently available
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  stripePriceId: text("stripe_price_id"), // Stripe price ID for this plan
+  stripeProductId: text("stripe_product_id"), // Stripe product ID for this plan
+  displayOrder: integer("display_order").default(0), // Order to display plans
+});
+
+// Organization subscriptions table
+export const organizationSubscriptions = pgTable("organization_subscriptions", {
+  id: serial("id").primaryKey(),
+  organizationId: integer("organization_id").notNull().references(() => organizations.id),
+  planId: integer("plan_id").notNull().references(() => subscriptionPlans.id),
+  status: text("status").notNull().default("active"), // active, canceled, past_due, trialing, etc.
+  currentPeriodStart: timestamp("current_period_start").notNull(),
+  currentPeriodEnd: timestamp("current_period_end").notNull(),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  stripeCustomerId: text("stripe_customer_id"),
+  billingCycleAnchor: timestamp("billing_cycle_anchor"),
+  billingInterval: text("billing_interval").default("month"), // month or year
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  trialEnd: timestamp("trial_end"),
+  canceledAt: timestamp("canceled_at"),
+});
+
 export const organizations = pgTable("organizations", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),

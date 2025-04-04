@@ -12,6 +12,7 @@ import {
   BarChart3,
   Calendar,
   LogOut,
+  CreditCard,
   Loader2,
   Menu,
   ShieldAlert,
@@ -290,6 +291,23 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
             >
               <DollarSign className="h-5 w-5 flex-shrink-0" />
               <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Stripe Connect</span>
+            </button>
+          ) : null}
+
+          {/* Subscription Plans Link - Only visible to camp creators */}
+          {user?.role === "camp_creator" ? (
+            <button
+              onClick={() => {
+                navigate("/dashboard/subscription-plans");
+                // Close sidebar on mobile after navigation
+                if (window.innerWidth < 1024) setSidebarOpen(false);
+              }}
+              className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
+                wouterLocation === "/dashboard/subscription-plans" ? "bg-gray-100" : ""
+              }`}
+            >
+              <CreditCard className="h-5 w-5 flex-shrink-0" />
+              <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Subscription Plans</span>
             </button>
           ) : null}
           

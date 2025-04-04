@@ -29,7 +29,9 @@ import {
   signatures,
   documentAuditTrail,
   campDocumentAgreements,
-  organizationMessages
+  organizationMessages,
+  subscriptionPlans,
+  organizationSubscriptions
 } from "./tables";
 
 // Import types
@@ -413,6 +415,39 @@ export type InsertPermissionSet = z.infer<typeof insertPermissionSetSchema>;
 export type InsertPermission = z.infer<typeof insertPermissionSchema>;
 export type InsertUserPermission = z.infer<typeof insertUserPermissionSchema>;
 
+// Subscription plan schemas
+export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+}).extend({
+  platformFeePercent: z.number().min(0).max(100),
+  price: z.number().min(0),
+  annualPrice: z.number().min(0).optional(),
+  maxTeamMembers: z.number().min(1),
+  maxCamps: z.number().min(1),
+  displayOrder: z.number().default(0)
+});
+
+export const insertOrganizationSubscriptionSchema = createInsertSchema(organizationSubscriptions).omit({
+  id: true, 
+  createdAt: true,
+  updatedAt: true
+}).extend({
+  status: z.enum(["active", "canceled", "past_due", "trialing", "unpaid", "incomplete", "incomplete_expired"]).default("active"),
+  currentPeriodStart: z.date(),
+  currentPeriodEnd: z.date(),
+  cancelAtPeriodEnd: z.boolean().default(false),
+  billingInterval: z.enum(["month", "year"]).default("month"),
+  trialEnd: z.date().optional().nullable()
+});
+
+// Export subscription types
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type OrganizationSubscription = typeof organizationSubscriptions.$inferSelect;
+export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
+export type InsertOrganizationSubscription = z.infer<typeof insertOrganizationSubscriptionSchema>;
+
 // Re-export tables
 export {
   organizations,
@@ -443,7 +478,9 @@ export {
   organizationMessages,
   permissionSets,
   permissions,
-  userPermissions
+  userPermissions,
+  subscriptionPlans,
+  organizationSubscriptions
 };
 
 export const predefinedSports = [

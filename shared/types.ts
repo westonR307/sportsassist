@@ -71,3 +71,8 @@ export type DynamicFieldSource =
   | "camp_dates"
   | "camp_location";
 export type AuditAction = "created" | "viewed" | "signed" | "sent" | "modified" | "expired" | "declined" | "revoked";
+
+// Subscription related types
+export type SubscriptionStatus = "active" | "canceled" | "past_due" | "trialing" | "unpaid" | "incomplete" | "incomplete_expired";
+export type BillingInterval = "month" | "year";
+export type PlanTier = "free" | "basic" | "premium" | "enterprise";

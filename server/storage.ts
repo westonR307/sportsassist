@@ -18,6 +18,8 @@ import {
   campSessions,
   recurrencePatterns,
   documents,
+  subscriptionPlans,
+  organizationSubscriptions,
   documentFields,
   signatureRequests,
   signatures,
@@ -74,6 +76,10 @@ import {
   type InsertPermission,
   type UserPermission,
   type InsertUserPermission,
+  type SubscriptionPlan,
+  type InsertSubscriptionPlan,
+  type OrganizationSubscription,
+  type InsertOrganizationSubscription,
   insertCampSchema,
   sports
 } from "@shared/schema";
@@ -261,6 +267,18 @@ export interface IStorage {
   
   // Permission checking methods
   checkUserPermission(userId: number, resource: string, action: string, scope?: string): Promise<boolean>;
+  
+  // Subscription plan methods
+  createSubscriptionPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan>;
+  getSubscriptionPlan(id: number): Promise<SubscriptionPlan | undefined>;
+  getAllSubscriptionPlans(): Promise<SubscriptionPlan[]>;
+  updateSubscriptionPlan(id: number, data: Partial<Omit<SubscriptionPlan, "id" | "createdAt" | "updatedAt">>): Promise<SubscriptionPlan>;
+  
+  // Organization subscription methods
+  createOrganizationSubscription(subscription: InsertOrganizationSubscription): Promise<OrganizationSubscription>;
+  getOrganizationSubscription(organizationId: number): Promise<OrganizationSubscription | undefined>;
+  updateOrganizationSubscription(id: number, data: Partial<Omit<OrganizationSubscription, "id" | "createdAt" | "updatedAt">>): Promise<OrganizationSubscription>;
+  getOrganizationActiveSubscription(organizationId: number): Promise<(OrganizationSubscription & { plan: SubscriptionPlan }) | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3190,6 +3208,163 @@ export class DatabaseStorage implements IStorage {
     } catch (error: any) {
       console.error(`Error checking permission for user ${userId}:`, error);
       throw new Error(`Failed to check permission: ${error.message}`);
+    }
+  }
+
+  // Subscription plan methods
+  async createSubscriptionPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan> {
+    try {
+      const [newPlan] = await db.insert(subscriptionPlans).values({
+        name: plan.name,
+        description: plan.description,
+        price: plan.price,
+        billingInterval: plan.billingInterval,
+        features: plan.features,
+        tier: plan.tier,
+        platformFeePercent: plan.platformFeePercent,
+        isActive: plan.isActive ?? true,
+        stripeProductId: plan.stripeProductId,
+        stripePriceId: plan.stripePriceId,
+        maxCamps: plan.maxCamps,
+        maxAthletes: plan.maxAthletes,
+        maxTeamMembers: plan.maxTeamMembers,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }).returning();
+      
+      return newPlan;
+    } catch (error: any) {
+      console.error("Error creating subscription plan:", error);
+      throw new Error(`Failed to create subscription plan: ${error.message}`);
+    }
+  }
+  
+  async getSubscriptionPlan(id: number): Promise<SubscriptionPlan | undefined> {
+    try {
+      const [plan] = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.id, id));
+      return plan;
+    } catch (error: any) {
+      console.error(`Error getting subscription plan ${id}:`, error);
+      throw new Error(`Failed to get subscription plan: ${error.message}`);
+    }
+  }
+  
+  async getAllSubscriptionPlans(): Promise<SubscriptionPlan[]> {
+    try {
+      return await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.isActive, true));
+    } catch (error: any) {
+      console.error("Error getting all subscription plans:", error);
+      throw new Error(`Failed to get subscription plans: ${error.message}`);
+    }
+  }
+  
+  async updateSubscriptionPlan(id: number, data: Partial<Omit<SubscriptionPlan, "id" | "createdAt" | "updatedAt">>): Promise<SubscriptionPlan> {
+    try {
+      const [updatedPlan] = await db.update(subscriptionPlans)
+        .set({
+          ...data,
+          updatedAt: new Date()
+        })
+        .where(eq(subscriptionPlans.id, id))
+        .returning();
+      
+      return updatedPlan;
+    } catch (error: any) {
+      console.error(`Error updating subscription plan ${id}:`, error);
+      throw new Error(`Failed to update subscription plan: ${error.message}`);
+    }
+  }
+  
+  // Organization subscription methods
+  async createOrganizationSubscription(subscription: InsertOrganizationSubscription): Promise<OrganizationSubscription> {
+    try {
+      const [newSubscription] = await db.insert(organizationSubscriptions).values({
+        organizationId: subscription.organizationId,
+        planId: subscription.planId,
+        status: subscription.status,
+        startDate: subscription.startDate ?? new Date(),
+        endDate: subscription.endDate,
+        stripeSubscriptionId: subscription.stripeSubscriptionId,
+        stripeCustomerId: subscription.stripeCustomerId,
+        cancelAtPeriodEnd: subscription.cancelAtPeriodEnd ?? false,
+        currentPeriodStart: subscription.currentPeriodStart ?? new Date(),
+        currentPeriodEnd: subscription.currentPeriodEnd,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }).returning();
+      
+      return newSubscription;
+    } catch (error: any) {
+      console.error("Error creating organization subscription:", error);
+      throw new Error(`Failed to create organization subscription: ${error.message}`);
+    }
+  }
+  
+  async getOrganizationSubscription(organizationId: number): Promise<OrganizationSubscription | undefined> {
+    try {
+      // Get the most recent subscription for the organization
+      const [subscription] = await db.select().from(organizationSubscriptions)
+        .where(eq(organizationSubscriptions.organizationId, organizationId))
+        .orderBy(desc(organizationSubscriptions.createdAt))
+        .limit(1);
+      
+      return subscription;
+    } catch (error: any) {
+      console.error(`Error getting organization subscription for org ${organizationId}:`, error);
+      throw new Error(`Failed to get organization subscription: ${error.message}`);
+    }
+  }
+  
+  async updateOrganizationSubscription(id: number, data: Partial<Omit<OrganizationSubscription, "id" | "createdAt" | "updatedAt">>): Promise<OrganizationSubscription> {
+    try {
+      const [updatedSubscription] = await db.update(organizationSubscriptions)
+        .set({
+          ...data,
+          updatedAt: new Date()
+        })
+        .where(eq(organizationSubscriptions.id, id))
+        .returning();
+      
+      return updatedSubscription;
+    } catch (error: any) {
+      console.error(`Error updating organization subscription ${id}:`, error);
+      throw new Error(`Failed to update organization subscription: ${error.message}`);
+    }
+  }
+  
+  async getOrganizationActiveSubscription(organizationId: number): Promise<(OrganizationSubscription & { plan: SubscriptionPlan }) | undefined> {
+    try {
+      // Get the active subscription for the organization
+      const subscriptions = await db.select({
+        subscription: organizationSubscriptions,
+        plan: subscriptionPlans
+      })
+      .from(organizationSubscriptions)
+      .innerJoin(
+        subscriptionPlans,
+        eq(organizationSubscriptions.planId, subscriptionPlans.id)
+      )
+      .where(
+        and(
+          eq(organizationSubscriptions.organizationId, organizationId),
+          eq(organizationSubscriptions.status, "active")
+        )
+      )
+      .orderBy(desc(organizationSubscriptions.createdAt))
+      .limit(1);
+      
+      if (subscriptions.length === 0) {
+        return undefined;
+      }
+      
+      const { subscription, plan } = subscriptions[0];
+      return {
+        ...subscription,
+        plan
+      };
+    } catch (error: any) {
+      console.error(`Error getting organization active subscription for org ${organizationId}:`, error);
+      throw new Error(`Failed to get organization active subscription: ${error.message}`);
     }
   }
 }

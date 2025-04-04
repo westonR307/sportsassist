@@ -4073,6 +4073,170 @@ export async function registerRoutes(app: Express) {
       });
     }
   });
+  
+  // ======================
+  // Subscription Plan Routes
+  // ======================
+  
+  // Get all subscription plans
+  app.get("/api/subscription-plans", async (req, res) => {
+    try {
+      const plans = await storage.getAllSubscriptionPlans();
+      res.json(plans);
+    } catch (error: any) {
+      console.error("Error fetching subscription plans:", error);
+      res.status(500).json({ 
+        message: error.message || "Failed to fetch subscription plans",
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
+  });
+  
+  // Get a specific subscription plan
+  app.get("/api/subscription-plans/:id", async (req, res) => {
+    try {
+      const planId = parseInt(req.params.id);
+      const plan = await storage.getSubscriptionPlan(planId);
+      
+      if (!plan) {
+        return res.status(404).json({ message: "Subscription plan not found" });
+      }
+      
+      res.json(plan);
+    } catch (error: any) {
+      console.error(`Error fetching subscription plan ${req.params.id}:`, error);
+      res.status(500).json({ 
+        message: error.message || "Failed to fetch subscription plan",
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
+  });
+  
+  // Create a new subscription plan (admin only)
+  app.post("/api/subscription-plans", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Only admin users should be able to create subscription plans
+      const user = await storage.getUser(req.user.id);
+      if (user.role !== "camp_creator") {
+        return res.status(403).json({ message: "Not authorized to create subscription plans" });
+      }
+      
+      const planData = req.body;
+      const newPlan = await storage.createSubscriptionPlan(planData);
+      
+      res.status(201).json(newPlan);
+    } catch (error: any) {
+      console.error("Error creating subscription plan:", error);
+      res.status(500).json({ 
+        message: error.message || "Failed to create subscription plan",
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
+  });
+  
+  // Update a subscription plan (admin only)
+  app.put("/api/subscription-plans/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Only admin users should be able to update subscription plans
+      const user = await storage.getUser(req.user.id);
+      if (user.role !== "camp_creator") {
+        return res.status(403).json({ message: "Not authorized to update subscription plans" });
+      }
+      
+      const planId = parseInt(req.params.id);
+      const planData = req.body;
+      
+      const updatedPlan = await storage.updateSubscriptionPlan(planId, planData);
+      
+      res.json(updatedPlan);
+    } catch (error: any) {
+      console.error(`Error updating subscription plan ${req.params.id}:`, error);
+      res.status(500).json({ 
+        message: error.message || "Failed to update subscription plan",
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
+  });
+  
+  // Get organization's active subscription
+  app.get("/api/organizations/:orgId/subscription", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const orgId = parseInt(req.params.orgId);
+      
+      // Check if the user belongs to the requested organization
+      if (req.user.organizationId !== orgId) {
+        return res.status(403).json({ message: "Not authorized for this organization" });
+      }
+      
+      const subscription = await storage.getOrganizationActiveSubscription(orgId);
+      
+      if (!subscription) {
+        return res.json({ active: false });
+      }
+      
+      res.json({
+        active: true,
+        subscription
+      });
+    } catch (error: any) {
+      console.error(`Error fetching organization subscription for ${req.params.orgId}:`, error);
+      res.status(500).json({ 
+        message: error.message || "Failed to fetch organization subscription",
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
+  });
+  
+  // Create/update an organization subscription
+  app.post("/api/organizations/:orgId/subscription", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const orgId = parseInt(req.params.orgId);
+      
+      // Only organization owners can update subscriptions
+      if (req.user.organizationId !== orgId || req.user.role !== "camp_creator") {
+        return res.status(403).json({ message: "Not authorized for this organization" });
+      }
+      
+      const subscriptionData = {
+        ...req.body,
+        organizationId: orgId
+      };
+      
+      // Check if there's an existing subscription to update
+      const existingSubscription = await storage.getOrganizationSubscription(orgId);
+      
+      let subscription;
+      if (existingSubscription) {
+        subscription = await storage.updateOrganizationSubscription(existingSubscription.id, subscriptionData);
+      } else {
+        subscription = await storage.createOrganizationSubscription(subscriptionData);
+      }
+      
+      res.json(subscription);
+    } catch (error: any) {
+      console.error(`Error updating organization subscription for ${req.params.orgId}:`, error);
+      res.status(500).json({ 
+        message: error.message || "Failed to update organization subscription",
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
+  });
 
   return createServer(app);
 }
