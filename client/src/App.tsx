@@ -103,6 +103,7 @@ function Router() {
       />
       <ProtectedRoute path="/dashboard/organization-profile" component={OrganizationProfilePage} />
       <ProtectedRoute path="/dashboard/permissions" component={PermissionManagementPage} />
+      <ProtectedRoute path="/permission-management" component={PermissionManagementPage} />
       <ProtectedRoute path="/custom-fields" component={CustomFieldsPage} />
       <ProtectedRoute path="/parent-dashboard" component={ParentDashboardRouter} />
       <ProtectedRoute path="/parent-onboarding" component={ParentOnboardingPage} />

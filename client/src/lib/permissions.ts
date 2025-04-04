@@ -252,6 +252,21 @@ export const checkPermission = async (resource: string, action: string, scope: s
   return data.hasPermission;
 };
 
+// Get user permissions for an organization
+export const getAllUserPermissions = async (organizationId: number): Promise<any[]> => {
+  const response = await fetch(`/api/organizations/${organizationId}/permissions/users`, {
+    method: 'GET',
+    credentials: 'include'
+  });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Failed to get all user permissions');
+  }
+  
+  return await response.json();
+};
+
 // Available resources
 export const availableResources = [
   { value: 'camps', label: 'Camps' },

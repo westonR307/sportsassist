@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { PermissionSetEditor } from '@/components/permission-set-editor';
 import { UserPermissionAssignment } from '@/components/user-permission-assignment';
-import { getPermissionSets, createPermissionSet, PermissionSet } from '@/lib/permissions';
+import { PermissionSummary } from '@/components/permission-summary';
+import { getPermissionSets, createPermissionSet, getUserPermissions, getAllUserPermissions, PermissionSet, UserPermission } from '@/lib/permissions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
@@ -12,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Users, Settings, Loader2 } from 'lucide-react';
+import { Plus, Users, Settings, Loader2, PieChart } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -33,6 +34,7 @@ export function PermissionManagementPage() {
     isDefault: false,
     defaultForRole: null
   });
+  const [userPermissions, setUserPermissions] = useState<UserPermission[]>([]);
   
   // Fetch current user
   const { data: userData, isLoading: userLoading } = useQuery({
@@ -80,6 +82,20 @@ export function PermissionManagementPage() {
       }
     }
   }, [teamData, selectedMemberId]);
+  
+  // Fetch all user permissions for the organization
+  const { data: allUserPermissions = [], isLoading: userPermsLoading } = useQuery({
+    queryKey: [`/api/organizations/${organizationId}/permissions/users`],
+    queryFn: () => getAllUserPermissions(organizationId as number),
+    enabled: !!organizationId && currentUser?.role === 'camp_creator'
+  });
+  
+  // Set user permissions when data is loaded (only once when first loaded)
+  useEffect(() => {
+    if (allUserPermissions && allUserPermissions.length > 0 && userPermissions.length === 0) {
+      setUserPermissions(allUserPermissions);
+    }
+  }, [allUserPermissions, userPermissions.length]);
   
   // Fetch permission sets
   const { data: permissionSets = [], isLoading: setsLoading } = useQuery({
@@ -181,8 +197,12 @@ export function PermissionManagementPage() {
         </div>
       </div>
       
-      <Tabs defaultValue="sets" className="mt-6">
+      <Tabs defaultValue="summary" className="mt-6">
         <TabsList className="mb-4">
+          <TabsTrigger value="summary">
+            <PieChart className="h-4 w-4 mr-2" />
+            Summary
+          </TabsTrigger>
           <TabsTrigger value="sets">
             <Settings className="h-4 w-4 mr-2" />
             Permission Sets
@@ -192,6 +212,23 @@ export function PermissionManagementPage() {
             User Permissions
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="summary">
+          {setsLoading || userPermsLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <span className="ml-2">Loading permission data...</span>
+            </div>
+          ) : (
+            <PermissionSummary 
+              permissionSets={permissionSets}
+              userPermissions={userPermissions} 
+              teamMembers={teamMembers}
+              organizationId={organizationId as number}
+              loading={setsLoading || userPermsLoading}
+            />
+          )}
+        </TabsContent>
         
         <TabsContent value="sets">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

@@ -257,6 +257,7 @@ export interface IStorage {
   assignPermissionSetToUser(userPermission: InsertUserPermission): Promise<UserPermission>;
   getUserPermissionSets(userId: number): Promise<(UserPermission & { permissionSet: PermissionSet })[]>;
   removeUserPermission(id: number): Promise<void>;
+  getAllUserPermissionsForOrganization(organizationId: number): Promise<any[]>;
   
   // Permission checking methods
   checkUserPermission(userId: number, resource: string, action: string, scope?: string): Promise<boolean>;
@@ -3053,6 +3054,68 @@ export class DatabaseStorage implements IStorage {
     } catch (error: any) {
       console.error(`Error removing user permission ${id}:`, error);
       throw new Error(`Failed to remove user permission: ${error.message}`);
+    }
+  }
+  
+  async getAllUserPermissionsForOrganization(organizationId: number): Promise<any[]> {
+    try {
+      console.log(`Getting all user permissions for organization ${organizationId}`);
+      
+      // Get all users in the organization
+      const orgUsers = await db.select().from(users).where(eq(users.organizationId, organizationId));
+      
+      if (!orgUsers.length) {
+        console.log(`No users found for organization ${organizationId}`);
+        return [];
+      }
+      
+      console.log(`Found ${orgUsers.length} users in organization ${organizationId}`);
+      
+      // For each user, get their permissions
+      const result = await Promise.all(orgUsers.map(async (user) => {
+        // Get user's assigned permission sets with permissions
+        const userPermSets = await this.getUserPermissionSets(user.id);
+        
+        // Get permissions for each set
+        const permissionSetsWithPermissions = await Promise.all(
+          userPermSets.map(async (ups) => {
+            const permissions = await this.getPermissionsBySet(ups.permissionSetId);
+            return {
+              id: ups.permissionSetId,
+              name: ups.permissionSet.name,
+              permissions: permissions
+            };
+          })
+        );
+        
+        // If the user has no specific permissions, get their default role-based permission set
+        if (permissionSetsWithPermissions.length === 0 && user.role) {
+          const defaultSet = await this.getDefaultPermissionSetForRole(organizationId, user.role);
+          
+          if (defaultSet) {
+            const permissions = await this.getPermissionsBySet(defaultSet.id);
+            permissionSetsWithPermissions.push({
+              id: defaultSet.id,
+              name: defaultSet.name + " (default for " + user.role + ")",
+              permissions
+            });
+          }
+        }
+        
+        return {
+          userId: user.id,
+          username: user.username,
+          name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
+          email: user.email,
+          role: user.role,
+          permissionSets: permissionSetsWithPermissions
+        };
+      }));
+      
+      return result;
+    } catch (error: any) {
+      console.error(`Error getting all user permissions for organization ${organizationId}:`, error);
+      throw new Error(`Failed to get all user permissions: ${error.message}`);
     }
   }
   

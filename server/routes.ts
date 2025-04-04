@@ -3328,6 +3328,33 @@ export async function registerRoutes(app: Express) {
     }
   });
   
+  // Get all user permissions for an organization
+  app.get("/api/organizations/:organizationId/permissions/users", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Only org owners (camp creators) can view all permissions
+      if (req.user.role !== "camp_creator") {
+        return res.status(403).json({ message: "Permission denied" });
+      }
+      
+      const organizationId = parseInt(req.params.organizationId);
+      
+      if (isNaN(organizationId)) {
+        return res.status(400).json({ message: "Invalid organization ID" });
+      }
+      
+      // Get all user permissions for the organization
+      const permissions = await storage.getAllUserPermissionsForOrganization(organizationId);
+      res.json(permissions);
+    } catch (error: any) {
+      console.error("Error getting user permissions:", error);
+      res.status(500).json({ message: error.message || "Failed to get user permissions" });
+    }
+  });
+  
   // Update a permission set
   app.put("/api/permissions/sets/:id", async (req, res) => {
     try {
