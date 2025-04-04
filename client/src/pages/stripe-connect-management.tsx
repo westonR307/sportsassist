@@ -18,6 +18,7 @@ const StripeConnectManagement = () => {
   const [processing, setProcessing] = useState(false);
   const [feePassthrough, setFeePassthrough] = useState(false);
   const [platformFeePercent, setPlatformFeePercent] = useState("15");
+  const [stripeApiKeyError, setStripeApiKeyError] = useState(false);
 
   // Get the user's organization ID
   const { data: user, isLoading: userLoading } = useQuery({
@@ -52,6 +53,15 @@ const StripeConnectManagement = () => {
       setPlatformFeePercent(organization.stripePlatformFeePercent?.toString() || "15");
     }
   }, [organization]);
+  
+  // Check for Stripe API key errors
+  useEffect(() => {
+    if (stripeStatus?.error === "Stripe is not properly configured. Please contact the platform administrator.") {
+      setStripeApiKeyError(true);
+    } else {
+      setStripeApiKeyError(false);
+    }
+  }, [stripeStatus]);
 
   const createStripeAccount = async () => {
     if (!orgId) return;
@@ -159,9 +169,44 @@ const StripeConnectManagement = () => {
     </div>;
   }
 
+  // State for API key input
+  const [stripeApiKey, setStripeApiKey] = useState('');
+
+  const submitStripeApiKey = async () => {
+    if (!stripeApiKey.trim()) return;
+    
+    toast({
+      title: "API Key Submission",
+      description: "Please contact your administrator to update the Stripe API key in the server environment.",
+    });
+    
+    // This doesn't actually set the key in the environment - would require server-side changes
+  };
+
   return (
     <div className="container mx-auto py-10 px-4">
       <h1 className="text-3xl font-bold mb-8">Stripe Connect Management</h1>
+      
+      {stripeApiKeyError && (
+        <Card className="mb-8 border-amber-500">
+          <CardHeader className="bg-amber-50">
+            <CardTitle className="text-amber-800">Stripe API Key Missing</CardTitle>
+            <CardDescription className="text-amber-700">
+              The Stripe integration is not properly configured. A valid Stripe API key is required.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <p className="text-gray-700 mb-4">
+              Please contact your system administrator to configure the Stripe API key. The key should be set
+              as an environment variable named <code className="bg-gray-100 p-1 rounded">STRIPE_SECRET_KEY</code>.
+            </p>
+            <div className="bg-gray-50 p-4 rounded-md border text-sm">
+              <p className="font-medium mb-2">Note for administrators:</p>
+              <p>The Stripe API key must be added to the server environment variables. This cannot be done from the user interface.</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       
       <Tabs defaultValue="account" className="w-full">
         <TabsList className="mb-4">
@@ -181,6 +226,9 @@ const StripeConnectManagement = () => {
               {!stripeStatus || !stripeStatus.hasStripeAccount ? (
                 <div className="space-y-4">
                   <p>Your organization doesn't have a Stripe account yet. Create one to start accepting payments.</p>
+                  <div className="text-sm text-amber-600 mb-4">
+                    <p>Note: You will need a valid Stripe API key to create a Stripe account. If you encounter an error, please contact the platform administrator to ensure Stripe is properly configured.</p>
+                  </div>
                   <Button onClick={createStripeAccount} disabled={processing}>
                     {processing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Create Stripe Account

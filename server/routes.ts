@@ -3761,6 +3761,13 @@ export async function registerRoutes(app: Express) {
         return res.status(403).json({ message: "Not authorized for this organization" });
       }
       
+      // Check if Stripe API key is configured
+      if (!process.env.STRIPE_SECRET_KEY) {
+        return res.status(500).json({ 
+          message: "Stripe is not properly configured. Please contact the platform administrator." 
+        });
+      }
+      
       // Get the organization
       const organization = await storage.getOrganization(orgId);
       if (!organization) {
@@ -3813,6 +3820,13 @@ export async function registerRoutes(app: Express) {
         return res.status(403).json({ message: "Not authorized for this organization" });
       }
       
+      // Check if Stripe API key is configured
+      if (!process.env.STRIPE_SECRET_KEY) {
+        return res.status(500).json({ 
+          message: "Stripe is not properly configured. Please contact the platform administrator." 
+        });
+      }
+      
       const { refreshUrl, returnUrl } = req.body;
       if (!refreshUrl || !returnUrl) {
         return res.status(400).json({ message: "Refresh URL and return URL are required" });
@@ -3857,6 +3871,13 @@ export async function registerRoutes(app: Express) {
       // Only organization members can view Stripe account status
       if (req.user.organizationId !== orgId) {
         return res.status(403).json({ message: "Not authorized for this organization" });
+      }
+      
+      // Check if Stripe API key is configured
+      if (!process.env.STRIPE_SECRET_KEY) {
+        return res.status(500).json({ 
+          message: "Stripe is not properly configured. Please contact the platform administrator." 
+        });
       }
       
       // Get the organization
@@ -3907,6 +3928,13 @@ export async function registerRoutes(app: Express) {
     try {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Check if Stripe API key is configured
+      if (!process.env.STRIPE_SECRET_KEY) {
+        return res.status(500).json({ 
+          message: "Stripe is not properly configured. Please contact the platform administrator." 
+        });
       }
       
       const campId = parseInt(req.params.campId);
@@ -4004,6 +4032,13 @@ export async function registerRoutes(app: Express) {
       // Only organization owners can update Stripe settings
       if (req.user.organizationId !== orgId || req.user.role !== "camp_creator") {
         return res.status(403).json({ message: "Not authorized for this organization" });
+      }
+      
+      // Check if Stripe API key is configured
+      if (!process.env.STRIPE_SECRET_KEY) {
+        return res.status(500).json({ 
+          message: "Stripe is not properly configured. Please contact the platform administrator." 
+        });
       }
       
       const { stripeFeePassthrough, stripePlatformFeePercent } = req.body;

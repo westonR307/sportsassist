@@ -6,9 +6,15 @@ import { eq } from 'drizzle-orm';
 // Default platform fee percentage (15%)
 const PLATFORM_FEE_PERCENTAGE = 15;
 
+// Check if Stripe API key is configured
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY || '';
+if (!stripeSecretKey) {
+  console.error('WARNING: STRIPE_SECRET_KEY environment variable is not set. Stripe functionality will not work.');
+}
+
 // Initialize Stripe with your secret key
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2025-02-24.acacia', // Use the latest API version
+export const stripe = new Stripe(stripeSecretKey, {
+  apiVersion: '2022-11-15', // Use a valid API version
 });
 
 // Calculate application fee amount based on base price
