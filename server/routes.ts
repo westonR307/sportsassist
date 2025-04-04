@@ -2056,6 +2056,53 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ message: "Failed to fetch organization staff" });
     }
   });
+  
+  // Update team member role - only camp_creator can do this
+  app.patch("/api/organizations/:orgId/staff/:userId/role", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    // Verify this is a camp_creator
+    if (req.user.role !== "camp_creator") {
+      return res.status(403).json({ message: "Only organization owners can update team member roles" });
+    }
+
+    const orgId = parseInt(req.params.orgId);
+    if (req.user.organizationId !== orgId) {
+      return res.status(403).json({ message: "Not authorized for this organization" });
+    }
+
+    const userId = parseInt(req.params.userId);
+    const { role } = req.body;
+
+    if (!role || !["coach", "manager", "volunteer"].includes(role)) {
+      return res.status(400).json({ message: "Invalid role specified" });
+    }
+
+    try {
+      // Get all staff members for this organization 
+      const staff = await storage.getOrganizationStaff(orgId);
+      
+      // Find the user in the staff members list
+      const user = staff.find(member => member.id === userId);
+      
+      if (!user || user.organizationId !== orgId) {
+        return res.status(404).json({ message: "User not found in this organization" });
+      }
+
+      // Don't allow changing the role of another camp_creator
+      if (user.role === "camp_creator") {
+        return res.status(403).json({ message: "Cannot change the role of an organization owner" });
+      }
+
+      await storage.updateUserRole(userId, role);
+      res.json({ success: true, message: "User role updated successfully" });
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      res.status(500).json({ message: "Failed to update user role" });
+    }
+  });
   app.post("/api/login", passport.authenticate("local"), async (req, res, next) => {
     try {
       console.log("Login successful - User:", {

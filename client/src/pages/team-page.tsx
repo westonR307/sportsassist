@@ -17,6 +17,7 @@ interface StaffMember {
   first_name: string | null;
   last_name: string | null;
   role: string;
+  organizationId?: number;
 }
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -275,6 +276,98 @@ function DeleteButton({ invitation, organizationId }: { invitation: Invitation; 
   );
 }
 
+function EditRoleDialog({ member, organizationId }: { member: StaffMember; organizationId: number }) {
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [role, setRole] = useState(member.role);
+  const { user } = useAuth();
+
+  const updateRoleMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest(
+        "PATCH",
+        `/api/organizations/${organizationId}/staff/${member.id}/role`,
+        { role }
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/organizations/${organizationId}/staff`] });
+      toast({
+        title: "Success",
+        description: "Team member role updated successfully",
+      });
+      setOpen(false);
+    },
+    onError: (error: Error) => {
+      let errorMessage = error.message;
+      try {
+        const errorData = JSON.parse(errorMessage);
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      } catch (e) {
+        // If parsing fails, use the original error message
+      }
+      
+      toast({
+        title: "Error updating role",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          Edit Role
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Change Team Member Role</DialogTitle>
+          <DialogDescription>
+            Update the role for {member.first_name && member.last_name 
+              ? `${member.first_name} ${member.last_name}` 
+              : member.username}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 pt-2">
+          <div className="space-y-2">
+            <Label htmlFor="role">Role</Label>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="coach">Coach</SelectItem>
+                <SelectItem value="manager">Manager</SelectItem>
+                <SelectItem value="volunteer">Volunteer</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button 
+              onClick={() => updateRoleMutation.mutate()}
+              disabled={updateRoleMutation.isPending || role === member.role}
+            >
+              {updateRoleMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                "Update Role"
+              )}
+            </Button>
+          </DialogFooter>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function TeamPage() {
   const { user } = useAuth();
 
@@ -317,6 +410,12 @@ function TeamPage() {
                         </p>
                         <p className="text-sm text-gray-500">{member.role}</p>
                       </div>
+                      {user?.role === "camp_creator" && member.role !== "camp_creator" && (
+                        <EditRoleDialog 
+                          member={member} 
+                          organizationId={user.organizationId || 0} 
+                        />
+                      )}
                     </div>
                   ))}
                 </div>
