@@ -781,19 +781,16 @@ export class DatabaseStorage implements IStorage {
           lastName
         });
         
-        // Generate a random username based on their name
-        const usernameBase = `${firstName.toLowerCase()}${lastName.toLowerCase()}`;
-        const username = `${usernameBase}${Math.floor(Math.random() * 1000)}`;
+        // Generate username from the part of the email before the @ symbol
+        const emailParts = invitationRecord.email.split('@');
+        const username = emailParts[0];
         
-        // Generate a random temporary password
-        const tempPassword = crypto.randomBytes(12).toString('hex');
-        
-        // Insert the new user
+        // Insert the new user - we'll let them set their password on first login
         await tx.insert(users).values({
           username,
           email: invitationRecord.email,
-          password: tempPassword, // This is a temporary password that they'll need to change
-          passwordHash: tempPassword, // Match the password field for backward compatibility
+          password: '', // Empty password that they'll need to set on first login
+          passwordHash: '', // Empty password hash that they'll need to set on first login
           role: invitationRecord.role,
           organizationId: invitationRecord.organizationId,
           first_name: firstName,
@@ -802,7 +799,7 @@ export class DatabaseStorage implements IStorage {
           updatedAt: new Date()
         });
         
-        console.log(`New user created with username: ${username}`);
+        console.log(`New user created with username derived from email: ${username}`);
       }
       
       return updatedInvitation;
