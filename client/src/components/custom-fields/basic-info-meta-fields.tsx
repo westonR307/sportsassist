@@ -35,6 +35,7 @@ import { apiRequest } from "@/lib/api";
 interface BasicInfoMetaFieldsProps {
   campId?: number;
   organizationId: number;
+  showSaveButton?: boolean;
 }
 
 export interface BasicInfoMetaFieldsRef {
@@ -45,6 +46,7 @@ export interface BasicInfoMetaFieldsRef {
 export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, BasicInfoMetaFieldsProps>(({
   campId,
   organizationId,
+  showSaveButton = true, // Default to showing save button
 }, ref) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -406,7 +408,7 @@ export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, Basi
           Add Custom Field
         </Button>
         
-        {addedFields.length > 0 && (campId || internalCampId) && (
+        {addedFields.length > 0 && (campId || internalCampId) && showSaveButton && (
           <Button 
             variant="secondary" 
             size="sm"

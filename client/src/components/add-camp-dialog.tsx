@@ -881,15 +881,19 @@ export function AddCampDialog({
                   
                   {/* Add the custom meta fields component */}
                   <div className="mt-8 border-t pt-6">
-                    <h3 className="text-lg font-medium mb-2">Additional Information</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Add custom fields to provide more details about your camp.
-                      Custom fields will be saved when you create the camp.
-                    </p>
+                    <div className="flex justify-between items-center mb-4">
+                      <div>
+                        <h3 className="text-lg font-medium">Additional Information</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Add custom fields to provide more details about your camp.
+                        </p>
+                      </div>
+                    </div>
                     {user?.organizationId && (
                       <BasicInfoMetaFields
                         ref={metaFieldsRef}
                         organizationId={user.organizationId}
+                        showSaveButton={false} // Hide save button during camp creation
                       />
                     )}
                   </div>
