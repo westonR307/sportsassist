@@ -235,6 +235,23 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
               <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Documents</span>
             </button>
           ) : null}
+          
+          {/* Organization Profile Link */}
+          {user?.role === "camp_creator" || user?.role === "manager" ? (
+            <button
+              onClick={() => {
+                navigate("/dashboard/organization-profile");
+                // Close sidebar on mobile after navigation
+                if (window.innerWidth < 1024) setSidebarOpen(false);
+              }}
+              className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
+                wouterLocation === "/dashboard/organization-profile" ? "bg-gray-100" : ""
+              }`}
+            >
+              <Users2 className="h-5 w-5 flex-shrink-0" />
+              <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Organization Profile</span>
+            </button>
+          ) : null}
           <Button
             variant="ghost"
             className="w-full justify-start whitespace-nowrap"

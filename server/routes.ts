@@ -4,6 +4,7 @@ import { createServer, type Server } from "http";
 import { db } from "./db";
 import { eq, inArray } from "drizzle-orm";
 import { campSports, scheduleExceptions, campSchedules, insertScheduleExceptionSchema, sports } from "@shared/schema";
+import { upload } from "./utils/file-upload";
 // Import the scheduleExceptionSchema from our dialog component for validation
 import { scheduleExceptionSchema } from "../client/src/components/schedule-exception-dialog";
 
@@ -2746,10 +2747,13 @@ export async function registerRoutes(app: Express) {
       const updatedOrg = await storage.updateOrganizationProfile(orgId, {
         name: req.body.name,
         description: req.body.description,
-        logoUrl: req.body.logoUrl,
         primaryColor: req.body.primaryColor,
         secondaryColor: req.body.secondaryColor,
-        aboutUs: req.body.aboutUs,
+        aboutText: req.body.aboutText,
+        contactEmail: req.body.contactEmail,
+        websiteUrl: req.body.websiteUrl,
+        socialLinks: req.body.socialLinks,
+        displayName: req.body.displayName,
         slug: req.body.slug
       });
       
@@ -2757,6 +2761,78 @@ export async function registerRoutes(app: Express) {
     } catch (error: any) {
       console.error("Error updating organization profile:", error);
       res.status(500).json({ message: error.message || "Failed to update organization profile" });
+    }
+  });
+  
+  // Upload organization logo
+  app.post("/api/organizations/:orgId/logo", upload.single('logo'), async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const orgId = parseInt(req.params.orgId);
+      
+      // Only allow camp creators who belong to this organization to update it
+      if (req.user.organizationId !== orgId || req.user.role !== "camp_creator") {
+        return res.status(403).json({ message: "Not authorized to update this organization's logo" });
+      }
+      
+      if (!req.file) {
+        return res.status(400).json({ message: "No logo file uploaded" });
+      }
+      
+      // Get the file path
+      const logoUrl = `/uploads/${req.file.filename}`;
+      
+      // Update the organization with the new logo URL
+      const updatedOrg = await storage.updateOrganizationProfile(orgId, {
+        logoUrl: logoUrl
+      });
+      
+      res.json({
+        success: true,
+        logoUrl: logoUrl
+      });
+    } catch (error: any) {
+      console.error("Error uploading organization logo:", error);
+      res.status(500).json({ message: error.message || "Failed to upload logo" });
+    }
+  });
+  
+  // Upload organization banner
+  app.post("/api/organizations/:orgId/banner", upload.single('banner'), async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const orgId = parseInt(req.params.orgId);
+      
+      // Only allow camp creators who belong to this organization to update it
+      if (req.user.organizationId !== orgId || req.user.role !== "camp_creator") {
+        return res.status(403).json({ message: "Not authorized to update this organization's banner" });
+      }
+      
+      if (!req.file) {
+        return res.status(400).json({ message: "No banner file uploaded" });
+      }
+      
+      // Get the file path
+      const bannerImageUrl = `/uploads/${req.file.filename}`;
+      
+      // Update the organization with the new banner URL
+      const updatedOrg = await storage.updateOrganizationProfile(orgId, {
+        bannerImageUrl: bannerImageUrl
+      });
+      
+      res.json({
+        success: true,
+        bannerImageUrl: bannerImageUrl
+      });
+    } catch (error: any) {
+      console.error("Error uploading organization banner:", error);
+      res.status(500).json({ message: error.message || "Failed to upload banner" });
     }
   });
 

@@ -51,6 +51,15 @@ export const uploadConfig = {
   })
 };
 
+// Generic upload middleware for single file uploads
+export const upload = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
+
 // Function to get the URL for an uploaded file
 export function getFileUrl(filename: string): string {
   return `/uploads/${filename}`;

@@ -28,6 +28,7 @@ import DocumentsPage from "@/pages/documents-page";
 import DocumentViewPage from "@/pages/document-view-page";
 import DocumentEditPage from "@/pages/document-edit-page";
 import SignaturePage from "@/pages/signature-page";
+import OrganizationProfilePage from "@/pages/organization-profile";
 import { ProtectedRoute } from "./lib/protected-route";
 
 // Component to handle dashboard routing based on user role
@@ -94,6 +95,7 @@ function Router() {
         path="/dashboard/settings" 
         component={user?.role === "parent" ? ParentSettingsPage : SettingsPage} 
       />
+      <ProtectedRoute path="/dashboard/organization-profile" component={OrganizationProfilePage} />
       <ProtectedRoute path="/custom-fields" component={CustomFieldsPage} />
       <ProtectedRoute path="/parent-dashboard" component={ParentDashboardRouter} />
       <ProtectedRoute path="/parent-onboarding" component={ParentOnboardingPage} />
