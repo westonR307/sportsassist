@@ -132,7 +132,10 @@ export default function OrganizationProfilePage() {
   // Update form values when organization data loads or changes
   useEffect(() => {
     if (organization) {
-      form.reset({
+      console.log('Setting organization data:', organization);
+      
+      // Create the data object to reset the form with
+      const formData = {
         name: organization.name || '',
         displayName: organization.displayName || '',
         description: organization.description || '',
@@ -147,7 +150,19 @@ export default function OrganizationProfilePage() {
           linkedin: organization.socialLinks?.linkedin || '',
           instagram: organization.socialLinks?.instagram || '',
         }
-      });
+      };
+      
+      console.log('Resetting form with data:', formData);
+      form.reset(formData);
+      
+      // Also set the preview images if they exist
+      if (organization.logoUrl) {
+        setLogoPreview(organization.logoUrl);
+      }
+      
+      if (organization.bannerImageUrl) {
+        setBannerPreview(organization.bannerImageUrl);
+      }
     }
   }, [organization, form]);
 
