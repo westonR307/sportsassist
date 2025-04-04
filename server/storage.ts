@@ -100,6 +100,7 @@ export interface IStorage {
   updateOrganization(id: number, orgData: Partial<Omit<Organization, "id" | "createdAt">>): Promise<Organization>;
   updateOrganizationProfile(id: number, profileData: Partial<Organization>): Promise<Organization>;
   getOrganizationUsers(orgId: number): Promise<User[]>;
+  getOrganizationOwner(orgId: number): Promise<User | undefined>;
   listPublicOrganizationCamps(orgId: number): Promise<(Camp & { sportName?: string })[]>;
   createInvitation(invitation: InsertInvitation & { token: string }): Promise<Invitation>;
   getInvitation(token: string): Promise<Invitation | undefined>;
@@ -685,6 +686,26 @@ export class DatabaseStorage implements IStorage {
     return await db.select()
       .from(users)
       .where(eq(users.organizationId, orgId));
+  }
+
+  async getOrganizationOwner(orgId: number): Promise<User | undefined> {
+    try {
+      console.log(`Fetching organization owner for organization ID: ${orgId}`);
+      
+      const [owner] = await db.select()
+        .from(users)
+        .where(
+          and(
+            eq(users.organizationId, orgId),
+            eq(users.role, "camp_creator" as Role)
+          )
+        );
+      
+      return owner;
+    } catch (error: any) {
+      console.error(`Error fetching organization owner for org ID ${orgId}:`, error);
+      throw new Error(`Failed to fetch organization owner: ${error.message}`);
+    }
   }
 
   async createInvitation(invitation: InsertInvitation & { token: string }): Promise<Invitation> {

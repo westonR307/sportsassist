@@ -631,11 +631,16 @@ export async function registerRoutes(app: Express) {
     // Return basic info about the invitation
     const organization = await storage.getOrganization(invitation.organizationId);
     
+    // Add invitedBy if available, and don't forget to include valid:true
+    const orgOwner = organization ? await storage.getOrganizationOwner(organization.id) : null;
+    
     res.json({
       email: invitation.email,
       role: invitation.role,
       organizationName: organization?.name || "Unknown Organization",
-      expiresAt: invitation.expiresAt
+      expiresAt: invitation.expiresAt,
+      valid: true,
+      invitedBy: orgOwner ? `${orgOwner.first_name} ${orgOwner.last_name}` : undefined
     });
   });
 
