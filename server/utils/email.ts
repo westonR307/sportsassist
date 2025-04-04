@@ -13,7 +13,7 @@ export async function sendInvitationEmail({
   organizationName: string;
   token: string;
 }) {
-  const acceptUrl = `${process.env.VITE_APP_URL || "http://localhost:5000"}/invitations/${token}/accept`;
+  const acceptUrl = `https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/invitations/${token}/accept`;
 
   try {
     console.log("Attempting to send invitation email to:", email);

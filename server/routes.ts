@@ -574,6 +574,31 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  app.get("/api/invitations/:token", async (req, res) => {
+    const invitation = await storage.getInvitation(req.params.token);
+    if (!invitation) {
+      return res.status(404).json({ message: "Invitation not found" });
+    }
+
+    if (invitation.accepted) {
+      return res.status(400).json({ message: "Invitation already accepted" });
+    }
+
+    if (new Date() > invitation.expiresAt) {
+      return res.status(400).json({ message: "Invitation expired" });
+    }
+
+    // Return basic info about the invitation
+    const organization = await storage.getOrganization(invitation.organizationId);
+    
+    res.json({
+      email: invitation.email,
+      role: invitation.role,
+      organizationName: organization?.name || "Unknown Organization",
+      expiresAt: invitation.expiresAt
+    });
+  });
+
   app.post("/api/invitations/:token/accept", async (req, res) => {
     const invitation = await storage.getInvitation(req.params.token);
     if (!invitation) {

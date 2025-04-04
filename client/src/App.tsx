@@ -30,6 +30,7 @@ import DocumentEditPage from "@/pages/document-edit-page";
 import SignaturePage from "@/pages/signature-page";
 import OrganizationProfilePage from "@/pages/organization-profile";
 import OrganizationPublicPage from "@/pages/organization";
+import InvitationAcceptPage from "@/pages/invitation-accept-page";
 import { ProtectedRoute } from "./lib/protected-route";
 
 // Component to handle dashboard routing based on user role
@@ -83,6 +84,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/find-camps" component={FindCampsPage} />
       <Route path="/org/:slug" component={OrganizationPublicPage} />
+      <Route path="/invitations/:token/accept" component={InvitationAcceptPage} />
       <ProtectedRoute path="/dashboard" component={DashboardRouter} />
       <ProtectedRoute path="/dashboard/my-athletes" component={MyAthletesPage} />
       <ProtectedRoute path="/dashboard/registrations" component={RegistrationsPage} />
