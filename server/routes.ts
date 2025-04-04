@@ -152,9 +152,16 @@ import { sendInvitationEmail } from "./utils/email";
 import { uploadConfig, getFileUrl } from "./utils/file-upload";
 import path from 'path';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2025-02-24.acacia",
-});
+// Import Stripe utility functions
+import { 
+  stripe, 
+  calculateApplicationFeeAmount, 
+  createStripeAccountLink, 
+  createStripeConnectedAccount,
+  retrieveStripeAccount,
+  updateOrganizationStripeStatus,
+  createCheckoutSession
+} from './utils/stripe';
 
 export async function registerRoutes(app: Express) {
   // Add cache control middleware
@@ -3733,6 +3740,302 @@ export async function registerRoutes(app: Express) {
     } catch (error: any) {
       console.error("Error checking permission:", error);
       res.status(500).json({ message: error.message || "Failed to check permission" });
+    }
+  });
+
+  // =========================================================================
+  // Stripe Connect API endpoints
+  // =========================================================================
+  
+  // Create a Stripe Connect account for an organization
+  app.post("/api/organizations/:orgId/stripe/create-account", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const orgId = parseInt(req.params.orgId);
+      
+      // Only organization owners can create Stripe accounts
+      if (req.user.organizationId !== orgId || req.user.role !== "camp_creator") {
+        return res.status(403).json({ message: "Not authorized for this organization" });
+      }
+      
+      // Get the organization
+      const organization = await storage.getOrganization(orgId);
+      if (!organization) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+      
+      // Check if organization already has a Stripe account
+      if (organization.stripeAccountId) {
+        return res.status(400).json({ 
+          message: "Organization already has a Stripe account",
+          accountId: organization.stripeAccountId 
+        });
+      }
+      
+      // Create a Stripe account
+      const account = await createStripeConnectedAccount(organization.contactEmail || req.user.email);
+      
+      // Update the organization with the Stripe account ID
+      await db.update(organizations)
+        .set({
+          stripeAccountId: account.id,
+          stripeAccountStatus: 'pending',
+          stripeAccountDetailsSubmitted: false,
+          stripeAccountChargesEnabled: false,
+          stripeAccountPayoutsEnabled: false,
+        })
+        .where(eq(organizations.id, orgId));
+      
+      res.status(201).json({ accountId: account.id });
+    } catch (error: any) {
+      console.error("Stripe account creation error:", error);
+      res.status(500).json({ 
+        message: error.message || "Failed to create Stripe account",
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
+  });
+  
+  // Create a Stripe account link for onboarding
+  app.post("/api/organizations/:orgId/stripe/create-account-link", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const orgId = parseInt(req.params.orgId);
+      
+      // Only organization owners can manage Stripe accounts
+      if (req.user.organizationId !== orgId || req.user.role !== "camp_creator") {
+        return res.status(403).json({ message: "Not authorized for this organization" });
+      }
+      
+      const { refreshUrl, returnUrl } = req.body;
+      if (!refreshUrl || !returnUrl) {
+        return res.status(400).json({ message: "Refresh URL and return URL are required" });
+      }
+      
+      // Get the organization's Stripe account ID
+      const organization = await storage.getOrganization(orgId);
+      if (!organization) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+      
+      if (!organization.stripeAccountId) {
+        return res.status(400).json({ message: "Organization doesn't have a Stripe account yet" });
+      }
+      
+      // Create an account link for onboarding
+      const accountLink = await createStripeAccountLink(
+        organization.stripeAccountId,
+        refreshUrl,
+        returnUrl
+      );
+      
+      res.json({ url: accountLink.url });
+    } catch (error: any) {
+      console.error("Stripe account link creation error:", error);
+      res.status(500).json({ 
+        message: error.message || "Failed to create account link",
+        error: process.env.NODE_ENV === 'development' ? error : undefined  
+      });
+    }
+  });
+  
+  // Get Stripe account status for an organization
+  app.get("/api/organizations/:orgId/stripe/account-status", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const orgId = parseInt(req.params.orgId);
+      
+      // Only organization members can view Stripe account status
+      if (req.user.organizationId !== orgId) {
+        return res.status(403).json({ message: "Not authorized for this organization" });
+      }
+      
+      // Get the organization
+      const organization = await storage.getOrganization(orgId);
+      if (!organization) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+      
+      if (!organization.stripeAccountId) {
+        return res.json({ 
+          hasStripeAccount: false,
+          status: 'not_created',
+          message: "Organization doesn't have a Stripe account yet" 
+        });
+      }
+      
+      // Fetch the latest status from Stripe
+      const account = await retrieveStripeAccount(organization.stripeAccountId);
+      
+      // Update the status in the database
+      await updateOrganizationStripeStatus(orgId, organization.stripeAccountId);
+      
+      // Get the updated organization with the new status
+      const updatedOrg = await storage.getOrganization(orgId);
+      
+      res.json({
+        hasStripeAccount: true,
+        accountId: updatedOrg.stripeAccountId,
+        status: updatedOrg.stripeAccountStatus,
+        detailsSubmitted: updatedOrg.stripeAccountDetailsSubmitted,
+        chargesEnabled: updatedOrg.stripeAccountChargesEnabled,
+        payoutsEnabled: updatedOrg.stripeAccountPayoutsEnabled,
+        // Additional info from Stripe
+        requirements: account.requirements,
+        capabilities: account.capabilities
+      });
+    } catch (error: any) {
+      console.error("Stripe account status check error:", error);
+      res.status(500).json({ 
+        message: error.message || "Failed to check account status",
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
+  });
+  
+  // Create a checkout session for registration payment
+  app.post("/api/camps/:campId/registrations/:registrationId/checkout", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const campId = parseInt(req.params.campId);
+      const registrationId = parseInt(req.params.registrationId);
+      
+      // Get the registration
+      const registration = await storage.getRegistration(registrationId);
+      if (!registration) {
+        return res.status(404).json({ message: "Registration not found" });
+      }
+      
+      // Verify the registration belongs to the specified camp
+      if (registration.campId !== campId) {
+        return res.status(400).json({ message: "Registration doesn't belong to this camp" });
+      }
+      
+      // For parents, verify they own the registration (child belongs to them)
+      if (req.user.role === "parent") {
+        const child = await storage.getChild(registration.childId);
+        if (!child || child.parentId !== req.user.id) {
+          return res.status(403).json({ message: "Not authorized for this registration" });
+        }
+      }
+      
+      // Get the camp
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Get the organization
+      const organization = await storage.getOrganization(camp.organizationId);
+      if (!organization) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+      
+      // Check if organization has a Stripe account
+      if (!organization.stripeAccountId) {
+        return res.status(400).json({ message: "Organization doesn't have a Stripe account set up" });
+      }
+      
+      // Check if the Stripe account is ready to accept payments
+      if (!organization.stripeAccountChargesEnabled) {
+        return res.status(400).json({ message: "Organization's Stripe account is not fully set up for payments" });
+      }
+      
+      const { successUrl, cancelUrl } = req.body;
+      if (!successUrl || !cancelUrl) {
+        return res.status(400).json({ message: "Success URL and cancel URL are required" });
+      }
+      
+      // Calculate the price
+      const priceInCents = Math.round(parseFloat(camp.price) * 100); // Convert to cents
+      
+      // Create checkout session
+      const session = await createCheckoutSession(
+        campId,
+        registration.childId,
+        camp.organizationId,
+        organization.stripeAccountId,
+        priceInCents,
+        camp.name,
+        successUrl,
+        cancelUrl,
+        { registrationId: registrationId.toString() }
+      );
+      
+      // Store the checkout session ID in the registration
+      await db.update(registrations)
+        .set({ stripePaymentId: session.id })
+        .where(eq(registrations.id, registrationId));
+      
+      res.json({
+        sessionId: session.id,
+        url: session.url
+      });
+    } catch (error: any) {
+      console.error("Checkout session creation error:", error);
+      res.status(500).json({ 
+        message: error.message || "Failed to create checkout session",
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
+  });
+  
+  // Update organization Stripe settings (fee passthrough, platform fee)
+  app.put("/api/organizations/:orgId/stripe/settings", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const orgId = parseInt(req.params.orgId);
+      
+      // Only organization owners can update Stripe settings
+      if (req.user.organizationId !== orgId || req.user.role !== "camp_creator") {
+        return res.status(403).json({ message: "Not authorized for this organization" });
+      }
+      
+      const { stripeFeePassthrough, stripePlatformFeePercent } = req.body;
+      
+      // Validate the fee percentage
+      if (stripePlatformFeePercent !== undefined) {
+        const feePercent = parseFloat(stripePlatformFeePercent);
+        if (isNaN(feePercent) || feePercent < 0) {
+          return res.status(400).json({ message: "Platform fee percentage must be a non-negative number" });
+        }
+      }
+      
+      // Update the organization with the new settings
+      await db.update(organizations)
+        .set({
+          stripeFeePassthrough: stripeFeePassthrough === undefined ? undefined : !!stripeFeePassthrough,
+          stripePlatformFeePercent: stripePlatformFeePercent === undefined ? undefined : stripePlatformFeePercent
+        })
+        .where(eq(organizations.id, orgId));
+      
+      const updatedOrg = await storage.getOrganization(orgId);
+      
+      res.json({
+        stripeFeePassthrough: updatedOrg.stripeFeePassthrough,
+        stripePlatformFeePercent: updatedOrg.stripePlatformFeePercent
+      });
+    } catch (error: any) {
+      console.error("Stripe settings update error:", error);
+      res.status(500).json({ 
+        message: error.message || "Failed to update Stripe settings",
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
     }
   });
 

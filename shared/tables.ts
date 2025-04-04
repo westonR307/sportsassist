@@ -103,6 +103,12 @@ export const organizations = pgTable("organizations", {
   name: text("name").notNull(),
   description: text("description"),
   stripeAccountId: text("stripe_account_id"),
+  stripeAccountStatus: text("stripe_account_status"),
+  stripeAccountDetailsSubmitted: boolean("stripe_account_details_submitted").default(false),
+  stripeAccountChargesEnabled: boolean("stripe_account_charges_enabled").default(false),
+  stripeAccountPayoutsEnabled: boolean("stripe_account_payouts_enabled").default(false),
+  stripeFeePassthrough: boolean("stripe_fee_passthrough").default(false), // If true, fee is passed to athlete; if false, creator absorbs fee
+  stripePlatformFeePercent: integer("stripe_platform_fee_percent").default(15), // Default 15% platform fee
   createdAt: timestamp("created_at").notNull().defaultNow(),
   logoUrl: text("logo_url"),
   primaryColor: text("primary_color"),

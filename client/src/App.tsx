@@ -32,6 +32,7 @@ import SignaturePage from "@/pages/signature-page";
 import OrganizationProfilePage from "@/pages/organization-profile";
 import OrganizationPublicPage from "@/pages/organization";
 import { PermissionManagementPage } from "@/pages/permission-management";
+import StripeConnectManagement from "@/pages/stripe-connect-management";
 import { ProtectedRoute } from "./lib/protected-route";
 
 // Component to handle dashboard routing based on user role
@@ -103,6 +104,7 @@ function Router() {
       />
       <ProtectedRoute path="/dashboard/organization-profile" component={OrganizationProfilePage} />
       <ProtectedRoute path="/dashboard/permissions" component={PermissionManagementPage} />
+      <ProtectedRoute path="/dashboard/stripe-connect" component={StripeConnectManagement} />
       <ProtectedRoute path="/permission-management" component={PermissionManagementPage} />
       <ProtectedRoute path="/custom-fields" component={CustomFieldsPage} />
       <ProtectedRoute path="/parent-dashboard" component={ParentDashboardRouter} />
