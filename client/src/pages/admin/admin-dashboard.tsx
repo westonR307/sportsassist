@@ -582,10 +582,7 @@ function AdminDashboard() {
     retry: 1
   });
   
-  // Debug logs for API request status
-  console.log("Admin dashboard - metrics loading:", isLoading);
-  console.log("Admin dashboard - metrics error:", error);
-  console.log("Admin dashboard - metrics data:", metrics);
+  // Removed debug logs
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
