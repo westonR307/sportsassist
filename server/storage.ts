@@ -241,6 +241,7 @@ export interface IStorage {
   
   // Organization messaging methods
   createOrganizationMessage(message: Omit<InsertOrganizationMessage, "id">): Promise<OrganizationMessage>;
+  getOrganizationMessage(messageId: number): Promise<OrganizationMessage | null>;
   getOrganizationMessages(organizationId: number): Promise<OrganizationMessage[]>;
   getUnreadOrganizationMessages(organizationId: number): Promise<OrganizationMessage[]>;
   markMessageAsRead(messageId: number): Promise<OrganizationMessage>;
@@ -2445,7 +2446,7 @@ export class DatabaseStorage implements IStorage {
   // Dashboard data methods
   async getAllCampSessions(organizationId: number): Promise<(CampSession & { camp: Camp })[]> {
     try {
-      console.log(`Storage - Getting all camp sessions for organization ${organizationId}`);
+      // Performance optimization: Reduced excessive logging
       
       // Get all camps for the organization
       const orgCamps = await db.select().from(camps).where(
@@ -2455,37 +2456,18 @@ export class DatabaseStorage implements IStorage {
         )
       );
       
-      console.log(`Storage - Found ${orgCamps.length} camps for organization ${organizationId}`);
-      
       if (!orgCamps.length) {
-        console.log("Storage - No camps found, returning empty sessions array");
         return [];
       }
       
       const campIds = orgCamps.map(camp => camp.id);
-      console.log(`Storage - Camp IDs: ${campIds.join(', ')}`);
       
       // Get all sessions for these camps
       const sessions = await db.select().from(campSessions).where(
         inArray(campSessions.campId, campIds)
       );
       
-      console.log(`Storage - Found ${sessions.length} sessions for these camps`);
-      if (sessions.length > 0) {
-        console.log(`Storage - Sample session data:`, JSON.stringify(sessions[0]));
-      }
-      
-      // If no sessions found, let's check the database directly to see what's in there
-      if (sessions.length === 0) {
-        const allSessions = await db.select().from(campSessions);
-        console.log(`Storage - Total sessions in database: ${allSessions.length}`);
-        if (allSessions.length > 0) {
-          console.log(`Storage - Sample session from all sessions:`, JSON.stringify(allSessions[0]));
-          console.log(`Storage - Session camp IDs in database:`, allSessions.map(s => s.campId).join(', '));
-        }
-      }
-      
-      // Create a map of camp id to camp object for quick lookup
+      // Create a map of camp id to camp object for quick lookup (more efficient than multiple lookups)
       const campsMap = new Map(orgCamps.map(camp => [camp.id, camp]));
       
       // Combine the sessions with their camp data
@@ -2494,10 +2476,9 @@ export class DatabaseStorage implements IStorage {
         camp: campsMap.get(session.campId)!
       }));
       
-      console.log(`Storage - Returning ${result.length} combined sessions`);
       return result;
     } catch (error) {
-      console.error("Error getting all camp sessions:", error);
+      console.error("Error getting all camp sessions:", error.message);
       throw new Error(`Failed to get all camp sessions: ${error.message}`);
     }
   }
@@ -2647,28 +2628,14 @@ export class DatabaseStorage implements IStorage {
   // Organization profile methods
   async getOrganizationBySlug(slug: string): Promise<Organization | undefined> {
     try {
-      console.log(`Fetching organization with slug: ${slug}`);
+      // Reduced logging to improve performance
       const [organization] = await db.select()
         .from(organizations)
         .where(eq(organizations.slug, slug));
       
       return organization;
     } catch (error: any) {
-      console.error(`Error fetching organization by slug ${slug}:`, error);
-      throw new Error(`Failed to fetch organization: ${error.message}`);
-    }
-  }
-
-  async getOrganizationBySlug(slug: string): Promise<Organization | undefined> {
-    try {
-      console.log(`Looking up organization by slug: ${slug}`);
-      const [organization] = await db.select()
-        .from(organizations)
-        .where(eq(organizations.slug, slug));
-      
-      return organization;
-    } catch (error: any) {
-      console.error(`Error fetching organization by slug ${slug}:`, error);
+      console.error(`Error fetching organization by slug ${slug}:`, error.message);
       return undefined;
     }
   }
@@ -2835,6 +2802,21 @@ export class DatabaseStorage implements IStorage {
     } catch (error: any) {
       console.error(`Error creating organization message:`, error);
       throw new Error(`Failed to create organization message: ${error.message}`);
+    }
+  }
+
+  async getOrganizationMessage(messageId: number): Promise<OrganizationMessage | null> {
+    try {
+      console.log(`Fetching organization message with ID ${messageId}`);
+      
+      const [message] = await db.select()
+        .from(organizationMessages)
+        .where(eq(organizationMessages.id, messageId));
+      
+      return message || null;
+    } catch (error: any) {
+      console.error(`Error fetching organization message with ID ${messageId}:`, error);
+      throw new Error(`Failed to fetch organization message: ${error.message}`);
     }
   }
 

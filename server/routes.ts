@@ -14,6 +14,17 @@ import {
   camps, 
   registrations 
 } from "@shared/schema";
+
+// Custom HTTP error class for consistent error handling
+class HttpError extends Error {
+  status: number;
+  
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+    this.name = 'HttpError';
+  }
+}
 import { storage } from "./storage";
 import { upload } from "./utils/file-upload";
 // Import the scheduleExceptionSchema from our dialog component for validation
@@ -715,28 +726,30 @@ export async function registerRoutes(app: Express) {
 
   // Get organization details
   app.get("/api/organizations/:orgId", async (req, res) => {
-    if (!req.user) {
-      return res.status(401).json({ message: "Authentication required" });
-    }
-
-    const orgId = parseInt(req.params.orgId);
-    
-    // Only allow users who belong to this organization to access its details
-    if (req.user.organizationId !== orgId && req.user.role !== "admin") {
-      return res.status(403).json({ message: "Not authorized to access this organization" });
-    }
-
     try {
-      const organization = await storage.getOrganization(orgId);
+      // Get authenticated user's organization ID
+      const userOrgId = authAndGetOrgId(req);
+      const requestedOrgId = parseInt(req.params.orgId);
+      
+      // Only allow users who belong to this organization to access its details
+      // Platform admins can access any organization
+      if (userOrgId !== requestedOrgId && req.user.role !== "platform_admin") {
+        throw new HttpError(403, "Not authorized to access this organization");
+      }
+
+      const organization = await storage.getOrganization(requestedOrgId);
       
       if (!organization) {
-        return res.status(404).json({ message: "Organization not found" });
+        throw new HttpError(404, "Organization not found");
       }
       
       res.json(organization);
     } catch (error) {
-      console.error("Error fetching organization:", error);
-      res.status(500).json({ message: "Failed to fetch organization details" });
+      if (error instanceof HttpError) {
+        return res.status(error.status).json({ error: error.message });
+      }
+      console.error("Error fetching organization:", error.message);
+      res.status(500).json({ error: "Failed to fetch organization details" });
     }
   });
 
@@ -3095,68 +3108,51 @@ export async function registerRoutes(app: Express) {
   });
   
   // Dashboard API routes
+  // Common auth check for dashboard routes to reduce code duplication
+  const authAndGetOrgId = (req: Request): number => {
+    if (!req.isAuthenticated()) {
+      throw new HttpError(401, "Not authenticated");
+    }
+    
+    const organizationId = req.user?.organizationId;
+    if (!organizationId) {
+      throw new HttpError(403, "User is not part of an organization");
+    }
+    
+    return organizationId;
+  };
+  
   app.get("/api/dashboard/sessions", async (req: Request, res: Response) => {
     try {
-      // User must be authenticated
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-      
-      const organizationId = req.user?.organizationId;
-      if (!organizationId) {
-        return res.status(403).json({ error: "User is not part of an organization" });
-      }
-      
+      const organizationId = authAndGetOrgId(req);
       const allSessions = await storage.getAllCampSessions(organizationId);
-      console.log(`API /api/dashboard/sessions: Found ${allSessions.length} sessions`);
-      
-      // Log some example sessions if available
-      if (allSessions.length > 0) {
-        console.log("Sample session data:", JSON.stringify(allSessions[0]));
-      }
-      
-      // Clear response and return an array even if empty
       return res.json(allSessions || []);
     } catch (error: any) {
-      console.error("Error getting all sessions:", error);
+      if (error instanceof HttpError) {
+        return res.status(error.status).json({ error: error.message });
+      }
+      console.error("Error getting all sessions:", error.message);
       res.status(500).json({ error: error.message || "Failed to get all sessions" });
     }
   });
   
   app.get("/api/dashboard/today-sessions", async (req: Request, res: Response) => {
     try {
-      // User must be authenticated
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-      
-      const organizationId = req.user?.organizationId;
-      if (!organizationId) {
-        return res.status(403).json({ error: "User is not part of an organization" });
-      }
-      
+      const organizationId = authAndGetOrgId(req);
       const todaySessions = await storage.getTodaySessions(organizationId);
-      console.log(`API /api/dashboard/today-sessions: Found ${todaySessions.length} sessions for today`);
-      
-      // Return empty array if no sessions found
       return res.json(todaySessions || []);
     } catch (error: any) {
-      console.error("Error getting today's sessions:", error);
+      if (error instanceof HttpError) {
+        return res.status(error.status).json({ error: error.message });
+      }
+      console.error("Error getting today's sessions:", error.message);
       res.status(500).json({ error: error.message || "Failed to get today's sessions" });
     }
   });
   
   app.get("/api/dashboard/recent-registrations", async (req: Request, res: Response) => {
     try {
-      // User must be authenticated
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-      
-      const organizationId = req.user?.organizationId;
-      if (!organizationId) {
-        return res.status(403).json({ error: "User is not part of an organization" });
-      }
+      const organizationId = authAndGetOrgId(req);
       
       // Get hours parameter from query string, default to 48
       const hours = req.query.hours ? parseInt(req.query.hours as string) : 48;
@@ -3164,49 +3160,38 @@ export async function registerRoutes(app: Express) {
       const recentRegistrations = await storage.getRecentRegistrations(organizationId, hours);
       return res.json(recentRegistrations);
     } catch (error: any) {
-      console.error("Error getting recent registrations:", error);
+      if (error instanceof HttpError) {
+        return res.status(error.status).json({ error: error.message });
+      }
+      console.error("Error getting recent registrations:", error.message);
       res.status(500).json({ error: error.message || "Failed to get recent registrations" });
     }
   });
   
   app.get("/api/dashboard/registrations-count", async (req: Request, res: Response) => {
     try {
-      // User must be authenticated
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-      
-      const organizationId = req.user?.organizationId;
-      if (!organizationId) {
-        return res.status(403).json({ error: "User is not part of an organization" });
-      }
-      
+      const organizationId = authAndGetOrgId(req);
       const totalCount = await storage.getTotalRegistrationsCount(organizationId);
-      console.log(`API /api/dashboard/registrations-count: Found ${totalCount} registrations`);
-      
       return res.json({ count: totalCount });
     } catch (error: any) {
-      console.error("Error getting total registrations count:", error);
+      if (error instanceof HttpError) {
+        return res.status(error.status).json({ error: error.message });
+      }
+      console.error("Error getting total registrations count:", error.message);
       res.status(500).json({ error: error.message || "Failed to get total registrations count" });
     }
   });
   
   app.get("/api/dashboard/camp-stats", async (req: Request, res: Response) => {
     try {
-      // User must be authenticated
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-      
-      const organizationId = req.user?.organizationId;
-      if (!organizationId) {
-        return res.status(403).json({ error: "User is not part of an organization" });
-      }
-      
+      const organizationId = authAndGetOrgId(req);
       const campStats = await storage.getCampCountsByStatus(organizationId);
       return res.json(campStats);
     } catch (error: any) {
-      console.error("Error getting camp statistics:", error);
+      if (error instanceof HttpError) {
+        return res.status(error.status).json({ error: error.message });
+      }
+      console.error("Error getting camp statistics:", error.message);
       res.status(500).json({ error: error.message || "Failed to get camp statistics" });
     }
   });
@@ -3238,16 +3223,13 @@ export async function registerRoutes(app: Express) {
       console.log(`Organization profile update for org ID: ${req.params.orgId}`);
       console.log('Request body received:', JSON.stringify(req.body));
       
-      if (!req.isAuthenticated()) {
-        console.log('Authentication required for organization profile update');
-        return res.status(401).json({ message: "Authentication required" });
-      }
-      
-      const orgId = parseInt(req.params.orgId);
+      // Get authenticated user's organization ID and check authorization
+      const userOrgId = authAndGetOrgId(req);
+      const requestedOrgId = parseInt(req.params.orgId);
       
       // Only allow camp creators who belong to this organization to update it
-      if (req.user.organizationId !== orgId || req.user.role !== "camp_creator") {
-        return res.status(403).json({ message: "Not authorized to update this organization's profile" });
+      if (userOrgId !== requestedOrgId || req.user.role !== "camp_creator") {
+        throw new HttpError(403, "Not authorized to update this organization's profile");
       }
       
       // Filter request body to only allow specific fields for update
@@ -3288,7 +3270,7 @@ export async function registerRoutes(app: Express) {
       }
       
       // Handle update with the cleaned fields
-      const updatedOrg = await storage.updateOrganizationProfile(orgId, updateData);
+      const updatedOrg = await storage.updateOrganizationProfile(requestedOrgId, updateData);
       
       res.json(updatedOrg);
     } catch (error: any) {
@@ -3300,15 +3282,13 @@ export async function registerRoutes(app: Express) {
   // Upload organization logo
   app.post("/api/organizations/:orgId/logo", upload.single('logo'), async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-      
-      const orgId = parseInt(req.params.orgId);
+      // Get authenticated user's organization ID and check authorization
+      const userOrgId = authAndGetOrgId(req);
+      const requestedOrgId = parseInt(req.params.orgId);
       
       // Only allow camp creators who belong to this organization to update it
-      if (req.user.organizationId !== orgId || req.user.role !== "camp_creator") {
-        return res.status(403).json({ message: "Not authorized to update this organization's logo" });
+      if (userOrgId !== requestedOrgId || req.user.role !== "camp_creator") {
+        throw new HttpError(403, "Not authorized to update this organization's logo");
       }
       
       if (!req.file) {
@@ -3319,7 +3299,7 @@ export async function registerRoutes(app: Express) {
       const logoUrl = `/uploads/${req.file.filename}`;
       
       // Update the organization with the new logo URL
-      const updatedOrg = await storage.updateOrganizationProfile(orgId, {
+      const updatedOrg = await storage.updateOrganizationProfile(requestedOrgId, {
         logoUrl: logoUrl
       });
       
@@ -3336,15 +3316,13 @@ export async function registerRoutes(app: Express) {
   // Upload organization banner
   app.post("/api/organizations/:orgId/banner", upload.single('banner'), async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-      
-      const orgId = parseInt(req.params.orgId);
+      // Get authenticated user's organization ID and check authorization
+      const userOrgId = authAndGetOrgId(req);
+      const requestedOrgId = parseInt(req.params.orgId);
       
       // Only allow camp creators who belong to this organization to update it
-      if (req.user.organizationId !== orgId || req.user.role !== "camp_creator") {
-        return res.status(403).json({ message: "Not authorized to update this organization's banner" });
+      if (userOrgId !== requestedOrgId || req.user.role !== "camp_creator") {
+        throw new HttpError(403, "Not authorized to update this organization's banner");
       }
       
       if (!req.file) {
@@ -3355,7 +3333,7 @@ export async function registerRoutes(app: Express) {
       const bannerImageUrl = `/uploads/${req.file.filename}`;
       
       // Update the organization with the new banner URL
-      const updatedOrg = await storage.updateOrganizationProfile(orgId, {
+      const updatedOrg = await storage.updateOrganizationProfile(requestedOrgId, {
         bannerImageUrl: bannerImageUrl
       });
       
@@ -3372,8 +3350,8 @@ export async function registerRoutes(app: Express) {
   // Send a message to an organization (available to authenticated users)
   app.post("/api/organizations/:orgId/messages", async (req, res) => {
     try {
-      const orgId = parseInt(req.params.orgId);
-      const organization = await storage.getOrganization(orgId);
+      const requestedOrgId = parseInt(req.params.orgId);
+      const organization = await storage.getOrganization(requestedOrgId);
       
       if (!organization) {
         return res.status(404).json({ message: "Organization not found" });
@@ -3381,7 +3359,7 @@ export async function registerRoutes(app: Express) {
       
       // Create the message
       const newMessage = await storage.createOrganizationMessage({
-        organizationId: orgId,
+        organizationId: requestedOrgId,
         senderId: req.user?.id || null, // If authenticated, record the sender ID
         senderName: req.body.senderName,
         senderEmail: req.body.senderEmail,
@@ -3402,18 +3380,16 @@ export async function registerRoutes(app: Express) {
   // Get organization messages (requires authentication and ownership)
   app.get("/api/organizations/:orgId/messages", async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-      
-      const orgId = parseInt(req.params.orgId);
+      // Get authenticated user's organization ID and check authorization
+      const userOrgId = authAndGetOrgId(req);
+      const requestedOrgId = parseInt(req.params.orgId);
       
       // Only allow camp creators who belong to this organization to view messages
-      if (req.user.organizationId !== orgId || req.user.role !== "camp_creator") {
-        return res.status(403).json({ message: "Not authorized to view this organization's messages" });
+      if (userOrgId !== requestedOrgId || req.user.role !== "camp_creator") {
+        throw new HttpError(403, "Not authorized to view this organization's messages");
       }
       
-      const messages = await storage.getOrganizationMessages(orgId);
+      const messages = await storage.getOrganizationMessages(requestedOrgId);
       res.json(messages);
     } catch (error: any) {
       console.error("Error fetching organization messages:", error);
@@ -3424,18 +3400,16 @@ export async function registerRoutes(app: Express) {
   // Get unread organization messages count (requires authentication and ownership)
   app.get("/api/organizations/:orgId/messages/unread", async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-      
-      const orgId = parseInt(req.params.orgId);
+      // Get authenticated user's organization ID and check authorization
+      const userOrgId = authAndGetOrgId(req);
+      const requestedOrgId = parseInt(req.params.orgId);
       
       // Only allow camp creators who belong to this organization to view message stats
-      if (req.user.organizationId !== orgId || req.user.role !== "camp_creator") {
-        return res.status(403).json({ message: "Not authorized to view this organization's messages" });
+      if (userOrgId !== requestedOrgId || req.user.role !== "camp_creator") {
+        throw new HttpError(403, "Not authorized to view this organization's messages");
       }
       
-      const unreadMessages = await storage.getUnreadOrganizationMessages(orgId);
+      const unreadMessages = await storage.getUnreadOrganizationMessages(requestedOrgId);
       res.json({ count: unreadMessages.length });
     } catch (error: any) {
       console.error("Error fetching unread message count:", error);
@@ -3446,17 +3420,34 @@ export async function registerRoutes(app: Express) {
   // Mark message as read (requires authentication and ownership)
   app.patch("/api/organizations/messages/:messageId/read", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || req.user.role !== "camp_creator") {
-        return res.status(401).json({ message: "Authentication required" });
+      // Get authenticated user's organization ID using our standard helper
+      const userOrgId = authAndGetOrgId(req);
+      
+      // Only camp creators can mark messages as read
+      if (req.user.role !== "camp_creator") {
+        throw new HttpError(403, "Not authorized to mark messages as read");
       }
       
       const messageId = parseInt(req.params.messageId);
+      
+      // Get the message to verify ownership
+      const message = await storage.getOrganizationMessage(messageId);
+      
+      if (!message) {
+        throw new HttpError(404, "Message not found");
+      }
+      
+      // Verify the user belongs to the organization the message was sent to
+      if (message.organizationId !== userOrgId) {
+        throw new HttpError(403, "Not authorized to mark this message as read");
+      }
+      
       const updatedMessage = await storage.markMessageAsRead(messageId);
       
       res.json(updatedMessage);
     } catch (error: any) {
       console.error("Error marking message as read:", error);
-      res.status(500).json({ message: error.message || "Failed to mark message as read" });
+      res.status(error.statusCode || 500).json({ message: error.message || "Failed to mark message as read" });
     }
   });
 
