@@ -1,15 +1,45 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import { queryClient } from "@/lib/queryClient";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "../lib/apiRequest";
+
+// Define types for our data to avoid TypeScript errors
+interface User {
+  id: number;
+  organizationId: number;
+  role: string;
+  username: string;
+  first_name: string;
+  last_name: string;
+}
+
+interface Organization {
+  id: number;
+  name: string;
+  stripeFeePassthrough: boolean;
+  stripePlatformFeePercent: number;
+  stripeAccountId?: string;
+}
+
+interface StripeStatus {
+  error?: string;
+  hasStripeAccount: boolean;
+  accountId?: string;
+  status?: string;
+  detailsSubmitted?: boolean;
+  chargesEnabled?: boolean;
+  payoutsEnabled?: boolean;
+  requirements?: {
+    currently_due?: string[];
+  }
+}
 
 const StripeConnectManagement = () => {
   const { toast } = useToast();
@@ -18,24 +48,23 @@ const StripeConnectManagement = () => {
   const [processing, setProcessing] = useState(false);
   const [feePassthrough, setFeePassthrough] = useState(false);
   const [platformFeePercent, setPlatformFeePercent] = useState("15");
-  const [stripeApiKeyError, setStripeApiKeyError] = useState(false);
-  const [stripeApiKey, setStripeApiKey] = useState('');
+  const [stripeConfigError, setStripeConfigError] = useState(false);
 
   // Get the user's organization ID
-  const { data: user, isLoading: userLoading } = useQuery({
+  const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ['/api/user'],
     retry: false,
   });
 
   // Get organization details including Stripe account info
-  const { data: organization, isLoading: orgLoading, refetch: refetchOrg } = useQuery({
+  const { data: organization, isLoading: orgLoading, refetch: refetchOrg } = useQuery<Organization>({
     queryKey: ['/api/organizations', orgId],
     enabled: !!orgId,
     refetchOnWindowFocus: false,
   });
 
   // Get Stripe account status
-  const { data: stripeStatus, isLoading: stripeStatusLoading, refetch: refetchStripeStatus } = useQuery({
+  const { data: stripeStatus, isLoading: stripeStatusLoading, refetch: refetchStripeStatus } = useQuery<StripeStatus>({
     queryKey: ['/api/organizations', orgId, 'stripe/account-status'],
     enabled: !!orgId,
     refetchOnWindowFocus: false,
@@ -55,12 +84,12 @@ const StripeConnectManagement = () => {
     }
   }, [organization]);
   
-  // Check for Stripe API key errors
+  // Check for Stripe configuration errors
   useEffect(() => {
     if (stripeStatus?.error === "Stripe is not properly configured. Please contact the platform administrator.") {
-      setStripeApiKeyError(true);
+      setStripeConfigError(true);
     } else {
-      setStripeApiKeyError(false);
+      setStripeConfigError(false);
     }
   }, [stripeStatus]);
 
@@ -102,10 +131,10 @@ const StripeConnectManagement = () => {
       setProcessing(true);
       const response = await apiRequest(`/api/organizations/${orgId}/stripe/create-account-link`, {
         method: 'POST',
-        body: {
+        body: JSON.stringify({
           refreshUrl: window.location.href,
           returnUrl: window.location.href,
-        },
+        }),
       });
       
       // Redirect to Stripe's onboarding
@@ -129,10 +158,10 @@ const StripeConnectManagement = () => {
       setProcessing(true);
       const response = await apiRequest(`/api/organizations/${orgId}/stripe/settings`, {
         method: 'PUT',
-        body: {
+        body: JSON.stringify({
           stripeFeePassthrough: feePassthrough,
           stripePlatformFeePercent: parseFloat(platformFeePercent),
-        },
+        }),
       });
       
       toast({
@@ -170,39 +199,25 @@ const StripeConnectManagement = () => {
     </div>;
   }
 
-  // Submit API key function
-
-  const submitStripeApiKey = async () => {
-    if (!stripeApiKey.trim()) return;
-    
-    toast({
-      title: "API Key Submission",
-      description: "Please contact your administrator to update the Stripe API key in the server environment.",
-    });
-    
-    // This doesn't actually set the key in the environment - would require server-side changes
-  };
-
   return (
     <div className="container mx-auto py-10 px-4">
       <h1 className="text-3xl font-bold mb-8">Stripe Connect Management</h1>
       
-      {stripeApiKeyError && (
+      {stripeConfigError && (
         <Card className="mb-8 border-amber-500">
           <CardHeader className="bg-amber-50">
-            <CardTitle className="text-amber-800">Stripe API Key Missing</CardTitle>
+            <CardTitle className="text-amber-800">Stripe Configuration Issue</CardTitle>
             <CardDescription className="text-amber-700">
-              The Stripe integration is not properly configured. A valid Stripe API key is required.
+              The Stripe integration is not properly configured on the platform.
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <p className="text-gray-700 mb-4">
-              Please contact your system administrator to configure the Stripe API key. The key should be set
-              as an environment variable named <code className="bg-gray-100 p-1 rounded">STRIPE_SECRET_KEY</code>.
+              The platform administrator needs to set up Stripe properly for the platform. This is not something you need to provide - the platform itself requires a Stripe API key.
             </p>
             <div className="bg-gray-50 p-4 rounded-md border text-sm">
-              <p className="font-medium mb-2">Note for administrators:</p>
-              <p>The Stripe API key must be added to the server environment variables. This cannot be done from the user interface.</p>
+              <p className="font-medium mb-2">Note:</p>
+              <p>Please contact the platform administrator to ensure Stripe is properly configured with a valid API key.</p>
             </div>
           </CardContent>
         </Card>
@@ -227,9 +242,9 @@ const StripeConnectManagement = () => {
                 <div className="space-y-4">
                   <p>Your organization doesn't have a Stripe account yet. Create one to start accepting payments.</p>
                   <div className="text-sm text-amber-600 mb-4">
-                    <p>Note: You will need a valid Stripe API key to create a Stripe account. If you encounter an error, please contact the platform administrator to ensure Stripe is properly configured.</p>
+                    <p>This will create a connected Stripe account for your organization. Payments will be processed through Stripe directly to your account, with our platform automatically collecting the appropriate fees.</p>
                   </div>
-                  <Button onClick={createStripeAccount} disabled={processing}>
+                  <Button onClick={createStripeAccount} disabled={processing || stripeConfigError}>
                     {processing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Create Stripe Account
                   </Button>
