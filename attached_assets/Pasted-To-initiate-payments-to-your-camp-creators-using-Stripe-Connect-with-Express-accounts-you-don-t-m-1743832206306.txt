@@ -1,0 +1,78 @@
+To initiate payments to your camp creators using Stripe Connect (with Express accounts), you don’t manually trigger a payout — Stripe handles it automatically after a successful payment, based on how you structure the charge.
+
+Here’s how it works with Destination Charges (which you’re using):
+
+⸻
+
+How Payments to Camp Creators Work
+
+1. You Create the Payment
+
+When an athlete pays for a camp:
+
+const session = await stripe.checkout.sessions.create({
+  mode: 'payment',
+  payment_method_types: ['card'],
+  line_items: [{
+    price_data: {
+      currency: 'usd',
+      unit_amount: 11500, // $115 if fee passed to athlete
+      product_data: {
+        name: 'Baseball Camp',
+      },
+    },
+    quantity: 1,
+  }],
+  payment_intent_data: {
+    application_fee_amount: 1500, // $15 platform fee
+    transfer_data: {
+      destination: 'acct_1ABCXYZ...', // Creator's Stripe Connect ID
+    },
+  },
+  success_url: 'https://sportsassist.io/success',
+  cancel_url: 'https://sportsassist.io/cancel',
+});
+
+	•	Stripe automatically splits the payment:
+	•	Sends your platform fee to you
+	•	Sends the rest to the creator’s connected account
+	•	Stripe then schedules a payout to the camp creator based on their payout schedule (default is daily/automatic, but creators can customize it in their Express dashboard)
+
+⸻
+
+2. No Manual Action Needed
+
+You do not have to:
+	•	Call a “pay creator” API
+	•	Trigger a transfer manually
+	•	Handle tax or payout timing
+
+Stripe handles it automatically because you passed transfer_data.destination in the payment creation.
+
+⸻
+
+3. Where You Might “Initiate” a Payment
+
+If you were using Separate Charges and Transfers, you’d:
+	•	First collect the entire payment to your platform
+	•	Then use stripe.transfers.create() to manually send funds to the creator
+
+But since you’re using Destination Charges, you don’t need this. Stripe handles the transfer behind the scenes.
+
+⸻
+
+How to Track Payments/Payouts
+
+You can:
+	•	Use Stripe webhooks like payment_intent.succeeded to track when payments complete
+	•	Use account.payout.created and account.payout.paid events if you want to show creators payout info
+	•	Display earnings in your dashboard by storing transaction metadata per creator
+
+⸻
+
+TL;DR
+	•	You initiate a Checkout Session with application_fee_amount and transfer_data.destination
+	•	Stripe splits the payment and pays the creator automatically
+	•	No manual payout needed
+
+Let me know if you want a webhook example to track completed payments and log them in your DB.
