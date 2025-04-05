@@ -823,11 +823,11 @@ export function AddCampDialog({
                               type="number"
                               {...field}
                               value={field.value === 0 ? "" : field.value}
-                              onChange={(e) =>
-                                field.onChange(
-                                  e.target.value ? parseInt(e.target.value) : 5,
-                                )
-                              }
+                              onChange={(e) => {
+                                // Allow actual empty values but convert valid inputs to numbers
+                                const value = e.target.value.trim();
+                                field.onChange(value ? parseInt(value) : '');
+                              }}
                               min={1}
                             />
                           </FormControl>
@@ -847,13 +847,11 @@ export function AddCampDialog({
                               type="number"
                               {...field}
                               value={field.value === 0 ? "" : field.value}
-                              onChange={(e) =>
-                                field.onChange(
-                                  e.target.value
-                                    ? parseInt(e.target.value)
-                                    : 18,
-                                )
-                              }
+                              onChange={(e) => {
+                                // Allow actual empty values but convert valid inputs to numbers
+                                const value = e.target.value.trim();
+                                field.onChange(value ? parseInt(value) : '');
+                              }}
                               min={1}
                             />
                           </FormControl>
@@ -875,11 +873,11 @@ export function AddCampDialog({
                               type="number"
                               {...field}
                               value={field.value === 0 ? "" : field.value}
-                              onChange={(e) =>
-                                field.onChange(
-                                  e.target.value ? parseInt(e.target.value) : 0,
-                                )
-                              }
+                              onChange={(e) => {
+                                // Allow actual empty values but convert valid inputs to numbers
+                                const value = e.target.value.trim();
+                                field.onChange(value ? parseInt(value) : '');
+                              }}
                               min={0}
                             />
                           </FormControl>
@@ -899,13 +897,11 @@ export function AddCampDialog({
                               type="number"
                               {...field}
                               min={1}
-                              onChange={(e) =>
-                                field.onChange(
-                                  e.target.value
-                                    ? parseInt(e.target.value)
-                                    : 20,
-                                )
-                              }
+                              onChange={(e) => {
+                                // Allow actual empty values but convert valid inputs to numbers
+                                const value = e.target.value.trim();
+                                field.onChange(value ? parseInt(value) : '');
+                              }}
                             />
                           </FormControl>
                           <FormMessage />
