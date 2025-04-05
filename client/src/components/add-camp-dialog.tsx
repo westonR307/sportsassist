@@ -34,6 +34,7 @@ import { CalendarScheduler } from "@/components/calendar-scheduler";
 import { DocumentAgreementsSelector } from "@/components/document-agreements-selector";
 import { AddCampCustomFieldButtonDialog } from "@/components/custom-fields/add-camp-custom-field-button-dialog";
 import { BasicInfoMetaFields, BasicInfoMetaFieldsRef } from "@/components/custom-fields/basic-info-meta-fields";
+import CampStaffSelector from "@/components/camp-staff-selector";
 
 
 // Map UI skill levels to schema skill levels
@@ -115,7 +116,9 @@ export function AddCampDialog({
   const [selectedCustomFields, setSelectedCustomFields] = useState<number[]>([]); // Store selected custom field IDs
   const [customFieldDetails, setCustomFieldDetails] = useState<{ [id: number]: {label: string, isInternal: boolean} }>({});
   const [duplicateData, setDuplicateData] = useState<any>(null);
+  const [selectedStaff, setSelectedStaff] = useState<{userId: number, role: string}[]>([]); // Store selected staff members
   const metaFieldsRef = useRef<BasicInfoMetaFieldsRef>(null);
+  const campStaffRef = useRef<React.ElementRef<typeof CampStaffSelector>>(null); // Ref for CampStaffSelector component
 
   // Get default dates
   const today = new Date();
@@ -427,6 +430,30 @@ export function AddCampDialog({
           });
         }
       }
+
+      // If staff members were selected, associate them with the camp
+      if (campStaffRef.current && data.id) {
+        try {
+          const selectedStaff = campStaffRef.current.getSelectedStaff();
+          if (selectedStaff.length > 0) {
+            console.log(`Setting ${selectedStaff.length} staff members for camp ${data.id}`);
+            await Promise.all(selectedStaff.map(staff => 
+              apiRequest('POST', `/api/camps/${data.id}/staff`, { 
+                userId: staff.userId,
+                role: staff.role
+              })
+            ));
+            console.log("Staff members associated successfully");
+          }
+        } catch (error) {
+          console.error("Error associating staff members:", error);
+          toast({
+            title: "Warning",
+            description: "Camp created but there was an issue associating staff members.",
+            variant: "destructive",
+          });
+        }
+      }
       
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
       onOpenChange(false);
@@ -437,6 +464,9 @@ export function AddCampDialog({
       setPlannedSessions([]); // Reset planned sessions
       setSelectedDocumentId(null); // Reset selected document
       setSelectedCustomFields([]); // Reset selected custom fields
+      if (campStaffRef.current) {
+        campStaffRef.current.clearSelectedStaff(); // Clear selected staff members
+      }
       toast({
         title: "Success",
         description: "Camp created successfully",
@@ -908,6 +938,27 @@ export function AddCampDialog({
                         </FormItem>
                       )}
                     />
+                  </div>
+                  
+                  {/* Camp staff management */}
+                  <div className="mt-8 border-t pt-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <div>
+                        <h3 className="text-lg font-medium">Camp Staff</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Assign coaches and staff members to this camp.
+                          Note: Staff assignments will be saved when the camp is created.
+                        </p>
+                      </div>
+                    </div>
+                    {user?.organizationId && (
+                      <CampStaffSelector
+                        ref={campStaffRef}
+                        campId={tempCampId} // We use the temporary ID for initial selection
+                        organizationId={user.organizationId}
+                        isNew={true} // Flag to indicate this is a new camp
+                      />
+                    )}
                   </div>
                   
                   {/* Add the custom meta fields component */}
