@@ -1347,6 +1347,108 @@ export async function registerRoutes(app: Express) {
     }
   });
   
+  // Camp Staff Management Routes
+  
+  // Get all staff for a specific camp
+  app.get("/api/camps/:id/staff", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    try {
+      const campId = parseInt(req.params.id, 10);
+      const camp = await storage.getCamp(campId);
+      
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if user belongs to the organization that owns the camp
+      if (camp.organizationId !== req.user.organizationId) {
+        return res.status(403).json({ message: "Not authorized for this camp" });
+      }
+      
+      const staff = await storage.getCampStaff(campId);
+      res.json(staff);
+    } catch (error) {
+      console.error("Error fetching camp staff:", error);
+      res.status(500).json({ message: "Failed to fetch camp staff" });
+    }
+  });
+  
+  // Add a staff member to a camp
+  app.post("/api/camps/:id/staff", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    try {
+      const campId = parseInt(req.params.id, 10);
+      const { userId, role } = req.body;
+      
+      if (!userId || !role) {
+        return res.status(400).json({ message: "User ID and role are required" });
+      }
+      
+      const camp = await storage.getCamp(campId);
+      
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if user belongs to the organization that owns the camp
+      if (camp.organizationId !== req.user.organizationId) {
+        return res.status(403).json({ message: "Not authorized for this camp" });
+      }
+      
+      // Verify the user to be added exists and belongs to the same organization
+      const userToAdd = await storage.getUser(userId);
+      if (!userToAdd || userToAdd.organizationId !== req.user.organizationId) {
+        return res.status(404).json({ message: "User not found in organization" });
+      }
+      
+      const result = await storage.addCampStaff(campId, userId, role);
+      res.status(201).json(result);
+    } catch (error) {
+      console.error("Error adding camp staff:", error);
+      res.status(500).json({ message: "Failed to add staff to camp" });
+    }
+  });
+  
+  // Remove a staff member from a camp
+  app.delete("/api/camps/:id/staff/:userId", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    try {
+      const campId = parseInt(req.params.id, 10);
+      const userId = parseInt(req.params.userId, 10);
+      
+      const camp = await storage.getCamp(campId);
+      
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if user belongs to the organization that owns the camp
+      if (camp.organizationId !== req.user.organizationId) {
+        return res.status(403).json({ message: "Not authorized for this camp" });
+      }
+      
+      const result = await storage.removeCampStaff(campId, userId);
+      
+      if (result) {
+        res.status(200).json({ message: "Staff member removed successfully" });
+      } else {
+        res.status(404).json({ message: "Staff member not found for this camp" });
+      }
+    } catch (error) {
+      console.error("Error removing camp staff:", error);
+      res.status(500).json({ message: "Failed to remove staff from camp" });
+    }
+  });
+  
   // Route to update a camp by ID
   app.patch("/api/camps/:id", async (req, res) => {
     try {
@@ -4477,6 +4579,157 @@ export async function registerRoutes(app: Express) {
         message: error.message || "Failed to update organization subscription",
         error: process.env.NODE_ENV === 'development' ? error : undefined
       });
+    }
+  });
+
+  // Camp Staff Management Routes
+  // Get all staff for a camp
+  app.get("/api/camps/:campId/staff", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const campId = parseInt(req.params.campId);
+      
+      // Check if camp exists
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if user has access to this camp (organization member or platform admin)
+      if (req.user.role !== "platform_admin" && req.user.organizationId !== camp.organizationId) {
+        return res.status(403).json({ message: "Not authorized to access this camp" });
+      }
+      
+      const staffMembers = await storage.getCampStaff(campId);
+      res.json(staffMembers);
+    } catch (error: any) {
+      console.error("Error getting camp staff:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Add staff to a camp
+  app.post("/api/camps/:campId/staff", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const campId = parseInt(req.params.campId);
+      const { userId, role } = req.body;
+      
+      // Validate input
+      if (!userId || !role) {
+        return res.status(400).json({ message: "User ID and role are required" });
+      }
+      
+      // Check if camp exists
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if user has access to manage this camp (organization admin/manager or platform admin)
+      if (req.user.role !== "platform_admin" && req.user.role !== "camp_creator" && 
+          (req.user.organizationId !== camp.organizationId || req.user.role !== "manager")) {
+        return res.status(403).json({ message: "Not authorized to manage staff for this camp" });
+      }
+      
+      // Check if the user being added exists and belongs to the same organization
+      const staffUser = await storage.getUser(userId);
+      if (!staffUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (staffUser.organizationId !== camp.organizationId) {
+        return res.status(400).json({ message: "User must belong to the same organization as the camp" });
+      }
+      
+      // Add the staff member
+      const addedStaff = await storage.addCampStaff(campId, userId, role);
+      res.status(201).json(addedStaff);
+    } catch (error: any) {
+      console.error("Error adding camp staff:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Update staff role for a camp
+  app.patch("/api/camps/:campId/staff/:userId", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const campId = parseInt(req.params.campId);
+      const userId = parseInt(req.params.userId);
+      const { role } = req.body;
+      
+      // Validate input
+      if (!role) {
+        return res.status(400).json({ message: "Role is required" });
+      }
+      
+      // Check if camp exists
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if user has access to manage this camp
+      if (req.user.role !== "platform_admin" && req.user.role !== "camp_creator" && 
+          (req.user.organizationId !== camp.organizationId || req.user.role !== "manager")) {
+        return res.status(403).json({ message: "Not authorized to manage staff for this camp" });
+      }
+      
+      // Update the staff member
+      const updatedStaff = await storage.updateCampStaff(campId, userId, role);
+      if (!updatedStaff) {
+        return res.status(404).json({ message: "Staff member not found for this camp" });
+      }
+      
+      res.json(updatedStaff);
+    } catch (error: any) {
+      console.error("Error updating camp staff:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Remove staff from a camp
+  app.delete("/api/camps/:campId/staff/:userId", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const campId = parseInt(req.params.campId);
+      const userId = parseInt(req.params.userId);
+      
+      // Check if camp exists
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Check if user has access to manage this camp
+      if (req.user.role !== "platform_admin" && req.user.role !== "camp_creator" && 
+          (req.user.organizationId !== camp.organizationId || req.user.role !== "manager")) {
+        return res.status(403).json({ message: "Not authorized to manage staff for this camp" });
+      }
+      
+      // Remove the staff member
+      const removed = await storage.removeCampStaff(campId, userId);
+      if (!removed) {
+        return res.status(404).json({ message: "Staff member not found for this camp" });
+      }
+      
+      res.json({ message: "Staff member removed successfully" });
+    } catch (error: any) {
+      console.error("Error removing camp staff:", error);
+      res.status(500).json({ message: error.message });
     }
   });
 

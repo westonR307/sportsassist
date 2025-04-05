@@ -34,6 +34,7 @@ import { queryClient } from "@/lib/queryClient";
 import { Camp } from "@shared/schema";
 import { sportsMap, sportsList, skillLevelNames } from "@shared/sports-utils";
 import { DocumentAgreementsSelector } from "./document-agreements-selector";
+import CampStaffSelector from "./camp-staff-selector";
 
 // Define a type for the form values explicitly
 type CampDates = {
@@ -214,7 +215,7 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <Tabs value={activeTab} onValueChange={handleTabChange}>
-              <TabsList className="grid grid-cols-5 mb-4">
+              <TabsList className="grid grid-cols-6 mb-4">
                 <TabsTrigger value="basic">
                   <Calendar className="h-4 w-4 mr-2" />
                   Basic Info
@@ -230,6 +231,15 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
                 <TabsTrigger value="sports">
                   <Dumbbell className="h-4 w-4 mr-2" />
                   Sports
+                </TabsTrigger>
+                <TabsTrigger value="staff">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 mr-2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                  </svg>
+                  Staff
                 </TabsTrigger>
                 <TabsTrigger value="agreements">
                   <FileText className="h-4 w-4 mr-2" />
@@ -643,6 +653,15 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
                       Add Sport
                     </Button>
                   </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="staff" className="space-y-4">
+                <div className="space-y-4">
+                  <CampStaffSelector 
+                    campId={camp.id}
+                    organizationId={camp.organizationId}
+                  />
                 </div>
               </TabsContent>
               

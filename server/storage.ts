@@ -27,6 +27,7 @@ import {
   campDocumentAgreements,
   organizationMessages,
   permissionSets,
+  campStaff,
   permissions,
   userPermissions,
   type User,
@@ -83,7 +84,7 @@ import {
   insertCampSchema,
   sports
 } from "@shared/schema";
-import { type Role, type SportLevel } from "@shared/types";
+import { type Role, type SportLevel, type StaffRole } from "@shared/types";
 import { db } from "./db";
 import { eq, sql, and, or, gte, lte, inArray, desc, gt, ne, isNull, count } from "drizzle-orm";
 import session from "express-session";
@@ -102,6 +103,10 @@ export interface IStorage {
   updateUserRole(userId: number, newRole: Role): Promise<User>;
   updateUserProfile(userId: number, profileData: Partial<Omit<User, "id" | "password" | "passwordHash" | "role" | "createdAt" | "updatedAt">>): Promise<User>;
   getOrganizationStaff(orgId: number): Promise<User[]>;
+  getCampStaff(campId: number): Promise<Array<User & { staffRole: StaffRole }>>;
+  addCampStaff(campId: number, userId: number, role: StaffRole): Promise<{ id: number }>;
+  updateCampStaff(campId: number, userId: number, role: StaffRole): Promise<{ id: number } | null>;
+  removeCampStaff(campId: number, userId: number): Promise<boolean>;
   createCamp(camp: Omit<Camp, "id"> & { schedules?: CampSchedule[] }): Promise<Camp>;
   updateCamp(id: number, campData: Partial<Omit<Camp, "id" | "organizationId">>): Promise<Camp>;
   listCamps(organizationId?: number): Promise<(Camp & { campSports?: any[], defaultStartTime?: string | null, defaultEndTime?: string | null })[]>;
@@ -381,6 +386,96 @@ export class DatabaseStorage implements IStorage {
           )
         )
       );
+  }
+
+  async getCampStaff(campId: number): Promise<Array<User & { staffRole: StaffRole }>> {
+    try {
+      const staffMembers = await db
+        .select({
+          ...users,
+          staffRole: campStaff.role
+        })
+        .from(users)
+        .innerJoin(campStaff, eq(users.id, campStaff.userId))
+        .where(eq(campStaff.campId, campId));
+      
+      return staffMembers;
+    } catch (error) {
+      console.error(`Error fetching staff for camp ${campId}:`, error);
+      throw new Error(`Failed to fetch camp staff: ${error}`);
+    }
+  }
+
+  async addCampStaff(campId: number, userId: number, role: StaffRole): Promise<{ id: number }> {
+    try {
+      const [result] = await db
+        .insert(campStaff)
+        .values({
+          campId,
+          userId,
+          role,
+        })
+        .returning({ id: campStaff.id });
+      
+      return result;
+    } catch (error) {
+      console.error(`Error adding staff to camp ${campId}:`, error);
+      throw new Error(`Failed to add camp staff: ${error}`);
+    }
+  }
+
+  async updateCampStaff(campId: number, userId: number, role: StaffRole): Promise<{ id: number } | null> {
+    try {
+      const [existingStaff] = await db
+        .select()
+        .from(campStaff)
+        .where(
+          and(
+            eq(campStaff.campId, campId),
+            eq(campStaff.userId, userId)
+          )
+        );
+      
+      if (!existingStaff) {
+        return null;
+      }
+      
+      const [result] = await db
+        .update(campStaff)
+        .set({
+          role,
+        })
+        .where(
+          and(
+            eq(campStaff.campId, campId),
+            eq(campStaff.userId, userId)
+          )
+        )
+        .returning({ id: campStaff.id });
+      
+      return result;
+    } catch (error) {
+      console.error(`Error updating staff role for camp ${campId}, user ${userId}:`, error);
+      throw new Error(`Failed to update camp staff role: ${error}`);
+    }
+  }
+
+  async removeCampStaff(campId: number, userId: number): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(campStaff)
+        .where(
+          and(
+            eq(campStaff.campId, campId),
+            eq(campStaff.userId, userId)
+          )
+        );
+      
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error(`Error removing staff from camp ${campId}:`, error);
+      throw new Error(`Failed to remove camp staff: ${error}`);
+    }
   }
 
   async createCamp(campData: any): Promise<any> {
