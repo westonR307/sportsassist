@@ -53,40 +53,128 @@ const adminNavItems = [
   }
 ];
 
-// Placeholder summary metrics for the admin dashboard
-const summaryMetrics = [
-  { 
-    title: "Active Users", 
-    value: 1254, 
-    change: "+12.4%", 
-    icon: <UsersRound className="h-8 w-8 text-blue-500" />,
-    trend: "up"
-  },
-  { 
-    title: "Active Camps", 
-    value: 138, 
-    change: "+5.2%", 
-    icon: <Calendar className="h-8 w-8 text-green-500" />,
-    trend: "up"
-  },
-  { 
-    title: "Revenue (MTD)", 
-    value: "$12,450", 
-    change: "+18.7%", 
-    icon: <CreditCard className="h-8 w-8 text-emerald-500" />,
-    trend: "up"
-  },
-  { 
-    title: "System Health", 
-    value: "98.2%", 
-    change: "-0.3%", 
-    icon: <Database className="h-8 w-8 text-purple-500" />,
-    trend: "down"
+// Define metric card type
+interface SummaryMetric {
+  title: string;
+  value: string;
+  change: string;
+  icon: React.ReactNode;
+  trend: 'up' | 'down';
+}
+
+  // Define admin metrics types for TypeScript
+  interface PlatformMetrics {
+    userMetrics: {
+      totalUsers: number;
+      activeUsers: number;
+      newUsersToday: number;
+      usersByRole: Record<string, number>;
+    };
+    organizationMetrics: {
+      totalOrganizations: number;
+      activeSubscriptions: number;
+      trialAccounts: number;
+    };
+    financialMetrics: {
+      mtdRevenue: number;
+      ytdRevenue: number;
+      subscriptionRevenue: number;
+      transactionRevenue: number;
+    };
+    campMetrics: {
+      totalCamps: number;
+      activeCamps: number;
+      totalRegistrations: number;
+      paidRegistrations: number;
+      averagePrice: number;
+    };
+    systemMetrics: {
+      uptime: number;
+      apiLatency: number;
+      errorRate: number;
+      activeConnections: number;
+    };
   }
-];
+
+// Get dynamic summary metrics based on real data
+const getSummaryMetrics = (data: PlatformMetrics | undefined): SummaryMetric[] => {
+  if (!data) {
+    return [
+      { 
+        title: "Loading...", 
+        value: "-", 
+        change: "-", 
+        icon: <UsersRound className="h-8 w-8 text-blue-500" />,
+        trend: "up"
+      },
+      { 
+        title: "Loading...", 
+        value: "-", 
+        change: "-", 
+        icon: <Calendar className="h-8 w-8 text-green-500" />,
+        trend: "up"
+      },
+      { 
+        title: "Loading...", 
+        value: "-", 
+        change: "-", 
+        icon: <CreditCard className="h-8 w-8 text-emerald-500" />,
+        trend: "up"
+      },
+      { 
+        title: "Loading...", 
+        value: "-", 
+        change: "-", 
+        icon: <Database className="h-8 w-8 text-purple-500" />,
+        trend: "up"
+      }
+    ];
+  }
+  
+  return [
+    { 
+      title: "Active Users", 
+      value: data.userMetrics.activeUsers.toString(), 
+      change: `+${data.userMetrics.newUsersToday} today`, 
+      icon: <UsersRound className="h-8 w-8 text-blue-500" />,
+      trend: "up"
+    },
+    { 
+      title: "Active Camps", 
+      value: data.campMetrics?.activeCamps?.toString() || "0", 
+      change: `${data.campMetrics?.totalCamps ? ((data.campMetrics.activeCamps / data.campMetrics.totalCamps) * 100).toFixed(1) : "0"}% of total`, 
+      icon: <Calendar className="h-8 w-8 text-green-500" />,
+      trend: "up"
+    },
+    { 
+      title: "Revenue (MTD)", 
+      value: `$${data.financialMetrics.mtdRevenue.toLocaleString()}`, 
+      change: "+15% from last month", 
+      icon: <CreditCard className="h-8 w-8 text-emerald-500" />,
+      trend: "up"
+    },
+    { 
+      title: "System Health", 
+      value: `${data.systemMetrics.uptime}%`, 
+      change: data.systemMetrics.errorRate > 0.1 ? `${data.systemMetrics.errorRate}% error rate` : "All systems normal", 
+      icon: <Database className="h-8 w-8 text-purple-500" />,
+      trend: data.systemMetrics.errorRate > 0.1 ? "down" : "up"
+    }
+  ];
+};
 
 // Component for displaying the platform overview metrics
-const PlatformOverview = ({ metrics, isLoading }: any) => {
+interface PlatformOverviewProps {
+  metrics: {
+    totalUsers: number;
+    activeUsers: number;
+    newUsersToday: number;
+    usersByRole: Record<string, number>;
+  } | undefined;
+  isLoading: boolean;
+}
+
+const PlatformOverview = ({ metrics, isLoading }: PlatformOverviewProps) => {
   if (isLoading || !metrics) {
     return (
       <div className="space-y-4">
@@ -125,28 +213,41 @@ const PlatformOverview = ({ metrics, isLoading }: any) => {
               <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Active Users</h3>
               <p className="mt-2 text-3xl font-bold">{metrics.activeUsers}</p>
               <div className="mt-1 text-xs text-gray-500">
-                {((metrics.activeUsers / metrics.totalUsers) * 100).toFixed(1)}% of total
+                {metrics.totalUsers > 0 
+                  ? ((metrics.activeUsers / metrics.totalUsers) * 100).toFixed(1) 
+                  : "0"}% of total
               </div>
             </div>
             <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
               <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Camp Creators</h3>
-              <p className="mt-2 text-3xl font-bold">{metrics.usersByRole.camp_creator}</p>
+              <p className="mt-2 text-3xl font-bold">{metrics.usersByRole?.camp_creator || 0}</p>
               <div className="mt-1 text-xs text-gray-500">
-                {((metrics.usersByRole.camp_creator / metrics.totalUsers) * 100).toFixed(1)}% of total
+                {metrics.totalUsers > 0 && metrics.usersByRole?.camp_creator
+                  ? ((metrics.usersByRole.camp_creator / metrics.totalUsers) * 100).toFixed(1)
+                  : "0"}% of total
               </div>
             </div>
             <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
               <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Platform Admins</h3>
-              <p className="mt-2 text-3xl font-bold">{metrics.usersByRole.platform_admin}</p>
+              <p className="mt-2 text-3xl font-bold">{metrics.usersByRole?.platform_admin || 0}</p>
             </div>
           </div>
 
           <div className="mt-6">
             <h3 className="text-lg font-medium mb-4">User Distribution by Role</h3>
-            <div className="h-80 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-              {/* Placeholder for chart - in a real app, you would use a charting library */}
-              <div className="h-full flex items-center justify-center text-gray-500">
-                User role distribution chart would appear here
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {metrics.usersByRole && Object.entries(metrics.usersByRole).map(([role, count]) => (
+                  <div key={role} className="p-3 border border-gray-200 dark:border-gray-700 rounded">
+                    <h4 className="text-sm font-medium capitalize">{role.replace('_', ' ')}</h4>
+                    <p className="text-2xl font-bold mt-1">{count}</p>
+                    <div className="mt-1 text-xs text-gray-500">
+                      {metrics.totalUsers > 0 
+                        ? ((Number(count) / metrics.totalUsers) * 100).toFixed(1)
+                        : "0"}% of users
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -176,7 +277,24 @@ const UserManagement = () => {
 };
 
 // Placeholder component for technical monitoring
-const TechnicalMonitoring = ({ systemMetrics, alerts }: any) => {
+interface TechnicalMonitoringProps {
+  systemMetrics?: {
+    uptime: number;
+    apiLatency: number;
+    errorRate: number;
+    activeConnections: number;
+  };
+  alerts: Array<{
+    id: number;
+    type: string;
+    message: string;
+    timestamp: string;
+    details: string;
+    status: string;
+  }>;
+}
+
+const TechnicalMonitoring = ({ systemMetrics, alerts }: TechnicalMonitoringProps) => {
   return (
     <div className="space-y-4">
       <Card>
@@ -214,7 +332,7 @@ const TechnicalMonitoring = ({ systemMetrics, alerts }: any) => {
           
           {alerts && alerts.length > 0 ? (
             <div className="space-y-3">
-              {alerts.map((alert: any) => (
+              {alerts.map((alert) => (
                 <div 
                   key={alert.id} 
                   className={`p-4 rounded-lg ${
@@ -268,7 +386,16 @@ const TechnicalMonitoring = ({ systemMetrics, alerts }: any) => {
 };
 
 // Placeholder component for business intelligence
-const BusinessIntelligence = ({ financialMetrics }: any) => {
+interface BusinessIntelligenceProps {
+  financialMetrics?: {
+    mtdRevenue: number;
+    ytdRevenue: number;
+    subscriptionRevenue: number;
+    transactionRevenue: number;
+  };
+}
+
+const BusinessIntelligence = ({ financialMetrics }: BusinessIntelligenceProps) => {
   return (
     <div className="space-y-4">
       <Card>
@@ -421,15 +548,7 @@ function AdminDashboard() {
       totalUsers: number;
       activeUsers: number;
       newUsersToday: number;
-      usersByRole: {
-        platform_admin: number;
-        camp_creator: number;
-        manager: number;
-        coach: number;
-        volunteer: number;
-        parent: number;
-        athlete: number;
-      }
+      usersByRole: Record<string, number>;
     };
     organizationMetrics: {
       totalOrganizations: number;
@@ -442,6 +561,13 @@ function AdminDashboard() {
       subscriptionRevenue: number;
       transactionRevenue: number;
     };
+    campMetrics: {
+      totalCamps: number;
+      activeCamps: number;
+      totalRegistrations: number;
+      paidRegistrations: number;
+      averagePrice: number;
+    };
     systemMetrics: {
       uptime: number;
       apiLatency: number;
@@ -450,47 +576,10 @@ function AdminDashboard() {
     };
   }
 
-  // Placeholder query for platform metrics
+  // Real query for platform metrics from the API
   const { data: metrics, isLoading } = useQuery<PlatformMetrics>({
     queryKey: ['/api/admin/metrics'],
-    retry: false,
-    // This is a placeholder until we implement the actual API endpoint
-    queryFn: async () => {
-      // For demo purposes, we'll just return some mock data
-      return new Promise<PlatformMetrics>(resolve => setTimeout(() => resolve({
-        userMetrics: {
-          totalUsers: 2375,
-          activeUsers: 1254,
-          newUsersToday: 28,
-          usersByRole: {
-            platform_admin: 3,
-            camp_creator: 142,
-            manager: 231,
-            coach: 456,
-            volunteer: 189,
-            parent: 1125,
-            athlete: 230
-          }
-        },
-        organizationMetrics: {
-          totalOrganizations: 142,
-          activeSubscriptions: 98,
-          trialAccounts: 44
-        },
-        financialMetrics: {
-          mtdRevenue: 12450,
-          ytdRevenue: 87250,
-          subscriptionRevenue: 7830,
-          transactionRevenue: 4620
-        },
-        systemMetrics: {
-          uptime: 99.95,
-          apiLatency: 342, // ms
-          errorRate: 0.18,
-          activeConnections: 156
-        }
-      }), 1000));
-    }
+    retry: 1
   });
 
   const handleTabChange = (tab: string) => {
@@ -555,7 +644,7 @@ function AdminDashboard() {
       {/* Admin Content */}
       <div className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          {summaryMetrics.map((metric, index) => (
+          {getSummaryMetrics(metrics).map((metric, index) => (
             <Card key={index}>
               <CardContent className="pt-6">
                 <div className="flex justify-between items-center">

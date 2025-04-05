@@ -3,8 +3,17 @@ import express, { Request, Response, NextFunction } from "express";
 import type { Express } from "express";
 import { createServer } from "http";
 import { db } from "./db";
-import { eq, inArray, gt, and } from "drizzle-orm";
-import { scheduleExceptions, insertScheduleExceptionSchema, sports } from "@shared/schema";
+import { eq, inArray, gt, and, gte, lte, isNull, or, sql } from "drizzle-orm";
+import { 
+  scheduleExceptions, 
+  insertScheduleExceptionSchema, 
+  sports, 
+  users, 
+  organizations, 
+  organizationSubscriptions, 
+  camps, 
+  registrations 
+} from "@shared/schema";
 import { storage } from "./storage";
 import { upload } from "./utils/file-upload";
 // Import the scheduleExceptionSchema from our dialog component for validation
@@ -200,39 +209,153 @@ export async function registerRoutes(app: Express) {
     }
     
     try {
-      // In a real implementation, we would query the database for actual metrics
-      // For now, we'll return mock data
+      // Get user counts by role
+      const usersByRole = await db.select({
+        role: users.role,
+        count: sql`count(*)`.as('count')
+      })
+      .from(users)
+      .groupBy(users.role);
+      
+      // Format user role counts into an object
+      const userRoleCounts = usersByRole.reduce((acc, item) => {
+        acc[item.role] = Number(item.count);
+        return acc;
+      }, {} as Record<string, number>);
+      
+      // Get total users
+      const totalUsersResult = await db.select({
+        count: sql`count(*)`.as('count')
+      })
+      .from(users);
+      const totalUsers = Number(totalUsersResult[0].count);
+      
+      // Get users created in the last 24 hours
+      const oneDayAgo = new Date();
+      oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+      
+      const newUsersResult = await db.select({
+        count: sql`count(*)`.as('count')
+      })
+      .from(users)
+      .where(gte(users.createdAt, oneDayAgo));
+      const newUsersToday = Number(newUsersResult[0].count);
+      
+      // Active users - for demo purposes, let's count users who have updated their profile in last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const activeUsersResult = await db.select({
+        count: sql`count(*)`.as('count')
+      })
+      .from(users)
+      .where(gte(users.updatedAt, thirtyDaysAgo));
+      const activeUsers = Number(activeUsersResult[0].count);
+      
+      // Organization counts
+      const organizationsResult = await db.select({
+        count: sql`count(*)`.as('count')
+      })
+      .from(organizations);
+      const totalOrganizations = Number(organizationsResult[0].count);
+      
+      // Active subscriptions
+      const activeSubscriptionsResult = await db.select({
+        count: sql`count(*)`.as('count')
+      })
+      .from(organizationSubscriptions)
+      .where(eq(organizationSubscriptions.status, "active"));
+      const activeSubscriptions = Number(activeSubscriptionsResult[0].count || 0);
+      
+      // Trial accounts without active subscriptions
+      const trialAccountsResult = await db.select({
+        count: sql`count(*)`.as('count')
+      })
+      .from(organizations)
+      .leftJoin(organizationSubscriptions, eq(organizations.id, organizationSubscriptions.organizationId))
+      .where(or(
+        isNull(organizationSubscriptions.id),
+        eq(organizationSubscriptions.status, "trialing")
+      ));
+      const trialAccounts = Number(trialAccountsResult[0].count || 0);
+      
+      // Count camps by status
+      const campsResult = await db.select({
+        count: sql`count(*)`.as('count')
+      })
+      .from(camps);
+      const totalCamps = Number(campsResult[0].count);
+      
+      // Get active camps (current date within the start/end date range)
+      const today = new Date();
+      const activeCampsResult = await db.select({
+        count: sql`count(*)`.as('count')
+      })
+      .from(camps)
+      .where(and(
+        lte(camps.startDate, today),
+        gte(camps.endDate, today),
+        eq(camps.isDeleted, false),
+        eq(camps.isCancelled, false)
+      ));
+      const activeCamps = Number(activeCampsResult[0].count);
+      
+      // Get registration counts
+      const registrationsResult = await db.select({
+        count: sql`count(*)`.as('count')
+      })
+      .from(registrations);
+      const totalRegistrations = Number(registrationsResult[0].count);
+      
+      // Get paid registrations
+      const paidRegistrationsResult = await db.select({
+        count: sql`count(*)`.as('count')
+      })
+      .from(registrations)
+      .where(eq(registrations.paid, true));
+      const paidRegistrations = Number(paidRegistrationsResult[0].count);
+      
+      // Calculate average revenue per registration
+      const averageRevenue = totalCamps > 0 ? await db.select({
+        avgPrice: sql`avg(${camps.price})`.as('avgPrice')
+      })
+      .from(camps)
+      .then(result => Number(result[0].avgPrice || 0)) : 0;
+      
+      // Estimated revenue (for demonstration purposes)
+      const estimatedRevenue = paidRegistrations * averageRevenue;
+      
+      // Return the real metrics
       const metrics = {
         userMetrics: {
-          totalUsers: 2375,
-          activeUsers: 1254,
-          newUsersToday: 28,
-          usersByRole: {
-            platform_admin: 3,
-            camp_creator: 142,
-            manager: 231,
-            coach: 456,
-            volunteer: 189,
-            parent: 1125,
-            athlete: 230
-          }
+          totalUsers,
+          activeUsers,
+          newUsersToday,
+          usersByRole: userRoleCounts
         },
         organizationMetrics: {
-          totalOrganizations: 142,
-          activeSubscriptions: 98,
-          trialAccounts: 44
+          totalOrganizations,
+          activeSubscriptions,
+          trialAccounts
         },
         financialMetrics: {
-          mtdRevenue: 12450,
-          ytdRevenue: 87250,
-          subscriptionRevenue: 7830,
-          transactionRevenue: 4620
+          mtdRevenue: Math.round(estimatedRevenue / 100), // Convert cents to dollars
+          ytdRevenue: Math.round(estimatedRevenue / 100 * 6), // Rough estimate for demo
+          subscriptionRevenue: Math.round(activeSubscriptions * 50), // Assuming $50 average subscription
+          transactionRevenue: Math.round(estimatedRevenue / 100 * 0.15) // Platform fee of 15%
+        },
+        campMetrics: {
+          totalCamps,
+          activeCamps,
+          totalRegistrations,
+          paidRegistrations,
+          averagePrice: Math.round(averageRevenue / 100) // Convert cents to dollars
         },
         systemMetrics: {
-          uptime: 99.95,
-          apiLatency: 342, // ms
-          errorRate: 0.18,
-          activeConnections: 156
+          uptime: 99.95, // Placeholder - would come from monitoring system
+          apiLatency: 342, // ms - would come from monitoring system
+          errorRate: 0.18, // would come from error tracking system
+          activeConnections: req.app.get('connectionCount') || 0
         }
       };
       
