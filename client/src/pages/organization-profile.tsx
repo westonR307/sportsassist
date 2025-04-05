@@ -50,7 +50,7 @@ import {
   FormLabel, 
   FormMessage 
 } from '@/components/ui/form';
-import { ColorPicker } from '../components/color-picker';
+
 
 // Form validation schema for organization profile
 const organizationProfileSchema = z.object({
@@ -682,19 +682,29 @@ export default function OrganizationProfilePage() {
                           <FormItem>
                             <FormLabel>Primary Color</FormLabel>
                             <FormControl>
-                              <div className="color-picker-wrapper">
-                                <ColorPicker 
-                                  value={field.value || '#3730a3'} 
-                                  onChange={(color) => {
-                                    // Ensure valid hex color
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="h-10 w-10 rounded border flex-shrink-0"
+                                  style={{ backgroundColor: field.value || '#3730a3' }}
+                                ></div>
+                                <Input 
+                                  type="color" 
+                                  value={field.value || '#3730a3'}
+                                  onChange={(e) => field.onChange(e.target.value)}
+                                  className="h-10 w-[100px]"
+                                />
+                                <Input 
+                                  type="text" 
+                                  value={field.value || '#3730a3'}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
                                     const validHexRegex = /^#([0-9A-F]{3}){1,2}$/i;
-                                    if (validHexRegex.test(color)) {
-                                      field.onChange(color);
-                                    } else {
-                                      // Fallback to default if invalid
-                                      field.onChange('#3730a3');
+                                    if (validHexRegex.test(value)) {
+                                      field.onChange(value);
                                     }
-                                  }} 
+                                  }}
+                                  placeholder="#000000"
+                                  className="h-10"
                                 />
                               </div>
                             </FormControl>
@@ -713,19 +723,29 @@ export default function OrganizationProfilePage() {
                           <FormItem>
                             <FormLabel>Secondary Color</FormLabel>
                             <FormControl>
-                              <div className="color-picker-wrapper">
-                                <ColorPicker 
-                                  value={field.value || '#1e3a8a'} 
-                                  onChange={(color) => {
-                                    // Ensure valid hex color
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="h-10 w-10 rounded border flex-shrink-0"
+                                  style={{ backgroundColor: field.value || '#1e3a8a' }}
+                                ></div>
+                                <Input 
+                                  type="color" 
+                                  value={field.value || '#1e3a8a'}
+                                  onChange={(e) => field.onChange(e.target.value)}
+                                  className="h-10 w-[100px]"
+                                />
+                                <Input 
+                                  type="text" 
+                                  value={field.value || '#1e3a8a'}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
                                     const validHexRegex = /^#([0-9A-F]{3}){1,2}$/i;
-                                    if (validHexRegex.test(color)) {
-                                      field.onChange(color);
-                                    } else {
-                                      // Fallback to default if invalid
-                                      field.onChange('#1e3a8a');
+                                    if (validHexRegex.test(value)) {
+                                      field.onChange(value);
                                     }
-                                  }} 
+                                  }}
+                                  placeholder="#000000"
+                                  className="h-10"
                                 />
                               </div>
                             </FormControl>
