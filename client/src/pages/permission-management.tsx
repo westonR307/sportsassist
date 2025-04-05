@@ -31,7 +31,7 @@ export function PermissionManagementPage() {
         description="Manage custom permission sets and user permissions for your organization"
       />
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [organizationId, setOrganizationId] = useState<number | null>(null);
+  const [organizationId, setOrganizationId] = useState<number | undefined>(undefined);
   const [isAddingSet, setIsAddingSet] = useState(false);
   const [selectedSetId, setSelectedSetId] = useState<number | null>(null);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
