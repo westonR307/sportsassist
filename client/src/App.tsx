@@ -35,6 +35,7 @@ import { PermissionManagementPage } from "@/pages/permission-management";
 import StripeConnectManagement from "@/pages/stripe-connect-management";
 import SubscriptionPlans from "@/pages/subscription-plans";
 import AdminDashboard from "@/pages/admin/admin-dashboard";
+import UserSwitcherPage from "@/pages/user-switcher-page";
 import { ProtectedRoute } from "./lib/protected-route";
 
 // Component to handle dashboard routing based on user role
@@ -110,6 +111,7 @@ function Router() {
       <ProtectedRoute path="/dashboard/subscription-plans" component={() => <SubscriptionPlans />} />
       <ProtectedRoute path="/permission-management" component={PermissionManagementPage} />
       <ProtectedRoute path="/custom-fields" component={CustomFieldsPage} />
+      <ProtectedRoute path="/user-switcher" component={UserSwitcherPage} />
       <ProtectedRoute path="/parent-dashboard" component={ParentDashboardRouter} />
       <ProtectedRoute path="/parent-onboarding" component={ParentOnboardingPage} />
       <ProtectedRoute 
