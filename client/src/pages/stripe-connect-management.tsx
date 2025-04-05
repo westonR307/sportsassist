@@ -100,9 +100,16 @@ const StripeConnectManagement = () => {
     
     try {
       setProcessing(true);
-      const response = await apiRequest(`/api/organizations/${orgId}/stripe/create-account`, {
+      const response = await fetch(`/api/organizations/${orgId}/stripe/create-account`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
       });
+      
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || response.statusText);
+      }
       
       toast({
         title: "Stripe account created",
@@ -157,16 +164,25 @@ const StripeConnectManagement = () => {
     
     try {
       setProcessing(true);
-      const response = await apiRequest(`/api/organizations/${orgId}/stripe/create-account-link`, {
+      const response = await fetch(`/api/organizations/${orgId}/stripe/create-account-link`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           refreshUrl: window.location.href,
           returnUrl: window.location.href,
         }),
+        credentials: 'include'
       });
       
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || response.statusText);
+      }
+      
+      const data = await response.json();
+      
       // Redirect to Stripe's onboarding
-      window.location.href = response.url;
+      window.location.href = data.url;
     } catch (error: any) {
       console.error("Error creating account link:", error);
       toast({
@@ -184,13 +200,20 @@ const StripeConnectManagement = () => {
     
     try {
       setProcessing(true);
-      const response = await apiRequest(`/api/organizations/${orgId}/stripe/settings`, {
+      const response = await fetch(`/api/organizations/${orgId}/stripe/settings`, {
         method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           stripeFeePassthrough: feePassthrough,
           stripePlatformFeePercent: parseFloat(platformFeePercent),
         }),
+        credentials: 'include'
       });
+      
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || response.statusText);
+      }
       
       toast({
         title: "Settings updated",
@@ -235,31 +258,31 @@ const StripeConnectManagement = () => {
           description="Connect your organization with Stripe to accept payments"
         />
       
-      {stripeConfigError && (
-        <Card className="mb-8 border-amber-500">
-          <CardHeader className="bg-amber-50">
-            <CardTitle className="text-amber-800">Stripe Configuration Issue</CardTitle>
-            <CardDescription className="text-amber-700">
-              The Stripe integration is not properly configured on the platform.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <p className="text-gray-700 mb-4">
-              The platform administrator needs to set up Stripe properly for the platform. This is not something you need to provide - the platform itself requires a Stripe API key.
-            </p>
-            <div className="bg-gray-50 p-4 rounded-md border text-sm">
-              <p className="font-medium mb-2">Note:</p>
-              <p>Please contact the platform administrator to ensure Stripe is properly configured with a valid API key.</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        {stripeConfigError && (
+          <Card className="mb-8 border-amber-500">
+            <CardHeader className="bg-amber-50">
+              <CardTitle className="text-amber-800">Stripe Configuration Issue</CardTitle>
+              <CardDescription className="text-amber-700">
+                The Stripe integration is not properly configured on the platform.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <p className="text-gray-700 mb-4">
+                The platform administrator needs to set up Stripe properly for the platform. This is not something you need to provide - the platform itself requires a Stripe API key.
+              </p>
+              <div className="bg-gray-50 p-4 rounded-md border text-sm">
+                <p className="font-medium mb-2">Note:</p>
+                <p>Please contact the platform administrator to ensure Stripe is properly configured with a valid API key.</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       
-      <Tabs defaultValue="account" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="account">Stripe Account</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="account" className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="account">Stripe Account</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+          </TabsList>
         
         <TabsContent value="account" className="space-y-4">
           <Card>
@@ -406,8 +429,9 @@ const StripeConnectManagement = () => {
             </CardContent>
           </Card>
         </TabsContent>
-      </Tabs>
-    </div>
+        </Tabs>
+      </div>
+    </DashboardLayout>
   );
 };
 

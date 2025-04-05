@@ -47,15 +47,14 @@ const SubscriptionPlans: React.FC = () => {
   const queryClient = useQueryClient();
 
   // Fetch subscription plans
-  const { data: plans, isLoading, error } = useQuery({
+  const { data: plans, isLoading, error } = useQuery<any[]>({
     queryKey: ['/api/subscription-plans'],
-    queryFn: () => apiRequest('/api/subscription-plans'),
   });
 
   // Create a new subscription plan
   const createPlanMutation = useMutation({
     mutationFn: (data: SubscriptionFormValues) => 
-      apiRequest('/api/subscription-plans', { method: 'POST', body: data }),
+      apiRequest('POST', '/api/subscription-plans', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/subscription-plans'] });
       setCreateDialogOpen(false);
@@ -76,7 +75,7 @@ const SubscriptionPlans: React.FC = () => {
   // Update a subscription plan
   const updatePlanMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: SubscriptionFormValues }) =>
-      apiRequest(`/api/subscription-plans/${id}`, { method: 'PUT', body: data }),
+      apiRequest('PUT', `/api/subscription-plans/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/subscription-plans'] });
       setEditingPlan(null);
@@ -467,6 +466,7 @@ const SubscriptionPlans: React.FC = () => {
         </DialogContent>
       </Dialog>
     </div>
+    </DashboardLayout>
   );
 };
 
