@@ -114,9 +114,33 @@ const StripeConnectManagement = () => {
       ]);
     } catch (error: any) {
       console.error("Error creating Stripe account:", error);
+      
+      // Extract the error message from the response if available
+      let errorMessage = "An error occurred while creating your Stripe account.";
+      
+      if (error.response) {
+        try {
+          const errorData = error.response;
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData.error?.message) {
+            errorMessage = errorData.error.message;
+          }
+          
+          // Special handling for the settings[controller] error
+          if (errorMessage.includes("settings[controller]")) {
+            errorMessage = "Invalid Stripe account configuration. The system has been updated. Please try again.";
+          }
+        } catch (parseError) {
+          console.error("Error parsing error response:", parseError);
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Failed to create Stripe account",
-        description: error.message || "An error occurred while creating your Stripe account.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
