@@ -23,6 +23,7 @@ import { useQuery } from "@tanstack/react-query";
 import { type Camp } from "@shared/schema";
 import { AddCampDialog } from "@/components/add-camp-dialog";
 import { DashboardLayout } from "@/pages/dashboard";
+import { CampsFilter, type CampFilterValues } from "@/components/camps-filter";
 
 // Extended camp type to include permissions from the server
 interface CampWithPermissions extends Camp {
@@ -41,6 +42,24 @@ export default function CampsPage() {
   
   const [showAddCampDialog, setShowAddCampDialog] = React.useState(shouldShowDialog);
   
+  // Set up filter state
+  const [filters, setFilters] = React.useState<CampFilterValues>({
+    search: '',
+    status: '',
+    type: '',
+    includeDeleted: false
+  });
+  
+  // Count active filters to show in the filter UI
+  const activeFilterCount = React.useMemo(() => {
+    let count = 0;
+    if (filters.search) count++;
+    if (filters.status) count++;
+    if (filters.type) count++;
+    if (filters.includeDeleted) count++;
+    return count;
+  }, [filters]);
+  
   // Effect to clear the URL parameter after the dialog is shown
   React.useEffect(() => {
     if (shouldShowDialog) {
@@ -50,8 +69,22 @@ export default function CampsPage() {
   }, [shouldShowDialog, navigate]);
   
   const { user } = useAuth();
+  
+  // Build the query URL with filter parameters
+  const queryUrl = React.useMemo(() => {
+    const url = new URL("/api/camps", window.location.origin);
+    
+    if (filters.search) url.searchParams.append('search', filters.search);
+    if (filters.status) url.searchParams.append('status', filters.status);
+    if (filters.type) url.searchParams.append('type', filters.type);
+    if (filters.includeDeleted) url.searchParams.append('includeDeleted', 'true');
+    
+    return url.pathname + url.search;
+  }, [filters]);
+  
+  // Update the query key when filters change
   const { data: camps, isLoading } = useQuery<CampWithPermissions[]>({
-    queryKey: ["/api/camps"],
+    queryKey: [queryUrl],
     staleTime: 5000, // Only refetch after 5 seconds
     refetchOnWindowFocus: false,
   });
@@ -78,6 +111,14 @@ export default function CampsPage() {
           </div>
         )}
       </div>
+      
+      {/* Camp filters */}
+      <CampsFilter 
+        filters={filters}
+        onFilterChange={setFilters}
+        activeFilterCount={activeFilterCount}
+        className="mb-4"
+      />
 
       {isLoading ? (
         <div className="flex justify-center p-8">

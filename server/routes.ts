@@ -1190,7 +1190,19 @@ export async function registerRoutes(app: Express) {
     try {
       console.log("Fetching camps list");
       
-      let camps;
+      let organizationId: number | undefined;
+      let includeDeleted = false;
+      
+      // Parse query parameters for filtering
+      const status = req.query.status as string | undefined;
+      const type = req.query.type as string | undefined;
+      const search = req.query.search as string | undefined;
+      
+      // If explicitly set in the query, override the default includeDeleted
+      if (req.query.includeDeleted === 'true') {
+        includeDeleted = true;
+      }
+      
       // Check if we should filter by organization
       if (req.user) {
         const userType = req.user.role;
@@ -1198,19 +1210,55 @@ export async function registerRoutes(app: Express) {
         // For organization staff members (camp creators, managers), show only their organization camps
         if (['camp_creator', 'manager', 'coach', 'volunteer'].includes(userType) && req.user.organizationId) {
           console.log(`Filtering camps for ${userType} with organization ID ${req.user.organizationId}`);
-          camps = await storage.listCamps(req.user.organizationId);
+          organizationId = req.user.organizationId;
         } else {
-          // For parents/athletes/public, show all public camps
           console.log("Showing all camps (public view)");
-          camps = await storage.listCamps();
         }
       } else {
         // For unauthenticated users, show all public camps
         console.log("Unauthenticated user - showing all public camps");
-        camps = await storage.listCamps();
       }
       
-      console.log(`Retrieved ${camps.length} camps`);
+      // Get camps from storage
+      let camps = await storage.listCamps(organizationId, includeDeleted);
+      
+      // Apply additional filters based on query parameters
+      if (status) {
+        // Apply status filtering based on date logic
+        const now = new Date();
+        
+        if (status === 'active') {
+          camps = camps.filter(camp => 
+            new Date(camp.startDate) <= now && new Date(camp.endDate) >= now && !camp.isCancelled
+          );
+        } else if (status === 'upcoming') {
+          camps = camps.filter(camp => 
+            new Date(camp.startDate) > now && !camp.isCancelled
+          );
+        } else if (status === 'past') {
+          camps = camps.filter(camp => 
+            new Date(camp.endDate) < now || camp.isCancelled
+          );
+        } else if (status === 'cancelled') {
+          camps = camps.filter(camp => camp.isCancelled);
+        }
+      }
+      
+      // Filter by camp type
+      if (type) {
+        camps = camps.filter(camp => camp.type === type);
+      }
+      
+      // Filter by search term (name or description)
+      if (search) {
+        const searchLower = search.toLowerCase();
+        camps = camps.filter(camp => 
+          camp.name.toLowerCase().includes(searchLower) || 
+          (camp.description && camp.description.toLowerCase().includes(searchLower))
+        );
+      }
+      
+      console.log(`Retrieved ${camps.length} camps after filtering`);
 
       // Force fresh response with multiple cache control headers
       res.set({
