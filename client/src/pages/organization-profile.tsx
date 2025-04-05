@@ -1013,6 +1013,5 @@ export default function OrganizationProfilePage() {
       </div>
     </div>
     </DashboardLayout>
-    </DashboardLayout>
   );
 }
