@@ -388,8 +388,25 @@ export default function OrganizationProfilePage() {
   const debouncedMutation = useCallback(
     debounce((data: OrganizationProfileData) => {
       const changedData = getChangedFields(data);
-      console.log('Submitting only changed fields:', changedData);
-      updateProfileMutation.mutate(changedData as OrganizationProfileData);
+      
+      // Validate color fields before submitting
+      const validatedData = { ...changedData };
+      const validHexRegex = /^#([0-9A-F]{3}){1,2}$/i;
+      
+      // Sanitize primary color if present
+      if (validatedData.primaryColor && !validHexRegex.test(validatedData.primaryColor)) {
+        console.log('Invalid primary color format, resetting to default:', validatedData.primaryColor);
+        validatedData.primaryColor = '#3730a3'; // Default primary color
+      }
+      
+      // Sanitize secondary color if present
+      if (validatedData.secondaryColor && !validHexRegex.test(validatedData.secondaryColor)) {
+        console.log('Invalid secondary color format, resetting to default:', validatedData.secondaryColor);
+        validatedData.secondaryColor = '#1e3a8a'; // Default secondary color
+      }
+      
+      console.log('Submitting only changed fields:', validatedData);
+      updateProfileMutation.mutate(validatedData as OrganizationProfileData);
     }, 500),
     [organization, updateProfileMutation]
   );
@@ -665,10 +682,21 @@ export default function OrganizationProfilePage() {
                           <FormItem>
                             <FormLabel>Primary Color</FormLabel>
                             <FormControl>
-                              <ColorPicker 
-                                value={field.value || '#3730a3'} 
-                                onChange={field.onChange} 
-                              />
+                              <div className="color-picker-wrapper">
+                                <ColorPicker 
+                                  value={field.value || '#3730a3'} 
+                                  onChange={(color) => {
+                                    // Ensure valid hex color
+                                    const validHexRegex = /^#([0-9A-F]{3}){1,2}$/i;
+                                    if (validHexRegex.test(color)) {
+                                      field.onChange(color);
+                                    } else {
+                                      // Fallback to default if invalid
+                                      field.onChange('#3730a3');
+                                    }
+                                  }} 
+                                />
+                              </div>
                             </FormControl>
                             <FormDescription>
                               Main color for your organization's branding.
@@ -685,10 +713,21 @@ export default function OrganizationProfilePage() {
                           <FormItem>
                             <FormLabel>Secondary Color</FormLabel>
                             <FormControl>
-                              <ColorPicker 
-                                value={field.value || '#1e3a8a'} 
-                                onChange={field.onChange} 
-                              />
+                              <div className="color-picker-wrapper">
+                                <ColorPicker 
+                                  value={field.value || '#1e3a8a'} 
+                                  onChange={(color) => {
+                                    // Ensure valid hex color
+                                    const validHexRegex = /^#([0-9A-F]{3}){1,2}$/i;
+                                    if (validHexRegex.test(color)) {
+                                      field.onChange(color);
+                                    } else {
+                                      // Fallback to default if invalid
+                                      field.onChange('#1e3a8a');
+                                    }
+                                  }} 
+                                />
+                              </div>
                             </FormControl>
                             <FormDescription>
                               Accent color for your organization's branding.
