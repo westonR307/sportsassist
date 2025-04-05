@@ -78,6 +78,17 @@ export const createStripeConnectedAccount = async (email: string) => {
         card_payments: { requested: true },
         transfers: { requested: true },
       },
+      settings: {
+        payouts: {
+          schedule: {
+            interval: 'daily',
+          },
+        },
+        controller: {
+          fees: { payer: 'application' },
+          stripe_dashboard: { type: 'express' } // Allow creators to access dashboard
+        }
+      }
     });
     
     return account;

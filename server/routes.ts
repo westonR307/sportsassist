@@ -1,5 +1,5 @@
 import { publicRoles } from "@shared/schema";
-import { Request, Response, NextFunction } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import type { Express } from "express";
 import { createServer } from "http";
 import { db } from "./db";
@@ -141,7 +141,7 @@ import {
   campSessions,
   recurrencePatterns
 } from "@shared/schema";
-import { campSchedules, campSports } from "@shared/tables";
+import { campSchedules, campSports, organizations, registrations } from "@shared/tables";
 import Stripe from "stripe";
 import { hashPassword, comparePasswords } from "./utils";
 import { registerParentRoutes } from "./parent-routes";
@@ -151,6 +151,7 @@ import passport from "passport";
 import { sendInvitationEmail } from "./utils/email";
 import { uploadConfig, getFileUrl } from "./utils/file-upload";
 import path from 'path';
+import { handleStripeWebhook } from "./stripe-webhook";
 
 // Import Stripe utility functions
 import { 
@@ -3746,6 +3747,9 @@ export async function registerRoutes(app: Express) {
   // =========================================================================
   // Stripe Connect API endpoints
   // =========================================================================
+  
+  // Stripe webhook endpoint
+  app.post("/api/stripe/webhook", express.raw({ type: 'application/json' }), handleStripeWebhook);
   
   // Create a Stripe Connect account for an organization
   app.post("/api/organizations/:orgId/stripe/create-account", async (req, res) => {

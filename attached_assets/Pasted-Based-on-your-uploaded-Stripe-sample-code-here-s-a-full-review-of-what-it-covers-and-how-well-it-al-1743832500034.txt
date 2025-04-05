@@ -1,0 +1,92 @@
+Based on your uploaded Stripe sample code, here’s a full review of what it covers and how well it aligns with the goals we’ve discussed for SportsAssist.io:
+
+⸻
+
+1. Express Account Onboarding – ✅ Working
+
+Files involved: server.rb, useStripeConnect.js
+	•	POST /account creates an Express connected account via the Stripe API.
+	•	The account includes:
+	•	capabilities for card_payments and transfers (required)
+	•	controller.fees.payer: "application" – this is correct for using application_fee_amount
+	•	controller.stripe_dashboard.type: "none" – this disables the dashboard (more on this below)
+	•	POST /account_session creates an onboarding session using the embedded method via Stripe Connect JS.
+
+Frontend hook (useStripeConnect.js) properly:
+	•	Sends connectedAccountId to the server
+	•	Fetches a client_secret for the onboarding session
+	•	Loads and initializes Stripe Connect’s embedded UI with your branding
+
+Note: You’re disabling the Express dashboard via "stripe_dashboard": { type: "none" }. If you want to let creators access the Stripe Express dashboard (recommended), change this to "type": "express".
+
+⸻
+
+2. Destination Charges – ❌ Not Yet Implemented
+
+There is no route yet to create a payment (Checkout Session or PaymentIntent) using application_fee_amount and transfer_data.destination.
+
+You’ll need to implement a new route for this (e.g., /create-checkout-session or /charge) and include:
+
+payment_intent_data: {
+  application_fee_amount: <your platform fee>,
+  transfer_data: {
+    destination: <connected_account_id>
+  }
+}
+
+This is essential for:
+	•	Automatically sending payouts to camp creators
+	•	Letting Stripe handle fee splitting
+	•	Ensuring you receive your platform fee
+
+⸻
+
+3. Webhook Handling – ❌ Not Yet Implemented
+
+There are no webhook routes or logic in the sample. You’ll want to add a route like /webhook and listen for:
+	•	checkout.session.completed — to track successful camp registrations
+	•	payment_intent.succeeded — to log finalized payments
+	•	Optionally account.updated, payout.paid, etc. for creator onboarding/payout tracking
+
+⸻
+
+4. Payouts – ✅ Handled by Stripe
+
+Once you send payments using transfer_data.destination, Stripe automatically handles payouts based on the creator’s payout schedule (usually daily by default). You don’t have to manually send payouts.
+
+Just make sure you’re using destination charges, or the funds won’t reach the connected account.
+
+⸻
+
+5. Taxes & 1099s – ✅ Stripe Handles
+
+Your setup (Express + destination charges) ensures:
+	•	Creators are classified as sellers
+	•	Stripe handles identity verification, tax info, and 1099-K issuance
+	•	You do not need to file 1099s, as long as you don’t pay creators outside Stripe
+
+You will need to track your own application fees for your business income.
+
+⸻
+
+✅ What’s Good
+	•	Express onboarding with embedded Connect components is implemented well
+	•	Clean separation between frontend and backend
+	•	Stripe Connect setup includes proper capabilities and fee responsibility settings
+
+⸻
+
+❌ What’s Missing / Needs Added
+	1.	Create payment route using application_fee_amount and transfer_data.destination
+	2.	Webhook route to log payments and track activity
+	3.	(Optional but recommended): Change stripe_dashboard.type from "none" to "express" to allow creators to access their payout dashboard
+	4.	(Optional): Stripe Tax configuration for automatic sales tax collection
+
+⸻
+
+Want Me to Provide?
+	•	Sample create-checkout-session route in Ruby?
+	•	Sample webhook route in Ruby?
+	•	Updated onboarding to allow dashboard access?
+
+Let me know and I’ll drop them right in. ￼
