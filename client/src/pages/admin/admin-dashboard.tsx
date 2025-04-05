@@ -482,38 +482,43 @@ const ConfigurationCenter = () => {
   );
 };
 
-// System alerts for the admin dashboard
-const systemAlerts = [
-  {
-    id: 1,
-    type: "error",
-    message: "Payment processing service degradation",
-    timestamp: "2025-04-05T09:32:14Z",
-    details: "The payment processing service is experiencing intermittent failures.",
-    status: "investigating"
-  },
-  {
-    id: 2,
-    type: "warning",
-    message: "High database load detected",
-    timestamp: "2025-04-05T08:15:42Z",
-    details: "Database load spiked to 82% for 15 minutes before returning to normal.",
-    status: "resolved"
-  },
-  {
-    id: 3,
-    type: "info",
-    message: "System maintenance scheduled",
-    timestamp: "2025-04-05T07:00:00Z",
-    details: "Scheduled maintenance will occur on April 10th at 02:00 UTC.",
-    status: "scheduled"
-  }
-];
+// System events interface
+interface SystemEvent {
+  id: number;
+  eventType: string;
+  eventSource: string;
+  eventMessage: string;
+  eventDetails: any;
+  timestamp: string;
+  severity: string;
+  userId?: number;
+  ipAddress?: string;
+  userAgent?: string;
+}
 
 function AdminDashboard() {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
+  
+  // Query to get system events from the API
+  const { data: systemEvents = [], isLoading: eventsLoading } = useQuery<SystemEvent[]>({
+    queryKey: ['/api/admin/system-events'],
+    retry: 1,
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+
+  // Map system events to the format expected by the TechnicalMonitoring component
+  const systemAlerts = systemEvents && systemEvents.length > 0 ? 
+    systemEvents.map(event => ({
+      id: event.id,
+      type: event.severity,
+      message: event.eventMessage,
+      timestamp: event.timestamp,
+      details: event.eventSource + (event.eventDetails ? ': ' + JSON.stringify(event.eventDetails) : ''),
+      status: event.severity === 'error' ? 'investigating' : 
+              event.severity === 'warning' ? 'monitoring' : 'resolved'
+    })) : [];
   
   // Handle logout
   const handleLogout = async () => {
