@@ -387,6 +387,33 @@ function AdminDashboard() {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
+  
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/logout', { 
+        method: 'POST',
+        credentials: 'include' 
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "Logged out successfully",
+          description: "You have been logged out of your account",
+        });
+        window.location.href = '/auth';
+      } else {
+        throw new Error("Logout failed");
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({
+        title: "Logout failed",
+        description: "There was a problem logging you out",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Define admin metrics types for TypeScript
   interface PlatformMetrics {
@@ -518,6 +545,9 @@ function AdminDashboard() {
                 Return to App
               </Button>
             </Link>
+            <Button variant="destructive" onClick={handleLogout}>
+              Logout
+            </Button>
           </div>
         </div>
       </header>

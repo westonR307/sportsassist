@@ -35,7 +35,6 @@ import { PermissionManagementPage } from "@/pages/permission-management";
 import StripeConnectManagement from "@/pages/stripe-connect-management";
 import SubscriptionPlans from "@/pages/subscription-plans";
 import AdminDashboard from "@/pages/admin/admin-dashboard";
-import UserSwitcherPage from "@/pages/user-switcher-page";
 import { ProtectedRoute } from "./lib/protected-route";
 
 // Component to handle dashboard routing based on user role
@@ -91,7 +90,6 @@ function Router() {
       <Route path="/find-camps" component={FindCampsPage} />
       <Route path="/org/:slug" component={OrganizationPublicPage} />
       <Route path="/invitations/:token/accept" component={InvitationAcceptPage} />
-      <Route path="/user-switcher" component={UserSwitcherPage} />
       <ProtectedRoute path="/dashboard" component={DashboardRouter} />
       <ProtectedRoute path="/dashboard/my-athletes" component={MyAthletesPage} />
       <ProtectedRoute path="/dashboard/registrations" component={RegistrationsPage} />
