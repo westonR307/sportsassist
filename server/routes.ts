@@ -212,10 +212,21 @@ export async function registerRoutes(app: Express) {
   
   // Admin dashboard routes
   app.get("/api/admin/metrics", async (req, res) => {
-    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+    console.log("Admin metrics API called - Auth Debug:", {
+      sessionID: req.sessionID,
+      isAuthenticated: req.isAuthenticated(),
+      user: req.user,
+      session: req.session
+    });
+    
+    if (!req.user) {
+      console.log("Admin metrics API - No user found");
+      return res.status(401).json({ message: "Unauthorized" });
+    }
     
     // Ensure user is a platform admin
     if (req.user.role !== "platform_admin") {
+      console.log("Admin metrics API - User role check failed:", req.user.role);
       return res.status(403).json({ message: "Forbidden: Platform admin access required" });
     }
     

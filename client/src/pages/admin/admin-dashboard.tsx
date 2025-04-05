@@ -577,10 +577,15 @@ function AdminDashboard() {
   }
 
   // Real query for platform metrics from the API
-  const { data: metrics, isLoading } = useQuery<PlatformMetrics>({
+  const { data: metrics, isLoading, error } = useQuery<PlatformMetrics>({
     queryKey: ['/api/admin/metrics'],
     retry: 1
   });
+  
+  // Debug logs for API request status
+  console.log("Admin dashboard - metrics loading:", isLoading);
+  console.log("Admin dashboard - metrics error:", error);
+  console.log("Admin dashboard - metrics data:", metrics);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
