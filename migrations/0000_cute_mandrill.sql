@@ -21,6 +21,10 @@ CREATE TABLE "camp_staff" (
 	"role" text NOT NULL
 );
 --> statement-breakpoint
+CREATE INDEX "camps_organization_id_idx" ON "camps" ("organization_id");
+CREATE INDEX "camps_status_idx" ON "camps" ("visibility", "is_deleted", "is_cancelled");
+CREATE INDEX "camps_dates_idx" ON "camps" ("start_date", "end_date");
+
 CREATE TABLE "camps" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
