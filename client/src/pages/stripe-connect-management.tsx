@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { DashboardLayout } from './dashboard';
+import { DashboardHeader } from '@/components/dashboard-header';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -226,8 +228,12 @@ const StripeConnectManagement = () => {
   }
 
   return (
-    <div className="container mx-auto py-10 px-4">
-      <h1 className="text-3xl font-bold mb-8">Stripe Connect Management</h1>
+    <DashboardLayout>
+      <div className="container mx-auto py-10 px-4">
+        <DashboardHeader
+          title="Stripe Connect Management"
+          description="Connect your organization with Stripe to accept payments"
+        />
       
       {stripeConfigError && (
         <Card className="mb-8 border-amber-500">

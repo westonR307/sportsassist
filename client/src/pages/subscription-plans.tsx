@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { DashboardLayout } from './dashboard';
+import { DashboardHeader } from '@/components/dashboard-header';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useForm } from "react-hook-form";
@@ -404,12 +406,13 @@ const SubscriptionPlans: React.FC = () => {
   }
 
   return (
-    <div className="container py-8">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">Subscription Plans</h1>
-          <p className="text-muted-foreground">Manage your organization's subscription plans</p>
-        </div>
+    <DashboardLayout>
+      <div className="container py-8">
+        <DashboardHeader
+          title="Subscription Plans"
+          description="Manage your organization's subscription plans"
+        />
+        <div className="flex justify-end mb-8">
         <Button onClick={() => setCreateDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-1" /> Add New Plan
         </Button>

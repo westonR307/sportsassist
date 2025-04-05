@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { DashboardLayout } from './dashboard';
+import { DashboardHeader } from '@/components/dashboard-header';
 import { useAuth } from '@/hooks/use-auth';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import debounce from 'lodash.debounce';
@@ -465,15 +467,12 @@ export default function OrganizationProfilePage() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-5xl">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Organization Profile</h1>
-          <p className="text-muted-foreground">
-            Customize your organization's profile and appearance
-          </p>
-        </div>
-      </div>
+    <DashboardLayout>
+      <div className="container mx-auto p-6 max-w-5xl">
+        <DashboardHeader
+          title="Organization Profile"
+          description="Customize your organization's profile and appearance"
+        />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid grid-cols-4 w-full max-w-2xl">

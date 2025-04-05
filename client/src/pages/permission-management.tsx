@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { DashboardLayout } from './dashboard';
+import { DashboardHeader } from '@/components/dashboard-header';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { PermissionSetEditor } from '@/components/permission-set-editor';
@@ -22,6 +24,12 @@ import { Role } from '@shared/types';
 export function PermissionManagementPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  return (
+    <DashboardLayout>
+      <DashboardHeader
+        title="Permission Management"
+        description="Manage custom permission sets and user permissions for your organization"
+      />
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [organizationId, setOrganizationId] = useState<number | null>(null);
   const [isAddingSet, setIsAddingSet] = useState(false);
