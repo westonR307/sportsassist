@@ -72,6 +72,12 @@ export const createStripeAccountLink = async (accountId: string, refreshUrl: str
 export const createStripeConnectedAccount = async (email: string) => {
   try {
     console.log(`Creating Stripe Connect account for email: ${email}`);
+    
+    // Proceed with account creation - the platform account is responsible for setting up
+    // the responsibilities of managing losses in the Stripe Dashboard
+    console.log('Proceeding with account creation - responsibility settings should be configured in Stripe Dashboard');
+    
+    // Create the Connect account
     const account = await stripe.accounts.create({
       type: 'express',
       email,
@@ -85,12 +91,15 @@ export const createStripeConnectedAccount = async (email: string) => {
             interval: 'daily',
           },
         },
-        // The controller field was causing the error - it's not a valid Stripe API parameter
-        // See Stripe API docs: https://stripe.com/docs/api/accounts/create
       },
       business_profile: {
-        mcc: '8299', // Educational Services
+        mcc: '8299', // Educational Services for sports camps
         url: 'https://sportsassist.io',
+        product_description: 'Sports camp registration and management platform',
+      },
+      // Set the responsibilities according to your business model
+      tos_acceptance: {
+        service_agreement: 'recipient', // The connected account is responsible for disputes
       }
     });
     

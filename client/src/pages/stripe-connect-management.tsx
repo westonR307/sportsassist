@@ -127,9 +127,11 @@ const StripeConnectManagement = () => {
             errorMessage = errorData.error.message;
           }
           
-          // Special handling for the settings[controller] error
+          // Special handling for known Stripe errors
           if (errorMessage.includes("settings[controller]")) {
             errorMessage = "Invalid Stripe account configuration. The system has been updated. Please try again.";
+          } else if (errorMessage.includes("Please review the responsibilities of managing losses")) {
+            errorMessage = "Stripe Connect platform setup incomplete. Please contact the SportsAssist administrator to complete the Stripe Connect platform profile setup.";
           }
         } catch (parseError) {
           console.error("Error parsing error response:", parseError);
