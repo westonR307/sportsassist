@@ -161,12 +161,14 @@ export default function CampsPage() {
                 ? "closed" 
                 : "open";
                 
-            // Calculate if camp is active, upcoming, or past
-            const campStatus = now < startDate 
-              ? "upcoming" 
-              : now > endDate 
-                ? "completed" 
-                : "active";
+            // Calculate if camp is active, upcoming, past, or cancelled
+            const campStatus = camp.isCancelled 
+              ? "cancelled"
+              : now < startDate 
+                ? "upcoming" 
+                : now > endDate 
+                  ? "completed" 
+                  : "active";
                 
             // Format duration in days
             const campDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -185,17 +187,29 @@ export default function CampsPage() {
             // We'll create two cards - one for the front and one for the back of the flip card
             const frontCard = (
               <Card className="h-full border-0 shadow-none">
-                <div className={`h-2 w-full ${campStatus === 'active' ? 'bg-green-500' : campStatus === 'upcoming' ? 'bg-blue-500' : 'bg-gray-400'}`} />
+                <div className={`h-2 w-full ${
+                  campStatus === 'active' ? 'bg-green-500' : 
+                  campStatus === 'upcoming' ? 'bg-blue-500' : 
+                  campStatus === 'cancelled' ? 'bg-red-500' : 
+                  'bg-gray-400'
+                }`} />
                 
                 <CardHeader className="p-3 pb-1">
                   <div className="space-y-1">
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-base truncate">{camp.name}</CardTitle>
-                      {canManageCamp ? (
-                        <Badge className="h-5 text-xs bg-green-100 text-green-800 hover:bg-green-200">
-                          Manager
-                        </Badge>
-                      ) : null}
+                      <div className="flex gap-1">
+                        {camp.isCancelled && (
+                          <Badge className="h-5 text-xs bg-red-100 text-red-800 hover:bg-red-200">
+                            Cancelled
+                          </Badge>
+                        )}
+                        {canManageCamp ? (
+                          <Badge className="h-5 text-xs bg-green-100 text-green-800 hover:bg-green-200">
+                            Manager
+                          </Badge>
+                        ) : null}
+                      </div>
                     </div>
                     <CardDescription className="line-clamp-1 text-xs">
                       {camp.description}
@@ -228,14 +242,23 @@ export default function CampsPage() {
                   <div className="flex items-center justify-between">
                     <Badge 
                       className={
-                        regStatus === 'open'
-                          ? 'bg-green-100 text-green-800 hover:bg-green-200 h-5 text-xs'
-                          : regStatus === 'upcoming'
-                            ? 'bg-blue-100 text-blue-800 hover:bg-blue-200 h-5 text-xs'
-                            : 'bg-gray-100 text-gray-800 hover:bg-gray-200 h-5 text-xs'
+                        camp.isCancelled
+                          ? 'bg-red-100 text-red-800 hover:bg-red-200 h-5 text-xs'
+                          : regStatus === 'open'
+                            ? 'bg-green-100 text-green-800 hover:bg-green-200 h-5 text-xs'
+                            : regStatus === 'upcoming'
+                              ? 'bg-blue-100 text-blue-800 hover:bg-blue-200 h-5 text-xs'
+                              : 'bg-gray-100 text-gray-800 hover:bg-gray-200 h-5 text-xs'
                       }
                     >
-                      {regStatus === 'open' ? 'Registration Open' : regStatus === 'upcoming' ? 'Opening Soon' : 'Closed'}
+                      {camp.isCancelled 
+                        ? 'Cancelled' 
+                        : regStatus === 'open' 
+                          ? 'Registration Open' 
+                          : regStatus === 'upcoming' 
+                            ? 'Opening Soon' 
+                            : 'Closed'
+                      }
                     </Badge>
                     <span className="text-xs">${camp.price}</span>
                   </div>
@@ -249,17 +272,29 @@ export default function CampsPage() {
             
             const backCard = (
               <Card className="h-full border-0 shadow-none overflow-y-auto">
-                <div className={`h-2 w-full ${campStatus === 'active' ? 'bg-green-500' : campStatus === 'upcoming' ? 'bg-blue-500' : 'bg-gray-400'}`} />
+                <div className={`h-2 w-full ${
+                  campStatus === 'active' ? 'bg-green-500' : 
+                  campStatus === 'upcoming' ? 'bg-blue-500' : 
+                  campStatus === 'cancelled' ? 'bg-red-500' : 
+                  'bg-gray-400'
+                }`} />
                 
                 <CardHeader className="p-3 pb-1">
                   <div className="flex justify-between items-start">
                     <CardTitle className="text-base">{camp.name}</CardTitle>
-                    <Badge 
-                      variant={camp.visibility === 'public' ? 'default' : 'outline'}
-                      className="capitalize h-5 text-xs"
-                    >
-                      {camp.visibility}
-                    </Badge>
+                    <div className="flex gap-1">
+                      {camp.isCancelled && (
+                        <Badge className="h-5 text-xs bg-red-100 text-red-800 hover:bg-red-200">
+                          Cancelled
+                        </Badge>
+                      )}
+                      <Badge 
+                        variant={camp.visibility === 'public' ? 'default' : 'outline'}
+                        className="capitalize h-5 text-xs"
+                      >
+                        {camp.visibility}
+                      </Badge>
+                    </div>
                   </div>
                 </CardHeader>
                 
