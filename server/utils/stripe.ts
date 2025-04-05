@@ -90,7 +90,7 @@ export const createStripeConnectedAccount = async (email: string) => {
       },
       business_profile: {
         mcc: '8299', // Educational Services
-        url: import.meta.env.VITE_PUBLIC_URL || 'https://sportsassist.io',
+        url: 'https://sportsassist.io',
       }
     });
     

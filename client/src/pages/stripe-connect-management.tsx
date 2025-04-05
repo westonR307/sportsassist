@@ -315,7 +315,7 @@ const StripeConnectManagement = () => {
                     </div>
                   )}
                   
-                  {stripeStatus.requirements && stripeStatus.requirements.currently_due?.length > 0 && (
+                  {stripeStatus?.requirements && Array.isArray(stripeStatus.requirements.currently_due) && stripeStatus.requirements.currently_due.length > 0 && (
                     <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
                       <p className="text-yellow-800 font-medium">There are still some requirements needed:</p>
                       <ul className="list-disc pl-5 mt-2">
