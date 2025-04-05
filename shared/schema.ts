@@ -31,7 +31,9 @@ import {
   campDocumentAgreements,
   organizationMessages,
   subscriptionPlans,
-  organizationSubscriptions
+  organizationSubscriptions,
+  platformMetrics,
+  systemEvents
 } from "./tables";
 
 // Import types
@@ -48,7 +50,7 @@ import {
   ValidationType
 } from "./types";
 
-export const publicRoles = ["camp_creator", "parent", "athlete"] as const;
+export const publicRoles = ["platform_admin", "camp_creator", "parent", "athlete"] as const;
 
 // Common UTC-safe date transformation function to ensure consistency
 const createUtcSafeDateTransformer = (fieldName: string) => {

@@ -189,6 +189,107 @@ export async function registerRoutes(app: Express) {
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
   });
+  
+  // Admin dashboard routes
+  app.get("/api/admin/metrics", async (req, res) => {
+    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+    
+    // Ensure user is a platform admin
+    if (req.user.role !== "platform_admin") {
+      return res.status(403).json({ message: "Forbidden: Platform admin access required" });
+    }
+    
+    try {
+      // In a real implementation, we would query the database for actual metrics
+      // For now, we'll return mock data
+      const metrics = {
+        userMetrics: {
+          totalUsers: 2375,
+          activeUsers: 1254,
+          newUsersToday: 28,
+          usersByRole: {
+            platform_admin: 3,
+            camp_creator: 142,
+            manager: 231,
+            coach: 456,
+            volunteer: 189,
+            parent: 1125,
+            athlete: 230
+          }
+        },
+        organizationMetrics: {
+          totalOrganizations: 142,
+          activeSubscriptions: 98,
+          trialAccounts: 44
+        },
+        financialMetrics: {
+          mtdRevenue: 12450,
+          ytdRevenue: 87250,
+          subscriptionRevenue: 7830,
+          transactionRevenue: 4620
+        },
+        systemMetrics: {
+          uptime: 99.95,
+          apiLatency: 342, // ms
+          errorRate: 0.18,
+          activeConnections: 156
+        }
+      };
+      
+      res.json(metrics);
+    } catch (error) {
+      console.error("Error fetching admin metrics:", error);
+      res.status(500).json({ message: "Failed to get admin metrics" });
+    }
+  });
+  
+  app.get("/api/admin/system-events", async (req, res) => {
+    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+    
+    // Ensure user is a platform admin
+    if (req.user.role !== "platform_admin") {
+      return res.status(403).json({ message: "Forbidden: Platform admin access required" });
+    }
+    
+    try {
+      // In a real implementation, we would query the database for system events
+      // For now, we'll return mock data
+      const systemEvents = [
+        {
+          id: 1,
+          type: "error",
+          message: "Payment processing service degradation",
+          timestamp: "2025-04-05T09:32:14Z",
+          details: "The payment processing service is experiencing intermittent failures.",
+          status: "investigating",
+          severity: "critical"
+        },
+        {
+          id: 2,
+          type: "warning",
+          message: "High database load detected",
+          timestamp: "2025-04-05T08:15:42Z",
+          details: "Database load spiked to 82% for 15 minutes before returning to normal.",
+          status: "resolved",
+          severity: "warning"
+        },
+        {
+          id: 3,
+          type: "info",
+          message: "System maintenance scheduled",
+          timestamp: "2025-04-10T02:00:00Z",
+          details: "Scheduled maintenance for database optimization.",
+          status: "scheduled",
+          severity: "info"
+        }
+      ];
+      
+      res.json(systemEvents);
+    } catch (error) {
+      console.error("Error fetching system events:", error);
+      res.status(500).json({ message: "Failed to get system events" });
+    }
+  });
 
   // Register public routes first (no auth required)
   registerPublicRoutes(app);

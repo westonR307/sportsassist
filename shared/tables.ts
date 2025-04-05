@@ -461,3 +461,28 @@ export const userPermissions = pgTable("user_permissions", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
+
+// Platform metrics table for admin dashboard
+export const platformMetrics = pgTable("platform_metrics", {
+  id: serial("id").primaryKey(),
+  metricType: text("metric_type").notNull(), // 'daily_users', 'revenue', 'registrations', etc.
+  metricDate: timestamp("metric_date").notNull(), // Date this metric is for
+  metricValue: integer("metric_value").notNull(), // Numeric value
+  metricValueFloat: text("metric_value_float"), // Float value for percentages, etc.
+  metricDetails: jsonb("metric_details"), // Additional details as JSON
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// System events for monitoring/auditing
+export const systemEvents = pgTable("system_events", {
+  id: serial("id").primaryKey(),
+  eventType: text("event_type").notNull(), // 'error', 'warning', 'info', etc.
+  eventSource: text("event_source").notNull(), // Component that generated the event
+  eventMessage: text("event_message").notNull(), // Human-readable message
+  eventDetails: jsonb("event_details"), // Additional details (stack trace, etc.)
+  userId: integer("user_id").references(() => users.id), // User who triggered the event (if applicable)
+  ipAddress: text("ip_address"), // IP address where the event originated
+  userAgent: text("user_agent"), // Browser/client info
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
+  severity: text("severity").notNull().default("info"), // 'critical', 'error', 'warning', 'info', 'debug'
+});

@@ -1,4 +1,4 @@
-export type Role = "camp_creator" | "manager" | "coach" | "volunteer" | "parent" | "athlete";
+export type Role = "platform_admin" | "camp_creator" | "manager" | "coach" | "volunteer" | "parent" | "athlete";
 export type SportLevel = "beginner" | "intermediate" | "advanced" | "all_levels";
 export type Gender = "male" | "female" | "other" | "prefer_not_to_say";
 export type ContactMethod = "email" | "sms" | "app";

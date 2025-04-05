@@ -34,6 +34,7 @@ import OrganizationPublicPage from "@/pages/organization";
 import { PermissionManagementPage } from "@/pages/permission-management";
 import StripeConnectManagement from "@/pages/stripe-connect-management";
 import SubscriptionPlans from "@/pages/subscription-plans";
+import AdminDashboard from "@/pages/admin/admin-dashboard";
 import { ProtectedRoute } from "./lib/protected-route";
 
 // Component to handle dashboard routing based on user role
@@ -121,6 +122,39 @@ function Router() {
       <ProtectedRoute path="/documents/:id" component={DocumentViewPage} />
       <ProtectedRoute path="/documents/:id/edit" component={DocumentEditPage} />
       <Route path="/sign/:token" component={SignaturePage} />
+      
+      {/* Admin routes - protected for platform_admin role only */}
+      <ProtectedRoute 
+        path="/admin" 
+        component={AdminDashboard}
+        requiredRoles={["platform_admin" as const]}
+      />
+      <ProtectedRoute 
+        path="/admin/users" 
+        component={AdminDashboard}
+        requiredRoles={["platform_admin" as const]}
+      />
+      <ProtectedRoute 
+        path="/admin/monitoring" 
+        component={AdminDashboard}
+        requiredRoles={["platform_admin" as const]}
+      />
+      <ProtectedRoute 
+        path="/admin/business" 
+        component={AdminDashboard}
+        requiredRoles={["platform_admin" as const]}
+      />
+      <ProtectedRoute 
+        path="/admin/support" 
+        component={AdminDashboard}
+        requiredRoles={["platform_admin" as const]}
+      />
+      <ProtectedRoute 
+        path="/admin/config" 
+        component={AdminDashboard}
+        requiredRoles={["platform_admin" as const]}
+      />
+      
       <Route component={NotFound} />
     </Switch>
   );
