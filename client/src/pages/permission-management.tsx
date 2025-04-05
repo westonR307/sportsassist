@@ -24,12 +24,6 @@ import { Role } from '@shared/types';
 export function PermissionManagementPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  return (
-    <DashboardLayout>
-      <DashboardHeader
-        title="Permission Management"
-        description="Manage custom permission sets and user permissions for your organization"
-      />
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [organizationId, setOrganizationId] = useState<number | undefined>(undefined);
   const [isAddingSet, setIsAddingSet] = useState(false);
