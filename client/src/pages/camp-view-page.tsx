@@ -376,7 +376,10 @@ function CampViewPage(props: { id?: string }) {
   const deleteCampMutation = useMutation({
     mutationFn: async () => {
       try {
-        const response = await apiRequest('POST', `/api/camps/${id}/delete`, {});
+        // Check if we need to use the camp's numeric ID directly instead of the slug
+        const actualCampId = camp?.id || id;
+        console.log("Deleting camp with ID:", actualCampId);
+        const response = await apiRequest('POST', `/api/camps/${actualCampId}/delete`, {});
         return await response.json();
       } catch (error) {
         console.error("Error deleting camp:", error);
@@ -413,7 +416,10 @@ function CampViewPage(props: { id?: string }) {
   const cancelCampMutation = useMutation({
     mutationFn: async () => {
       try {
-        const response = await apiRequest('POST', `/api/camps/${id}/cancel`, {
+        // Check if we need to use the camp's numeric ID directly instead of the slug
+        const actualCampId = camp?.id || id;
+        console.log("Cancelling camp with ID:", actualCampId);
+        const response = await apiRequest('POST', `/api/camps/${actualCampId}/cancel`, {
           reason: cancelReason
         });
         return await response.json();
