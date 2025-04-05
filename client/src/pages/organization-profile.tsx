@@ -1012,5 +1012,6 @@ export default function OrganizationProfilePage() {
         </div>
       </div>
     </div>
+    </DashboardLayout>
   );
 }
