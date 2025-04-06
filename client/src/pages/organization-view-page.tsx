@@ -45,6 +45,13 @@ interface Organization {
   } | null;
   bannerImageUrl: string | null;
   slug: string | null;
+  missionStatement: string | null;
+  feature1Title: string | null;
+  feature1Description: string | null;
+  feature2Title: string | null;
+  feature2Description: string | null;
+  feature3Title: string | null;
+  feature3Description: string | null;
 }
 
 export default function OrganizationViewPage() {
@@ -341,52 +348,79 @@ export default function OrganizationViewPage() {
                       <Trophy className="mr-2 h-5 w-5" />
                       Our Mission
                     </h2>
-                    <p className="mb-6">
-                      We are dedicated to providing exceptional sports experiences that develop athletic skills,
-                      build character, and foster a lifelong love of sports in participants of all ages and abilities.
-                    </p>
+                    {organization.missionStatement ? (
+                      <p className="mb-6 whitespace-pre-line">
+                        {organization.missionStatement}
+                      </p>
+                    ) : (
+                      <p className="mb-6">
+                        We are dedicated to providing exceptional sports experiences that develop athletic skills,
+                        build character, and foster a lifelong love of sports in participants of all ages and abilities.
+                      </p>
+                    )}
+                    
+                    <h3 className="text-xl font-semibold mb-4 flex items-center"
+                       style={{ color: organization.primaryColor || undefined }}>
+                      <Award className="mr-2 h-5 w-5" />
+                      Why Choose Us
+                    </h3>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                      {/* Feature 1 */}
                       <div className="flex items-start">
                         <div className="rounded-full p-2 mr-3" 
                              style={{ background: `${organization.primaryColor}20` || 'var(--primary/20)' }}>
                           <Award className="h-5 w-5" style={{ color: organization.primaryColor || undefined }} />
                         </div>
                         <div>
-                          <h3 className="font-semibold">Quality Instruction</h3>
-                          <p className="text-sm text-muted-foreground">Professional coaching from experienced instructors</p>
+                          <h3 className="font-semibold">{organization.feature1Title || "Quality Instruction"}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {organization.feature1Description || "Professional coaching from experienced instructors"}
+                          </p>
                         </div>
                       </div>
+                      
+                      {/* Feature 2 */}
                       <div className="flex items-start">
                         <div className="rounded-full p-2 mr-3" 
                              style={{ background: `${organization.primaryColor}20` || 'var(--primary/20)' }}>
                           <User className="h-5 w-5" style={{ color: organization.primaryColor || undefined }} />
                         </div>
                         <div>
-                          <h3 className="font-semibold">Personal Development</h3>
-                          <p className="text-sm text-muted-foreground">Focus on character building and life skills</p>
+                          <h3 className="font-semibold">{organization.feature2Title || "Personal Development"}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {organization.feature2Description || "Focus on character building and life skills"}
+                          </p>
                         </div>
                       </div>
+                      
+                      {/* Feature 3 */}
                       <div className="flex items-start">
                         <div className="rounded-full p-2 mr-3" 
                              style={{ background: `${organization.primaryColor}20` || 'var(--primary/20)' }}>
                           <Users className="h-5 w-5" style={{ color: organization.primaryColor || undefined }} />
                         </div>
                         <div>
-                          <h3 className="font-semibold">Inclusive Environment</h3>
-                          <p className="text-sm text-muted-foreground">Welcoming atmosphere for participants of all levels</p>
+                          <h3 className="font-semibold">{organization.feature3Title || "Inclusive Environment"}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {organization.feature3Description || "Welcoming atmosphere for participants of all levels"}
+                          </p>
                         </div>
                       </div>
-                      <div className="flex items-start">
-                        <div className="rounded-full p-2 mr-3" 
-                             style={{ background: `${organization.primaryColor}20` || 'var(--primary/20)' }}>
-                          <Zap className="h-5 w-5" style={{ color: organization.primaryColor || undefined }} />
+                      
+                      {/* Default fourth feature if none of the custom ones are available */}
+                      {!organization.feature1Title && !organization.feature2Title && !organization.feature3Title && (
+                        <div className="flex items-start">
+                          <div className="rounded-full p-2 mr-3" 
+                              style={{ background: `${organization.primaryColor}20` || 'var(--primary/20)' }}>
+                            <Zap className="h-5 w-5" style={{ color: organization.primaryColor || undefined }} />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold">Innovative Programs</h3>
+                            <p className="text-sm text-muted-foreground">Cutting-edge training methods and curriculum</p>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-semibold">Innovative Programs</h3>
-                          <p className="text-sm text-muted-foreground">Cutting-edge training methods and curriculum</p>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -525,38 +559,84 @@ export default function OrganizationViewPage() {
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white rounded-xl shadow-md p-6 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
-                   style={{ backgroundColor: `${organization.primaryColor}20` || 'var(--primary/20)' }}>
-                <Award className="h-8 w-8" style={{ color: organization.primaryColor || undefined }} />
+            {/* Show organization custom features if available, otherwise default ones */}
+            {organization.feature1Title ? (
+              // Feature 1 from org settings
+              <div className="bg-white rounded-xl shadow-md p-6 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
+                     style={{ backgroundColor: `${organization.primaryColor}20` || 'var(--primary/20)' }}>
+                  <Award className="h-8 w-8" style={{ color: organization.primaryColor || undefined }} />
+                </div>
+                <h3 className="text-xl font-bold mb-3">{organization.feature1Title}</h3>
+                <p className="text-muted-foreground">
+                  {organization.feature1Description || "Our experienced coaches provide top-quality instruction."}
+                </p>
               </div>
-              <h3 className="text-xl font-bold mb-3">Expert Coaches</h3>
-              <p className="text-muted-foreground">
-                Our experienced staff includes professional athletes and certified coaches who are passionate about player development.
-              </p>
-            </div>
+            ) : (
+              // Default feature 1
+              <div className="bg-white rounded-xl shadow-md p-6 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
+                     style={{ backgroundColor: `${organization.primaryColor}20` || 'var(--primary/20)' }}>
+                  <Award className="h-8 w-8" style={{ color: organization.primaryColor || undefined }} />
+                </div>
+                <h3 className="text-xl font-bold mb-3">Expert Coaches</h3>
+                <p className="text-muted-foreground">
+                  Our experienced staff includes professional athletes and certified coaches who are passionate about player development.
+                </p>
+              </div>
+            )}
             
-            <div className="bg-white rounded-xl shadow-md p-6 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
-                   style={{ backgroundColor: `${organization.primaryColor}20` || 'var(--primary/20)' }}>
-                <Users className="h-8 w-8" style={{ color: organization.primaryColor || undefined }} />
+            {organization.feature2Title ? (
+              // Feature 2 from org settings
+              <div className="bg-white rounded-xl shadow-md p-6 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
+                     style={{ backgroundColor: `${organization.primaryColor}20` || 'var(--primary/20)' }}>
+                  <Users className="h-8 w-8" style={{ color: organization.primaryColor || undefined }} />
+                </div>
+                <h3 className="text-xl font-bold mb-3">{organization.feature2Title}</h3>
+                <p className="text-muted-foreground">
+                  {organization.feature2Description || "We focus on providing personalized attention to each athlete."}
+                </p>
               </div>
-              <h3 className="text-xl font-bold mb-3">Small Group Focus</h3>
-              <p className="text-muted-foreground">
-                We maintain low athlete-to-coach ratios to ensure personalized attention and maximum skill development.
-              </p>
-            </div>
+            ) : (
+              // Default feature 2
+              <div className="bg-white rounded-xl shadow-md p-6 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
+                     style={{ backgroundColor: `${organization.primaryColor}20` || 'var(--primary/20)' }}>
+                  <Users className="h-8 w-8" style={{ color: organization.primaryColor || undefined }} />
+                </div>
+                <h3 className="text-xl font-bold mb-3">Small Group Focus</h3>
+                <p className="text-muted-foreground">
+                  We maintain low athlete-to-coach ratios to ensure personalized attention and maximum skill development.
+                </p>
+              </div>
+            )}
             
-            <div className="bg-white rounded-xl shadow-md p-6 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
-                   style={{ backgroundColor: `${organization.primaryColor}20` || 'var(--primary/20)' }}>
-                <CalendarRange className="h-8 w-8" style={{ color: organization.primaryColor || undefined }} />
+            {organization.feature3Title ? (
+              // Feature 3 from org settings
+              <div className="bg-white rounded-xl shadow-md p-6 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
+                     style={{ backgroundColor: `${organization.primaryColor}20` || 'var(--primary/20)' }}>
+                  <CalendarRange className="h-8 w-8" style={{ color: organization.primaryColor || undefined }} />
+                </div>
+                <h3 className="text-xl font-bold mb-3">{organization.feature3Title}</h3>
+                <p className="text-muted-foreground">
+                  {organization.feature3Description || "We offer flexible programs to meet your needs."}
+                </p>
               </div>
-              <h3 className="text-xl font-bold mb-3">Flexible Programs</h3>
-              <p className="text-muted-foreground">
-                Choose from a variety of camps, clinics, and training options to fit your schedule and development goals.
-              </p>
-            </div>
+            ) : (
+              // Default feature 3
+              <div className="bg-white rounded-xl shadow-md p-6 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
+                     style={{ backgroundColor: `${organization.primaryColor}20` || 'var(--primary/20)' }}>
+                  <CalendarRange className="h-8 w-8" style={{ color: organization.primaryColor || undefined }} />
+                </div>
+                <h3 className="text-xl font-bold mb-3">Flexible Programs</h3>
+                <p className="text-muted-foreground">
+                  Choose from a variety of camps, clinics, and training options to fit your schedule and development goals.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

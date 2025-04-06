@@ -163,6 +163,14 @@ export const organizations = pgTable("organizations", {
   bannerImageUrl: text("banner_image_url"),
   displayName: text("display_name"),
   slug: text("slug"),
+  // Added fields for Mission Statement and Features
+  missionStatement: text("mission_statement"),
+  feature1Title: text("feature_1_title"),
+  feature1Description: text("feature_1_description"),
+  feature2Title: text("feature_2_title"),
+  feature2Description: text("feature_2_description"),
+  feature3Title: text("feature_3_title"),
+  feature3Description: text("feature_3_description"),
 });
 
 export const users = pgTable("users", {

@@ -68,7 +68,14 @@ const organizationProfileSchema = z.object({
     twitter: z.string().url().optional().or(z.literal('')),
     linkedin: z.string().url().optional().or(z.literal('')),
     instagram: z.string().url().optional().or(z.literal(''))
-  }).optional()
+  }).optional(),
+  missionStatement: z.string().optional(),
+  feature1Title: z.string().optional(),
+  feature1Description: z.string().optional(),
+  feature2Title: z.string().optional(),
+  feature2Description: z.string().optional(),
+  feature3Title: z.string().optional(),
+  feature3Description: z.string().optional()
 });
 
 type OrganizationProfileData = z.infer<typeof organizationProfileSchema>;
@@ -95,6 +102,13 @@ interface Organization {
   bannerImageUrl?: string | null;
   displayName?: string | null;
   slug?: string | null;
+  missionStatement?: string | null;
+  feature1Title?: string | null;
+  feature1Description?: string | null;
+  feature2Title?: string | null;
+  feature2Description?: string | null;
+  feature3Title?: string | null;
+  feature3Description?: string | null;
 }
 
 export default function OrganizationProfilePage() {
@@ -143,7 +157,14 @@ export default function OrganizationProfilePage() {
       twitter: organization?.socialLinks?.twitter || '',
       linkedin: organization?.socialLinks?.linkedin || '',
       instagram: organization?.socialLinks?.instagram || '',
-    }
+    },
+    missionStatement: organization?.missionStatement || '',
+    feature1Title: organization?.feature1Title || '',
+    feature1Description: organization?.feature1Description || '',
+    feature2Title: organization?.feature2Title || '',
+    feature2Description: organization?.feature2Description || '',
+    feature3Title: organization?.feature3Title || '',
+    feature3Description: organization?.feature3Description || '',
   };
   
   console.log('Initial form values:', defaultFormValues);
@@ -174,7 +195,14 @@ export default function OrganizationProfilePage() {
           twitter: organization.socialLinks?.twitter || '',
           linkedin: organization.socialLinks?.linkedin || '',
           instagram: organization.socialLinks?.instagram || '',
-        }
+        },
+        missionStatement: organization.missionStatement || '',
+        feature1Title: organization.feature1Title || '',
+        feature1Description: organization.feature1Description || '',
+        feature2Title: organization.feature2Title || '',
+        feature2Description: organization.feature2Description || '',
+        feature3Title: organization.feature3Title || '',
+        feature3Description: organization.feature3Description || '',
       };
       
       console.log('Resetting form with data:', formData);
@@ -348,6 +376,15 @@ export default function OrganizationProfilePage() {
     if (data.aboutText !== original.aboutText) changed.aboutText = data.aboutText;
     if (data.contactEmail !== original.contactEmail) changed.contactEmail = data.contactEmail;
     if (data.websiteUrl !== original.websiteUrl) changed.websiteUrl = data.websiteUrl;
+    
+    // New mission and features fields
+    if (data.missionStatement !== original.missionStatement) changed.missionStatement = data.missionStatement;
+    if (data.feature1Title !== original.feature1Title) changed.feature1Title = data.feature1Title;
+    if (data.feature1Description !== original.feature1Description) changed.feature1Description = data.feature1Description;
+    if (data.feature2Title !== original.feature2Title) changed.feature2Title = data.feature2Title;
+    if (data.feature2Description !== original.feature2Description) changed.feature2Description = data.feature2Description;
+    if (data.feature3Title !== original.feature3Title) changed.feature3Title = data.feature3Title;
+    if (data.feature3Description !== original.feature3Description) changed.feature3Description = data.feature3Description;
     
     // Handle social links
     if (data.socialLinks) {
@@ -734,7 +771,7 @@ export default function OrganizationProfilePage() {
                     Share information about your organization
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-6">
                   <FormField
                     control={form.control}
                     name="aboutText"
@@ -743,7 +780,7 @@ export default function OrganizationProfilePage() {
                         <FormLabel>About Us</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="Tell people about your organization, mission, and values..." 
+                            placeholder="Tell people about your organization, history, and values..." 
                             className="min-h-[200px]" 
                             {...field} 
                             value={field.value || ''}
@@ -756,8 +793,159 @@ export default function OrganizationProfilePage() {
                       </FormItem>
                     )}
                   />
-                </CardContent>
 
+                  <Separator />
+                  
+                  <FormField
+                    control={form.control}
+                    name="missionStatement"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Mission Statement</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="What is your organization's mission or purpose?" 
+                            className="min-h-[120px]" 
+                            {...field} 
+                            value={field.value || ''}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          This will be featured prominently on your profile page.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Separator />
+                  
+                  <div>
+                    <h3 className="text-lg font-medium mb-4">Feature Highlights</h3>
+                    <p className="text-sm text-muted-foreground mb-6">
+                      Add up to three unique features or benefits of your organization that you want to highlight.
+                    </p>
+                    
+                    <div className="space-y-6">
+                      {/* Feature 1 */}
+                      <div className="grid gap-3">
+                        <FormField
+                          control={form.control}
+                          name="feature1Title"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Feature 1 Title</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder="e.g., Expert Coaching" 
+                                  {...field} 
+                                  value={field.value || ''}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="feature1Description"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Feature 1 Description</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Brief description of this feature or benefit" 
+                                  {...field} 
+                                  value={field.value || ''}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      {/* Feature 2 */}
+                      <div className="grid gap-3">
+                        <FormField
+                          control={form.control}
+                          name="feature2Title"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Feature 2 Title</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder="e.g., State-of-the-Art Facilities" 
+                                  {...field} 
+                                  value={field.value || ''}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="feature2Description"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Feature 2 Description</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Brief description of this feature or benefit" 
+                                  {...field} 
+                                  value={field.value || ''}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      {/* Feature 3 */}
+                      <div className="grid gap-3">
+                        <FormField
+                          control={form.control}
+                          name="feature3Title"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Feature 3 Title</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder="e.g., Personalized Development" 
+                                  {...field} 
+                                  value={field.value || ''}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="feature3Description"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Feature 3 Description</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Brief description of this feature or benefit" 
+                                  {...field} 
+                                  value={field.value || ''}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
               </Card>
             </TabsContent>
 
