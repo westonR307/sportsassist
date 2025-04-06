@@ -3,6 +3,7 @@ import { DashboardLayout } from './dashboard';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { useAuth } from '@/hooks/use-auth';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'wouter';
 import debounce from 'lodash.debounce';
 import { apiRequest } from '@/lib/queryClient';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -36,7 +37,9 @@ import {
   X,
   Loader2,
   RotateCcw,
-  Save
+  Save,
+  Eye,
+  ExternalLink
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
@@ -612,10 +615,25 @@ export default function OrganizationProfilePage() {
   return (
     <DashboardLayout>
       <div className="container mx-auto p-6 max-w-5xl">
-        <DashboardHeader
-          title="Organization Profile"
-          description="Customize your organization's profile and appearance"
-        />
+        <div className="flex justify-between items-start">
+          <DashboardHeader
+            title="Organization Profile"
+            description="Customize your organization's profile and appearance"
+          />
+          {organization?.name && (
+            <Link
+              to={`/organization/${organization.slug || organization.name.toLowerCase().replace(/\s+/g, '-')}`}
+              target="_blank"
+              className="mt-2"
+            >
+              <Button variant="outline" className="flex items-center gap-2">
+                <Eye className="h-4 w-4" />
+                <span>Preview Profile</span>
+                <ExternalLink className="h-4 w-4 ml-1" />
+              </Button>
+            </Link>
+          )}
+        </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid grid-cols-4 w-full max-w-2xl">
