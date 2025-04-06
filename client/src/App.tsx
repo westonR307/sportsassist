@@ -31,6 +31,7 @@ import DocumentEditPage from "@/pages/document-edit-page";
 import SignaturePage from "@/pages/signature-page";
 import OrganizationProfilePage from "@/pages/organization-profile";
 import OrganizationPublicPage from "@/pages/organization";
+import OrganizationViewPage from "@/pages/organization-view-page";
 import { PermissionManagementPage } from "@/pages/permission-management";
 import StripeConnectManagement from "@/pages/stripe-connect-management";
 import SubscriptionPlans from "@/pages/subscription-plans";
@@ -89,6 +90,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/login" component={() => <Redirect to="/auth" />} />
       <Route path="/find-camps" component={FindCampsPage} />
+      <Route path="/organization/:slugOrName" component={OrganizationViewPage} />
       <Route path="/org/:slug" component={OrganizationPublicPage} />
       <Route path="/invitations/:token/accept" component={InvitationAcceptPage} />
       <ProtectedRoute path="/dashboard" component={DashboardRouter} />
