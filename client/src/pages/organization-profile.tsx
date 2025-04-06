@@ -675,59 +675,49 @@ export default function OrganizationProfilePage() {
                     <Separator className="my-4" />
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <FormField
-                        control={form.control}
-                        name="primaryColor"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Primary Color</FormLabel>
-                            <FormControl>
-                              <div className="flex items-center space-x-4">
-                                <div 
-                                  className="h-8 w-8 rounded border"
-                                  style={{ backgroundColor: field.value || '#3730a3' }}
-                                ></div>
-                                <input 
-                                  type="color"
-                                  {...field}
-                                  className="h-8 w-14"
-                                />
-                              </div>
-                            </FormControl>
-                            <FormDescription>
-                              Main color for your organization's branding.
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      <div className="space-y-2">
+                        <Label htmlFor="primaryColorInput">Primary Color</Label>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="h-10 w-10 rounded border"
+                            style={{ backgroundColor: form.watch('primaryColor') || '#3730a3' }}
+                          ></div>
+                          <input 
+                            id="primaryColorInput"
+                            type="color" 
+                            value={form.watch('primaryColor') || '#3730a3'}
+                            onChange={(e) => {
+                              form.setValue('primaryColor', e.target.value);
+                            }}
+                            className="h-10"
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          Main color for your organization's branding.
+                        </p>
+                      </div>
 
-                      <FormField
-                        control={form.control}
-                        name="secondaryColor"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Secondary Color</FormLabel>
-                            <FormControl>
-                              <div className="flex items-center space-x-4">
-                                <div 
-                                  className="h-8 w-8 rounded border"
-                                  style={{ backgroundColor: field.value || '#1e3a8a' }}
-                                ></div>
-                                <input 
-                                  type="color"
-                                  {...field}
-                                  className="h-8 w-14"
-                                />
-                              </div>
-                            </FormControl>
-                            <FormDescription>
-                              Accent color for your organization's branding.
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      <div className="space-y-2">
+                        <Label htmlFor="secondaryColorInput">Secondary Color</Label>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="h-10 w-10 rounded border"
+                            style={{ backgroundColor: form.watch('secondaryColor') || '#1e3a8a' }}
+                          ></div>
+                          <input 
+                            id="secondaryColorInput"
+                            type="color" 
+                            value={form.watch('secondaryColor') || '#1e3a8a'}
+                            onChange={(e) => {
+                              form.setValue('secondaryColor', e.target.value);
+                            }}
+                            className="h-10"
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          Accent color for your organization's branding.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
