@@ -675,81 +675,59 @@ export default function OrganizationProfilePage() {
                     <Separator className="my-4" />
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label htmlFor="primaryColor" className="text-sm font-medium">
-                          Primary Color
-                        </label>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="h-10 w-10 rounded border flex-shrink-0"
-                            style={{ backgroundColor: form.watch('primaryColor') || '#3730a3' }}
-                          ></div>
-                          <input 
-                            id="primaryColorPicker"
-                            type="color" 
-                            value={form.watch('primaryColor') || '#3730a3'}
-                            onChange={(e) => {
-                              form.setValue('primaryColor', e.target.value);
-                            }}
-                            className="h-10 w-[100px]"
-                          />
-                          <input 
-                            id="primaryColor"
-                            type="text" 
-                            value={form.watch('primaryColor') || '#3730a3'}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              const validHexRegex = /^#([0-9A-F]{3}){1,2}$/i;
-                              if (validHexRegex.test(value)) {
-                                form.setValue('primaryColor', value);
-                              }
-                            }}
-                            placeholder="#000000"
-                            className="h-10 rounded border px-3"
-                          />
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          Main color for your organization's branding.
-                        </p>
-                      </div>
+                      <FormField
+                        control={form.control}
+                        name="primaryColor"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Primary Color</FormLabel>
+                            <FormControl>
+                              <div className="flex items-center space-x-4">
+                                <div 
+                                  className="h-8 w-8 rounded border"
+                                  style={{ backgroundColor: field.value || '#3730a3' }}
+                                ></div>
+                                <input 
+                                  type="color"
+                                  {...field}
+                                  className="h-8 w-14"
+                                />
+                              </div>
+                            </FormControl>
+                            <FormDescription>
+                              Main color for your organization's branding.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                      <div className="space-y-2">
-                        <label htmlFor="secondaryColor" className="text-sm font-medium">
-                          Secondary Color
-                        </label>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="h-10 w-10 rounded border flex-shrink-0"
-                            style={{ backgroundColor: form.watch('secondaryColor') || '#1e3a8a' }}
-                          ></div>
-                          <input 
-                            id="secondaryColorPicker"
-                            type="color" 
-                            value={form.watch('secondaryColor') || '#1e3a8a'}
-                            onChange={(e) => {
-                              form.setValue('secondaryColor', e.target.value);
-                            }}
-                            className="h-10 w-[100px]"
-                          />
-                          <input 
-                            id="secondaryColor"
-                            type="text" 
-                            value={form.watch('secondaryColor') || '#1e3a8a'}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              const validHexRegex = /^#([0-9A-F]{3}){1,2}$/i;
-                              if (validHexRegex.test(value)) {
-                                form.setValue('secondaryColor', value);
-                              }
-                            }}
-                            placeholder="#000000"
-                            className="h-10 rounded border px-3"
-                          />
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          Accent color for your organization's branding.
-                        </p>
-                      </div>
+                      <FormField
+                        control={form.control}
+                        name="secondaryColor"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Secondary Color</FormLabel>
+                            <FormControl>
+                              <div className="flex items-center space-x-4">
+                                <div 
+                                  className="h-8 w-8 rounded border"
+                                  style={{ backgroundColor: field.value || '#1e3a8a' }}
+                                ></div>
+                                <input 
+                                  type="color"
+                                  {...field}
+                                  className="h-8 w-14"
+                                />
+                              </div>
+                            </FormControl>
+                            <FormDescription>
+                              Accent color for your organization's branding.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
                   </div>
                 </CardContent>
