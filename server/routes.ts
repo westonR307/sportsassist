@@ -110,7 +110,15 @@ function registerPublicRoutes(app: Express) {
         websiteUrl: organization.websiteUrl,
         socialLinks: organization.socialLinks,
         bannerImageUrl: organization.bannerImageUrl,
-        slug: organization.slug
+        slug: organization.slug,
+        // Include mission statement and feature fields
+        missionStatement: organization.missionStatement,
+        feature1Title: organization.feature1Title,
+        feature1Description: organization.feature1Description,
+        feature2Title: organization.feature2Title,
+        feature2Description: organization.feature2Description,
+        feature3Title: organization.feature3Title,
+        feature3Description: organization.feature3Description
       };
       
       res.json(publicOrgData);
