@@ -4,6 +4,7 @@ import type { Express } from "express";
 import { createServer } from "http";
 import { db } from "./db";
 import { eq, inArray, gt, and, gte, lte, isNull, or, sql, desc } from "drizzle-orm";
+import { campStaff, users } from "@shared/tables";
 import { PLATFORM_FEE_PERCENTAGE } from "./constants";
 
 // Function to calculate subscription revenue from actual data
@@ -168,13 +169,45 @@ function registerPublicRoutes(app: Express) {
             sportName: sportInfo?.name || "Unknown Sport"
           };
         });
+
+        // Get organization information
+        const organization = await db.select().from(organizations)
+          .where(eq(organizations.id, camp.organizationId))
+          .then(results => results[0] || null);
+
+        // Get the coaches assigned to this camp
+        const campCoaches = await db.select({
+          campStaff: campStaff,
+          user: {
+            id: users.id,
+            firstName: users.first_name,
+            lastName: users.last_name,
+            profilePhoto: users.profile_photo
+          }
+        })
+        .from(campStaff)
+        .innerJoin(users, eq(campStaff.userId, users.id))
+        .where(eq(campStaff.campId, camp.id));
         
         return {
           ...camp,
           location: [camp.streetAddress, camp.city, camp.state, camp.zipCode]
             .filter(Boolean)
             .join(", "),
-          campSports: campSportsWithDetails
+          campSports: campSportsWithDetails,
+          organization: organization ? {
+            id: organization.id,
+            name: organization.name,
+            logoUrl: organization.logoUrl,
+            slug: organization.slug
+          } : null,
+          coaches: campCoaches.map(coach => ({
+            id: coach.user.id,
+            firstName: coach.user.firstName,
+            lastName: coach.user.lastName,
+            profilePhoto: coach.user.profilePhoto,
+            role: coach.campStaff.role
+          }))
         };
       }));
       
@@ -203,7 +236,7 @@ import {
   campSessions,
   recurrencePatterns
 } from "@shared/schema";
-import { campSchedules, campSports, organizations, registrations, systemEvents } from "@shared/tables";
+import { campSchedules, campSports, systemEvents } from "@shared/tables";
 import Stripe from "stripe";
 import { hashPassword, comparePasswords } from "./utils";
 import { registerParentRoutes } from "./parent-routes";

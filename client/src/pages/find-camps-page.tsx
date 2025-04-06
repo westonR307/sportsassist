@@ -18,7 +18,8 @@ import {
   ChevronDown,
   Sparkles,
   List,
-  Grid3X3
+  Grid3X3,
+  Users
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,6 +72,19 @@ interface ExtendedCamp extends Camp {
   defaultStartTime?: string | null;
   defaultEndTime?: string | null;
   location?: string; // Computed property for display purposes
+  organization?: {
+    id: number;
+    name: string;
+    logoUrl: string | null;
+    slug: string | null;
+  };
+  coaches?: Array<{
+    id: number;
+    firstName: string | null;
+    lastName: string | null;
+    profilePhoto: string | null;
+    role: string;
+  }>;
 }
 
 export default function FindCampsPage() {
@@ -904,6 +918,17 @@ export default function FindCampsPage() {
             <>
               <DialogHeader className="p-6 pb-2">
                 <DialogTitle className="text-2xl font-bold">{selectedCamp.name}</DialogTitle>
+                {selectedCamp.organization && (
+                  <div className="flex items-center text-sm text-muted-foreground mt-1">
+                    <span>Organized by: </span>
+                    <Link 
+                      to={`/organization/${selectedCamp.organization.slug || selectedCamp.organization.id}`}
+                      className="ml-1 font-medium text-primary hover:underline"
+                    >
+                      {selectedCamp.organization.name}
+                    </Link>
+                  </div>
+                )}
                 <DialogDescription className="flex flex-wrap gap-2 mt-2">
                   {selectedCamp.campSports && selectedCamp.campSports.length > 0 ? (
                     selectedCamp.campSports.map((sport, index) => (
@@ -973,6 +998,35 @@ export default function FindCampsPage() {
                       </p>
                     </div>
                   </div>
+                  
+                  {selectedCamp.coaches && selectedCamp.coaches.length > 0 && (
+                    <div className="flex items-start gap-2">
+                      <Users className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium">Coaches</p>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {selectedCamp.coaches.map((coach: { id: number; firstName: string | null; lastName: string | null; profilePhoto: string | null; role: string }, index: number) => (
+                            <div key={index} className="flex items-center gap-1">
+                              <div className="relative h-6 w-6 rounded-full overflow-hidden bg-muted">
+                                {coach.profilePhoto ? (
+                                  <img
+                                    src={coach.profilePhoto}
+                                    alt={`${coach.firstName} ${coach.lastName}`}
+                                    className="object-cover h-full w-full"
+                                  />
+                                ) : (
+                                  <User className="h-4 w-4 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-muted-foreground" />
+                                )}
+                              </div>
+                              <span className="text-sm text-muted-foreground">
+                                {coach.firstName} {coach.lastName}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   
                   <Separator />
                   
