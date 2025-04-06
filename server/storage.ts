@@ -2786,7 +2786,7 @@ export class DatabaseStorage implements IStorage {
         
         // Get registration count
         const [{ count }] = await db.select({
-          count: count()
+          count: sql<number>`COUNT(*)`
         }).from(registrations)
           .where(eq(registrations.campId, camp.id));
         
