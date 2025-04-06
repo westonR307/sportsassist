@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import debounce from 'lodash.debounce';
 import { apiRequest } from '@/lib/queryClient';
+import { ErrorBoundary } from '@/components/error-boundary';
 import { 
   Card, 
   CardContent, 
@@ -674,51 +675,80 @@ export default function OrganizationProfilePage() {
 
                     <Separator className="my-4" />
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="primaryColorInput">Primary Color</Label>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="h-10 w-10 rounded border"
-                            style={{ backgroundColor: form.watch('primaryColor') || '#3730a3' }}
-                          ></div>
-                          <input 
-                            id="primaryColorInput"
-                            type="color" 
-                            value={form.watch('primaryColor') || '#3730a3'}
-                            onChange={(e) => {
-                              form.setValue('primaryColor', e.target.value);
-                            }}
-                            className="h-10"
-                          />
+                    <ErrorBoundary fallback={
+                      <div className="p-4 rounded-md bg-red-50 border border-red-200 text-red-700">
+                        <h3 className="font-medium">Color Picker Error</h3>
+                        <p className="text-sm mt-1">We couldn't load the color picker components. Please try updating your colors manually by entering HEX values.</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="manualPrimaryColor">Primary Color</Label>
+                            <Input 
+                              id="manualPrimaryColor"
+                              type="text" 
+                              value={form.watch('primaryColor') || '#3730a3'}
+                              onChange={(e) => form.setValue('primaryColor', e.target.value)}
+                              placeholder="#3730a3"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="manualSecondaryColor">Secondary Color</Label>
+                            <Input 
+                              id="manualSecondaryColor"
+                              type="text" 
+                              value={form.watch('secondaryColor') || '#1e3a8a'}
+                              onChange={(e) => form.setValue('secondaryColor', e.target.value)}
+                              placeholder="#1e3a8a"
+                            />
+                          </div>
                         </div>
-                        <p className="text-xs text-gray-500">
-                          Main color for your organization's branding.
-                        </p>
                       </div>
+                    }>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="primaryColorInput">Primary Color</Label>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="h-10 w-10 rounded border"
+                              style={{ backgroundColor: form.watch('primaryColor') || '#3730a3' }}
+                            ></div>
+                            <input 
+                              id="primaryColorInput"
+                              type="color" 
+                              value={form.watch('primaryColor') || '#3730a3'}
+                              onChange={(e) => {
+                                form.setValue('primaryColor', e.target.value);
+                              }}
+                              className="h-10"
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            Main color for your organization's branding.
+                          </p>
+                        </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="secondaryColorInput">Secondary Color</Label>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="h-10 w-10 rounded border"
-                            style={{ backgroundColor: form.watch('secondaryColor') || '#1e3a8a' }}
-                          ></div>
-                          <input 
-                            id="secondaryColorInput"
-                            type="color" 
-                            value={form.watch('secondaryColor') || '#1e3a8a'}
-                            onChange={(e) => {
-                              form.setValue('secondaryColor', e.target.value);
-                            }}
-                            className="h-10"
-                          />
+                        <div className="space-y-2">
+                          <Label htmlFor="secondaryColorInput">Secondary Color</Label>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="h-10 w-10 rounded border"
+                              style={{ backgroundColor: form.watch('secondaryColor') || '#1e3a8a' }}
+                            ></div>
+                            <input 
+                              id="secondaryColorInput"
+                              type="color" 
+                              value={form.watch('secondaryColor') || '#1e3a8a'}
+                              onChange={(e) => {
+                                form.setValue('secondaryColor', e.target.value);
+                              }}
+                              className="h-10"
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            Accent color for your organization's branding.
+                          </p>
                         </div>
-                        <p className="text-xs text-gray-500">
-                          Accent color for your organization's branding.
-                        </p>
                       </div>
-                    </div>
+                    </ErrorBoundary>
                   </div>
                 </CardContent>
 
