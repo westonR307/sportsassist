@@ -84,13 +84,13 @@ function logError(location: string, error: any) {
 // Function to register public routes that don't require authentication
 function registerPublicRoutes(app: Express) {
   // Public organization profile endpoints
-  app.get("/api/organizations/public/:slug", async (req, res) => {
+  app.get("/api/organizations/public/:slugOrName", async (req, res) => {
     try {
-      const organizationSlug = req.params.slug;
-      console.log(`Fetching public org profile for slug: ${organizationSlug}`);
+      const slugOrName = req.params.slugOrName;
+      console.log(`Fetching public org profile for slug or name: ${slugOrName}`);
       
-      // Get organization by slug
-      const organization = await storage.getOrganizationBySlug(organizationSlug);
+      // Get organization by slug or name (converted to slug format)
+      const organization = await storage.getOrganizationBySlug(slugOrName);
       
       if (!organization) {
         return res.status(404).json({ message: "Organization not found" });
@@ -121,13 +121,13 @@ function registerPublicRoutes(app: Express) {
   });
   
   // Get public camps for an organization
-  app.get("/api/organizations/public/:slug/camps", async (req, res) => {
+  app.get("/api/organizations/public/:slugOrName/camps", async (req, res) => {
     try {
-      const organizationSlug = req.params.slug;
-      console.log(`Fetching public camps for org slug: ${organizationSlug}`);
+      const slugOrName = req.params.slugOrName;
+      console.log(`Fetching public camps for org slug or name: ${slugOrName}`);
       
-      // Get organization by slug
-      const organization = await storage.getOrganizationBySlug(organizationSlug);
+      // Get organization by slug or name (converted to slug format)
+      const organization = await storage.getOrganizationBySlug(slugOrName);
       
       if (!organization) {
         return res.status(404).json({ message: "Organization not found" });

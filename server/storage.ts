@@ -2721,16 +2721,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Organization profile methods
-  async getOrganizationBySlug(slug: string): Promise<Organization | undefined> {
+  async getOrganizationBySlug(slugOrName: string): Promise<Organization | undefined> {
     try {
-      // Reduced logging to improve performance
-      const [organization] = await db.select()
+      // Try to find by slug first
+      let orgResult = await db.select()
         .from(organizations)
-        .where(eq(organizations.slug, slug));
+        .where(eq(organizations.slug, slugOrName));
       
-      return organization;
+      // If no result found by slug, try to find by name (converted to slug format)
+      if (!orgResult.length) {
+        // Generate a slug-like string from the name for comparison
+        const nameToSlug = slugOrName.toLowerCase().replace(/-/g, ' ');
+        
+        orgResult = await db.select()
+          .from(organizations)
+          .where(
+            sql`LOWER(REPLACE(${organizations.name}, ' ', '-')) = ${slugOrName} OR LOWER(${organizations.name}) = ${nameToSlug}`
+          );
+      }
+      
+      return orgResult[0];
     } catch (error: any) {
-      console.error(`Error fetching organization by slug ${slug}:`, error.message);
+      console.error(`Error fetching organization by slug or name ${slugOrName}:`, error.message);
       return undefined;
     }
   }
