@@ -511,6 +511,94 @@ export default function OrganizationProfilePage() {
       uploadBannerMutation.mutate(file);
     }
   };
+  
+  // Mutation to remove logo
+  const removeLogoMutation = useMutation({
+    mutationFn: async () => {
+      if (!user?.organizationId) {
+        throw new Error('No organization associated with this user');
+      }
+      
+      const response = await fetch(`/api/organizations/${user.organizationId}/logo`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`${response.status}: ${text}`);
+      }
+      
+      return response;
+    },
+    onSuccess: () => {
+      if (user?.organizationId) {
+        queryClient.invalidateQueries({ queryKey: ['/api/organizations', user.organizationId] });
+      }
+      setLogoPreview(null);
+      toast({
+        title: 'Logo Removed',
+        description: 'Your organization logo has been successfully removed.',
+        variant: 'default',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Removal Failed',
+        description: `Failed to remove logo: ${error.message}`,
+        variant: 'destructive',
+      });
+    }
+  });
+  
+  // Mutation to remove banner
+  const removeBannerMutation = useMutation({
+    mutationFn: async () => {
+      if (!user?.organizationId) {
+        throw new Error('No organization associated with this user');
+      }
+      
+      const response = await fetch(`/api/organizations/${user.organizationId}/banner`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`${response.status}: ${text}`);
+      }
+      
+      return response;
+    },
+    onSuccess: () => {
+      if (user?.organizationId) {
+        queryClient.invalidateQueries({ queryKey: ['/api/organizations', user.organizationId] });
+      }
+      setBannerPreview(null);
+      toast({
+        title: 'Banner Removed',
+        description: 'Your organization banner has been successfully removed.',
+        variant: 'default',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Removal Failed',
+        description: `Failed to remove banner: ${error.message}`,
+        variant: 'destructive',
+      });
+    }
+  });
+  
+  // Handle remove logo
+  const handleRemoveLogo = () => {
+    removeLogoMutation.mutate();
+  };
+  
+  // Handle remove banner
+  const handleRemoveBanner = () => {
+    removeBannerMutation.mutate();
+  };
 
   // Loading state
   if (isLoading) {
@@ -650,13 +738,26 @@ export default function OrganizationProfilePage() {
                           )}
                         </div>
                         <div className="flex flex-col gap-2">
-                          <Label 
-                            htmlFor="logo-upload" 
-                            className="cursor-pointer inline-flex items-center px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md text-sm font-medium"
-                          >
-                            <Upload className="mr-2 h-4 w-4" />
-                            Upload Logo
-                          </Label>
+                          <div className="flex gap-2">
+                            <Label 
+                              htmlFor="logo-upload" 
+                              className="cursor-pointer inline-flex items-center px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md text-sm font-medium"
+                            >
+                              <Upload className="mr-2 h-4 w-4" />
+                              Upload Logo
+                            </Label>
+                            {(logoPreview || organization?.logoUrl) && (
+                              <Button
+                                variant="outline"
+                                type="button"
+                                className="inline-flex items-center text-destructive hover:text-destructive"
+                                onClick={handleRemoveLogo}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Remove
+                              </Button>
+                            )}
+                          </div>
                           <input 
                             id="logo-upload" 
                             type="file" 
@@ -696,6 +797,17 @@ export default function OrganizationProfilePage() {
                             <Upload className="mr-2 h-4 w-4" />
                             Upload Banner
                           </Label>
+                          {(bannerPreview || organization?.bannerImageUrl) && (
+                            <Button
+                              variant="outline"
+                              type="button"
+                              className="inline-flex items-center text-destructive hover:text-destructive"
+                              onClick={handleRemoveBanner}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Remove
+                            </Button>
+                          )}
                           <input 
                             id="banner-upload" 
                             type="file" 

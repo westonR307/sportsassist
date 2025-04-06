@@ -3518,6 +3518,33 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ message: error.message || "Failed to upload logo" });
     }
   });
+
+  // Remove organization logo
+  app.delete("/api/organizations/:orgId/logo", async (req, res) => {
+    try {
+      // Get authenticated user's organization ID and check authorization
+      const userOrgId = authAndGetOrgId(req);
+      const requestedOrgId = parseInt(req.params.orgId);
+      
+      // Only allow camp creators who belong to this organization to update it
+      if (userOrgId !== requestedOrgId || req.user.role !== "camp_creator") {
+        throw new HttpError(403, "Not authorized to remove this organization's logo");
+      }
+      
+      // Update the organization to remove the logo URL
+      const updatedOrg = await storage.updateOrganizationProfile(requestedOrgId, {
+        logoUrl: null
+      });
+      
+      res.json({
+        success: true,
+        message: "Logo removed successfully"
+      });
+    } catch (error: any) {
+      console.error("Error removing organization logo:", error);
+      res.status(500).json({ message: error.message || "Failed to remove logo" });
+    }
+  });
   
   // Upload organization banner
   app.post("/api/organizations/:orgId/banner", upload.single('banner'), async (req, res) => {
@@ -3550,6 +3577,33 @@ export async function registerRoutes(app: Express) {
     } catch (error: any) {
       console.error("Error uploading organization banner:", error);
       res.status(500).json({ message: error.message || "Failed to upload banner" });
+    }
+  });
+  
+  // Remove organization banner
+  app.delete("/api/organizations/:orgId/banner", async (req, res) => {
+    try {
+      // Get authenticated user's organization ID and check authorization
+      const userOrgId = authAndGetOrgId(req);
+      const requestedOrgId = parseInt(req.params.orgId);
+      
+      // Only allow camp creators who belong to this organization to update it
+      if (userOrgId !== requestedOrgId || req.user.role !== "camp_creator") {
+        throw new HttpError(403, "Not authorized to remove this organization's banner");
+      }
+      
+      // Update the organization to remove the banner URL
+      const updatedOrg = await storage.updateOrganizationProfile(requestedOrgId, {
+        bannerImageUrl: null
+      });
+      
+      res.json({
+        success: true,
+        message: "Banner removed successfully"
+      });
+    } catch (error: any) {
+      console.error("Error removing organization banner:", error);
+      res.status(500).json({ message: error.message || "Failed to remove banner" });
     }
   });
 
