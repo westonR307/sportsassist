@@ -33,7 +33,9 @@ import {
   subscriptionPlans,
   organizationSubscriptions,
   platformMetrics,
-  systemEvents
+  systemEvents,
+  campMessages,
+  campMessageRecipients
 } from "./tables";
 
 // Import types
@@ -389,26 +391,27 @@ export const insertOrganizationMessageSchema = createInsertSchema(organizationMe
   isRead: true
 });
 
-export const insertCampMessageSchema = createInsertSchema(tables.campMessages).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  emailSent: true
+export const insertCampMessageSchema = z.object({
+  campId: z.number(),
+  organizationId: z.number(),
+  senderId: z.number(),
+  subject: z.string(),
+  content: z.string(),
+  sentToAll: z.boolean().default(false)
 });
 
-export const insertCampMessageRecipientSchema = createInsertSchema(tables.campMessageRecipients).omit({
-  id: true,
-  createdAt: true,
-  isRead: true,
-  emailDelivered: true,
-  emailOpenedAt: true
+export const insertCampMessageRecipientSchema = z.object({
+  messageId: z.number(),
+  registrationId: z.number(),
+  childId: z.number(),
+  parentId: z.number()
 });
 
 export type OrganizationMessage = typeof organizationMessages.$inferSelect;
 export type InsertOrganizationMessage = z.infer<typeof insertOrganizationMessageSchema>;
-export type CampMessage = typeof tables.campMessages.$inferSelect;
+export type CampMessage = typeof campMessages.$inferSelect;
 export type InsertCampMessage = z.infer<typeof insertCampMessageSchema>;
-export type CampMessageRecipient = typeof tables.campMessageRecipients.$inferSelect;
+export type CampMessageRecipient = typeof campMessageRecipients.$inferSelect; 
 export type InsertCampMessageRecipient = z.infer<typeof insertCampMessageRecipientSchema>;
 
 // Permission management schemas
@@ -501,7 +504,9 @@ export {
   permissions,
   userPermissions,
   subscriptionPlans,
-  organizationSubscriptions
+  organizationSubscriptions,
+  campMessages,
+  campMessageRecipients
 };
 
 export const predefinedSports = [

@@ -18,6 +18,8 @@ import {
   campSessions,
   recurrencePatterns,
   documents,
+  campMessages,
+  campMessageRecipients,
   subscriptionPlans,
   organizationSubscriptions,
   documentFields,
