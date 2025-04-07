@@ -195,7 +195,8 @@ export function CampMessagesTab({
                             messageId={message.id} 
                             campId={campId} 
                             recipientId={message.sentById}
-                            subject={`Re: ${message.subject}`} 
+                            subject={`Re: ${message.subject}`}
+                            hasMultipleRecipients={message.recipientsCount ? message.recipientsCount > 1 : message.sentToAll} 
                           />
                         )}
                       </div>

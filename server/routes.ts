@@ -2927,7 +2927,7 @@ export async function registerRoutes(app: Express) {
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
     
     const messageId = parseInt(req.params.messageId);
-    const { content } = req.body;
+    const { content, recipientId, replyToAll } = req.body;
     
     if (!content || content.trim() === '') {
       return res.status(400).json({ message: "Reply content is required" });
@@ -2964,7 +2964,9 @@ export async function registerRoutes(app: Express) {
         content: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
         campId: message.campId,
         userRole: req.user.role,
-        messageOrganizationId: message.organizationId
+        messageOrganizationId: message.organizationId,
+        recipientId,
+        replyToAll
       });
       
       // Create the reply - define it outside the try block so it's accessible later
@@ -3007,12 +3009,15 @@ export async function registerRoutes(app: Express) {
             }
           }
         } 
-        // For camp creator replies, notify the parent if the message was sent to a specific parent
+        // For camp creator replies
         else if (req.user.role === 'camp_creator') {
           // Get the original recipients to find out who to notify
           const recipients = await storage.getCampMessageRecipients(messageId);
-          if (!message.sentToAll) {
-            // This was sent to specific parents, notify them
+          
+          // Determine who to notify based on replyToAll flag
+          if (replyToAll) {
+            // Reply to all - notify all original recipients
+            console.log("Sending reply to all recipients of the original message");
             for (const recipient of recipients) {
               const parent = await storage.getUser(recipient.parentId);
               if (parent && parent.email) {
@@ -3022,7 +3027,41 @@ export async function registerRoutes(app: Express) {
                   senderName: senderName,
                   originalSubject: message.subject,
                   replyContent: content,
-                  campName: req.body.campName || 'Camp', // Ideally, get the camp name from the database
+                  campName: req.body.campName || 'Camp',
+                  replyUrl: `https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/parent/messages/${messageId}`
+                });
+              }
+            }
+          } 
+          // Individual reply - only notify the specific recipient
+          else if (recipientId) {
+            console.log(`Sending reply to specific recipient ID: ${recipientId}`);
+            const parent = await storage.getUser(recipientId);
+            if (parent && parent.email) {
+              await sendCampMessageReplyEmail({
+                recipientEmail: parent.email,
+                recipientName: `${parent.first_name || ''} ${parent.last_name || ''}`.trim() || parent.username,
+                senderName: senderName,
+                originalSubject: message.subject,
+                replyContent: content,
+                campName: req.body.campName || 'Camp',
+                replyUrl: `https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/parent/messages/${messageId}`
+              });
+            }
+          }
+          // If neither replyToAll nor recipientId, fall back to notifying all original recipients
+          else if (!message.sentToAll) {
+            console.log("No specific recipient ID or replyToAll flag - falling back to original recipients");
+            for (const recipient of recipients) {
+              const parent = await storage.getUser(recipient.parentId);
+              if (parent && parent.email) {
+                await sendCampMessageReplyEmail({
+                  recipientEmail: parent.email,
+                  recipientName: `${parent.first_name || ''} ${parent.last_name || ''}`.trim() || parent.username,
+                  senderName: senderName,
+                  originalSubject: message.subject,
+                  replyContent: content,
+                  campName: req.body.campName || 'Camp',
                   replyUrl: `https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/parent/messages/${messageId}`
                 });
               }

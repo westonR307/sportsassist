@@ -145,6 +145,8 @@ export function ParentMessagesPage() {
                           <CampMessageReplyDialog 
                             messageId={msg.message.id} 
                             campId={msg.message.campId}
+                            // For parents, don't enable reply-all functionality
+                            hasMultipleRecipients={false}
                           />
                         </CardFooter>
                       </Card>
