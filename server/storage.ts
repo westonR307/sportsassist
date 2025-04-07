@@ -3443,7 +3443,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(campMessages)
       .leftJoin(
-        campMessageRecipients,
+        campMessageRecipients, 
         and(
           eq(campMessageRecipients.messageId, campMessages.id),
           eq(campMessageRecipients.parentId, parentId)
@@ -3454,7 +3454,10 @@ export class DatabaseStorage implements IStorage {
           eq(campMessages.campId, campId),
           or(
             eq(campMessages.sentToAll, true),
-            ne(campMessageRecipients.id, null)
+            and(
+              ne(campMessageRecipients.id, null),
+              eq(campMessageRecipients.parentId, parentId)
+            )
           )
         )
       );
