@@ -2581,12 +2581,17 @@ export async function registerRoutes(app: Express) {
   app.get("/api/camps/:id/registrations-with-parents", async (req, res) => {
     try {
       const campId = parseInt(req.params.id);
+      console.log(`[API] Fetching registrations with parents for camp ID: ${campId}, User: `, 
+        req.user ? {id: req.user.id, role: req.user.role, orgId: req.user.organizationId} : 'Not authenticated');
       
       // First check if the camp exists
       const camp = await storage.getCamp(campId);
       if (!camp) {
+        console.log(`[API] Camp ${campId} not found`);
         return res.status(404).json({ message: "Camp not found" });
       }
+      
+      console.log(`[API] Found camp ${campId}, organization ID: ${camp.organizationId}`);
       
       // Only organization staff can access this endpoint for messaging functionality
       if (req.user) {
@@ -2594,11 +2599,19 @@ export async function registerRoutes(app: Express) {
         const isOrgStaff = (req.user.organizationId === camp.organizationId) && 
                           ['camp_creator', 'manager', 'coach', 'volunteer'].includes(req.user.role);
         
+        console.log(`[API] User organization check: User Org: ${req.user.organizationId}, Camp Org: ${camp.organizationId}, Role: ${req.user.role}, Is Org Staff: ${isOrgStaff}`);
+        
         if (isOrgStaff) {
           // Get registrations with parent information for messaging
+          console.log(`[API] Authorized access, fetching registrations with parent info`);
           const registrations = await storage.getRegistrationsWithParentInfo(campId);
+          console.log(`[API] Found ${registrations.length} registrations with parent info`);
           return res.json(registrations);
+        } else {
+          console.log(`[API] User is not organization staff for this camp`);
         }
+      } else {
+        console.log(`[API] No authenticated user found for registrations-with-parents request`);
       }
       
       // Unauthorized access

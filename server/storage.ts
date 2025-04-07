@@ -2656,9 +2656,15 @@ export class DatabaseStorage implements IStorage {
         .select({ count: count() })
         .from(registrations)
         .where(eq(registrations.campId, campId));
-      console.log(`[DEBUG] Registration count for camp ${campId}:`, regCount);
+      console.log(`[DEBUG] Registration count for camp ${campId}:`, regCount[0]?.count || 0);
       
-      const results = await db
+      if (!regCount[0]?.count) {
+        console.log(`[DEBUG] No registrations found for camp ${campId}`);
+        return [];
+      }
+      
+      // Get the raw query for debugging
+      const query = db
         .select({
           id: registrations.id,
           childId: registrations.childId,
@@ -2671,11 +2677,31 @@ export class DatabaseStorage implements IStorage {
         .leftJoin(children, eq(registrations.childId, children.id))
         .leftJoin(users, eq(children.parentId, users.id))
         .where(eq(registrations.campId, campId));
-
-      console.log(`[DEBUG] Found ${results.length} registrations with parent info for camp ${campId}`);
-      console.log(`[DEBUG] Registration data:`, JSON.stringify(results, null, 2));
       
-      return results;
+      console.log(`[DEBUG] Query SQL:`, query.toSQL());
+      
+      const results = await query;
+      
+      // Validate the results
+      if (!results || results.length === 0) {
+        console.log(`[DEBUG] No registrations with parent info found for camp ${campId}`);
+        return [];
+      }
+      
+      // Map the results to ensure all fields are present
+      const formattedResults = results.map(r => ({
+        id: r.id,
+        childId: r.childId,
+        childName: r.childName || 'Unknown Child',
+        parentId: r.parentId,
+        parentName: r.parentName || 'Unknown Parent',
+        parentEmail: r.parentEmail || 'No email provided'
+      }));
+
+      console.log(`[DEBUG] Found ${formattedResults.length} registrations with parent info for camp ${campId}`);
+      console.log(`[DEBUG] Registration data sample:`, JSON.stringify(formattedResults.slice(0, 2), null, 2));
+      
+      return formattedResults;
     } catch (error) {
       console.error("Error getting registrations with parent info:", error);
       throw new Error("Failed to get registrations with parent info");

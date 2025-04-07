@@ -107,51 +107,76 @@ export function SendCampMessageDialog({
       const userData = await userCheckResponse.json();
       console.log(`Authenticated as: ${userData.username}, Role: ${userData.role}, Organization: ${userData.organizationId}`);
       
-      // Now fetch the registrations with parent info
-      console.log(`Fetching registrations with parents for camp ${campId}`);
-      const response = await fetch(`/api/camps/${campId}/registrations-with-parents`, {
+      // Use the regular registrations endpoint instead since we're having issues with the specialized endpoint
+      console.log(`Fetching regular registrations for camp ${campId}`);
+      const registrationsResponse = await fetch(`/api/camps/${campId}/registrations`, {
         credentials: 'include', // Include cookies for authentication
         headers: {
           'Accept': 'application/json'
         }
       });
       
-      console.log(`Registration API response status: ${response.status}`);
+      console.log(`Registration API response status: ${registrationsResponse.status}`);
       
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`Loaded ${data.length} participants:`, data); 
-        
-        if (!data || data.length === 0) {
-          console.log("No participants found for this camp");
-          setRecipients([]);
-          return;
-        }
-        
-        const formattedData = data.map((reg: any) => ({
-          id: reg.id,
-          childId: reg.childId,
-          childName: reg.childName || "Unknown Child",
-          parentId: reg.parentId,
-          parentName: reg.parentName || "Unknown Parent",
-          parentEmail: reg.parentEmail || "No email provided"
-        }));
-        
-        console.log("Formatted recipient data:", formattedData);
-        setRecipients(formattedData);
-      } else if (response.status === 403) {
-        console.log("Permission denied when fetching participants");
-        throw new Error("You don't have permission to access participant information");
-      } else if (response.status === 404) {
-        console.log("Camp not found when fetching participants");
-        throw new Error("Camp not found");
-      } else {
-        const errorText = await response.text();
-        console.log("Error response from API:", errorText);
-        
-        const errorData = JSON.parse(errorText || '{}');
-        throw new Error(errorData?.message || "Failed to load participants");
+      if (!registrationsResponse.ok) {
+        throw new Error(`Failed to fetch registrations: ${registrationsResponse.statusText}`);
       }
+      
+      const registrationData = await registrationsResponse.json();
+      console.log("Registration data:", registrationData);
+      
+      if (!registrationData.registrations || registrationData.registrations.length === 0) {
+        console.log("No registrations found for this camp");
+        setRecipients([]);
+        return;
+      }
+      
+      // For each registration, we need to get the child and parent info
+      const processedRegistrations = [];
+      for (const reg of registrationData.registrations) {
+        try {
+          // Get child info
+          const childResponse = await fetch(`/api/children/${reg.childId}`, {
+            credentials: 'include'
+          });
+          
+          if (!childResponse.ok) {
+            console.warn(`Cannot fetch child info for ID ${reg.childId}`);
+            continue;
+          }
+          
+          const childData = await childResponse.json();
+          
+          // Get parent info
+          const parentResponse = await fetch(`/api/users/${childData.parentId}`, {
+            credentials: 'include'
+          });
+          
+          if (!parentResponse.ok) {
+            console.warn(`Cannot fetch parent info for ID ${childData.parentId}`);
+            continue;
+          }
+          
+          const parentData = await parentResponse.json();
+          
+          // Add this registration with parent and child info
+          processedRegistrations.push({
+            id: reg.id,
+            childId: reg.childId,
+            childName: childData.fullName || "Unknown Child",
+            parentId: childData.parentId,
+            parentName: `${parentData.first_name || ''} ${parentData.last_name || ''}`.trim() || "Unknown Parent",
+            parentEmail: parentData.email || "No email provided"
+          });
+        } catch (err) {
+          console.error("Error processing registration:", err);
+        }
+      }
+      
+      console.log(`Processed ${processedRegistrations.length} registrations with parent info`);
+      console.log("Processed registration data:", processedRegistrations);
+      
+      setRecipients(processedRegistrations);
     } catch (error) {
       console.error("Error loading participants:", error);
       toast({
