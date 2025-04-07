@@ -87,7 +87,10 @@ function ParentDashboardLayout({ children }: ParentDashboardLayoutProps) {
       <div className="flex-1 flex flex-col">
         <header className="border-b sticky top-0 z-30 bg-background">
           <div className="flex h-16 items-center px-6 justify-between">
-            <h1 className="text-xl font-semibold">Parent Dashboard</h1>
+            <div className="flex items-center gap-4">
+              <div className="w-10"></div> {/* Space for sidebar toggle button */}
+              <h1 className="text-xl font-semibold">Parent Dashboard</h1>
+            </div>
             <div className="flex items-center gap-4">
               <NotificationBell />
               <div className="flex items-center gap-2">
