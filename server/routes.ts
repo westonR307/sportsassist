@@ -2955,13 +2955,30 @@ export async function registerRoutes(app: Express) {
       
       // Create the reply
       const senderName = `${req.user.first_name || ''} ${req.user.last_name || ''}`.trim() || req.user.username;
-      const reply = await storage.createCampMessageReply({
+      
+      // Detailed logging for debugging
+      console.log("About to create message reply with data:", {
         messageId,
         senderId: req.user.id,
         senderName,
-        content,
-        campId: message.campId
+        content: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
+        campId: message.campId,
+        userRole: req.user.role,
+        messageOrganizationId: message.organizationId
       });
+      
+      try {
+        const reply = await storage.createCampMessageReply({
+          messageId,
+          senderId: req.user.id,
+          senderName,
+          content,
+          campId: message.campId
+        });
+      } catch (error) {
+        console.error("Error creating camp message reply:", error);
+        return res.status(500).json({ message: "Failed to create message reply", error: error.message });
+      }
       
       // Send email notification for the reply
       try {

@@ -3657,6 +3657,18 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
+  // Get a camp by ID - same as getCamp but with a different name
+  async getCampById(id: number): Promise<Camp | undefined> {
+    try {
+      console.log(`Fetching camp with ID ${id}`);
+      const [camp] = await db.select().from(camps).where(eq(camps.id, id));
+      return camp;
+    } catch (error) {
+      console.error(`Error getting camp by ID ${id}:`, error);
+      throw error;
+    }
+  }
+  
   async createCampMessageReply(data: {
     messageId: number;
     senderId: number;
