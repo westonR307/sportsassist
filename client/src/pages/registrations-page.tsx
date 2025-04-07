@@ -17,7 +17,12 @@ import {
 import { Camp, Registration } from "@shared/schema";
 
 interface RegistrationWithCamp extends Registration {
-  camp: Camp;
+  camp: Camp & {
+    slug?: string;
+    location?: string;
+    defaultStartTime?: string;
+    defaultEndTime?: string;
+  };
   child: {
     id: number;
     fullName: string;
@@ -195,7 +200,7 @@ function RegistrationCard({ registration, status }: RegistrationCardProps) {
             <div className="flex items-center gap-2 mt-1">
               {statusBadge}
               <span className="text-xs text-muted-foreground">
-                Registered on {format(new Date(registration.registrationDate), "MMM d, yyyy")}
+                Registered on {format(new Date(registration.registeredAt), "MMM d, yyyy")}
               </span>
             </div>
           </div>
@@ -244,7 +249,7 @@ function RegistrationCard({ registration, status }: RegistrationCardProps) {
           
           <div className="pt-3">
             <Button variant="outline" className="w-full flex items-center gap-2" asChild>
-              <a href={`/dashboard/camps/${String(camp.id)}`}>
+              <a href={`/camp/${camp.slug || camp.id}`}>
                 <span>View Camp Details</span>
                 <ArrowRight className="h-4 w-4" />
               </a>
