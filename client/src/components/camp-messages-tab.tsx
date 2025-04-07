@@ -51,6 +51,9 @@ export function CampMessagesTab({
 
   const { data: messages, isLoading, isError, error, refetch } = useQuery({
     queryKey: [`/api/camps/${campId}/messages`],
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchInterval: false,
     select: (data: CampMessage[]) => {
       // Sort messages by createdAt date in descending order (newest first)
       return [...data].sort((a, b) => 

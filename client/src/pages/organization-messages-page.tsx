@@ -64,6 +64,8 @@ export default function OrganizationMessagesPage() {
   const { data: camps } = useQuery<CampBasicInfo[]>({
     queryKey: ["/api/camps/basic-info"],
     refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchInterval: false,
     onError: (error) => {
       toast({
         title: "Error fetching camps",
@@ -77,6 +79,8 @@ export default function OrganizationMessagesPage() {
   const { data: messages, isLoading } = useQuery<CampMessage[]>({
     queryKey: ["/api/organizations/camp-messages"],
     refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchInterval: false,
     onError: (error) => {
       toast({
         title: "Error fetching camp messages",
