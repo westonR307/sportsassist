@@ -798,40 +798,68 @@ export class DatabaseStorage implements IStorage {
       
       console.log(`[Storage] Found registration: ${JSON.stringify(registration)}`);
       
-      // Step 1: Handle document signatures related to this registration
-      // First, find all signature requests associated with this registration
-      console.log(`[Storage] Checking for signature requests related to registration ${id}`);
-      const signatureRequestsForRegistration = await db
-        .select()
-        .from(signatureRequests)
-        .where(eq(signatureRequests.registrationId, id));
-      
-      console.log(`[Storage] Found ${signatureRequestsForRegistration.length} signature requests to clean up`);
-      
-      // For each signature request
-      for (const request of signatureRequestsForRegistration) {
-        // Delete any signatures associated with this request
-        console.log(`[Storage] Deleting signatures for request ${request.id}`);
-        await db.delete(signatures).where(eq(signatures.signatureRequestId, request.id));
+      try {
+        // Step 1: Handle document signatures related to this registration
+        // First, find all signature requests associated with this registration
+        console.log(`[Storage] Checking for signature requests related to registration ${id}`);
         
-        // Delete any audit trail records
-        console.log(`[Storage] Deleting audit trail records for request ${request.id}`);
-        await db.delete(documentAuditTrail).where(eq(documentAuditTrail.signatureRequestId, request.id));
+        // Execute a direct SQL query to get the signature requests
+        const signatureRequestsQuery = await db.execute(
+          sql`SELECT * FROM signature_requests WHERE registration_id = ${id}`
+        );
+        
+        const signatureRequestsForRegistration = signatureRequestsQuery.rows || [];
+        console.log(`[Storage] Found ${signatureRequestsForRegistration.length} signature requests to clean up`);
+        
+        // For each signature request
+        for (const request of signatureRequestsForRegistration) {
+          try {
+            // Delete any signatures associated with this request
+            console.log(`[Storage] Deleting signatures for request ${request.id}`);
+            await db.execute(
+              sql`DELETE FROM signatures WHERE signature_request_id = ${request.id}`
+            );
+            
+            // Delete any audit trail records
+            console.log(`[Storage] Deleting audit trail records for request ${request.id}`);
+            await db.execute(
+              sql`DELETE FROM document_audit_logs WHERE signature_request_id = ${request.id}`
+            );
+          } catch (signatureError) {
+            console.error(`[Storage] Error cleaning up signature request ${request.id}:`, signatureError);
+            // Continue with other requests even if one fails
+          }
+        }
+        
+        // Now delete the signature requests themselves
+        if (signatureRequestsForRegistration.length > 0) {
+          console.log(`[Storage] Deleting ${signatureRequestsForRegistration.length} signature requests`);
+          await db.execute(
+            sql`DELETE FROM signature_requests WHERE registration_id = ${id}`
+          );
+        }
+      } catch (signatureCleanupError) {
+        console.error(`[Storage] Error in signature cleanup phase:`, signatureCleanupError);
+        // Continue with registration deletion even if signature cleanup fails
       }
       
-      // Now delete the signature requests themselves
-      if (signatureRequestsForRegistration.length > 0) {
-        console.log(`[Storage] Deleting ${signatureRequestsForRegistration.length} signature requests`);
-        await db.delete(signatureRequests).where(eq(signatureRequests.registrationId, id));
+      try {
+        // Step 2: Delete custom field responses
+        console.log(`[Storage] Deleting custom field responses for registration ${id}`);
+        await db.delete(customFieldResponses).where(eq(customFieldResponses.registrationId, id));
+      } catch (fieldResponseError) {
+        console.error(`[Storage] Error deleting custom field responses:`, fieldResponseError);
+        // Continue with deletion
       }
       
-      // Step 2: Delete custom field responses
-      console.log(`[Storage] Deleting custom field responses for registration ${id}`);
-      await db.delete(customFieldResponses).where(eq(customFieldResponses.registrationId, id));
-      
-      // Step 3: Delete attendance records
-      console.log(`[Storage] Deleting attendance records for registration ${id}`);
-      await db.delete(attendanceRecords).where(eq(attendanceRecords.registrationId, id));
+      try {
+        // Step 3: Delete attendance records
+        console.log(`[Storage] Deleting attendance records for registration ${id}`);
+        await db.delete(attendanceRecords).where(eq(attendanceRecords.registrationId, id));
+      } catch (attendanceError) {
+        console.error(`[Storage] Error deleting attendance records:`, attendanceError);
+        // Continue with deletion
+      }
       
       // Step 4: Finally delete the registration itself
       console.log(`[Storage] Deleting registration ${id}`);
