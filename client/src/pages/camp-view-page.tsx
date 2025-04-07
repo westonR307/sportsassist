@@ -595,10 +595,6 @@ function CampViewPage(props: { id?: string }) {
                     <Copy className="h-4 w-4 mr-2" />
                     Duplicate
                   </Button>
-                  <Button variant="outline">
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Message
-                  </Button>
                 </div>
                 {registrationStatus === 'not_open' ? (
                   <Button

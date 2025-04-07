@@ -3157,10 +3157,20 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`Fetching all messages for camp ${campId}`);
       
-      return await db.select()
-        .from(campMessages)
-        .where(eq(campMessages.campId, campId))
-        .orderBy(desc(campMessages.createdAt));
+      const messages = await db.select({
+        ...campMessages,
+        sentBy: {
+          username: users.username,
+          first_name: users.first_name,
+          last_name: users.last_name
+        }
+      })
+      .from(campMessages)
+      .leftJoin(users, eq(campMessages.senderId, users.id))
+      .where(eq(campMessages.campId, campId))
+      .orderBy(desc(campMessages.createdAt));
+      
+      return messages;
     } catch (error: any) {
       console.error(`Error fetching camp messages for camp ID ${campId}:`, error);
       throw new Error(`Failed to fetch camp messages: ${error.message}`);
@@ -3171,10 +3181,18 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`Fetching all camp messages for organization ${organizationId}`);
       
-      const messages = await db.select()
-        .from(campMessages)
-        .where(eq(campMessages.organizationId, organizationId))
-        .orderBy(desc(campMessages.createdAt));
+      const messages = await db.select({
+        ...campMessages,
+        sentBy: {
+          username: users.username,
+          first_name: users.first_name,
+          last_name: users.last_name
+        }
+      })
+      .from(campMessages)
+      .leftJoin(users, eq(campMessages.senderId, users.id))
+      .where(eq(campMessages.organizationId, organizationId))
+      .orderBy(desc(campMessages.createdAt));
       
       // Get all camps for the organization to get their names
       const campsList = await this.getCampBasicInfo(organizationId);
