@@ -65,10 +65,27 @@ export function SendCampMessageDialog({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch registrations for the camp
+  // Fetch registrations for the camp - use a separate flag to prevent refetch loops
+  const [shouldFetchRegistrations, setShouldFetchRegistrations] = useState(false);
+  
+  // Set shouldFetchRegistrations when dialog opens
+  useEffect(() => {
+    if (open && !shouldFetchRegistrations) {
+      setShouldFetchRegistrations(true);
+    }
+  }, [open, shouldFetchRegistrations]);
+  
+  // Clean up when component unmounts
+  useEffect(() => {
+    return () => {
+      // Ensure dialog is closed when component unmounts
+      setOpen(false);
+    };
+  }, []);
+  
   const { data: registrations, isLoading: isLoadingRegistrations } = useQuery({
     queryKey: [`/api/camps/${campId}/registrations-with-parents`],
-    enabled: open,
+    enabled: shouldFetchRegistrations,
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchInterval: false,
