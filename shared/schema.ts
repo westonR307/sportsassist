@@ -35,7 +35,8 @@ import {
   platformMetrics,
   systemEvents,
   campMessages,
-  campMessageRecipients
+  campMessageRecipients,
+  campMessageReplies
 } from "./tables";
 
 // Import types
@@ -408,12 +409,23 @@ export const insertCampMessageRecipientSchema = z.object({
   parentId: z.number()
 });
 
+export const insertCampMessageReplySchema = z.object({
+  messageId: z.number(),
+  parentId: z.number(),
+  parentName: z.string(),
+  content: z.string(),
+  organizationId: z.number(),
+  campId: z.number()
+});
+
 export type OrganizationMessage = typeof organizationMessages.$inferSelect;
 export type InsertOrganizationMessage = z.infer<typeof insertOrganizationMessageSchema>;
 export type CampMessage = typeof campMessages.$inferSelect;
 export type InsertCampMessage = z.infer<typeof insertCampMessageSchema>;
 export type CampMessageRecipient = typeof campMessageRecipients.$inferSelect; 
 export type InsertCampMessageRecipient = z.infer<typeof insertCampMessageRecipientSchema>;
+export type CampMessageReply = typeof campMessageReplies.$inferSelect;
+export type InsertCampMessageReply = z.infer<typeof insertCampMessageReplySchema>;
 
 // Permission management schemas
 export const insertPermissionSetSchema = createInsertSchema(permissionSets).omit({
@@ -507,7 +519,8 @@ export {
   subscriptionPlans,
   organizationSubscriptions,
   campMessages,
-  campMessageRecipients
+  campMessageRecipients,
+  campMessageReplies
 };
 
 export const predefinedSports = [

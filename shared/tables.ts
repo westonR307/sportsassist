@@ -463,6 +463,18 @@ export const campMessageRecipients = pgTable("camp_message_recipients", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const campMessageReplies = pgTable("camp_message_replies", {
+  id: serial("id").primaryKey(),
+  messageId: integer("message_id").references(() => campMessages.id).notNull(),
+  parentId: integer("parent_id").references(() => users.id).notNull(),
+  parentName: text("parent_name").notNull(),
+  content: text("content").notNull(),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
+  campId: integer("camp_id").references(() => camps.id).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  isRead: boolean("is_read").notNull().default(false),
+});
+
 // Permission management tables
 
 // Permission sets define named groups of permissions
