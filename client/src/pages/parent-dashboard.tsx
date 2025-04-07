@@ -76,11 +76,33 @@ interface ParentDashboardLayoutProps {
   children: React.ReactNode;
 }
 
+import { NotificationBell } from "@/components/notification-bell";
+
 function ParentDashboardLayout({ children }: ParentDashboardLayoutProps) {
+  const { user } = useAuth();
+  
   return (
     <div className="flex min-h-screen">
       <ParentSidebar />
-      <div className="flex-1 p-6 md:p-8">{children}</div>
+      <div className="flex-1 flex flex-col">
+        <header className="border-b sticky top-0 z-30 bg-background">
+          <div className="flex h-16 items-center px-6 justify-between">
+            <h1 className="text-xl font-semibold">Parent Dashboard</h1>
+            <div className="flex items-center gap-4">
+              <NotificationBell />
+              <div className="flex items-center gap-2">
+                <div className="text-sm text-right hidden md:block">
+                  <p className="font-medium">{user?.first_name} {user?.last_name}</p>
+                  <p className="text-xs text-muted-foreground">Parent</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+        <main className="flex-1 p-6 md:p-8 overflow-auto">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
@@ -118,14 +140,6 @@ export default function ParentDashboard() {
               </p>
             </div>
             <div className="flex gap-3 self-end md:self-auto">
-              <Button 
-                variant="outline" 
-                onClick={handleLogout}
-                className="hidden md:flex"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
               <Button 
                 onClick={() => {
                   console.log("Add Athlete button clicked");
