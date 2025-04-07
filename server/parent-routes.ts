@@ -259,14 +259,16 @@ export function registerParentRoutes(app: Express) {
         return res.json([]);
       }
       
-      // Use an "in" clause to get all registrations for all of this parent's children in one query
-      const childRegistrations = await db
+      // Get all registrations for all of this parent's children
+      // If in() is not available, we'll use a manual filter approach
+      const allRegistrations = await db
         .select()
-        .from(registrations)
-        .where(
-          // Only get registrations for children that belong to this parent
-          registrations.childId.in(childIds)
-        );
+        .from(registrations);
+        
+      // Filter registrations to only include those for this parent's children
+      const childRegistrations = allRegistrations.filter(reg => 
+        childIds.includes(reg.childId)
+      );
       
       console.log(`Found ${childRegistrations.length} registrations for children of parent ${req.user.id}`);
       

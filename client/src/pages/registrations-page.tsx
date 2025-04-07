@@ -112,7 +112,7 @@ export default function RegistrationsPage() {
                       title="No upcoming registrations"
                       description="You don't have any upcoming camp registrations. Browse available camps to register."
                       actionText="Browse Camps"
-                      actionLink="/dashboard/camps"
+                      actionLink="/find-camps"
                     />
                   )}
                 </TabsContent>
@@ -133,7 +133,7 @@ export default function RegistrationsPage() {
                       title="No active registrations"
                       description="You don't have any active camp registrations right now."
                       actionText="Browse Camps"
-                      actionLink="/dashboard/camps"
+                      actionLink="/find-camps"
                     />
                   )}
                 </TabsContent>
@@ -154,7 +154,7 @@ export default function RegistrationsPage() {
                       title="No past registrations"
                       description="You don't have any past camp registrations."
                       actionText="Browse Camps"
-                      actionLink="/dashboard/camps"
+                      actionLink="/find-camps"
                     />
                   )}
                 </TabsContent>
