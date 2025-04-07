@@ -69,6 +69,9 @@ export function SendCampMessageDialog({
   const { data: registrations, isLoading: isLoadingRegistrations } = useQuery({
     queryKey: [`/api/camps/${campId}/registrations-with-parents`],
     enabled: open,
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchInterval: false,
     select: (data: any[]) => {
       return data.map((reg) => ({
         id: reg.id,

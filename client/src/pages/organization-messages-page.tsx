@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { useLocation } from "wouter";
 
 import {
   Card,
@@ -31,7 +32,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search } from "lucide-react";
+import { Loader2, Search, ArrowLeft } from "lucide-react";
+import { BackButton } from "@/components/back-button";
 
 import { format } from "date-fns";
 
@@ -107,6 +109,9 @@ export default function OrganizationMessagesPage() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
+      <div className="mb-4">
+        <BackButton />
+      </div>
       <Card>
         <CardHeader>
           <CardTitle>Organization Messages</CardTitle>
