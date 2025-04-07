@@ -207,9 +207,10 @@ function CampViewPage(props: { id?: string }) {
   const { isLoading, camp, campError } = useCampData(id);
 
 
+  // Only fetch registrations using the camp numeric ID (not the slug)
   const { data: registrationsData, isLoading: isLoadingRegistrations } = useQuery<RegistrationsResponse>({
-    queryKey: [`/api/camps/${id}/registrations`],
-    enabled: !!id,
+    queryKey: [`/api/camps/${camp?.id}/registrations`],
+    enabled: !!camp?.id, // Only enable when we have the numeric camp ID from the camp data
   });
 
   const registrations = registrationsData?.registrations || [];
@@ -346,8 +347,15 @@ function CampViewPage(props: { id?: string }) {
     mutationFn: async () => {
       setRegistering(true);
       try {
-        const response = await apiRequest('POST', `/api/camps/${id}/register`, {
-          campId: parseInt(id),
+        // Make sure we use the numeric camp ID from the camp object, not the slug from the URL
+        const campId = camp?.id;
+        if (!campId) {
+          throw new Error("Camp ID not available");
+        }
+        
+        console.log("Registering for camp with ID:", campId);
+        const response = await apiRequest('POST', `/api/camps/${campId}/register`, {
+          campId: campId,
           childId: selectedChildId,
         });
 
@@ -362,7 +370,10 @@ function CampViewPage(props: { id?: string }) {
         description: "You have successfully registered for this camp.",
       });
 
-      queryClient.invalidateQueries({ queryKey: [`/api/camps/${id}/registrations`] });
+      // Invalidate the camp registrations query with the camp ID
+      if (camp?.id) {
+        queryClient.invalidateQueries({ queryKey: [`/api/camps/${camp.id}/registrations`] });
+      }
     },
     onError: (error: any) => {
       toast({
