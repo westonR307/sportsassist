@@ -466,8 +466,8 @@ export const campMessageRecipients = pgTable("camp_message_recipients", {
 export const campMessageReplies = pgTable("camp_message_replies", {
   id: serial("id").primaryKey(),
   messageId: integer("message_id").references(() => campMessages.id).notNull(),
-  parentId: integer("parent_id").references(() => users.id).notNull(),
-  parentName: text("parent_name").notNull(),
+  senderId: integer("sender_id").references(() => users.id).notNull(),
+  senderName: text("sender_name").notNull(),
   content: text("content").notNull(),
   organizationId: integer("organization_id").references(() => organizations.id).notNull(),
   campId: integer("camp_id").references(() => camps.id).notNull(),

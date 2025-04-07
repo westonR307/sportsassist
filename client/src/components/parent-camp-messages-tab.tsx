@@ -6,6 +6,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -13,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Mail, Circle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { CampMessageReplyDialog } from "@/components/camp-message-reply-dialog";
 
 interface CampMessage {
   id: number;
@@ -105,6 +107,12 @@ export function ParentCampMessagesTab({ campId }: ParentCampMessagesTabProps) {
                     {message.content}
                   </div>
                 </CardContent>
+                <CardFooter className="flex justify-end pt-2">
+                  <CampMessageReplyDialog 
+                    messageId={message.id} 
+                    campId={campId}
+                  />
+                </CardFooter>
               </Card>
             ))}
           </div>

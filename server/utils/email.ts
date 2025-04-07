@@ -102,3 +102,62 @@ export async function sendCampMessageEmail({
     );
   }
 }
+
+export async function sendCampMessageReplyEmail({
+  recipientEmail,
+  recipientName,
+  senderName,
+  campName,
+  originalSubject,
+  replyContent,
+  replyUrl,
+}: {
+  recipientEmail: string;
+  recipientName: string;
+  senderName: string;
+  campName: string;
+  originalSubject: string;
+  replyContent: string;
+  replyUrl: string;
+}) {
+  try {
+    console.log("Attempting to send message reply notification to:", recipientEmail);
+    
+    const result = await resend.emails.send({
+      from: "SportsAssist.io <weston.rosenau@sportsassist.io>",
+      to: recipientEmail,
+      subject: `New Reply: ${originalSubject} - ${campName}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background-color: #f9f9f9; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
+            <h2 style="color: #333; margin-top: 0;">New Reply to: ${originalSubject}</h2>
+            <p style="color: #666; font-size: 14px;">From: ${senderName}</p>
+            <p style="color: #666; font-size: 14px;">Camp: ${campName}</p>
+          </div>
+          
+          <div style="padding: 20px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee;">
+            <p style="margin-bottom: 15px;"><strong>Reply Content:</strong></p>
+            ${replyContent}
+          </div>
+          
+          <div style="padding: 20px 0;">
+            <a href="${replyUrl}" style="display: inline-block; background: #0070f3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">View in SportsAssist</a>
+          </div>
+          
+          <div style="padding-top: 20px; font-size: 12px; color: #999;">
+            <p>This is a notification about a reply to a message in ${campName}.</p>
+            <p>Please do not reply to this email. Log in to SportsAssist to continue the conversation.</p>
+          </div>
+        </div>
+      `,
+    });
+    
+    console.log("Message reply email sent successfully:", result);
+    return result;
+  } catch (error) {
+    console.error("Failed to send message reply email:", error);
+    throw new Error(
+      `Failed to send message reply email: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
+  }
+}

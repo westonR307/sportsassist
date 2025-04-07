@@ -251,7 +251,7 @@ import { registerParentRoutes } from "./parent-routes";
 import documentRoutes from "./document-routes";
 import { randomBytes } from "crypto";
 import passport from "passport";
-import { sendInvitationEmail, sendCampMessageEmail } from "./utils/email";
+import { sendInvitationEmail, sendCampMessageEmail, sendCampMessageReplyEmail } from "./utils/email";
 import { uploadConfig, getFileUrl } from "./utils/file-upload";
 import path from 'path';
 import { handleStripeWebhook } from "./stripe-webhook";
@@ -2885,6 +2885,135 @@ export async function registerRoutes(app: Express) {
     } catch (error) {
       console.error("Error marking camp message as read:", error);
       res.status(500).json({ message: "Failed to mark camp message as read" });
+    }
+  });
+  
+  // Get replies for a specific camp message
+  app.get("/api/camp-messages/:messageId/replies", async (req, res) => {
+    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+    
+    const messageId = parseInt(req.params.messageId);
+    
+    try {
+      // Get the message first to check permissions
+      const message = await storage.getCampMessageById(messageId);
+      if (!message) {
+        return res.status(404).json({ message: "Message not found" });
+      }
+      
+      // For camp_creator/admin users, they should be part of the organization that sent the message
+      if (req.user.role === 'camp_creator' && req.user.organizationId !== message.organizationId) {
+        return res.status(403).json({ message: "Not authorized to view replies for this message" });
+      }
+      
+      // For parents, they need to have access to the camp
+      if (req.user.role === 'parent') {
+        const hasAccess = await storage.checkParentHasAccessToCamp(req.user.id, message.campId);
+        if (!hasAccess) {
+          return res.status(403).json({ message: "Not authorized to view replies for this message" });
+        }
+      }
+      
+      const replies = await storage.getCampMessageReplies(messageId);
+      res.json(replies);
+    } catch (error) {
+      console.error("Error fetching message replies:", error);
+      res.status(500).json({ message: "Failed to fetch message replies" });
+    }
+  });
+  
+  // Add a reply to a camp message
+  app.post("/api/camp-messages/:messageId/replies", async (req, res) => {
+    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+    
+    const messageId = parseInt(req.params.messageId);
+    const { content } = req.body;
+    
+    if (!content || content.trim() === '') {
+      return res.status(400).json({ message: "Reply content is required" });
+    }
+    
+    try {
+      // Get the message first to check permissions
+      const message = await storage.getCampMessageById(messageId);
+      if (!message) {
+        return res.status(404).json({ message: "Message not found" });
+      }
+      
+      // For camp_creator/admin users, they should be part of the organization that sent the message
+      if (req.user.role === 'camp_creator' && req.user.organizationId !== message.organizationId) {
+        return res.status(403).json({ message: "Not authorized to reply to this message" });
+      }
+      
+      // For parents, they need to have access to the camp
+      if (req.user.role === 'parent') {
+        const hasAccess = await storage.checkParentHasAccessToCamp(req.user.id, message.campId);
+        if (!hasAccess) {
+          return res.status(403).json({ message: "Not authorized to reply to this message" });
+        }
+      }
+      
+      // Create the reply
+      const senderName = `${req.user.first_name || ''} ${req.user.last_name || ''}`.trim() || req.user.username;
+      const reply = await storage.createCampMessageReply({
+        messageId,
+        senderId: req.user.id,
+        senderName,
+        content,
+        campId: message.campId
+      });
+      
+      // Send email notification for the reply
+      try {
+        // For parent replies, notify camp creator/organization
+        if (req.user.role === 'parent') {
+          // Get organization users to send notifications to
+          const orgUsers = await storage.getOrganizationUsers(message.organizationId);
+          for (const user of orgUsers) {
+            if (user.email) {
+              await sendCampMessageReplyEmail({
+                recipientEmail: user.email,
+                recipientName: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
+                senderName: senderName,
+                originalSubject: message.subject,
+                replyContent: content,
+                campName: req.body.campName || 'Camp', // Ideally, get the camp name from the database
+                replyUrl: `https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/organization/messages/${messageId}`
+              });
+            }
+          }
+        } 
+        // For camp creator replies, notify the parent if the message was sent to a specific parent
+        else if (req.user.role === 'camp_creator') {
+          // Get the original recipients to find out who to notify
+          const recipients = await storage.getCampMessageRecipients(messageId);
+          if (!message.sentToAll) {
+            // This was sent to specific parents, notify them
+            for (const recipient of recipients) {
+              const parent = await storage.getUser(recipient.parentId);
+              if (parent && parent.email) {
+                await sendCampMessageReplyEmail({
+                  recipientEmail: parent.email,
+                  recipientName: `${parent.first_name || ''} ${parent.last_name || ''}`.trim() || parent.username,
+                  senderName: senderName,
+                  originalSubject: message.subject,
+                  replyContent: content,
+                  campName: req.body.campName || 'Camp', // Ideally, get the camp name from the database
+                  replyUrl: `https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/parent/messages/${messageId}`
+                });
+              }
+            }
+          }
+        }
+      } catch (emailError) {
+        console.error("Failed to send email notification for reply:", emailError);
+        // Continue with the API response even if email fails
+      }
+      
+      res.status(201).json(reply);
+    } catch (error) {
+      console.error("Error creating message reply:", error);
+      res.status(500).json({ message: "Failed to create message reply" });
     }
   });
 

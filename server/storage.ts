@@ -270,6 +270,12 @@ export interface IStorage {
   markCampMessageRecipientAsRead(recipientId: number): Promise<CampMessageRecipient | null>;
   markCampMessageRecipientAsDelivered(recipientId: number): Promise<CampMessageRecipient | null>;
   recordCampMessageRecipientOpened(recipientId: number): Promise<CampMessageRecipient | null>;
+  
+  // Camp message replies
+  createCampMessageReply(data: { messageId: number; senderId: number; senderName: string; content: string; campId: number }): Promise<any>;
+  getCampMessageReplies(messageId: number): Promise<any[]>;
+  getCampMessageById(messageId: number): Promise<any | null>;
+  checkParentHasAccessToCamp(userId: number, campId: number): Promise<boolean>;
   getParentCampMessages(parentId: number): Promise<{message: CampMessage, recipient: CampMessageRecipient}[]>;
   
   // Permission management methods
@@ -3631,6 +3637,105 @@ export class DatabaseStorage implements IStorage {
     } catch (error: any) {
       console.error(`Error fetching parent camp messages for parent ID ${parentId} and camp ID ${campId}:`, error);
       throw new Error(`Failed to fetch parent camp messages: ${error.message}`);
+    }
+  }
+  
+  async getCampMessageById(messageId: number): Promise<any | null> {
+    try {
+      console.log(`Fetching camp message with ID ${messageId}`);
+      
+      const [message] = await db
+        .select()
+        .from(campMessages)
+        .where(eq(campMessages.id, messageId))
+        .limit(1);
+      
+      return message || null;
+    } catch (error) {
+      console.error(`Error fetching camp message with ID ${messageId}:`, error);
+      return null;
+    }
+  }
+  
+  async createCampMessageReply(data: {
+    messageId: number;
+    senderId: number;
+    senderName: string;
+    content: string;
+    campId: number;
+  }): Promise<any> {
+    try {
+      console.log(`Creating reply to message ${data.messageId} from sender ${data.senderId}`);
+      
+      // Get the camp first to get the organization ID
+      const camp = await this.getCampById(data.campId);
+      if (!camp) {
+        throw new Error(`Camp with ID ${data.campId} not found`);
+      }
+      
+      const organizationId = camp.organizationId;
+      
+      // Insert the reply
+      const [reply] = await db
+        .insert(campMessageReplies)
+        .values({
+          messageId: data.messageId,
+          senderId: data.senderId,
+          senderName: data.senderName,
+          content: data.content,
+          campId: data.campId,
+          organizationId: organizationId,
+          isRead: false
+        })
+        .returning();
+      
+      console.log(`Created message reply with ID ${reply.id}`);
+      return reply;
+    } catch (error) {
+      console.error(`Error creating camp message reply:`, error);
+      throw error;
+    }
+  }
+  
+  async getCampMessageReplies(messageId: number): Promise<any[]> {
+    try {
+      console.log(`Fetching replies for message ${messageId}`);
+      
+      const replies = await db
+        .select()
+        .from(campMessageReplies)
+        .where(eq(campMessageReplies.messageId, messageId))
+        .orderBy(asc(campMessageReplies.createdAt));
+      
+      console.log(`Found ${replies.length} replies for message ${messageId}`);
+      return replies;
+    } catch (error) {
+      console.error(`Error getting camp message replies for message ${messageId}:`, error);
+      return [];
+    }
+  }
+  
+  async checkParentHasAccessToCamp(userId: number, campId: number): Promise<boolean> {
+    try {
+      console.log(`Checking if parent ${userId} has access to camp ${campId}`);
+      
+      // Check if this parent has any children registered for this camp
+      const registrations = await db
+        .select()
+        .from(registrations)
+        .innerJoin(children, eq(registrations.childId, children.id))
+        .where(and(
+          eq(registrations.campId, campId),
+          eq(children.parentId, userId)
+        ))
+        .limit(1);
+      
+      const hasAccess = registrations.length > 0;
+      console.log(`Parent ${userId} ${hasAccess ? 'has' : 'does not have'} access to camp ${campId}`);
+      return hasAccess;
+    } catch (error) {
+      console.error(`Error checking parent access to camp:`, error);
+      return false;
     }
   }
 
