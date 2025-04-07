@@ -2640,10 +2640,15 @@ export async function registerRoutes(app: Express) {
     }
 
     try {
-      const { subject, content, sendToAll } = req.body;
+      const { subject, content, sendToAll, selectedRecipients } = req.body;
       
       if (!subject || !content) {
         return res.status(400).json({ message: "Subject and content are required" });
+      }
+      
+      // Validate selectedRecipients if not sending to all
+      if (sendToAll !== true && (!selectedRecipients || !Array.isArray(selectedRecipients) || selectedRecipients.length === 0)) {
+        return res.status(400).json({ message: "Selected recipients are required when not sending to all" });
       }
       
       // Get the organization for the email
@@ -2678,8 +2683,20 @@ export async function registerRoutes(app: Express) {
       // Create recipients for the message
       const recipients = [];
       
-      // First, collect all recipients
-      for (const registration of registrations) {
+      // Filter registrations based on sendToAll or selectedRecipients
+      const targetRegistrations = sendToAll === true
+        ? registrations
+        : registrations.filter(reg => selectedRecipients.includes(reg.id));
+      
+      if (!sendToAll && targetRegistrations.length === 0) {
+        return res.status(400).json({ 
+          message: "None of the selected recipients were found in this camp",
+          messageId: newMessage.id
+        });
+      }
+      
+      // Collect recipient details
+      for (const registration of targetRegistrations) {
         const child = await storage.getChild(registration.childId);
         if (!child) continue;
         
@@ -2693,8 +2710,7 @@ export async function registerRoutes(app: Express) {
         });
       }
       
-      // Create all recipient records at once - this ensures that messages sent to "all" 
-      // actually have recipient records for everyone
+      // Create recipient records only for the relevant registrations
       const createdRecipients = await storage.createCampMessageRecipients(recipients);
       console.log(`Created ${createdRecipients.length} recipient records for message ${newMessage.id}`);
       
