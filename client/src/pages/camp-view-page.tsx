@@ -364,11 +364,18 @@ function CampViewPage(props: { id?: string }) {
         setRegistering(false);
       }
     },
-    onSuccess: () => {
-      toast({
-        title: "Registration successful",
-        description: "You have successfully registered for this camp.",
-      });
+    onSuccess: (data) => {
+      if (data.isWaitlisted) {
+        toast({
+          title: "Added to waitlist",
+          description: "You have been added to the waitlist for this camp. We'll notify you if a spot becomes available.",
+        });
+      } else {
+        toast({
+          title: "Registration successful",
+          description: "You have successfully registered for this camp.",
+        });
+      }
 
       // Invalidate the camp registrations query with the camp ID
       if (camp?.id) {
@@ -575,6 +582,19 @@ function CampViewPage(props: { id?: string }) {
                     )}
                     Register Now
                   </Button>
+                ) : registrationStatus === 'waitlist' ? (
+                  <Button
+                    onClick={() => setShowChildSelectionDialog(true)}
+                    variant="secondary"
+                    disabled={registerMutation.isPending}
+                  >
+                    {registerMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <ClipboardList className="h-4 w-4 mr-2" />
+                    )}
+                    Join Waitlist
+                  </Button>
                 ) : null}
                 <Button variant="outline" onClick={() => setShowShareDialog(true)}>
                   <Share2 className="h-4 w-4 mr-2" />
@@ -586,8 +606,16 @@ function CampViewPage(props: { id?: string }) {
             {user && !canManage && !isParent && (
               <div className="flex gap-2">
                 {registrationStatus === 'waitlist' ? (
-                  <Button variant="secondary">
-                    <ClipboardList className="h-4 w-4 mr-2" />
+                  <Button 
+                    variant="secondary"
+                    onClick={() => setShowChildSelectionDialog(true)}
+                    disabled={registerMutation.isPending}
+                  >
+                    {registerMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <ClipboardList className="h-4 w-4 mr-2" />
+                    )}
                     Join Waitlist
                   </Button>
                 ) : registrationStatus === 'closed' ? (
