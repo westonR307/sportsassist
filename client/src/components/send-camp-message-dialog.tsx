@@ -88,9 +88,23 @@ export function SendCampMessageDialog({
     
     setIsLoadingRecipients(true);
     try {
-      const response = await fetch(`/api/camps/${campId}/registrations-with-parents`);
+      // Make sure we're authenticated first by checking the user's session
+      const userCheckResponse = await fetch('/api/user');
+      if (!userCheckResponse.ok) {
+        throw new Error("You must be logged in to send messages");
+      }
+      
+      // Now fetch the registrations with parent info
+      const response = await fetch(`/api/camps/${campId}/registrations-with-parents`, {
+        credentials: 'include', // Include cookies for authentication
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      
       if (response.ok) {
         const data = await response.json();
+        console.log("Loaded participants data:", data); // For debugging
         const formattedData = data.map((reg: any) => ({
           id: reg.id,
           childId: reg.childId,
@@ -100,8 +114,13 @@ export function SendCampMessageDialog({
           parentEmail: reg.parentEmail || "No email provided"
         }));
         setRecipients(formattedData);
+      } else if (response.status === 403) {
+        throw new Error("You don't have permission to access participant information");
+      } else if (response.status === 404) {
+        throw new Error("Camp not found");
       } else {
-        throw new Error("Failed to load participants");
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || "Failed to load participants");
       }
     } catch (error) {
       console.error("Error loading participants:", error);
@@ -142,11 +161,19 @@ export function SendCampMessageDialog({
         throw new Error("You must select at least one recipient if not sending to all participants");
       }
 
+      // Check authentication first
+      const userCheckResponse = await fetch('/api/user');
+      if (!userCheckResponse.ok) {
+        throw new Error("You must be logged in to send messages");
+      }
+
       const response = await fetch(`/api/camps/${campId}/messages`, {
         method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({
           subject: data.subject,
           content: data.content,
