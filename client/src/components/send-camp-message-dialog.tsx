@@ -30,7 +30,6 @@ import { Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 
-// Define registration data structure
 interface RegistrationWithChild {
   id: number;
   childId: number;
@@ -40,7 +39,6 @@ interface RegistrationWithChild {
   parentEmail: string;
 }
 
-// Define the schema for the form
 const sendMessageSchema = z.object({
   subject: z.string().min(1, "Subject is required"),
   content: z.string().min(1, "Message content is required"),
@@ -59,16 +57,14 @@ export function SendCampMessageDialog({
   campId,
   campName
 }: SendCampMessageDialogProps) {
-  // Basic state
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingRecipients, setIsLoadingRecipients] = useState(false);
   const [recipients, setRecipients] = useState<RegistrationWithChild[]>([]);
-  
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Initialize form with default values
   const form = useForm<SendMessageFormValues>({
     resolver: zodResolver(sendMessageSchema),
     defaultValues: {
@@ -79,42 +75,31 @@ export function SendCampMessageDialog({
     }
   });
 
-  // Watch the sendToAll field value to update the form
   const sendToAll = form.watch("sendToAll");
 
-  // No separate loadRecipients function; fetching logic is directly in handleOpenChange
-
-  // Handle dialog open/close
   const handleOpenChange = async (newOpen: boolean) => {
     setOpen(newOpen);
-    
-    // If opening dialog, load recipients
+
     if (newOpen) {
-      console.log("Dialog opened, directly loading recipients for camp ID:", campId);
       setIsLoadingRecipients(true);
-      
+
       try {
-        // Direct fetch to the correct endpoint - no fallback approach
         const response = await fetch(`/api/camps/${campId}/registrations-with-parents`, {
           credentials: 'include',
           headers: {
             'Accept': 'application/json'
           }
         });
-        
-        console.log(`Registrations API response status: ${response.status}`);
-        
+
         if (!response.ok) {
           throw new Error(response.status === 403 
             ? "You don't have permission to view participant information" 
             : `Failed to load participants: ${response.statusText}`);
         }
-        
+
         const data = await response.json();
-        console.log("Registrations with parents data received:", data);
-        
+
         if (Array.isArray(data) && data.length > 0) {
-          // Format the data to match our component's expected format
           const formatted = data.map(reg => ({
             id: reg.id,
             childId: reg.childId,
@@ -123,11 +108,9 @@ export function SendCampMessageDialog({
             parentName: reg.parentName || "Unknown Parent",
             parentEmail: reg.parentEmail || "No email provided"
           }));
-          
-          console.log(`Successfully loaded ${formatted.length} participants`);
+
           setRecipients(formatted);
         } else {
-          console.log("No registrations found for this camp");
           setRecipients([]);
         }
       } catch (error) {
@@ -142,7 +125,6 @@ export function SendCampMessageDialog({
         setIsLoadingRecipients(false);
       }
     } else {
-      // If closing dialog, reset form
       form.reset({
         subject: "",
         content: "",
@@ -152,16 +134,13 @@ export function SendCampMessageDialog({
     }
   };
 
-  // Handle form submission
   const onSubmit = async (data: SendMessageFormValues) => {
     setIsSubmitting(true);
     try {
-      // Add validation for non-empty recipients if not sending to all
       if (!data.sendToAll && (!data.selectedRecipients || data.selectedRecipients.length === 0)) {
         throw new Error("You must select at least one recipient if not sending to all participants");
       }
 
-      // Check authentication first
       const userCheckResponse = await fetch('/api/user');
       if (!userCheckResponse.ok) {
         throw new Error("You must be logged in to send messages");
@@ -173,7 +152,7 @@ export function SendCampMessageDialog({
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        credentials: 'include', // Include cookies for authentication
+        credentials: 'include',
         body: JSON.stringify({
           subject: data.subject,
           content: data.content,
@@ -188,11 +167,8 @@ export function SendCampMessageDialog({
           title: "Message sent",
           description: `Message sent to ${result.recipientsCount} recipient${result.recipientsCount !== 1 ? 's' : ''}.`,
         });
-        
-        // Invalidate the messages cache to refresh the list
+
         queryClient.invalidateQueries({ queryKey: [`/api/camps/${campId}/messages`] });
-        
-        // Close the dialog
         handleOpenChange(false);
       } else {
         const errorData = await response.json();
@@ -207,80 +183,6 @@ export function SendCampMessageDialog({
       });
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  // Handle recipient selection
-  const toggleRecipient = (recipientId: number) => {
-    const currentSelectedRecipients = form.getValues("selectedRecipients") || [];
-    const index = currentSelectedRecipients.indexOf(recipientId);
-    
-    if (index > -1) {
-      // Remove recipient if already selected
-      const newSelectedRecipients = [...currentSelectedRecipients];
-      newSelectedRecipients.splice(index, 1);
-      form.setValue("selectedRecipients", newSelectedRecipients);
-    } else {
-      // Add recipient if not already selected
-      form.setValue("selectedRecipients", [...currentSelectedRecipients, recipientId]);
-    }
-  };
-
-  // Debugging tool to directly test API endpoint
-  const testApiEndpoint = async () => {
-    console.log("Testing API endpoint directly for camp ID:", campId);
-    setIsLoadingRecipients(true);
-    
-    try {
-      const response = await fetch(`/api/camps/${campId}/registrations-with-parents`, {
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-      
-      console.log(`Test API response status: ${response.status}`);
-      
-      if (!response.ok) {
-        throw new Error(`API test failed with status: ${response.status} - ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      console.log("API test data:", data);
-      
-      if (Array.isArray(data) && data.length > 0) {
-        toast({
-          title: "API Test Successful",
-          description: `Found ${data.length} participants from the API`,
-        });
-        
-        // Format and store the data
-        const formatted = data.map(reg => ({
-          id: reg.id,
-          childId: reg.childId,
-          childName: reg.childName || "Unknown Child",
-          parentId: reg.parentId,
-          parentName: reg.parentName || "Unknown Parent",
-          parentEmail: reg.parentEmail || "No email provided"
-        }));
-        
-        setRecipients(formatted);
-      } else {
-        toast({
-          title: "API Test Succeeded",
-          description: "But no participants were found for this camp",
-        });
-        setRecipients([]);
-      }
-    } catch (error) {
-      console.error("API test error:", error);
-      toast({
-        title: "API Test Failed",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingRecipients(false);
     }
   };
 
@@ -362,7 +264,7 @@ export function SendCampMessageDialog({
                   </FormItem>
                 )}
               />
-              
+
               {!sendToAll && (
                 <FormField
                   control={form.control}
@@ -383,38 +285,47 @@ export function SendCampMessageDialog({
                           ) : recipients.length > 0 ? (
                             <ScrollArea className="h-52 w-full">
                               <div className="space-y-2 p-2">
-                                {recipients.map((registration) => (
-                                  <Card 
-                                    key={registration.id} 
-                                    className={`cursor-pointer transition-colors ${
-                                      field.value?.includes(registration.id) 
-                                        ? 'bg-primary/10 border-primary' 
-                                        : 'hover:bg-muted'
-                                    }`}
-                                  >
-                                    <CardContent 
-                                      className="p-3 flex justify-between items-center"
-                                      onClick={() => toggleRecipient(registration.id)}
+                                {recipients.map((registration) => {
+                                  const isSelected = field.value?.includes(registration.id) || false;
+                                  return (
+                                    <Card 
+                                      key={registration.id} 
+                                      className={`cursor-pointer transition-colors ${
+                                        isSelected 
+                                          ? 'bg-primary/10 border-primary' 
+                                          : 'hover:bg-muted'
+                                      }`}
                                     >
-                                      <div>
-                                        <div className="font-medium">{registration.childName}</div>
-                                        <div className="text-sm text-muted-foreground">Parent: {registration.parentName}</div>
-                                        <div className="text-xs text-muted-foreground">{registration.parentEmail}</div>
-                                      </div>
-                                      <Checkbox 
-                                        checked={field.value?.includes(registration.id)}
-                                        onCheckedChange={(checked) => {
-                                          if (checked) {
-                                            toggleRecipient(registration.id);
-                                          } else {
-                                            toggleRecipient(registration.id);
-                                          }
+                                      <CardContent 
+                                        className="p-3 flex justify-between items-center"
+                                        onClick={() => {
+                                          const currentSelected = field.value || [];
+                                          const newSelected = isSelected
+                                            ? currentSelected.filter(id => id !== registration.id)
+                                            : [...currentSelected, registration.id];
+                                          form.setValue("selectedRecipients", newSelected);
                                         }}
-                                        className="h-5 w-5"
-                                      />
-                                    </CardContent>
-                                  </Card>
-                                ))}
+                                      >
+                                        <div>
+                                          <div className="font-medium">{registration.childName}</div>
+                                          <div className="text-sm text-muted-foreground">Parent: {registration.parentName}</div>
+                                          <div className="text-xs text-muted-foreground">{registration.parentEmail}</div>
+                                        </div>
+                                        <Checkbox 
+                                          checked={isSelected}
+                                          onCheckedChange={() => {
+                                            const currentSelected = field.value || [];
+                                            const newSelected = isSelected
+                                              ? currentSelected.filter(id => id !== registration.id)
+                                              : [...currentSelected, registration.id];
+                                            form.setValue("selectedRecipients", newSelected);
+                                          }}
+                                          className="h-5 w-5"
+                                        />
+                                      </CardContent>
+                                    </Card>
+                                  );
+                                })}
                               </div>
                             </ScrollArea>
                           ) : (
