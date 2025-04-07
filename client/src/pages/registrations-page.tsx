@@ -207,20 +207,50 @@ function RegistrationCard({ registration, status }: RegistrationCardProps) {
   // Add deregistration mutation
   const deregisterMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/registrations/${registration.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include'
-      });
+      console.log(`Attempting to delete registration with ID: ${registration.id}`);
       
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: "An unknown error occurred" }));
-        throw new Error(errorData.message || "Failed to deregister");
+      try {
+        const response = await fetch(`/api/registrations/${registration.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include'
+        });
+        
+        console.log('DELETE request status:', response.status);
+        
+        const responseText = await response.text();
+        console.log('Response body:', responseText);
+        
+        if (!response.ok) {
+          let errorMsg = "Failed to deregister";
+          try {
+            // Try parsing as JSON if possible
+            if (responseText) {
+              const errorData = JSON.parse(responseText);
+              errorMsg = errorData.message || errorMsg;
+            }
+          } catch (e) {
+            console.error('Error parsing response:', e);
+          }
+          throw new Error(`${errorMsg} (Status: ${response.status})`);
+        }
+        
+        let result = {};
+        if (responseText) {
+          try {
+            result = JSON.parse(responseText);
+          } catch (e) {
+            console.log('Response was not JSON, using empty object');
+          }
+        }
+        
+        return result;
+      } catch (error) {
+        console.error('Error in deregister mutation:', error);
+        throw error;
       }
-      
-      return await response.json();
     },
     onSuccess: () => {
       toast({
