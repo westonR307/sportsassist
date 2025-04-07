@@ -442,6 +442,7 @@ export const campMessages = pgTable("camp_messages", {
   campId: integer("camp_id").references(() => camps.id).notNull(),
   organizationId: integer("organization_id").references(() => organizations.id).notNull(),
   senderId: integer("sender_id").references(() => users.id).notNull(),
+  senderName: text("sender_name").notNull(),
   subject: text("subject").notNull(),
   content: text("content").notNull(),
   sentToAll: boolean("sent_to_all").notNull().default(false),
@@ -519,3 +520,4 @@ export const systemEvents = pgTable("system_events", {
   timestamp: timestamp("timestamp").notNull().defaultNow(),
   severity: text("severity").notNull().default("info"), // 'critical', 'error', 'warning', 'info', 'debug'
 });
+

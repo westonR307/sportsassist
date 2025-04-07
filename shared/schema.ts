@@ -395,6 +395,7 @@ export const insertCampMessageSchema = z.object({
   campId: z.number(),
   organizationId: z.number(),
   senderId: z.number(),
+  senderName: z.string(),
   subject: z.string(),
   content: z.string(),
   sentToAll: z.boolean().default(false)

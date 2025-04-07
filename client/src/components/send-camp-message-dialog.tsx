@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -26,14 +26,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent } from "@/components/ui/card";
+
+// Define registration data structure
+interface RegistrationWithChild {
+  id: number;
+  childId: number;
+  childName: string;
+  parentId: number;
+  parentName: string;
+  parentEmail: string;
+}
 
 // Define the schema for the form
 const sendMessageSchema = z.object({
   subject: z.string().min(1, "Subject is required"),
   content: z.string().min(1, "Message content is required"),
-  sendToAll: z.boolean().default(true)
+  sendToAll: z.boolean().default(true),
+  selectedRecipients: z.array(z.number()).optional(),
 });
 
 type SendMessageFormValues = z.infer<typeof sendMessageSchema>;
@@ -52,24 +65,60 @@ export function SendCampMessageDialog({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Fetch registrations for the camp
+  const { data: registrations, isLoading: isLoadingRegistrations } = useQuery({
+    queryKey: [`/api/camps/${campId}/registrations-with-parents`],
+    enabled: open,
+    select: (data: any[]) => {
+      return data.map((reg) => ({
+        id: reg.id,
+        childId: reg.childId,
+        childName: reg.childName || "Unknown Child",
+        parentId: reg.parentId,
+        parentName: reg.parentName || "Unknown Parent",
+        parentEmail: reg.parentEmail || "No email provided"
+      }));
+    }
+  });
+
   const form = useForm<SendMessageFormValues>({
     resolver: zodResolver(sendMessageSchema),
     defaultValues: {
       subject: "",
       content: "",
-      sendToAll: true
+      sendToAll: true,
+      selectedRecipients: []
     }
   });
+
+  // Watch the sendToAll field value to update the form
+  const sendToAll = form.watch("sendToAll");
+
+  // Reset selected recipients when switching to "send to all"
+  useEffect(() => {
+    if (sendToAll) {
+      form.setValue("selectedRecipients", []);
+    }
+  }, [sendToAll, form]);
 
   async function onSubmit(data: SendMessageFormValues) {
     setIsSubmitting(true);
     try {
-      const response = await apiRequest(`/api/camps/${campId}/messages`, {
+      // Add validation for non-empty recipients if not sending to all
+      if (!data.sendToAll && (!data.selectedRecipients || data.selectedRecipients.length === 0)) {
+        throw new Error("You must select at least one recipient if not sending to all participants");
+      }
+
+      const response = await fetch(`/api/camps/${campId}/messages`, {
         method: "POST",
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
           subject: data.subject,
           content: data.content,
-          sendToAll: data.sendToAll
+          sendToAll: data.sendToAll,
+          selectedRecipients: !data.sendToAll ? data.selectedRecipients : undefined
         }),
       });
 
@@ -168,12 +217,93 @@ export function SendCampMessageDialog({
                       Send to all participants
                     </FormLabel>
                     <FormDescription>
-                      Sends to everyone registered for this camp. If unchecked, you'll be able to select specific participants in a future version.
+                      Sends to everyone registered for this camp. If unchecked, you'll be able to select specific participants.
                     </FormDescription>
                   </div>
                 </FormItem>
               )}
             />
+            
+            {!sendToAll && (
+              <FormField
+                control={form.control}
+                name="selectedRecipients"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Select Recipients</FormLabel>
+                    <FormDescription>
+                      Select one or more participants to send this message to.
+                    </FormDescription>
+                    <FormControl>
+                      <div className="rounded-md border p-2">
+                        {isLoadingRegistrations ? (
+                          <div className="flex items-center justify-center py-4">
+                            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                            <span className="ml-2 text-muted-foreground">Loading participants...</span>
+                          </div>
+                        ) : registrations && registrations.length > 0 ? (
+                          <ScrollArea className="h-52 w-full">
+                            <div className="space-y-2 p-2">
+                              {registrations.map((registration) => (
+                                <Card key={registration.id} className={`cursor-pointer transition-colors ${
+                                  field.value?.includes(registration.id) 
+                                    ? 'bg-primary/10 border-primary' 
+                                    : 'hover:bg-muted'
+                                }`}>
+                                  <CardContent 
+                                    className="p-3 flex justify-between items-center"
+                                    onClick={() => {
+                                      const selectedRecipients = [...(field.value || [])];
+                                      const index = selectedRecipients.indexOf(registration.id);
+                                    
+                                      if (index > -1) {
+                                        selectedRecipients.splice(index, 1);
+                                      } else {
+                                        selectedRecipients.push(registration.id);
+                                      }
+                                    
+                                      field.onChange(selectedRecipients);
+                                    }}
+                                  >
+                                    <div>
+                                      <div className="font-medium">{registration.childName}</div>
+                                      <div className="text-sm text-muted-foreground">Parent: {registration.parentName}</div>
+                                      <div className="text-xs text-muted-foreground">{registration.parentEmail}</div>
+                                    </div>
+                                    <Checkbox 
+                                      checked={field.value?.includes(registration.id)}
+                                      onCheckedChange={(checked) => {
+                                        const selectedRecipients = [...(field.value || [])];
+                                        const index = selectedRecipients.indexOf(registration.id);
+                                      
+                                        if (checked && index === -1) {
+                                          selectedRecipients.push(registration.id);
+                                        } else if (!checked && index > -1) {
+                                          selectedRecipients.splice(index, 1);
+                                        }
+                                      
+                                        field.onChange(selectedRecipients);
+                                      }}
+                                      className="h-5 w-5"
+                                    />
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          </ScrollArea>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-4 text-center">
+                            <p className="text-muted-foreground">No participants found for this camp.</p>
+                            <p className="text-sm text-muted-foreground">Please select "Send to all" if you wish to message when participants register.</p>
+                          </div>
+                        )}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <DialogFooter>
               <Button 

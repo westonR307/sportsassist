@@ -2645,6 +2645,29 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Failed to get registrations with child info");
     }
   }
+  
+  async getRegistrationsWithParentInfo(campId: number): Promise<any[]> {
+    try {
+      const results = await db
+        .select({
+          id: registrations.id,
+          childId: registrations.childId,
+          childName: children.fullName,
+          parentId: children.parentId,
+          parentName: sql<string>`CONCAT(${users.first_name}, ' ', ${users.last_name})`.as('parentName'),
+          parentEmail: users.email,
+        })
+        .from(registrations)
+        .leftJoin(children, eq(registrations.childId, children.id))
+        .leftJoin(users, eq(children.parentId, users.id))
+        .where(eq(registrations.campId, campId));
+
+      return results;
+    } catch (error) {
+      console.error("Error getting registrations with parent info:", error);
+      throw new Error("Failed to get registrations with parent info");
+    }
+  }
 
   // Dashboard data methods
   async getAllCampSessions(organizationId: number): Promise<(CampSession & { camp: Camp })[]> {
@@ -3097,6 +3120,7 @@ export class DatabaseStorage implements IStorage {
           campId: message.campId,
           organizationId: message.organizationId,
           senderId: message.senderId,
+          senderName: message.senderName,
           subject: message.subject,
           content: message.content,
           sentToAll: message.sentToAll || false,

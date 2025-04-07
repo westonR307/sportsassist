@@ -2606,14 +2606,16 @@ export async function registerRoutes(app: Express) {
       }
       
       // Create camp message
+      const senderName = `${req.user.first_name || ''} ${req.user.last_name || ''}`.trim() || req.user.username || 'Camp Staff';
+      
       const newMessage = await storage.createCampMessage({
         campId,
         organizationId: camp.organizationId,
         senderId: req.user.id,
+        senderName,
         subject,
         content,
-        sentToAll: sendToAll === true,
-        emailSent: false
+        sentToAll: sendToAll === true
       });
       
       // Get registrations for this camp
@@ -2660,7 +2662,7 @@ export async function registerRoutes(app: Express) {
               subject,
               content,
               campName: camp.name,
-              senderName: `${req.user.first_name || ''} ${req.user.last_name || ''}`.trim(),
+              senderName: newMessage.senderName || `${req.user.first_name || ''} ${req.user.last_name || ''}`.trim(),
               organizationName: organization.name,
               messageId: newMessage.id,
               recipientId: recipientRecord[0].id
