@@ -4,6 +4,7 @@ import { Link, useLocation } from "wouter";
 import { Camp, CampSport } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/back-button";
 import { 
   Search, 
   Filter, 
@@ -251,6 +252,9 @@ export default function FindCampsPage() {
       {/* Search and Filters */}
       <section className="container mx-auto px-4 py-8">
         <div className="flex flex-col">
+          <div className="flex items-center mb-3">
+            <BackButton to="/parent-dashboard" />
+          </div>
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold">Find Camps</h2>
             
