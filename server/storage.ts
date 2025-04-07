@@ -3420,29 +3420,39 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`Fetching camp messages for parent ${parentId} and camp ${campId}`);
       
-      // Get all messages for this camp that are either sent to all or specifically to this parent
-      const results = await db.select({
+      // Get messages for this camp specific to this parent
+      const recipientMessages = await db.select({
         message: campMessages,
         recipient: campMessageRecipients
       })
       .from(campMessages)
-      .leftJoin(
+      .innerJoin(
         campMessageRecipients,
         and(
           eq(campMessageRecipients.messageId, campMessages.id),
           eq(campMessageRecipients.parentId, parentId)
         )
       )
+      .where(eq(campMessages.campId, campId));
+
+      // Get messages sent to all for this camp
+      const allMessages = await db.select({
+        message: campMessages,
+        recipient: sql<any>`NULL AS recipient`
+      })
+      .from(campMessages)
       .where(
         and(
           eq(campMessages.campId, campId),
-          or(
-            eq(campMessages.sentToAll, true),
-            eq(campMessageRecipients.parentId, parentId)
-          )
+          eq(campMessages.sentToAll, true)
         )
-      )
-      .orderBy(desc(campMessages.createdAt));
+      );
+
+      // Combine and sort both types of messages
+      const results = [...recipientMessages, ...allMessages]
+        .sort((a, b) => 
+          new Date(b.message.createdAt).getTime() - new Date(a.message.createdAt).getTime()
+        );
       
       return results;
     } catch (error: any) {
