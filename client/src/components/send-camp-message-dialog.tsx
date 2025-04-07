@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -25,8 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
@@ -60,47 +59,16 @@ export function SendCampMessageDialog({
   campId,
   campName
 }: SendCampMessageDialogProps) {
+  // Basic state
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingRecipients, setIsLoadingRecipients] = useState(false);
+  const [recipients, setRecipients] = useState<RegistrationWithChild[]>([]);
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch registrations for the camp - use a separate flag to prevent refetch loops
-  const [shouldFetchRegistrations, setShouldFetchRegistrations] = useState(false);
-  
-  // Set shouldFetchRegistrations when dialog opens
-  useEffect(() => {
-    if (open && !shouldFetchRegistrations) {
-      setShouldFetchRegistrations(true);
-    }
-  }, [open, shouldFetchRegistrations]);
-  
-  // Clean up when component unmounts
-  useEffect(() => {
-    return () => {
-      // Ensure dialog is closed when component unmounts
-      setOpen(false);
-    };
-  }, []);
-  
-  const { data: registrations, isLoading: isLoadingRegistrations } = useQuery({
-    queryKey: [`/api/camps/${campId}/registrations-with-parents`],
-    enabled: shouldFetchRegistrations,
-    refetchOnWindowFocus: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchInterval: false,
-    select: (data: any[]) => {
-      return data.map((reg) => ({
-        id: reg.id,
-        childId: reg.childId,
-        childName: reg.childName || "Unknown Child",
-        parentId: reg.parentId,
-        parentName: reg.parentName || "Unknown Parent",
-        parentEmail: reg.parentEmail || "No email provided"
-      }));
-    }
-  });
-
+  // Initialize form with default values
   const form = useForm<SendMessageFormValues>({
     resolver: zodResolver(sendMessageSchema),
     defaultValues: {
@@ -114,14 +82,59 @@ export function SendCampMessageDialog({
   // Watch the sendToAll field value to update the form
   const sendToAll = form.watch("sendToAll");
 
-  // Reset selected recipients when switching to "send to all"
-  useEffect(() => {
-    if (sendToAll) {
-      form.setValue("selectedRecipients", []);
+  // Function to load recipients
+  const loadRecipients = async () => {
+    if (!open || recipients.length > 0) return;
+    
+    setIsLoadingRecipients(true);
+    try {
+      const response = await fetch(`/api/camps/${campId}/registrations-with-parents`);
+      if (response.ok) {
+        const data = await response.json();
+        const formattedData = data.map((reg: any) => ({
+          id: reg.id,
+          childId: reg.childId,
+          childName: reg.childName || "Unknown Child",
+          parentId: reg.parentId,
+          parentName: reg.parentName || "Unknown Parent",
+          parentEmail: reg.parentEmail || "No email provided"
+        }));
+        setRecipients(formattedData);
+      } else {
+        throw new Error("Failed to load participants");
+      }
+    } catch (error) {
+      console.error("Error loading participants:", error);
+      toast({
+        title: "Failed to load participants",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingRecipients(false);
     }
-  }, [sendToAll, form]);
+  };
 
-  async function onSubmit(data: SendMessageFormValues) {
+  // Handle dialog open/close
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    
+    // If opening dialog, load recipients
+    if (newOpen) {
+      loadRecipients();
+    } else {
+      // If closing dialog, reset form
+      form.reset({
+        subject: "",
+        content: "",
+        sendToAll: true,
+        selectedRecipients: []
+      });
+    }
+  };
+
+  // Handle form submission
+  const onSubmit = async (data: SendMessageFormValues) => {
     setIsSubmitting(true);
     try {
       // Add validation for non-empty recipients if not sending to all
@@ -152,9 +165,8 @@ export function SendCampMessageDialog({
         // Invalidate the messages cache to refresh the list
         queryClient.invalidateQueries({ queryKey: [`/api/camps/${campId}/messages`] });
         
-        // Close the dialog and reset form
-        setOpen(false);
-        form.reset();
+        // Close the dialog
+        handleOpenChange(false);
       } else {
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to send message");
@@ -169,10 +181,26 @@ export function SendCampMessageDialog({
     } finally {
       setIsSubmitting(false);
     }
-  }
+  };
+
+  // Handle recipient selection
+  const toggleRecipient = (recipientId: number) => {
+    const currentSelectedRecipients = form.getValues("selectedRecipients") || [];
+    const index = currentSelectedRecipients.indexOf(recipientId);
+    
+    if (index > -1) {
+      // Remove recipient if already selected
+      const newSelectedRecipients = [...currentSelectedRecipients];
+      newSelectedRecipients.splice(index, 1);
+      form.setValue("selectedRecipients", newSelectedRecipients);
+    } else {
+      // Add recipient if not already selected
+      form.setValue("selectedRecipients", [...currentSelectedRecipients, recipientId]);
+    }
+  };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="secondary">Send Message to Participants</Button>
       </DialogTrigger>
@@ -229,7 +257,12 @@ export function SendCampMessageDialog({
                   <FormControl>
                     <Checkbox
                       checked={field.value}
-                      onCheckedChange={field.onChange}
+                      onCheckedChange={(checked) => {
+                        field.onChange(checked);
+                        if (checked) {
+                          form.setValue("selectedRecipients", []);
+                        }
+                      }}
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
@@ -256,34 +289,26 @@ export function SendCampMessageDialog({
                     </FormDescription>
                     <FormControl>
                       <div className="rounded-md border p-2">
-                        {isLoadingRegistrations ? (
+                        {isLoadingRecipients ? (
                           <div className="flex items-center justify-center py-4">
                             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                             <span className="ml-2 text-muted-foreground">Loading participants...</span>
                           </div>
-                        ) : registrations && registrations.length > 0 ? (
+                        ) : recipients.length > 0 ? (
                           <ScrollArea className="h-52 w-full">
                             <div className="space-y-2 p-2">
-                              {registrations.map((registration) => (
-                                <Card key={registration.id} className={`cursor-pointer transition-colors ${
-                                  field.value?.includes(registration.id) 
-                                    ? 'bg-primary/10 border-primary' 
-                                    : 'hover:bg-muted'
-                                }`}>
+                              {recipients.map((registration) => (
+                                <Card 
+                                  key={registration.id} 
+                                  className={`cursor-pointer transition-colors ${
+                                    field.value?.includes(registration.id) 
+                                      ? 'bg-primary/10 border-primary' 
+                                      : 'hover:bg-muted'
+                                  }`}
+                                >
                                   <CardContent 
                                     className="p-3 flex justify-between items-center"
-                                    onClick={() => {
-                                      const selectedRecipients = [...(field.value || [])];
-                                      const index = selectedRecipients.indexOf(registration.id);
-                                    
-                                      if (index > -1) {
-                                        selectedRecipients.splice(index, 1);
-                                      } else {
-                                        selectedRecipients.push(registration.id);
-                                      }
-                                    
-                                      field.onChange(selectedRecipients);
-                                    }}
+                                    onClick={() => toggleRecipient(registration.id)}
                                   >
                                     <div>
                                       <div className="font-medium">{registration.childName}</div>
@@ -293,16 +318,11 @@ export function SendCampMessageDialog({
                                     <Checkbox 
                                       checked={field.value?.includes(registration.id)}
                                       onCheckedChange={(checked) => {
-                                        const selectedRecipients = [...(field.value || [])];
-                                        const index = selectedRecipients.indexOf(registration.id);
-                                      
-                                        if (checked && index === -1) {
-                                          selectedRecipients.push(registration.id);
-                                        } else if (!checked && index > -1) {
-                                          selectedRecipients.splice(index, 1);
+                                        if (checked) {
+                                          toggleRecipient(registration.id);
+                                        } else {
+                                          toggleRecipient(registration.id);
                                         }
-                                      
-                                        field.onChange(selectedRecipients);
                                       }}
                                       className="h-5 w-5"
                                     />
@@ -329,7 +349,7 @@ export function SendCampMessageDialog({
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => setOpen(false)}
+                onClick={() => handleOpenChange(false)}
                 disabled={isSubmitting}
               >
                 Cancel
