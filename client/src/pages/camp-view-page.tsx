@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { CampMessagesTab } from "@/components/camp-messages-tab";
 import {
   Tooltip,
   TooltipContent,
@@ -725,11 +726,14 @@ function CampViewPage(props: { id?: string }) {
         </div>
 
         <Tabs defaultValue="details" className="space-y-6">
-          <TabsList className={`grid w-full max-w-md ${canManage ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          <TabsList className={`grid w-full max-w-md ${canManage ? 'grid-cols-4' : 'grid-cols-2'}`}>
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="registrations">Registrations</TabsTrigger>
             {canManage && (
               <TabsTrigger value="attendance">Attendance</TabsTrigger>
+            )}
+            {canManage && (
+              <TabsTrigger value="messages">Messages</TabsTrigger>
             )}
           </TabsList>
 
@@ -1203,6 +1207,16 @@ function CampViewPage(props: { id?: string }) {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+          )}
+
+          {canManage && (
+            <TabsContent value="messages">
+              <CampMessagesTab 
+                campId={camp.id} 
+                campName={camp.name} 
+                hasPermission={canManage} 
+              />
             </TabsContent>
           )}
         </Tabs>

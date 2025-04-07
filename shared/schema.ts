@@ -389,8 +389,27 @@ export const insertOrganizationMessageSchema = createInsertSchema(organizationMe
   isRead: true
 });
 
+export const insertCampMessageSchema = createInsertSchema(tables.campMessages).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  emailSent: true
+});
+
+export const insertCampMessageRecipientSchema = createInsertSchema(tables.campMessageRecipients).omit({
+  id: true,
+  createdAt: true,
+  isRead: true,
+  emailDelivered: true,
+  emailOpenedAt: true
+});
+
 export type OrganizationMessage = typeof organizationMessages.$inferSelect;
 export type InsertOrganizationMessage = z.infer<typeof insertOrganizationMessageSchema>;
+export type CampMessage = typeof tables.campMessages.$inferSelect;
+export type InsertCampMessage = z.infer<typeof insertCampMessageSchema>;
+export type CampMessageRecipient = typeof tables.campMessageRecipients.$inferSelect;
+export type InsertCampMessageRecipient = z.infer<typeof insertCampMessageRecipientSchema>;
 
 // Permission management schemas
 export const insertPermissionSetSchema = createInsertSchema(permissionSets).omit({

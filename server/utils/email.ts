@@ -40,3 +40,65 @@ export async function sendInvitationEmail({
     );
   }
 }
+
+export async function sendCampMessageEmail({
+  email,
+  recipientName,
+  subject,
+  content,
+  campName,
+  senderName,
+  organizationName,
+  messageId,
+  recipientId,
+}: {
+  email: string;
+  recipientName: string;
+  subject: string;
+  content: string;
+  campName: string;
+  senderName: string;
+  organizationName: string;
+  messageId: number;
+  recipientId: number;
+}) {
+  try {
+    console.log("Attempting to send camp message email to:", email);
+    
+    // Create a tracking pixel URL for email open tracking
+    const trackingPixel = `https://c8ec6828-11e1-4f13-bc1a-ad5dd97bb72c-00-1w16g0bsxslil.kirk.repl.co/api/camp-messages/${messageId}/track/${recipientId}`;
+    
+    const result = await resend.emails.send({
+      from: "SportsAssist.io <weston.rosenau@sportsassist.io>",
+      to: email,
+      subject: `${subject} - ${campName}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background-color: #f9f9f9; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
+            <h2 style="color: #333; margin-top: 0;">${subject}</h2>
+            <p style="color: #666; font-size: 14px;">From: ${senderName} at ${organizationName}</p>
+            <p style="color: #666; font-size: 14px;">Camp: ${campName}</p>
+          </div>
+          
+          <div style="padding: 20px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee;">
+            ${content}
+          </div>
+          
+          <div style="padding-top: 20px; font-size: 12px; color: #999;">
+            <p>This message was sent to you regarding your participation in ${campName}.</p>
+            <p>Please do not reply to this email. If you need to respond, please contact the camp organizer directly.</p>
+          </div>
+        </div>
+        <img src="${trackingPixel}" alt="" width="1" height="1" style="display:none;" />
+      `,
+    });
+    
+    console.log("Camp message email sent successfully:", result);
+    return result;
+  } catch (error) {
+    console.error("Failed to send camp message email:", error);
+    throw new Error(
+      `Failed to send camp message email: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
+  }
+}

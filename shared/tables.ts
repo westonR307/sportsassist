@@ -437,6 +437,31 @@ export const organizationMessages = pgTable("organization_messages", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export const campMessages = pgTable("camp_messages", {
+  id: serial("id").primaryKey(),
+  campId: integer("camp_id").references(() => camps.id).notNull(),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
+  senderId: integer("sender_id").references(() => users.id).notNull(),
+  subject: text("subject").notNull(),
+  content: text("content").notNull(),
+  sentToAll: boolean("sent_to_all").notNull().default(false),
+  emailSent: boolean("email_sent").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const campMessageRecipients = pgTable("camp_message_recipients", {
+  id: serial("id").primaryKey(),
+  messageId: integer("message_id").references(() => campMessages.id).notNull(),
+  registrationId: integer("registration_id").references(() => registrations.id).notNull(),
+  childId: integer("child_id").references(() => children.id).notNull(),
+  parentId: integer("parent_id").references(() => users.id).notNull(),
+  isRead: boolean("is_read").notNull().default(false),
+  emailDelivered: boolean("email_delivered").notNull().default(false),
+  emailOpenedAt: timestamp("email_opened_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Permission management tables
 
 // Permission sets define named groups of permissions

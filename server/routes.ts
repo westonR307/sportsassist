@@ -251,7 +251,7 @@ import { registerParentRoutes } from "./parent-routes";
 import documentRoutes from "./document-routes";
 import { randomBytes } from "crypto";
 import passport from "passport";
-import { sendInvitationEmail } from "./utils/email";
+import { sendInvitationEmail, sendCampMessageEmail } from "./utils/email";
 import { uploadConfig, getFileUrl } from "./utils/file-upload";
 import path from 'path';
 import { handleStripeWebhook } from "./stripe-webhook";
@@ -2593,12 +2593,196 @@ export async function registerRoutes(app: Express) {
     }
 
     try {
-      // Here we'll add actual message sending logic later
-      // For now just return success
-      res.json({ message: "Message sent successfully" });
+      const { subject, content, sendToAll } = req.body;
+      
+      if (!subject || !content) {
+        return res.status(400).json({ message: "Subject and content are required" });
+      }
+      
+      // Get the organization for the email
+      const organization = await storage.getOrganization(camp.organizationId);
+      if (!organization) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+      
+      // Create camp message
+      const newMessage = await storage.createCampMessage({
+        campId,
+        organizationId: camp.organizationId,
+        senderId: req.user.id,
+        subject,
+        content,
+        sentToAll: sendToAll === true,
+        emailSent: false
+      });
+      
+      // Get registrations for this camp
+      const registrations = await storage.getRegistrationsByCamp(campId);
+      
+      if (registrations.length === 0) {
+        return res.status(200).json({ 
+          message: "Message created but no recipients found",
+          messageId: newMessage.id
+        });
+      }
+      
+      // Create recipients for the message
+      const recipients = [];
+      
+      for (const registration of registrations) {
+        // Get parent's email for the child
+        const child = await storage.getChild(registration.childId);
+        
+        if (!child) continue;
+        
+        const parent = await storage.getUser(child.parentId);
+        
+        if (!parent || !parent.email) continue;
+        
+        // Add recipient to the list
+        recipients.push({
+          messageId: newMessage.id,
+          registrationId: registration.id,
+          childId: registration.childId,
+          parentId: child.parentId,
+          isRead: false,
+          emailDelivered: false
+        });
+        
+        // Send email
+        try {
+          const recipientRecord = await storage.createCampMessageRecipients([recipients[recipients.length - 1]]);
+          
+          if (recipientRecord && recipientRecord.length > 0) {
+            await sendCampMessageEmail({
+              email: parent.email,
+              recipientName: `${parent.first_name || ''} ${parent.last_name || ''}`.trim(),
+              subject,
+              content,
+              campName: camp.name,
+              senderName: `${req.user.first_name || ''} ${req.user.last_name || ''}`.trim(),
+              organizationName: organization.name,
+              messageId: newMessage.id,
+              recipientId: recipientRecord[0].id
+            });
+            
+            // Mark as delivered
+            await storage.markCampMessageRecipientAsDelivered(recipientRecord[0].id);
+          }
+        } catch (emailError) {
+          console.error("Error sending email to recipient:", emailError);
+          // Continue with other recipients if one fails
+        }
+      }
+      
+      // Mark the message as email sent
+      await storage.markCampMessageAsEmailSent(newMessage.id);
+      
+      res.status(201).json({
+        message: "Message sent successfully",
+        messageId: newMessage.id,
+        recipientsCount: recipients.length
+      });
+      
     } catch (error) {
       console.error("Error sending message:", error);
       res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+  
+  // Get all messages for a camp
+  app.get("/api/camps/:id/messages", async (req, res) => {
+    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+    
+    const campId = parseInt(req.params.id);
+    const camp = await storage.getCamp(campId);
+    
+    if (!camp) {
+      return res.status(404).json({ message: "Camp not found" });
+    }
+    
+    // Check if user has permission to view messages for this camp
+    if (camp.organizationId !== req.user.organizationId && req.user.role !== 'platform_admin') {
+      return res.status(403).json({ message: "Not authorized to view messages for this camp" });
+    }
+    
+    try {
+      const messages = await storage.getCampMessages(campId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching camp messages:", error);
+      res.status(500).json({ message: "Failed to fetch camp messages" });
+    }
+  });
+  
+  // Tracking endpoint for email opens
+  app.get("/api/camp-messages/:messageId/track/:recipientId", async (req, res) => {
+    try {
+      const messageId = parseInt(req.params.messageId);
+      const recipientId = parseInt(req.params.recipientId);
+      
+      // Record that the recipient opened the email
+      await storage.recordCampMessageRecipientOpened(recipientId);
+      
+      // Return a 1x1 transparent pixel
+      res.set('Content-Type', 'image/gif');
+      res.send(Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64'));
+    } catch (error) {
+      console.error("Error tracking email open:", error);
+      // Still return the pixel even if there's an error
+      res.set('Content-Type', 'image/gif');
+      res.send(Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64'));
+    }
+  });
+  
+  // Get parent's camp messages
+  app.get("/api/parent/:parentId/camp-messages", async (req, res) => {
+    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+    
+    const parentId = parseInt(req.params.parentId);
+    
+    // Only allow the parent to view their own messages or platform admins
+    if (req.user.id !== parentId && req.user.role !== 'platform_admin') {
+      return res.status(403).json({ message: "Not authorized to view these messages" });
+    }
+    
+    try {
+      const messages = await storage.getParentCampMessages(parentId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching parent camp messages:", error);
+      res.status(500).json({ message: "Failed to fetch parent camp messages" });
+    }
+  });
+  
+  // Mark a camp message as read for a recipient
+  app.patch("/api/camp-messages/:messageId/recipients/:recipientId/read", async (req, res) => {
+    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+    
+    const messageId = parseInt(req.params.messageId);
+    const recipientId = parseInt(req.params.recipientId);
+    
+    try {
+      // Get the recipient record
+      const recipients = await storage.getCampMessageRecipients(messageId);
+      const recipient = recipients.find(r => r.id === recipientId);
+      
+      if (!recipient) {
+        return res.status(404).json({ message: "Recipient not found" });
+      }
+      
+      // Check if the user is authorized (must be the parent or an admin)
+      if (req.user.id !== recipient.parentId && req.user.role !== 'platform_admin') {
+        return res.status(403).json({ message: "Not authorized to mark this message as read" });
+      }
+      
+      // Mark the message as read
+      const updatedRecipient = await storage.markCampMessageRecipientAsRead(recipientId);
+      
+      res.json(updatedRecipient);
+    } catch (error) {
+      console.error("Error marking camp message as read:", error);
+      res.status(500).json({ message: "Failed to mark camp message as read" });
     }
   });
 

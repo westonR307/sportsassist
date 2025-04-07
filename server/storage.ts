@@ -36,6 +36,10 @@ import {
   type InsertOrganization,
   type OrganizationMessage,
   type InsertOrganizationMessage,
+  type CampMessage,
+  type InsertCampMessage,
+  type CampMessageRecipient,
+  type InsertCampMessageRecipient,
   type Invitation,
   type InsertInvitation,
   type Child,
@@ -251,6 +255,19 @@ export interface IStorage {
   getOrganizationMessages(organizationId: number): Promise<OrganizationMessage[]>;
   getUnreadOrganizationMessages(organizationId: number): Promise<OrganizationMessage[]>;
   markMessageAsRead(messageId: number): Promise<OrganizationMessage>;
+  
+  // Camp messaging methods
+  createCampMessage(message: Omit<InsertCampMessage, "id">): Promise<CampMessage>;
+  getCampMessage(messageId: number): Promise<CampMessage | null>;
+  getCampMessages(campId: number): Promise<CampMessage[]>;
+  getOrganizationCampMessages(organizationId: number): Promise<CampMessage[]>;
+  createCampMessageRecipients(recipients: Omit<InsertCampMessageRecipient, "id">[]): Promise<CampMessageRecipient[]>;
+  getCampMessageRecipients(messageId: number): Promise<CampMessageRecipient[]>;
+  markCampMessageAsEmailSent(messageId: number): Promise<CampMessage | null>;
+  markCampMessageRecipientAsRead(recipientId: number): Promise<CampMessageRecipient | null>;
+  markCampMessageRecipientAsDelivered(recipientId: number): Promise<CampMessageRecipient | null>;
+  recordCampMessageRecipientOpened(recipientId: number): Promise<CampMessageRecipient | null>;
+  getParentCampMessages(parentId: number): Promise<{message: CampMessage, recipient: CampMessageRecipient}[]>;
   
   // Permission management methods
   createPermissionSet(permissionSet: InsertPermissionSet): Promise<PermissionSet>;
@@ -3065,6 +3082,204 @@ export class DatabaseStorage implements IStorage {
     } catch (error: any) {
       console.error(`Error marking message ${messageId} as read:`, error);
       throw new Error(`Failed to mark message as read: ${error.message}`);
+    }
+  }
+
+  // Camp messaging methods implementation
+  async createCampMessage(message: Omit<InsertCampMessage, "id">): Promise<CampMessage> {
+    try {
+      console.log(`Creating camp message for camp ID ${message.campId}`);
+
+      const [newMessage] = await db.insert(campMessages)
+        .values({
+          campId: message.campId,
+          organizationId: message.organizationId,
+          senderId: message.senderId,
+          subject: message.subject,
+          content: message.content,
+          sentToAll: message.sentToAll || false,
+          emailSent: false, // Will be updated after emails are sent
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning();
+      
+      return newMessage;
+    } catch (error: any) {
+      console.error(`Error creating camp message:`, error);
+      throw new Error(`Failed to create camp message: ${error.message}`);
+    }
+  }
+
+  async getCampMessage(messageId: number): Promise<CampMessage | null> {
+    try {
+      console.log(`Fetching camp message with ID ${messageId}`);
+      
+      const [message] = await db.select()
+        .from(campMessages)
+        .where(eq(campMessages.id, messageId));
+      
+      return message || null;
+    } catch (error: any) {
+      console.error(`Error fetching camp message with ID ${messageId}:`, error);
+      throw new Error(`Failed to fetch camp message: ${error.message}`);
+    }
+  }
+
+  async getCampMessages(campId: number): Promise<CampMessage[]> {
+    try {
+      console.log(`Fetching all messages for camp ${campId}`);
+      
+      return await db.select()
+        .from(campMessages)
+        .where(eq(campMessages.campId, campId))
+        .orderBy(desc(campMessages.createdAt));
+    } catch (error: any) {
+      console.error(`Error fetching camp messages for camp ID ${campId}:`, error);
+      throw new Error(`Failed to fetch camp messages: ${error.message}`);
+    }
+  }
+
+  async getOrganizationCampMessages(organizationId: number): Promise<CampMessage[]> {
+    try {
+      console.log(`Fetching all camp messages for organization ${organizationId}`);
+      
+      return await db.select()
+        .from(campMessages)
+        .where(eq(campMessages.organizationId, organizationId))
+        .orderBy(desc(campMessages.createdAt));
+    } catch (error: any) {
+      console.error(`Error fetching organization camp messages for org ID ${organizationId}:`, error);
+      throw new Error(`Failed to fetch organization camp messages: ${error.message}`);
+    }
+  }
+
+  async createCampMessageRecipients(recipients: Omit<InsertCampMessageRecipient, "id">[]): Promise<CampMessageRecipient[]> {
+    try {
+      if (!recipients.length) {
+        return [];
+      }
+      
+      console.log(`Creating ${recipients.length} camp message recipients`);
+      
+      const newRecipients = await db.insert(campMessageRecipients)
+        .values(recipients.map(recipient => ({
+          messageId: recipient.messageId,
+          registrationId: recipient.registrationId,
+          childId: recipient.childId,
+          parentId: recipient.parentId,
+          isRead: false,
+          emailDelivered: false,
+          createdAt: new Date(),
+        })))
+        .returning();
+      
+      return newRecipients;
+    } catch (error: any) {
+      console.error(`Error creating camp message recipients:`, error);
+      throw new Error(`Failed to create camp message recipients: ${error.message}`);
+    }
+  }
+
+  async getCampMessageRecipients(messageId: number): Promise<CampMessageRecipient[]> {
+    try {
+      console.log(`Fetching recipients for camp message ${messageId}`);
+      
+      return await db.select()
+        .from(campMessageRecipients)
+        .where(eq(campMessageRecipients.messageId, messageId));
+    } catch (error: any) {
+      console.error(`Error fetching camp message recipients for message ID ${messageId}:`, error);
+      throw new Error(`Failed to fetch camp message recipients: ${error.message}`);
+    }
+  }
+  
+  async markCampMessageAsEmailSent(messageId: number): Promise<CampMessage | null> {
+    try {
+      console.log(`Marking camp message ${messageId} as email sent`);
+      
+      const [updatedMessage] = await db.update(campMessages)
+        .set({ emailSent: true, updatedAt: new Date() })
+        .where(eq(campMessages.id, messageId))
+        .returning();
+      
+      return updatedMessage || null;
+    } catch (error: any) {
+      console.error(`Error marking camp message ${messageId} as email sent:`, error);
+      throw new Error(`Failed to mark camp message as email sent: ${error.message}`);
+    }
+  }
+
+  async markCampMessageRecipientAsRead(recipientId: number): Promise<CampMessageRecipient | null> {
+    try {
+      console.log(`Marking camp message recipient ${recipientId} as read`);
+      
+      const [updatedRecipient] = await db.update(campMessageRecipients)
+        .set({ isRead: true })
+        .where(eq(campMessageRecipients.id, recipientId))
+        .returning();
+      
+      return updatedRecipient || null;
+    } catch (error: any) {
+      console.error(`Error marking camp message recipient ${recipientId} as read:`, error);
+      throw new Error(`Failed to mark camp message recipient as read: ${error.message}`);
+    }
+  }
+
+  async markCampMessageRecipientAsDelivered(recipientId: number): Promise<CampMessageRecipient | null> {
+    try {
+      console.log(`Marking camp message recipient ${recipientId} as email delivered`);
+      
+      const [updatedRecipient] = await db.update(campMessageRecipients)
+        .set({ 
+          emailDelivered: true
+        })
+        .where(eq(campMessageRecipients.id, recipientId))
+        .returning();
+      
+      return updatedRecipient || null;
+    } catch (error: any) {
+      console.error(`Error marking camp message recipient ${recipientId} as email delivered:`, error);
+      throw new Error(`Failed to mark camp message recipient as email delivered: ${error.message}`);
+    }
+  }
+
+  async recordCampMessageRecipientOpened(recipientId: number): Promise<CampMessageRecipient | null> {
+    try {
+      console.log(`Recording camp message recipient ${recipientId} email opened`);
+      
+      const [updatedRecipient] = await db.update(campMessageRecipients)
+        .set({ 
+          emailOpenedAt: new Date(),
+          isRead: true // Also mark as read when opened
+        })
+        .where(eq(campMessageRecipients.id, recipientId))
+        .returning();
+      
+      return updatedRecipient || null;
+    } catch (error: any) {
+      console.error(`Error recording camp message recipient ${recipientId} email opened:`, error);
+      throw new Error(`Failed to record camp message recipient email opened: ${error.message}`);
+    }
+  }
+
+  async getParentCampMessages(parentId: number): Promise<{message: CampMessage, recipient: CampMessageRecipient}[]> {
+    try {
+      console.log(`Fetching all camp messages for parent ${parentId}`);
+      
+      const results = await db.select({
+        message: campMessages,
+        recipient: campMessageRecipients
+      })
+      .from(campMessageRecipients)
+      .innerJoin(campMessages, eq(campMessageRecipients.messageId, campMessages.id))
+      .where(eq(campMessageRecipients.parentId, parentId))
+      .orderBy(desc(campMessages.createdAt));
+      
+      return results;
+    } catch (error: any) {
+      console.error(`Error fetching parent camp messages for parent ID ${parentId}:`, error);
+      throw new Error(`Failed to fetch parent camp messages: ${error.message}`);
     }
   }
 
