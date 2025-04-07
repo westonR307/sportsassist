@@ -286,15 +286,6 @@ export function SendCampMessageDialog({
 
   return (
     <div className="space-y-2">
-      <Button 
-        variant="outline" 
-        size="sm" 
-        onClick={testApiEndpoint} 
-        className="mb-2"
-      >
-        Debug: Test API Endpoint
-      </Button>
-      
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogTrigger asChild>
           <Button variant="secondary">Send Message to Participants</Button>
