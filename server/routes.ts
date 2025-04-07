@@ -2807,6 +2807,61 @@ export async function registerRoutes(app: Express) {
     }
   });
   
+  // Get all basic camp info (for the messages page dropdown)
+  app.get("/api/camps/basic-info", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    try {
+      const camps = await storage.getCampBasicInfo(req.user.organizationId);
+      res.json(camps);
+    } catch (error) {
+      console.error("Error fetching basic camp info:", error);
+      res.status(500).json({ message: "Failed to fetch camp info" });
+    }
+  });
+  
+  // Get all messages for an organization
+  app.get("/api/organizations/messages", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    const organizationId = req.user.organizationId;
+    if (!organizationId) {
+      return res.status(403).json({ message: "Not associated with an organization" });
+    }
+    
+    try {
+      const messages = await storage.getOrganizationMessages(organizationId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching organization messages:", error);
+      res.status(500).json({ message: "Failed to fetch organization messages" });
+    }
+  });
+  
+  // Get all camp messages for an organization
+  app.get("/api/organizations/camp-messages", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    const organizationId = req.user.organizationId;
+    if (!organizationId) {
+      return res.status(403).json({ message: "Not associated with an organization" });
+    }
+    
+    try {
+      const messages = await storage.getOrganizationCampMessages(organizationId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching organization camp messages:", error);
+      res.status(500).json({ message: "Failed to fetch organization camp messages" });
+    }
+  });
+  
   // Get all users in an organization (including camp creator)
   app.get("/api/organizations/:orgId/users", async (req, res) => {
     if (!req.user) {

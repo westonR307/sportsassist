@@ -33,6 +33,7 @@ import {
   ClipboardList,
   Clipboard,
   X,
+  MessageSquare,
 } from "lucide-react";
 import { GiBaseballBat } from "react-icons/gi";
 import { useLocation as useWouterLocation } from "wouter";
@@ -274,6 +275,23 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
             >
               <Users2 className="h-5 w-5 flex-shrink-0" />
               <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Organization Profile</span>
+            </button>
+          ) : null}
+          
+          {/* Messages Link */}
+          {user?.role === "camp_creator" || user?.role === "manager" ? (
+            <button
+              onClick={() => {
+                navigate("/dashboard/messages");
+                // Close sidebar on mobile after navigation
+                if (window.innerWidth < 1024) setSidebarOpen(false);
+              }}
+              className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
+                wouterLocation === "/dashboard/messages" ? "bg-gray-100" : ""
+              }`}
+            >
+              <MessageSquare className="h-5 w-5 flex-shrink-0" />
+              <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Messages</span>
             </button>
           ) : null}
           

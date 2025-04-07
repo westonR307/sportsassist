@@ -92,7 +92,7 @@ import {
 } from "@shared/schema";
 import { type Role, type SportLevel, type StaffRole } from "@shared/types";
 import { db } from "./db";
-import { eq, sql, and, or, gte, lte, inArray, desc, gt, ne, isNull, count } from "drizzle-orm";
+import { eq, sql, and, or, gte, lte, inArray, desc, asc, gt, ne, isNull, count } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -263,6 +263,7 @@ export interface IStorage {
   getCampMessage(messageId: number): Promise<CampMessage | null>;
   getCampMessages(campId: number): Promise<CampMessage[]>;
   getOrganizationCampMessages(organizationId: number): Promise<CampMessage[]>;
+  getCampBasicInfo(organizationId: number): Promise<{ id: number; name: string }[]>;
   createCampMessageRecipients(recipients: Omit<InsertCampMessageRecipient, "id">[]): Promise<CampMessageRecipient[]>;
   getCampMessageRecipients(messageId: number): Promise<CampMessageRecipient[]>;
   markCampMessageAsEmailSent(messageId: number): Promise<CampMessage | null>;
@@ -3170,13 +3171,63 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`Fetching all camp messages for organization ${organizationId}`);
       
-      return await db.select()
+      const messages = await db.select()
         .from(campMessages)
         .where(eq(campMessages.organizationId, organizationId))
         .orderBy(desc(campMessages.createdAt));
+      
+      // Get all camps for the organization to get their names
+      const campsList = await this.getCampBasicInfo(organizationId);
+      
+      // Create a map of camp ID to camp name
+      const campNameMap = new Map<number, string>();
+      campsList.forEach(camp => {
+        campNameMap.set(camp.id, camp.name);
+      });
+      
+      // Get recipient counts for each message
+      const messageIds = messages.map(m => m.id);
+      const recipientCounts = messageIds.length > 0 ? await db
+        .select({
+          messageId: campMessageRecipients.messageId,
+          count: sql`COUNT(*)`,
+        })
+        .from(campMessageRecipients)
+        .where(inArray(campMessageRecipients.messageId, messageIds))
+        .groupBy(campMessageRecipients.messageId) : [];
+      
+      // Create a map of message ID to recipient count
+      const countMap = new Map<number, number>();
+      recipientCounts.forEach(row => {
+        countMap.set(row.messageId, Number(row.count));
+      });
+      
+      // Combine the messages with the camp names and recipient counts
+      return messages.map(message => ({
+        ...message,
+        campName: campNameMap.get(message.campId) || "Unknown Camp",
+        recipientsCount: message.sentToAll ? 0 : (countMap.get(message.id) || 0),
+      }));
     } catch (error: any) {
       console.error(`Error fetching organization camp messages for org ID ${organizationId}:`, error);
       throw new Error(`Failed to fetch organization camp messages: ${error.message}`);
+    }
+  }
+  
+  async getCampBasicInfo(organizationId: number): Promise<{ id: number; name: string }[]> {
+    try {
+      console.log(`Fetching basic camp info for organization ${organizationId}`);
+      return await db
+        .select({
+          id: camps.id,
+          name: camps.name,
+        })
+        .from(camps)
+        .where(eq(camps.organizationId, organizationId))
+        .orderBy(asc(camps.name));
+    } catch (error: any) {
+      console.error(`Error fetching basic camp info for org ID ${organizationId}:`, error);
+      throw new Error(`Failed to fetch basic camp info: ${error.message}`);
     }
   }
 

@@ -32,6 +32,7 @@ import SignaturePage from "@/pages/signature-page";
 import OrganizationProfilePage from "@/pages/organization-profile";
 import OrganizationPublicPage from "@/pages/organization";
 import OrganizationViewPage from "@/pages/organization-view-page";
+import OrganizationMessagesPage from "@/pages/organization-messages-page";
 import { PermissionManagementPage } from "@/pages/permission-management";
 import StripeConnectManagement from "@/pages/stripe-connect-management";
 import SubscriptionPlans from "@/pages/subscription-plans";
@@ -139,6 +140,11 @@ function Router() {
       <ProtectedRoute 
         path="/dashboard/organization-profile" 
         component={OrganizationProfilePage}
+        requiredRoles={["camp_creator" as const, "platform_admin" as const]} 
+      />
+      <ProtectedRoute 
+        path="/dashboard/messages" 
+        component={OrganizationMessagesPage}
         requiredRoles={["camp_creator" as const, "platform_admin" as const]} 
       />
       <ProtectedRoute 
