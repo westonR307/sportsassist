@@ -107,6 +107,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ParentCampMessagesTab } from "@/components/parent-camp-messages-tab"; // Import the new component
 
 
 // Extended camp type to include permissions from the server
@@ -140,12 +141,12 @@ const useCampData = (idOrSlug: string | undefined) => {
 
       // Determine if we're dealing with a numeric ID or a slug
       const isNumericId = /^\d+$/.test(idOrSlug);
-      
+
       // Construct the URL based on whether we have a numeric ID or a slug
       const url = isNumericId
         ? `/api/camps/${idOrSlug}`
         : `/api/camps/slug/${idOrSlug}`;
-        
+
       console.log("Full API URL:", url);
       console.log("Using slug-based URL:", !isNumericId);
 
@@ -216,7 +217,8 @@ function CampViewPage(props: { id?: string }) {
   });
 
   const registrations = registrationsData?.registrations || [];
-  const canManage = camp?.permissions?.canManage || false;
+  const hasPermission = camp?.permissions?.canManage || false;
+  const showMessagesTab = hasPermission || isParent;
 
   const getRegistrationStatus = () => {
     if (!camp) return 'unknown';
@@ -247,13 +249,13 @@ function CampViewPage(props: { id?: string }) {
       (reg.parentId === user.id || (reg.parent && reg.parent.id === user.id))
     );
   };
-  
+
   // Check if a specific child is already registered for this camp
   const isChildRegistered = (childId: number) => {
     if (!registrations) return false;
     return registrations.some((reg: any) => reg.childId === childId);
   };
-  
+
   // Check if user is specifically on the waitlist
   const isUserWaitlisted = () => {
     if (!user || !registrations || !isParent) return false;
@@ -277,7 +279,7 @@ function CampViewPage(props: { id?: string }) {
 
   const ChildSelectionDialog = () => {
     const isWaitlist = registrationStatus === 'waitlist';
-    
+
     if (isLoadingChildren) {
       return (
         <div className="flex justify-center py-4">
@@ -315,7 +317,7 @@ function CampViewPage(props: { id?: string }) {
         <div className="grid gap-3">
           {(() => {
             const availableChildren = children.filter(child => !isChildRegistered(child.id));
-            
+
             if (availableChildren.length === 0) {
               return (
                 <div className="text-center py-4">
@@ -336,7 +338,7 @@ function CampViewPage(props: { id?: string }) {
                 </div>
               );
             }
-            
+
             return availableChildren.map((child) => (
               <Card
                 key={child.id}
@@ -412,7 +414,7 @@ function CampViewPage(props: { id?: string }) {
         if (!campId) {
           throw new Error("Camp ID not available");
         }
-        
+
         console.log("Registering for camp with ID:", campId);
         const response = await apiRequest('POST', `/api/camps/${campId}/register`, {
           campId: campId,
@@ -580,7 +582,7 @@ function CampViewPage(props: { id?: string }) {
           </div>
 
           <div className="flex flex-wrap gap-2 items-center">
-            {canManage && (
+            {hasPermission && (
               <div className="flex flex-wrap gap-2 items-center justify-center">
                 <div className="flex gap-2">
                   <Button onClick={() => setEditDialogOpen(true)}>
@@ -618,8 +620,8 @@ function CampViewPage(props: { id?: string }) {
                 )}
               </div>
             )}
-            
-            {isParent && !canManage && (
+
+            {isParent && !hasPermission && (
               <div className="flex gap-2">
                 {isUserRegistered() ? (
                   <Button variant="outline" disabled>
@@ -658,8 +660,8 @@ function CampViewPage(props: { id?: string }) {
                 </Button>
               </div>
             )}
-            
-            {user && !canManage && !isParent && (
+
+            {user && !hasPermission && !isParent && (
               <div className="flex gap-2">
                 {isUserRegistered() ? (
                   <Button variant="outline" disabled>
@@ -711,8 +713,8 @@ function CampViewPage(props: { id?: string }) {
                 </Button>
               </div>
             )}
-            
-            {!user && !canManage && !isParent && (
+
+            {!user && !hasPermission && !isParent && (
               <div className="flex items-center text-muted-foreground">
                 <ShieldAlert className="h-4 w-4 mr-2" />
                 <span className="text-sm">View only</span>
@@ -722,15 +724,13 @@ function CampViewPage(props: { id?: string }) {
         </div>
 
         <Tabs defaultValue="details" className="space-y-6">
-          <TabsList className={`grid w-full max-w-md ${canManage ? 'grid-cols-4' : 'grid-cols-2'}`}>
+          <TabsList className={`grid w-full max-w-md ${hasPermission ? 'grid-cols-4' : 'grid-cols-2'}`}>
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="registrations">Registrations</TabsTrigger>
-            {canManage && (
+            {hasPermission && (
               <TabsTrigger value="attendance">Attendance</TabsTrigger>
             )}
-            {canManage && (
-              <TabsTrigger value="messages">Messages</TabsTrigger>
-            )}
+            {showMessagesTab && <TabsTrigger value="messages">Messages</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="details" className="space-y-6">
@@ -843,7 +843,7 @@ function CampViewPage(props: { id?: string }) {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>Camp Schedule</CardTitle>
-                    {canManage && (
+                    {hasPermission && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -868,10 +868,10 @@ function CampViewPage(props: { id?: string }) {
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>
                   Registered Athletes
-                  {canManage ? '' : ' (Limited View)'}
+                  {hasPermission ? '' : ' (Limited View)'}
                 </CardTitle>
                 <div className="flex items-center gap-2">
-                  {canManage && (
+                  {hasPermission && (
                     <>
                       <Button variant="outline" size="sm" className="h-8">
                         <Users className="h-4 w-4 mr-2" />
@@ -894,7 +894,7 @@ function CampViewPage(props: { id?: string }) {
                             Export as PDF
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => {
-                            setExportFormat("csv");
+                            setExportFormat(""csv");
                             setShowExportDialog(true);
                           }}>
                             <TableIcon className="h-4 w-4 mr-2" />
@@ -917,7 +917,7 @@ function CampViewPage(props: { id?: string }) {
                     <p className="text-muted-foreground">
                       No athletes registered yet
                     </p>
-                    {canManage && (
+                    {hasPermission && (
                       <Button variant="outline" size="sm" className="mt-4">
                         Add Registration
                       </Button>
@@ -925,7 +925,7 @@ function CampViewPage(props: { id?: string }) {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {!canManage && (
+                    {!hasPermission && (
                       <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md mb-4">
                         <p className="flex items-center">
                           <ShieldAlert className="h-4 w-4 mr-2 text-orange-500" />
@@ -970,7 +970,7 @@ function CampViewPage(props: { id?: string }) {
                               </span>
                             </div>
 
-                            {canManage && (
+                            {hasPermission && (
                               <Button variant="ghost" size="sm">
                                 <Edit className="h-3 w-3" />
                               </Button>
@@ -986,7 +986,7 @@ function CampViewPage(props: { id?: string }) {
           </TabsContent>
 
 
-          {canManage && (
+          {hasPermission && (
             <TabsContent value="attendance">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
@@ -1206,13 +1206,13 @@ function CampViewPage(props: { id?: string }) {
             </TabsContent>
           )}
 
-          {canManage && (
-            <TabsContent value="messages">
-              <CampMessagesTab 
-                campId={camp.id} 
-                campName={camp.name} 
-                hasPermission={canManage} 
-              />
+          {showMessagesTab && (
+            <TabsContent value="messages" className="space-y-4">
+              {isParent ? (
+                <ParentCampMessagesTab campId={camp.id} />
+              ) : (
+                <CampMessagesTab campId={camp.id} campName={camp.name} hasPermission={hasPermission} />
+              )}
             </TabsContent>
           )}
         </Tabs>

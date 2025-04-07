@@ -17,6 +17,7 @@ import {
   Settings,
   ChevronRight,
   UserPlus,
+  MessageSquare, // Added import for MessageSquare icon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -115,6 +116,11 @@ export function ParentSidebar() {
                 </SidebarLink>
               </div>
               <div onClick={() => setIsSheetOpen(false)}>
+                <SidebarLink to="/parent/messages" icon={<MessageSquare size={20} />}> {/* Added Messages link */}
+                  Messages
+                </SidebarLink>
+              </div>
+              <div onClick={() => setIsSheetOpen(false)}>
                 <SidebarLink to="/dashboard/settings" icon={<Settings size={20} />}>
                   Profile Settings
                 </SidebarLink>
@@ -133,6 +139,9 @@ export function ParentSidebar() {
               </SidebarLink>
               <SidebarLink to="/find-camps" icon={<Archive size={20} />}>
                 Available Camps
+              </SidebarLink>
+              <SidebarLink to="/parent/messages" icon={<MessageSquare size={20} />}> {/* Added Messages link */}
+                Messages
               </SidebarLink>
               <SidebarLink to="/dashboard/settings" icon={<Settings size={20} />}>
                 Profile Settings
