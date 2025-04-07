@@ -3420,44 +3420,43 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`Fetching camp messages for parent ${parentId} and camp ${campId}`);
       
-      // Get messages for this camp specific to this parent and messages sent to all
-      const messages = await db.select({
-        message: campMessages
-      })
-      .from(campMessages)
-      .leftJoin(
-        campMessageRecipients,
-        and(
-          eq(campMessageRecipients.messageId, campMessages.id),
-          eq(campMessageRecipients.parentId, parentId)
-        )
-      )
-      .where(
-        and(
-          eq(campMessages.campId, campId),
-          or(
-            eq(campMessages.sentToAll, true),
-            ne(campMessageRecipients.id, null)
-          )
-        )
-      );
+      // First get all messages for this camp
+      const messages = await db.select()
+        .from(campMessages)
+        .where(eq(campMessages.campId, campId));
 
-      // For each message, get its recipient info if it exists
+      // For each message, determine if parent should see it
       const results = await Promise.all(messages.map(async (msg) => {
+        // If message was sent to all, include it
+        if (msg.sentToAll) {
+          return {
+            message: msg,
+            recipient: null
+          };
+        }
+
+        // Otherwise, check if there's a specific recipient record
         const [recipient] = await db.select()
           .from(campMessageRecipients)
           .where(
             and(
-              eq(campMessageRecipients.messageId, msg.message.id),
+              eq(campMessageRecipients.messageId, msg.id),
               eq(campMessageRecipients.parentId, parentId)
             )
           );
 
-        return {
-          message: msg.message,
-          recipient: recipient || null
-        };
+        // Only include message if there's a recipient record
+        return recipient ? {
+          message: msg,
+          recipient
+        } : null;
       }));
+
+      // Filter out null results and sort by creation date
+      return results.filter(result => result !== null)
+        .sort((a, b) => 
+          new Date(b.message.createdAt).getTime() - new Date(a.message.createdAt).getTime()
+        );
 
       // Sort by creation date
       return results.sort((a, b) => 
