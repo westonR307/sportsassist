@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { registerDebugRoutes } from "./debug-routes";
 import cors from "cors";
 
 const app = express();
@@ -45,6 +46,10 @@ app.use((req, res, next) => {
 
     const server = await registerRoutes(app);
     log("Routes registered successfully");
+    
+    // Register debug routes (only in development)
+    registerDebugRoutes(app);
+    log("Debug routes registered");
 
     // Set up error handling after routes
     app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
