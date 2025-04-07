@@ -2967,14 +2967,21 @@ export async function registerRoutes(app: Express) {
         messageOrganizationId: message.organizationId
       });
       
+      // Create the reply - define it outside the try block so it's accessible later
+      let reply;
+      
       try {
-        const reply = await storage.createCampMessageReply({
+        reply = await storage.createCampMessageReply({
           messageId,
           senderId: req.user.id,
           senderName,
           content,
           campId: message.campId
         });
+        
+        if (!reply) {
+          throw new Error("No reply data returned from storage function");
+        }
       } catch (error) {
         console.error("Error creating camp message reply:", error);
         return res.status(500).json({ message: "Failed to create message reply", error: error.message });

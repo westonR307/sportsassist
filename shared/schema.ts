@@ -411,10 +411,10 @@ export const insertCampMessageRecipientSchema = z.object({
 
 export const insertCampMessageReplySchema = z.object({
   messageId: z.number(),
-  parentId: z.number(),
-  parentName: z.string(),
+  senderId: z.number(),
+  senderName: z.string(),
   content: z.string(),
-  organizationId: z.number(),
+  organizationId: z.number().optional(),
   campId: z.number()
 });
 
