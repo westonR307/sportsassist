@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -76,6 +77,7 @@ export function SendCampMessageDialog({
   });
 
   const sendToAll = form.watch("sendToAll");
+  const selectedRecipients = form.watch("selectedRecipients") || [];
 
   const handleOpenChange = async (newOpen: boolean) => {
     setOpen(newOpen);
@@ -132,6 +134,16 @@ export function SendCampMessageDialog({
         selectedRecipients: []
       });
     }
+  };
+
+  const handleRecipientSelect = (registrationId: number) => {
+    const newSelectedRecipients = selectedRecipients.includes(registrationId)
+      ? selectedRecipients.filter(id => id !== registrationId)
+      : [...selectedRecipients, registrationId];
+    
+    form.setValue("selectedRecipients", newSelectedRecipients, {
+      shouldDirty: true
+    });
   };
 
   const onSubmit = async (data: SendMessageFormValues) => {
@@ -269,7 +281,7 @@ export function SendCampMessageDialog({
                 <FormField
                   control={form.control}
                   name="selectedRecipients"
-                  render={({ field }) => (
+                  render={() => (
                     <FormItem>
                       <FormLabel>Select Recipients</FormLabel>
                       <FormDescription>
@@ -285,47 +297,33 @@ export function SendCampMessageDialog({
                           ) : recipients.length > 0 ? (
                             <ScrollArea className="h-52 w-full">
                               <div className="space-y-2 p-2">
-                                {recipients.map((registration) => {
-                                  const isSelected = field.value?.includes(registration.id) || false;
-                                  return (
-                                    <Card 
-                                      key={registration.id} 
-                                      className={`cursor-pointer transition-colors ${
-                                        isSelected 
-                                          ? 'bg-primary/10 border-primary' 
-                                          : 'hover:bg-muted'
-                                      }`}
+                                {recipients.map((registration) => (
+                                  <Card 
+                                    key={registration.id} 
+                                    className={`cursor-pointer transition-colors ${
+                                      selectedRecipients.includes(registration.id)
+                                        ? 'bg-primary/10 border-primary' 
+                                        : 'hover:bg-muted'
+                                    }`}
+                                  >
+                                    <CardContent 
+                                      className="p-3 flex justify-between items-center"
+                                      onClick={() => handleRecipientSelect(registration.id)}
                                     >
-                                      <CardContent 
-                                        className="p-3 flex justify-between items-center"
-                                        onClick={() => {
-                                          const currentSelected = field.value || [];
-                                          const newSelected = isSelected
-                                            ? currentSelected.filter(id => id !== registration.id)
-                                            : [...currentSelected, registration.id];
-                                          form.setValue("selectedRecipients", newSelected);
-                                        }}
-                                      >
-                                        <div>
-                                          <div className="font-medium">{registration.childName}</div>
-                                          <div className="text-sm text-muted-foreground">Parent: {registration.parentName}</div>
-                                          <div className="text-xs text-muted-foreground">{registration.parentEmail}</div>
-                                        </div>
-                                        <Checkbox 
-                                          checked={isSelected}
-                                          onCheckedChange={() => {
-                                            const currentSelected = field.value || [];
-                                            const newSelected = isSelected
-                                              ? currentSelected.filter(id => id !== registration.id)
-                                              : [...currentSelected, registration.id];
-                                            form.setValue("selectedRecipients", newSelected);
-                                          }}
-                                          className="h-5 w-5"
-                                        />
-                                      </CardContent>
-                                    </Card>
-                                  );
-                                })}
+                                      <div>
+                                        <div className="font-medium">{registration.childName}</div>
+                                        <div className="text-sm text-muted-foreground">Parent: {registration.parentName}</div>
+                                        <div className="text-xs text-muted-foreground">{registration.parentEmail}</div>
+                                      </div>
+                                      <Checkbox 
+                                        checked={selectedRecipients.includes(registration.id)}
+                                        onClick={(e) => e.stopPropagation()}
+                                        onCheckedChange={() => handleRecipientSelect(registration.id)}
+                                        className="h-5 w-5"
+                                      />
+                                    </CardContent>
+                                  </Card>
+                                ))}
                               </div>
                             </ScrollArea>
                           ) : (
