@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import {
   Tooltip,
   TooltipContent,
@@ -240,7 +241,20 @@ function CampViewPage(props: { id?: string }) {
 
   const isUserRegistered = () => {
     if (!user || !registrations || !isParent) return false;
-    return registrations.some((reg: any) => reg.parentId === user.id);
+    // Check if the user has any registrations (normal or waitlisted)
+    return registrations.some((reg: any) => 
+      (reg.parentId === user.id || (reg.parent && reg.parent.id === user.id))
+    );
+  };
+  
+  // Check if user is specifically on the waitlist
+  const isUserWaitlisted = () => {
+    if (!user || !registrations || !isParent) return false;
+    // Check if the user has a waitlisted registration
+    return registrations.some((reg: any) => 
+      (reg.parentId === user.id || (reg.parent && reg.parent.id === user.id)) && 
+      reg.status === "waitlisted"
+    );
   };
 
   const { data: children = [], isLoading: isLoadingChildren } = useQuery<Child[]>({
@@ -255,6 +269,8 @@ function CampViewPage(props: { id?: string }) {
   const [showFormFieldsDialog, setShowFormFieldsDialog] = useState(false);
 
   const ChildSelectionDialog = () => {
+    const isWaitlist = registrationStatus === 'waitlist';
+    
     if (isLoadingChildren) {
       return (
         <div className="flex justify-center py-4">
@@ -268,7 +284,7 @@ function CampViewPage(props: { id?: string }) {
         <div className="text-center py-4">
           <p className="text-muted-foreground mb-2">You don't have any athletes registered yet.</p>
           <p className="text-sm text-muted-foreground">
-            Please add an athlete profile before registering for a camp.
+            Please add an athlete profile before {isWaitlist ? 'joining the waitlist' : 'registering for a camp'}.
           </p>
           <Button
             variant="outline"
@@ -287,7 +303,7 @@ function CampViewPage(props: { id?: string }) {
     return (
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Please select which athlete you would like to register for this camp:
+          Please select which athlete you would like to {isWaitlist ? 'add to the waitlist' : 'register'} for this camp:
         </p>
         <div className="grid gap-3">
           {children.map((child) => (
@@ -315,6 +331,15 @@ function CampViewPage(props: { id?: string }) {
             </Card>
           ))}
         </div>
+        {isWaitlist && (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Waitlist Information</AlertTitle>
+            <AlertDescription>
+              This camp is currently at capacity. By joining the waitlist, you'll be notified if a spot becomes available.
+            </AlertDescription>
+          </Alert>
+        )}
         <div className="flex justify-end gap-2 mt-4">
           <Button
             variant="outline"
@@ -330,13 +355,16 @@ function CampViewPage(props: { id?: string }) {
               }
             }}
             disabled={!selectedChildId || registerMutation.isPending}
+            variant={isWaitlist ? "secondary" : "default"}
           >
             {registerMutation.isPending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : isWaitlist ? (
+              <ClipboardList className="h-4 w-4 mr-2" />
             ) : (
               <CheckCircle className="h-4 w-4 mr-2" />
             )}
-            Confirm Registration
+            {isWaitlist ? 'Join Waitlist' : 'Confirm Registration'}
           </Button>
         </div>
       </div>
@@ -568,7 +596,7 @@ function CampViewPage(props: { id?: string }) {
                 {isUserRegistered() ? (
                   <Button variant="outline" disabled>
                     <CheckCircle className="h-4 w-4 mr-2" />
-                    Already Registered
+                    {isUserWaitlisted() ? 'On Waitlist' : 'Already Registered'}
                   </Button>
                 ) : registrationStatus === 'open' ? (
                   <Button
@@ -605,7 +633,12 @@ function CampViewPage(props: { id?: string }) {
             
             {user && !canManage && !isParent && (
               <div className="flex gap-2">
-                {registrationStatus === 'waitlist' ? (
+                {isUserRegistered() ? (
+                  <Button variant="outline" disabled>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    {isUserWaitlisted() ? 'On Waitlist' : 'Already Registered'}
+                  </Button>
+                ) : registrationStatus === 'waitlist' ? (
                   <Button 
                     variant="secondary"
                     onClick={() => setShowChildSelectionDialog(true)}
@@ -895,9 +928,16 @@ function CampViewPage(props: { id?: string }) {
                             </div>
                           </div>
                           <div className="flex items-center">
-                            <span className={`px-2 py-1 rounded-full text-xs ${registration.paid ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
-                              {registration.paid ? 'Paid' : 'Unpaid'}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              {registration.status === 'waitlisted' && (
+                                <span className="px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
+                                  Waitlist
+                                </span>
+                              )}
+                              <span className={`px-2 py-1 rounded-full text-xs ${registration.paid ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+                                {registration.paid ? 'Paid' : 'Unpaid'}
+                              </span>
+                            </div>
 
                             {canManage && (
                               <Button variant="ghost" size="sm">
@@ -1014,18 +1054,24 @@ function CampViewPage(props: { id?: string }) {
                                   </div>
                                 </TableCell>
                                 <TableCell className="text-center">
-                                  <Select defaultValue="not_recorded">
-                                    <SelectTrigger className="w-32 h-8">
-                                      <SelectValue placeholder="Status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="not_recorded">Not Recorded</SelectItem>
-                                      <SelectItem value="present">Present</SelectItem>
-                                      <SelectItem value="absent">Absent</SelectItem>
-                                      <SelectItem value="late">Late</SelectItem>
-                                      <SelectItem value="excused">Excused</SelectItem>
-                                    </SelectContent>
-                                  </Select>
+                                  {registration.status === 'waitlisted' ? (
+                                    <Badge variant="outline" className="bg-purple-100 text-purple-800 hover:bg-purple-100">
+                                      Waitlisted
+                                    </Badge>
+                                  ) : (
+                                    <Select defaultValue="not_recorded">
+                                      <SelectTrigger className="w-32 h-8">
+                                        <SelectValue placeholder="Status" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="not_recorded">Not Recorded</SelectItem>
+                                        <SelectItem value="present">Present</SelectItem>
+                                        <SelectItem value="absent">Absent</SelectItem>
+                                        <SelectItem value="late">Late</SelectItem>
+                                        <SelectItem value="excused">Excused</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  )}
                                 </TableCell>
                                 <TableCell className="text-center text-sm">
                                   {new Date().toLocaleDateString()}
