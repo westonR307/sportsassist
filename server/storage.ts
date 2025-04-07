@@ -3400,16 +3400,108 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`Fetching all camp messages for parent ${parentId}`);
       
-      const results = await db.select({
+      // Find all registrations for this parent across all camps
+      const userRegistrations = await db.select()
+        .from(registrations)
+        .innerJoin(children, eq(registrations.childId, children.id))
+        .where(eq(children.parentId, parentId));
+      
+      if (!userRegistrations.length) {
+        console.log(`No registrations found for parent ${parentId}`);
+        return [];
+      }
+      
+      // Get all the camp IDs this parent is registered for
+      const campIds = [...new Set(userRegistrations.map(reg => reg.registrations.campId))];
+      console.log(`Parent ${parentId} has registrations in ${campIds.length} camps:`, campIds);
+      
+      // Get all targeted messages for this parent (with recipient records)
+      const targetedMessages = await db.select({
         message: campMessages,
         recipient: campMessageRecipients
       })
       .from(campMessageRecipients)
       .innerJoin(campMessages, eq(campMessageRecipients.messageId, campMessages.id))
-      .where(eq(campMessageRecipients.parentId, parentId))
-      .orderBy(desc(campMessages.createdAt));
+      .where(
+        and(
+          eq(campMessageRecipients.parentId, parentId),
+          inArray(campMessages.campId, campIds),
+          eq(campMessages.sentToAll, false)
+        )
+      );
       
-      return results;
+      // Get all messages sent to everyone (with recipient records)
+      const allMessagesWithRecipient = await db.select({
+        message: campMessages,
+        recipient: campMessageRecipients
+      })
+      .from(campMessageRecipients)
+      .innerJoin(campMessages, eq(campMessageRecipients.messageId, campMessages.id))
+      .where(
+        and(
+          eq(campMessageRecipients.parentId, parentId),
+          inArray(campMessages.campId, campIds),
+          eq(campMessages.sentToAll, true)
+        )
+      );
+      
+      // Get all messages sent to everyone that don't have recipient records for this parent yet
+      const allMessagesWithoutRecipient = await db.select({
+        message: campMessages
+      })
+      .from(campMessages)
+      .leftJoin(
+        campMessageRecipients,
+        and(
+          eq(campMessageRecipients.messageId, campMessages.id),
+          eq(campMessageRecipients.parentId, parentId)
+        )
+      )
+      .where(
+        and(
+          inArray(campMessages.campId, campIds),
+          eq(campMessages.sentToAll, true),
+          isNull(campMessageRecipients.id)
+        )
+      );
+      
+      // Combine messages with recipient records
+      const messagesWithRecipients = [...targetedMessages, ...allMessagesWithRecipient];
+      
+      // Add placeholder recipients for messages without recipient records
+      const messagesWithPlaceholders = allMessagesWithoutRecipient.map(({ message }) => {
+        // Use the first registration for the camp as reference
+        const registration = userRegistrations.find(r => r.registrations.campId === message.campId)?.registrations;
+        
+        if (!registration) {
+          console.log(`Warning: No registration found for camp ${message.campId} for parent ${parentId}`);
+          return null;
+        }
+        
+        return {
+          message,
+          recipient: {
+            id: 0, // Use a placeholder ID
+            messageId: message.id,
+            registrationId: registration.id,
+            childId: registration.childId,
+            parentId: parentId,
+            isRead: false,
+            emailDelivered: true,
+            emailOpenedAt: null,
+            createdAt: message.createdAt
+          }
+        };
+      }).filter(item => item !== null) as {message: CampMessage, recipient: CampMessageRecipient}[];
+      
+      // Combine all messages and sort by most recent first
+      const allMessages = [...messagesWithRecipients, ...messagesWithPlaceholders];
+      
+      console.log(`Found total of ${allMessages.length} messages for parent ${parentId}`);
+      
+      return allMessages.sort((a, b) => 
+        new Date(b.message.createdAt).getTime() - new Date(a.message.createdAt).getTime()
+      );
     } catch (error: any) {
       console.error(`Error fetching parent camp messages for parent ID ${parentId}:`, error);
       throw new Error(`Failed to fetch parent camp messages: ${error.message}`);
@@ -3420,7 +3512,7 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`Fetching camp messages for parent ${parentId} and camp ${campId}`);
       
-      // Check if parent has any registrations for this camp using proper table references
+      // Step 1: Check if parent has any registrations for this camp first
       const userRegistrations = await db.select()
         .from(registrations)
         .innerJoin(children, eq(registrations.childId, children.id))
@@ -3439,13 +3531,13 @@ export class DatabaseStorage implements IStorage {
 
       console.log(`Found ${userRegistrations.length} registrations for parent ${parentId} in camp ${campId}`);
       
-      // First get all "sent to all" messages for this camp
-      const sentToAllMessages = await db.select({
+      // Step 2: First query - get messages sent to all with matching recipient records
+      const sentToAllWithRecipient = await db.select({
         message: campMessages,
         recipient: campMessageRecipients
       })
       .from(campMessages)
-      .leftJoin(
+      .innerJoin(
         campMessageRecipients, 
         and(
           eq(campMessageRecipients.messageId, campMessages.id),
@@ -3459,7 +3551,28 @@ export class DatabaseStorage implements IStorage {
         )
       );
       
-      // Then get all messages specifically targeted to this parent
+      // Step 3: Second query - get messages sent to all WITHOUT recipient records
+      // These need placeholder recipient records
+      const sentToAllWithoutRecipient = await db.select({
+        message: campMessages
+      })
+      .from(campMessages)
+      .leftJoin(
+        campMessageRecipients, 
+        and(
+          eq(campMessageRecipients.messageId, campMessages.id),
+          eq(campMessageRecipients.parentId, parentId)
+        )
+      )
+      .where(
+        and(
+          eq(campMessages.campId, campId),
+          eq(campMessages.sentToAll, true),
+          isNull(campMessageRecipients.id)
+        )
+      );
+      
+      // Step 4: Third query - get targeted messages for this parent
       const targetedMessages = await db.select({
         message: campMessages,
         recipient: campMessageRecipients
@@ -3477,22 +3590,27 @@ export class DatabaseStorage implements IStorage {
         )
       );
       
-      // Combine both message sets
-      const allMessages = [...sentToAllMessages, ...targetedMessages];
+      console.log(`Found ${sentToAllWithRecipient.length} sentToAll messages with recipient records for parent ${parentId}`);
+      console.log(`Found ${sentToAllWithoutRecipient.length} sentToAll messages without recipient records`);
+      console.log(`Found ${targetedMessages.length} targeted messages for parent ${parentId}`);
       
-      console.log(`Found ${allMessages.length} messages for parent ${parentId} in camp ${campId}`);
-
-      // Map to ensure the correct recipient is assigned
-      const messagesWithRecipients = allMessages.map(({ message, recipient }) => {
+      // Step 5: Combine the messages with recipient records
+      const messagesWithRecipients = [
+        ...sentToAllWithRecipient,
+        ...targetedMessages
+      ];
+      
+      // Step 6: Add placeholder recipients for messages without recipient records
+      const messagesWithPlaceholders = sentToAllWithoutRecipient.map(({ message }) => {
+        // Use the first registration as reference for placeholder recipient
+        const registration = userRegistrations[0].registrations;
         return {
           message,
-          // For "sentToAll" messages that might not have a specific recipient record for this parent,
-          // we need to ensure the frontend still gets a valid recipient object
-          recipient: recipient || {
+          recipient: {
             id: 0, // Use a placeholder ID
             messageId: message.id,
-            registrationId: userRegistrations[0].registrations.id,
-            childId: userRegistrations[0].registrations.childId,
+            registrationId: registration.id,
+            childId: registration.childId,
             parentId: parentId,
             isRead: false,
             emailDelivered: true,
@@ -3501,9 +3619,13 @@ export class DatabaseStorage implements IStorage {
           }
         };
       });
-
-      // Sort by most recent first
-      return messagesWithRecipients.sort((a, b) => 
+      
+      // Step 7: Combine all messages and sort by most recent first
+      const allMessages = [...messagesWithRecipients, ...messagesWithPlaceholders];
+      
+      console.log(`Found total of ${allMessages.length} messages for parent ${parentId} in camp ${campId}`);
+      
+      return allMessages.sort((a, b) => 
         new Date(b.message.createdAt).getTime() - new Date(a.message.createdAt).getTime()
       );
     } catch (error: any) {
