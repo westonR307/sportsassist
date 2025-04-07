@@ -3121,6 +3121,17 @@ export async function registerRoutes(app: Express) {
       // Registration requires childId, but we'll make it optional in the API
       // If not provided, we'll need to show a child selection UI on the frontend
       const childId = req.body.childId;
+
+      // Check if the child is already registered for this camp
+      if (childId) {
+        const existingRegistration = registrations.find(reg => reg.childId === childId);
+        if (existingRegistration) {
+          return res.status(400).json({ 
+            message: "This child is already registered for this camp", 
+            existingRegistration 
+          });
+        }
+      }
       
       // Create a skeleton registration
       const registration = await storage.createRegistration({

@@ -247,6 +247,12 @@ function CampViewPage(props: { id?: string }) {
     );
   };
   
+  // Check if a specific child is already registered for this camp
+  const isChildRegistered = (childId: number) => {
+    if (!registrations) return false;
+    return registrations.some((reg: any) => reg.childId === childId);
+  };
+  
   // Check if user is specifically on the waitlist
   const isUserWaitlisted = () => {
     if (!user || !registrations || !isParent) return false;
@@ -306,30 +312,55 @@ function CampViewPage(props: { id?: string }) {
           Please select which athlete you would like to {isWaitlist ? 'add to the waitlist' : 'register'} for this camp:
         </p>
         <div className="grid gap-3">
-          {children.map((child) => (
-            <Card
-              key={child.id}
-              className={`cursor-pointer transition-colors ${selectedChildId === child.id ? 'border-primary' : 'hover:border-primary/50'}`}
-              onClick={() => setSelectedChildId(child.id)}
-            >
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="bg-muted rounded-full h-10 w-10 flex items-center justify-center">
-                    <User className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="font-medium">{child.fullName}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(child.dateOfBirth).toLocaleDateString()}
-                    </p>
-                  </div>
+          {(() => {
+            const availableChildren = children.filter(child => !isChildRegistered(child.id));
+            
+            if (availableChildren.length === 0) {
+              return (
+                <div className="text-center py-4">
+                  <p className="text-muted-foreground mb-2">All your athletes are already registered for this camp.</p>
+                  <p className="text-sm text-muted-foreground">
+                    To register a new athlete, please add them to your profile first.
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="mt-4"
+                    onClick={() => {
+                      setShowChildSelectionDialog(false);
+                      navigate('/parent-dashboard');
+                    }}
+                  >
+                    Go to Dashboard
+                  </Button>
                 </div>
-                {selectedChildId === child.id && (
-                  <CheckCircle className="h-5 w-5 text-primary" />
-                )}
-              </CardContent>
-            </Card>
-          ))}
+              );
+            }
+            
+            return availableChildren.map((child) => (
+              <Card
+                key={child.id}
+                className={`cursor-pointer transition-colors ${selectedChildId === child.id ? 'border-primary' : 'hover:border-primary/50'}`}
+                onClick={() => setSelectedChildId(child.id)}
+              >
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-muted rounded-full h-10 w-10 flex items-center justify-center">
+                      <User className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{child.fullName}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(child.dateOfBirth).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  {selectedChildId === child.id && (
+                    <CheckCircle className="h-5 w-5 text-primary" />
+                  )}
+                </CardContent>
+              </Card>
+            ));
+          })()}
         </div>
         {isWaitlist && (
           <Alert>
