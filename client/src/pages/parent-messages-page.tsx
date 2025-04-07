@@ -57,9 +57,10 @@ export function ParentMessagesPage() {
   // Mutation for marking a message as read
   const markAsReadMutation = useMutation({
     mutationFn: ({ messageId, recipientId }: { messageId: number; recipientId: number }) => 
-      apiRequest(`/api/camp-messages/${messageId}/recipients/${recipientId}/read`, {
-        method: 'PATCH'
-      }),
+      apiRequest(
+        'PATCH',
+        `/api/camp-messages/${messageId}/recipients/${recipientId}/read`
+      ),
     onSuccess: () => {
       // Invalidate the messages query to refetch with updated read status
       queryClient.invalidateQueries({ queryKey });
