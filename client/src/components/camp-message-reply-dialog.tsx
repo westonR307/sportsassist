@@ -75,10 +75,14 @@ export function CampMessageReplyDialog({
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: [`/api/camps/${campId}/messages/parent`] });
       queryClient.invalidateQueries({ queryKey: [`/api/parent/${user?.id}/camp-messages`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/camps/${campId}/messages`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/organizations/camp-messages`] });
       
       toast({
         title: "Reply sent",
-        description: "Your reply has been sent to the camp administrators.",
+        description: user?.role === 'parent' 
+          ? "Your reply has been sent to the camp administrators."
+          : "Your reply has been sent successfully.",
       });
       
       // Clear form and close dialog
@@ -134,7 +138,9 @@ export function CampMessageReplyDialog({
         <DialogHeader>
           <DialogTitle>Reply to Message</DialogTitle>
           <DialogDescription>
-            Your reply will be sent to the camp administrators only.
+            {user?.role === 'parent' 
+              ? "Your reply will be sent to the camp administrators only."
+              : "Your reply will be sent to the parent/athlete who sent this message."}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -153,7 +159,9 @@ export function CampMessageReplyDialog({
                     />
                   </FormControl>
                   <FormDescription>
-                    Your reply will only be visible to the camp staff, not to other parents or athletes.
+                    {user?.role === 'parent' 
+                      ? "Your reply will only be visible to the camp staff, not to other parents or athletes."
+                      : "Your reply will only be visible to the parent/athlete who sent this message, not to other parents or athletes."}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
