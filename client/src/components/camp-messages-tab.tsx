@@ -16,6 +16,7 @@ import { Loader2, Mail, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { CampMessageReplyDialog } from "@/components/camp-message-reply-dialog";
 
 interface CampMessage {
   id: number;
@@ -33,6 +34,12 @@ interface CampMessage {
   sentToAll: boolean;
   emailSent: boolean;
   recipientsCount?: number;
+  replies?: Array<{
+    id: number;
+    content: string;
+    senderName: string;
+    createdAt: string;
+  }>;
 }
 
 interface CampMessagesTabProps {
@@ -168,15 +175,28 @@ export function CampMessagesTab({
                         </div>
                       )}
                     </CardContent>
-                    <CardFooter className="flex justify-between pt-2 text-xs text-muted-foreground">
-                      <div>
-                        Sent to: {message.sentToAll ? "All Participants" : "Selected Participants"}
+                    <CardFooter className="flex flex-col gap-2 pt-2">
+                      <div className="flex justify-between w-full text-xs text-muted-foreground">
+                        <div>
+                          Sent to: {message.sentToAll ? "All Participants" : "Selected Participants"}
+                        </div>
+                        <div>
+                          {message.emailSent ? (
+                            <span className="text-green-600">Email Sent</span>
+                          ) : (
+                            <span className="text-amber-600">Email Pending</span>
+                          )}
+                        </div>
                       </div>
-                      <div>
-                        {message.emailSent ? (
-                          <span className="text-green-600">Email Sent</span>
-                        ) : (
-                          <span className="text-amber-600">Email Pending</span>
+                      
+                      <div className="flex justify-end">
+                        {hasPermission && (
+                          <CampMessageReplyDialog 
+                            messageId={message.id} 
+                            campId={campId} 
+                            recipientId={message.sentById}
+                            subject={`Re: ${message.subject}`} 
+                          />
                         )}
                       </div>
                     </CardFooter>

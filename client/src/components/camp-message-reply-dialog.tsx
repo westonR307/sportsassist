@@ -38,6 +38,8 @@ type FormData = z.infer<typeof formSchema>;
 interface CampMessageReplyDialogProps {
   messageId: number;
   campId: number;
+  recipientId?: number;
+  subject?: string;
   onSuccess?: () => void;
   className?: string;
 }
@@ -45,6 +47,8 @@ interface CampMessageReplyDialogProps {
 export function CampMessageReplyDialog({ 
   messageId, 
   campId,
+  recipientId,
+  subject,
   onSuccess,
   className = "" 
 }: CampMessageReplyDialogProps) {
@@ -67,7 +71,9 @@ export function CampMessageReplyDialog({
         `/api/camp-messages/${messageId}/replies`,
         {
           content: data.content,
-          campId
+          campId,
+          recipientId,
+          subject
         }
       );
     },
@@ -136,7 +142,9 @@ export function CampMessageReplyDialog({
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Reply to Message</DialogTitle>
+          <DialogTitle>
+            {subject ? `Reply to: ${subject}` : "Reply to Message"}
+          </DialogTitle>
           <DialogDescription>
             {user?.role === 'parent' 
               ? "Your reply will be sent to the camp administrators only."
