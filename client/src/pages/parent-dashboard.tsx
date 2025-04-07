@@ -235,6 +235,13 @@ export default function ParentDashboard() {
                   <p className="text-sm text-muted-foreground">
                     Browse through upcoming camps, register your athletes, and manage their schedules all in one place.
                   </p>
+                  <div className="mt-4">
+                    <Button variant="outline" className="w-full" asChild>
+                      <Link href="/find-camps">
+                        Browse Available Camps
+                      </Link>
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
               
