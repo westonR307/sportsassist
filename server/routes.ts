@@ -2456,6 +2456,56 @@ export async function registerRoutes(app: Express) {
     });
     res.status(201).json(registration);
   });
+  
+  // Delete a registration (deregister child from camp)
+  app.delete("/api/registrations/:id", async (req, res) => {
+    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+    
+    const registrationId = parseInt(req.params.id);
+    if (isNaN(registrationId)) {
+      return res.status(400).json({ message: "Invalid registration ID" });
+    }
+    
+    try {
+      // First get the registration to check permissions
+      const registration = await storage.getRegistration(registrationId);
+      
+      if (!registration) {
+        return res.status(404).json({ message: "Registration not found" });
+      }
+      
+      // For parents, verify the child belongs to them
+      if (req.user.role === "parent") {
+        const child = await storage.getChild(registration.childId);
+        if (!child || child.parentId !== req.user.id) {
+          return res.status(403).json({ message: "Not authorized for this registration" });
+        }
+      } 
+      // For organization staff, verify the camp belongs to their organization
+      else if (req.user.role === "coach" || req.user.role === "manager" || req.user.role === "camp_creator") {
+        const camp = await storage.getCamp(registration.campId);
+        if (!camp || camp.organizationId !== req.user.organizationId) {
+          return res.status(403).json({ message: "Not authorized for this registration" });
+        }
+      }
+      // Platform admins can delete any registration
+      else if (req.user.role !== "platform_admin") {
+        return res.status(403).json({ message: "Not authorized to delete registrations" });
+      }
+      
+      // Perform the deletion
+      const success = await storage.deleteRegistration(registrationId);
+      
+      if (success) {
+        res.status(200).json({ message: "Registration successfully deleted" });
+      } else {
+        res.status(500).json({ message: "Failed to delete registration" });
+      }
+    } catch (error) {
+      console.error("Error deleting registration:", error);
+      res.status(500).json({ message: "An error occurred while deleting the registration" });
+    }
+  });
 
   // Route removed (duplicate of the one above)
 

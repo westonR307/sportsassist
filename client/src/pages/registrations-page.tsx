@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ParentSidebar } from "@/components/parent-sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CalendarClock, Calendar, User, ArrowRight, Clock, MapPin, AlertCircle } from "lucide-react";
+import { CalendarClock, Calendar, User, ArrowRight, Clock, MapPin, AlertCircle, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -15,6 +15,19 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Camp, Registration } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { apiRequest } from "@/lib/queryClient";
 
 interface RegistrationWithCamp extends Registration {
   camp: Camp & {
@@ -179,6 +192,8 @@ interface RegistrationCardProps {
 
 function RegistrationCard({ registration, status }: RegistrationCardProps) {
   const { camp, child } = registration;
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   
   let statusBadge;
   if (status === "upcoming") {
@@ -188,6 +203,35 @@ function RegistrationCard({ registration, status }: RegistrationCardProps) {
   } else {
     statusBadge = <Badge variant="outline">Completed</Badge>;
   }
+
+  // Add deregistration mutation
+  const deregisterMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest(`/api/registrations/${registration.id}`, {
+        method: 'DELETE'
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: `${child.fullName} has been removed from ${camp.name}.`,
+        variant: "default",
+      });
+      // Invalidate and refetch parent registrations
+      queryClient.invalidateQueries({ queryKey: ["/api/parent/registrations"] });
+    },
+    onError: (error) => {
+      console.error("Error deregistering:", error);
+      toast({
+        title: "Error",
+        description: "There was a problem removing the registration. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Don't allow deregistration for past camps
+  const canDeregister = status !== "past";
 
   return (
     <Card>
@@ -247,13 +291,50 @@ function RegistrationCard({ registration, status }: RegistrationCardProps) {
             </div>
           )}
           
-          <div className="pt-3">
+          <div className="pt-3 space-y-2">
             <Button variant="outline" className="w-full flex items-center gap-2" asChild>
               <a href={`/camp/${camp.slug || camp.id}`}>
                 <span>View Camp Details</span>
                 <ArrowRight className="h-4 w-4" />
               </a>
             </Button>
+            
+            {canDeregister && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" className="w-full text-destructive hover:text-destructive flex items-center gap-2">
+                    <LogOut className="h-4 w-4" />
+                    <span>Deregister from Camp</span>
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will remove {child.fullName} from {camp.name}. This action cannot be undone.
+                      {status === "active" && (
+                        <p className="mt-2 font-semibold text-destructive">
+                          Warning: This camp is currently active. Deregistering during an active camp may result in loss of camp access.
+                        </p>
+                      )}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={(e) => {
+                        e.preventDefault();
+                        deregisterMutation.mutate();
+                      }}
+                      disabled={deregisterMutation.isPending}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {deregisterMutation.isPending ? "Removing..." : "Yes, Deregister"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
         </div>
       </CardContent>

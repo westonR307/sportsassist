@@ -115,6 +115,7 @@ export interface IStorage {
   getRegistrationsByCamp(campId: number): Promise<Registration[]>;
   createRegistration(registration: Omit<Registration, "id">): Promise<Registration>;
   getRegistration(id: number): Promise<Registration | undefined>;
+  deleteRegistration(id: number): Promise<boolean>;
   createOrganization(org: InsertOrganization): Promise<Organization>;
   getOrganization(id: number): Promise<Organization | undefined>;
   getOrganizationBySlug(slug: string): Promise<Organization | undefined>;
@@ -782,6 +783,30 @@ export class DatabaseStorage implements IStorage {
   async getRegistration(id: number): Promise<Registration | undefined> {
     const [registration] = await db.select().from(registrations).where(eq(registrations.id, id));
     return registration;
+  }
+  
+  async deleteRegistration(id: number): Promise<boolean> {
+    try {
+      // Check if registration exists first
+      const registration = await this.getRegistration(id);
+      if (!registration) {
+        return false;
+      }
+      
+      // Delete any custom field responses associated with this registration first
+      await db.delete(customFieldResponses).where(eq(customFieldResponses.registrationId, id));
+      
+      // Delete any attendance records associated with this registration
+      await db.delete(attendanceRecords).where(eq(attendanceRecords.registrationId, id));
+      
+      // Delete the registration itself
+      const result = await db.delete(registrations).where(eq(registrations.id, id));
+      
+      return true;
+    } catch (error) {
+      console.error("Error deleting registration:", error);
+      return false;
+    }
   }
   async createOrganization(org: InsertOrganization): Promise<Organization> {
     const [organization] = await db.insert(organizations)
