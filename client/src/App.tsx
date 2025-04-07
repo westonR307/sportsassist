@@ -14,6 +14,7 @@ import Dashboard from "@/pages/dashboard";
 import ParentDashboard from "@/pages/parent-dashboard";
 import ParentOnboardingPage from "@/pages/parent-onboarding";
 import ParentSettingsPage from "@/pages/parent-settings-page";
+import ParentMessagesPage from "@/pages/parent-messages-page";
 import ReportsPage from "@/pages/reports-page";
 import TeamPage from "@/pages/team-page";
 import SettingsPage from "@/pages/settings-page";
@@ -178,6 +179,11 @@ function Router() {
       <ProtectedRoute 
         path="/athlete-dashboard" 
         component={Dashboard} // Temporarily use the regular dashboard - we'll create a dedicated page later
+      />
+      <ProtectedRoute 
+        path="/parent/messages" 
+        component={ParentMessagesPage}
+        requiredRoles={["parent" as const]} 
       />
       {/* Document-related routes */}
       <ProtectedRoute path="/documents" component={DocumentsPage} />

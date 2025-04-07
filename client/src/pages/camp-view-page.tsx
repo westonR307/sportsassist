@@ -894,7 +894,7 @@ function CampViewPage(props: { id?: string }) {
                             Export as PDF
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => {
-                            setExportFormat(""csv");
+                            setExportFormat("csv");
                             setShowExportDialog(true);
                           }}>
                             <TableIcon className="h-4 w-4 mr-2" />
