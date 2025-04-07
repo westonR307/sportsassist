@@ -2649,6 +2649,15 @@ export class DatabaseStorage implements IStorage {
   
   async getRegistrationsWithParentInfo(campId: number): Promise<any[]> {
     try {
+      console.log(`[DEBUG] Getting registrations with parent info for camp ID: ${campId}`);
+      
+      // Make sure we have registrations for this camp
+      const regCount = await db
+        .select({ count: count() })
+        .from(registrations)
+        .where(eq(registrations.campId, campId));
+      console.log(`[DEBUG] Registration count for camp ${campId}:`, regCount);
+      
       const results = await db
         .select({
           id: registrations.id,
@@ -2663,6 +2672,9 @@ export class DatabaseStorage implements IStorage {
         .leftJoin(users, eq(children.parentId, users.id))
         .where(eq(registrations.campId, campId));
 
+      console.log(`[DEBUG] Found ${results.length} registrations with parent info for camp ${campId}`);
+      console.log(`[DEBUG] Registration data:`, JSON.stringify(results, null, 2));
+      
       return results;
     } catch (error) {
       console.error("Error getting registrations with parent info:", error);

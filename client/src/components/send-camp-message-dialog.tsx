@@ -84,17 +84,31 @@ export function SendCampMessageDialog({
 
   // Function to load recipients
   const loadRecipients = async () => {
-    if (!open || recipients.length > 0) return;
+    // Skip if dialog not open or we already have recipients
+    if (!open) {
+      console.log("Dialog not open, skipping recipient fetch");
+      return;
+    }
     
+    // Always try to fetch fresh data when dialog opens
     setIsLoadingRecipients(true);
     try {
-      // Make sure we're authenticated first by checking the user's session
+      console.log(`Attempting to fetch participants for camp ID: ${campId}`);
+      
+      // First check user authentication status
       const userCheckResponse = await fetch('/api/user');
+      console.log(`User authentication check status: ${userCheckResponse.status}`);
+      
       if (!userCheckResponse.ok) {
         throw new Error("You must be logged in to send messages");
       }
       
+      // Get user info for debugging
+      const userData = await userCheckResponse.json();
+      console.log(`Authenticated as: ${userData.username}, Role: ${userData.role}, Organization: ${userData.organizationId}`);
+      
       // Now fetch the registrations with parent info
+      console.log(`Fetching registrations with parents for camp ${campId}`);
       const response = await fetch(`/api/camps/${campId}/registrations-with-parents`, {
         credentials: 'include', // Include cookies for authentication
         headers: {
@@ -102,9 +116,18 @@ export function SendCampMessageDialog({
         }
       });
       
+      console.log(`Registration API response status: ${response.status}`);
+      
       if (response.ok) {
         const data = await response.json();
-        console.log("Loaded participants data:", data); // For debugging
+        console.log(`Loaded ${data.length} participants:`, data); 
+        
+        if (!data || data.length === 0) {
+          console.log("No participants found for this camp");
+          setRecipients([]);
+          return;
+        }
+        
         const formattedData = data.map((reg: any) => ({
           id: reg.id,
           childId: reg.childId,
@@ -113,13 +136,20 @@ export function SendCampMessageDialog({
           parentName: reg.parentName || "Unknown Parent",
           parentEmail: reg.parentEmail || "No email provided"
         }));
+        
+        console.log("Formatted recipient data:", formattedData);
         setRecipients(formattedData);
       } else if (response.status === 403) {
+        console.log("Permission denied when fetching participants");
         throw new Error("You don't have permission to access participant information");
       } else if (response.status === 404) {
+        console.log("Camp not found when fetching participants");
         throw new Error("Camp not found");
       } else {
-        const errorData = await response.json().catch(() => null);
+        const errorText = await response.text();
+        console.log("Error response from API:", errorText);
+        
+        const errorData = JSON.parse(errorText || '{}');
         throw new Error(errorData?.message || "Failed to load participants");
       }
     } catch (error) {
@@ -129,6 +159,9 @@ export function SendCampMessageDialog({
         description: error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive",
       });
+      
+      // Set empty array on error to avoid null reference issues
+      setRecipients([]);
     } finally {
       setIsLoadingRecipients(false);
     }
