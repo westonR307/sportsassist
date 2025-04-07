@@ -2804,6 +2804,43 @@ export async function registerRoutes(app: Express) {
     }
   });
   
+  // Get parent's messages for a specific camp
+  app.get("/api/camps/:id/messages/parent", async (req, res) => {
+    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+    
+    const campId = parseInt(req.params.id);
+    const parentId = req.user.id;
+    
+    try {
+      const camp = await storage.getCamp(campId);
+      
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Get all of the parent's messages
+      const allMessages = await storage.getParentCampMessages(parentId);
+      
+      // Filter messages to only include those for this specific camp
+      const campMessages = allMessages
+        .filter(item => item.message.campId === campId)
+        .map(item => ({
+          id: item.message.id,
+          subject: item.message.subject,
+          content: item.message.content,
+          senderName: item.message.senderName,
+          createdAt: item.message.createdAt,
+          sentToAll: item.message.sentToAll,
+          isRead: item.recipient.isRead
+        }));
+      
+      res.json(campMessages);
+    } catch (error) {
+      console.error(`Error fetching parent camp messages for camp ${campId}:`, error);
+      res.status(500).json({ message: "Failed to fetch parent camp messages" });
+    }
+  });
+  
   // Mark a camp message as read for a recipient
   app.patch("/api/camp-messages/:messageId/recipients/:recipientId/read", async (req, res) => {
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
