@@ -3420,16 +3420,26 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`Fetching camp messages for parent ${parentId} and camp ${campId}`);
       
+      // Get all messages for this camp that are either sent to all or specifically to this parent
       const results = await db.select({
         message: campMessages,
         recipient: campMessageRecipients
       })
-      .from(campMessageRecipients)
-      .innerJoin(campMessages, eq(campMessageRecipients.messageId, campMessages.id))
+      .from(campMessages)
+      .leftJoin(
+        campMessageRecipients,
+        and(
+          eq(campMessageRecipients.messageId, campMessages.id),
+          eq(campMessageRecipients.parentId, parentId)
+        )
+      )
       .where(
         and(
-          eq(campMessageRecipients.parentId, parentId),
-          eq(campMessages.campId, campId)
+          eq(campMessages.campId, campId),
+          or(
+            eq(campMessages.sentToAll, true),
+            eq(campMessageRecipients.parentId, parentId)
+          )
         )
       )
       .orderBy(desc(campMessages.createdAt));
