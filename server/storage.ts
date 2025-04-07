@@ -3420,41 +3420,49 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`Fetching camp messages for parent ${parentId} and camp ${campId}`);
       
-      // Get messages for this camp specific to this parent
-      const recipientMessages = await db.select({
-        message: campMessages,
-        recipient: campMessageRecipients
+      // Get messages for this camp specific to this parent and messages sent to all
+      const messages = await db.select({
+        message: campMessages
       })
       .from(campMessages)
-      .innerJoin(
+      .leftJoin(
         campMessageRecipients,
         and(
           eq(campMessageRecipients.messageId, campMessages.id),
           eq(campMessageRecipients.parentId, parentId)
         )
       )
-      .where(eq(campMessages.campId, campId));
-
-      // Get messages sent to all for this camp
-      const allMessages = await db.select({
-        message: campMessages,
-        recipient: sql<any>`NULL AS recipient`
-      })
-      .from(campMessages)
       .where(
         and(
           eq(campMessages.campId, campId),
-          eq(campMessages.sentToAll, true)
+          or(
+            eq(campMessages.sentToAll, true),
+            ne(campMessageRecipients.id, null)
+          )
         )
       );
 
-      // Combine and sort both types of messages
-      const results = [...recipientMessages, ...allMessages]
-        .sort((a, b) => 
-          new Date(b.message.createdAt).getTime() - new Date(a.message.createdAt).getTime()
-        );
-      
-      return results;
+      // For each message, get its recipient info if it exists
+      const results = await Promise.all(messages.map(async (msg) => {
+        const [recipient] = await db.select()
+          .from(campMessageRecipients)
+          .where(
+            and(
+              eq(campMessageRecipients.messageId, msg.message.id),
+              eq(campMessageRecipients.parentId, parentId)
+            )
+          );
+
+        return {
+          message: msg.message,
+          recipient: recipient || null
+        };
+      }));
+
+      // Sort by creation date
+      return results.sort((a, b) => 
+        new Date(b.message.createdAt).getTime() - new Date(a.message.createdAt).getTime()
+      );
     } catch (error: any) {
       console.error(`Error fetching parent camp messages for parent ID ${parentId} and camp ID ${campId}:`, error);
       throw new Error(`Failed to fetch parent camp messages: ${error.message}`);
