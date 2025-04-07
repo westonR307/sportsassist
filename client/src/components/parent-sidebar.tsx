@@ -110,7 +110,7 @@ export function ParentSidebar() {
                 </SidebarLink>
               </div>
               <div onClick={() => setIsSheetOpen(false)}>
-                <SidebarLink to="/dashboard/camps" icon={<Archive size={20} />}>
+                <SidebarLink to="/find-camps" icon={<Archive size={20} />}>
                   Available Camps
                 </SidebarLink>
               </div>
@@ -131,7 +131,7 @@ export function ParentSidebar() {
               <SidebarLink to="/dashboard/registrations" icon={<Calendar size={20} />}>
                 Registrations
               </SidebarLink>
-              <SidebarLink to="/dashboard/camps" icon={<Archive size={20} />}>
+              <SidebarLink to="/find-camps" icon={<Archive size={20} />}>
                 Available Camps
               </SidebarLink>
               <SidebarLink to="/dashboard/settings" icon={<Settings size={20} />}>

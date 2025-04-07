@@ -94,25 +94,76 @@ function Router() {
       <Route path="/org/:slug" component={OrganizationPublicPage} />
       <Route path="/invitations/:token/accept" component={InvitationAcceptPage} />
       <ProtectedRoute path="/dashboard" component={DashboardRouter} />
-      <ProtectedRoute path="/dashboard/my-athletes" component={MyAthletesPage} />
-      <ProtectedRoute path="/dashboard/registrations" component={RegistrationsPage} />
-      <ProtectedRoute path="/dashboard/camps" component={CampsPage} />
-      <ProtectedRoute path="/dashboard/camps/:id" component={CampViewPage} />
-      <ProtectedRoute path="/dashboard/camps/slug/:id" component={CampViewPage} />
+      <ProtectedRoute 
+        path="/dashboard/my-athletes" 
+        component={MyAthletesPage}
+        requiredRoles={["parent" as const]} 
+      />
+      <ProtectedRoute 
+        path="/dashboard/registrations" 
+        component={RegistrationsPage}
+      />
+      <ProtectedRoute 
+        path="/dashboard/camps" 
+        component={CampsPage}
+        requiredRoles={["camp_creator" as const, "platform_admin" as const]} 
+      />
+      <ProtectedRoute 
+        path="/dashboard/camps/:id" 
+        component={CampViewPage}
+        requiredRoles={["camp_creator" as const, "platform_admin" as const]} 
+      />
+      <ProtectedRoute 
+        path="/dashboard/camps/slug/:id" 
+        component={CampViewPage}
+        requiredRoles={["camp_creator" as const, "platform_admin" as const]} 
+      />
       <ProtectedRoute path="/camp/:id" component={CampViewPage} />
       <ProtectedRoute path="/camp/slug/:id" component={CampViewPage} />
-      <ProtectedRoute path="/dashboard/reports" component={ReportsPage} />
-      <ProtectedRoute path="/dashboard/team" component={TeamPage} />
+      <ProtectedRoute 
+        path="/dashboard/reports" 
+        component={ReportsPage}
+        requiredRoles={["camp_creator" as const, "platform_admin" as const]} 
+      />
+      <ProtectedRoute 
+        path="/dashboard/team" 
+        component={TeamPage}
+        requiredRoles={["camp_creator" as const, "platform_admin" as const]} 
+      />
       <ProtectedRoute 
         path="/dashboard/settings" 
         component={user?.role === "parent" ? ParentSettingsPage : SettingsPage} 
       />
-      <ProtectedRoute path="/dashboard/organization-profile" component={OrganizationProfilePage} />
-      <ProtectedRoute path="/dashboard/permissions" component={PermissionManagementPage} />
-      <ProtectedRoute path="/dashboard/stripe-connect" component={StripeConnectManagement} />
-      <ProtectedRoute path="/dashboard/subscription-plans" component={() => <SubscriptionPlans />} />
-      <ProtectedRoute path="/permission-management" component={PermissionManagementPage} />
-      <ProtectedRoute path="/custom-fields" component={CustomFieldsPage} />
+      <ProtectedRoute 
+        path="/dashboard/organization-profile" 
+        component={OrganizationProfilePage}
+        requiredRoles={["camp_creator" as const, "platform_admin" as const]} 
+      />
+      <ProtectedRoute 
+        path="/dashboard/permissions" 
+        component={PermissionManagementPage}
+        requiredRoles={["camp_creator" as const, "platform_admin" as const]} 
+      />
+      <ProtectedRoute 
+        path="/dashboard/stripe-connect" 
+        component={StripeConnectManagement}
+        requiredRoles={["camp_creator" as const, "platform_admin" as const]} 
+      />
+      <ProtectedRoute 
+        path="/dashboard/subscription-plans" 
+        component={() => <SubscriptionPlans />}
+        requiredRoles={["camp_creator" as const, "platform_admin" as const]} 
+      />
+      <ProtectedRoute 
+        path="/permission-management" 
+        component={PermissionManagementPage}
+        requiredRoles={["camp_creator" as const, "platform_admin" as const]} 
+      />
+      <ProtectedRoute 
+        path="/custom-fields" 
+        component={CustomFieldsPage}
+        requiredRoles={["camp_creator" as const, "platform_admin" as const]} 
+      />
       <ProtectedRoute path="/user-switcher" component={UserSwitcherPage} />
       <ProtectedRoute path="/parent-dashboard" component={ParentDashboardRouter} />
       <ProtectedRoute path="/parent-onboarding" component={ParentOnboardingPage} />
