@@ -207,9 +207,20 @@ function RegistrationCard({ registration, status }: RegistrationCardProps) {
   // Add deregistration mutation
   const deregisterMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest(`/api/registrations/${registration.id}`, {
-        method: 'DELETE'
+      const response = await fetch(`/api/registrations/${registration.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: "An unknown error occurred" }));
+        throw new Error(errorData.message || "Failed to deregister");
+      }
+      
+      return await response.json();
     },
     onSuccess: () => {
       toast({
@@ -224,7 +235,7 @@ function RegistrationCard({ registration, status }: RegistrationCardProps) {
       console.error("Error deregistering:", error);
       toast({
         title: "Error",
-        description: "There was a problem removing the registration. Please try again.",
+        description: error instanceof Error ? error.message : "There was a problem removing the registration. Please try again.",
         variant: "destructive",
       });
     }
