@@ -120,6 +120,8 @@ function Router() {
       />
       <ProtectedRoute path="/camp/:id" component={CampViewPage} />
       <ProtectedRoute path="/camp/slug/:id" component={CampViewPage} />
+      <ProtectedRoute path="/register/camp/:id" component={CampViewPage} />
+      <ProtectedRoute path="/register/camp/slug/:id" component={CampViewPage} />
       <ProtectedRoute 
         path="/dashboard/reports" 
         component={ReportsPage}

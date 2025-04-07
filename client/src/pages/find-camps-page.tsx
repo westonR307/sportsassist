@@ -234,8 +234,8 @@ export default function FindCampsPage() {
     
     // Determine the URL path based on whether we have a slug
     const campPath = campSlug 
-      ? `/dashboard/camps/slug/${campSlug}`
-      : `/dashboard/camps/${campId}`;
+      ? `/register/camp/slug/${campSlug}`
+      : `/register/camp/${campId}`;
     
     if (!user) {
       // Redirect to auth page with return URL
