@@ -62,7 +62,7 @@ export function CampMessageReplyDialog({
 
   const replyMutation = useMutation({
     mutationFn: (data: FormData) => {
-      return apiRequest(`/api/camp-messages/${messageId}/reply`, {
+      return apiRequest(`/api/camp-messages/${messageId}/replies`, {
         method: "POST",
         body: JSON.stringify({
           content: data.content,
