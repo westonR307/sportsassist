@@ -20,6 +20,7 @@ import {
   documents,
   campMessages,
   campMessageRecipients,
+  campMessageReplies,
   subscriptionPlans,
   organizationSubscriptions,
   documentFields,
