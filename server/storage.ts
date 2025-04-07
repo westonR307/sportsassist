@@ -3415,6 +3415,31 @@ export class DatabaseStorage implements IStorage {
       throw new Error(`Failed to fetch parent camp messages: ${error.message}`);
     }
   }
+  
+  async getParentCampMessagesForCamp(parentId: number, campId: number): Promise<{message: CampMessage, recipient: CampMessageRecipient}[]> {
+    try {
+      console.log(`Fetching camp messages for parent ${parentId} and camp ${campId}`);
+      
+      const results = await db.select({
+        message: campMessages,
+        recipient: campMessageRecipients
+      })
+      .from(campMessageRecipients)
+      .innerJoin(campMessages, eq(campMessageRecipients.messageId, campMessages.id))
+      .where(
+        and(
+          eq(campMessageRecipients.parentId, parentId),
+          eq(campMessages.campId, campId)
+        )
+      )
+      .orderBy(desc(campMessages.createdAt));
+      
+      return results;
+    } catch (error: any) {
+      console.error(`Error fetching parent camp messages for parent ID ${parentId} and camp ID ${campId}:`, error);
+      throw new Error(`Failed to fetch parent camp messages: ${error.message}`);
+    }
+  }
 
   // Permission Set methods
   async createPermissionSet(permissionSet: InsertPermissionSet): Promise<PermissionSet> {

@@ -2818,21 +2818,19 @@ export async function registerRoutes(app: Express) {
         return res.status(404).json({ message: "Camp not found" });
       }
       
-      // Get all of the parent's messages
-      const allMessages = await storage.getParentCampMessages(parentId);
+      // Get all of the parent's messages for this specific camp
+      const messages = await storage.getParentCampMessagesForCamp(parentId, campId);
       
-      // Filter messages to only include those for this specific camp
-      const campMessages = allMessages
-        .filter(item => item.message.campId === campId)
-        .map(item => ({
-          id: item.message.id,
-          subject: item.message.subject,
-          content: item.message.content,
-          senderName: item.message.senderName,
-          createdAt: item.message.createdAt,
-          sentToAll: item.message.sentToAll,
-          isRead: item.recipient.isRead
-        }));
+      // Transform messages into the expected format
+      const campMessages = messages.map(item => ({
+        id: item.message.id,
+        subject: item.message.subject,
+        content: item.message.content,
+        senderName: item.message.senderName,
+        createdAt: item.message.createdAt,
+        sentToAll: item.message.sentToAll,
+        isRead: item.recipient.isRead
+      }));
       
       res.json(campMessages);
     } catch (error) {
