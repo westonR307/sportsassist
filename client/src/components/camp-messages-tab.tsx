@@ -147,6 +147,26 @@ export function CampMessagesTab({
                           ? `${message.content.substring(0, 300)}...` 
                           : message.content}
                       </div>
+                      
+                      {/* Display message replies if any */}
+                      {message.replies && message.replies.length > 0 && (
+                        <div className="mt-4 border-t pt-3">
+                          <h4 className="text-sm font-medium mb-2">Replies</h4>
+                          <div className="space-y-3">
+                            {message.replies.map((reply) => (
+                              <div key={reply.id} className="bg-muted p-3 rounded-md">
+                                <div className="flex justify-between items-start mb-1">
+                                  <div className="text-xs font-medium">{reply.senderName}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {format(new Date(reply.createdAt), "MMM d, yyyy h:mm a")}
+                                  </div>
+                                </div>
+                                <div className="text-sm whitespace-pre-wrap">{reply.content}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                     <CardFooter className="flex justify-between pt-2 text-xs text-muted-foreground">
                       <div>

@@ -3198,10 +3198,11 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getCampMessages(campId: number): Promise<CampMessage[]> {
+  async getCampMessages(campId: number): Promise<(CampMessage & { replies?: any[] })[]> {
     try {
       console.log(`Fetching all messages for camp ${campId}`);
       
+      // First get the messages
       const messages = await db.select({
         ...campMessages,
         sentBy: {
@@ -3215,7 +3216,18 @@ export class DatabaseStorage implements IStorage {
       .where(eq(campMessages.campId, campId))
       .orderBy(desc(campMessages.createdAt));
       
-      return messages;
+      // Now get all replies for these messages
+      const messagesWithReplies = await Promise.all(
+        messages.map(async (message) => {
+          const replies = await this.getCampMessageReplies(message.id);
+          return {
+            ...message,
+            replies: replies
+          };
+        })
+      );
+      
+      return messagesWithReplies;
     } catch (error: any) {
       console.error(`Error fetching camp messages for camp ID ${campId}:`, error);
       throw new Error(`Failed to fetch camp messages: ${error.message}`);

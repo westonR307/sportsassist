@@ -42,6 +42,15 @@ type CampBasicInfo = {
   name: string;
 };
 
+type MessageReply = {
+  id: number;
+  messageId: number;
+  senderId: number;
+  senderName: string;
+  content: string;
+  createdAt: string;
+};
+
 type CampMessage = {
   id: number;
   campId: number;
@@ -54,6 +63,7 @@ type CampMessage = {
   sentToAll: boolean;
   createdAt: string;
   recipientsCount: number;
+  replies?: MessageReply[];
 };
 
 export default function OrganizationMessagesPage() {
@@ -154,34 +164,52 @@ export default function OrganizationMessagesPage() {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : filteredMessages && filteredMessages.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Camp</TableHead>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Sender</TableHead>
-                    <TableHead className="text-right">Recipients</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredMessages.map((message) => (
-                    <TableRow key={message.id} className="cursor-pointer hover:bg-muted/50">
-                      <TableCell className="font-medium whitespace-nowrap">
+              <div className="divide-y">
+                {filteredMessages.map((message) => (
+                  <div key={message.id} className="p-4 hover:bg-muted/50">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-base font-medium">{message.subject}</h3>
+                      <Badge variant="outline">
                         {format(new Date(message.createdAt), "MMM d, yyyy")}
-                      </TableCell>
-                      <TableCell>{message.campName}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">
-                        {message.subject}
-                      </TableCell>
-                      <TableCell>{message.senderName}</TableCell>
-                      <TableCell className="text-right">
-                        <Badge variant="outline">{message.recipientsCount}</Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                      <span>From: {message.senderName}</span>
+                      <span>•</span>
+                      <span>Camp: {message.campName}</span>
+                      <span>•</span>
+                      <span>
+                        Recipients: {message.sentToAll ? "All Participants" : message.recipientsCount}
+                      </span>
+                    </div>
+                    <div className="text-sm mt-2 whitespace-pre-wrap">
+                      {message.content.length > 200
+                        ? `${message.content.substring(0, 200)}...`
+                        : message.content}
+                    </div>
+                    
+                    {/* Display message replies if any */}
+                    {message.replies && message.replies.length > 0 && (
+                      <div className="mt-4 ml-4 border-l-2 pl-4">
+                        <h4 className="text-sm font-medium mb-2">Replies ({message.replies.length})</h4>
+                        <div className="space-y-3">
+                          {message.replies.map((reply) => (
+                            <div key={reply.id} className="bg-muted p-3 rounded-md">
+                              <div className="flex justify-between items-start mb-1">
+                                <div className="text-xs font-medium">{reply.senderName}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {format(new Date(reply.createdAt), "MMM d, yyyy h:mm a")}
+                                </div>
+                              </div>
+                              <div className="text-sm">{reply.content}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             ) : (
               <div className="flex flex-col items-center justify-center p-8 text-center">
                 <p className="text-muted-foreground">No messages found</p>
