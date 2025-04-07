@@ -1,6 +1,6 @@
 
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useEffect } from "react";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
   Card,
@@ -11,17 +11,65 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Mail } from "lucide-react";
+import { Mail, Circle } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+
+interface CampMessage {
+  id: number;
+  subject: string;
+  content: string;
+  senderName: string;
+  createdAt: string;
+  sentToAll: boolean;
+  isRead: boolean;
+  recipientId: number | null;
+}
 
 interface ParentCampMessagesTabProps {
   campId: number;
 }
 
 export function ParentCampMessagesTab({ campId }: ParentCampMessagesTabProps) {
-  const { data: messages, isLoading } = useQuery({
-    queryKey: [`/api/camps/${campId}/messages/parent`],
+  const queryClient = useQueryClient();
+  const queryKey = [`/api/camps/${campId}/messages/parent`];
+
+  const { data: messages, isLoading } = useQuery<CampMessage[]>({
+    queryKey,
     refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
+
+  // Mutation for marking a message as read
+  const markAsReadMutation = useMutation({
+    mutationFn: ({ messageId, recipientId }: { messageId: number; recipientId: number }) => 
+      apiRequest(`/api/camp-messages/${messageId}/recipients/${recipientId}/read`, {
+        method: 'PATCH'
+      }),
+    onSuccess: () => {
+      // Invalidate the messages query to refetch with updated read status
+      queryClient.invalidateQueries({ queryKey });
+    }
+  });
+
+  // Mark unread messages as read when component mounts
+  useEffect(() => {
+    if (messages) {
+      // Find all unread messages that have a recipientId
+      const unreadMessages = messages.filter(
+        (message) => !message.isRead && message.recipientId !== null
+      );
+
+      // Mark each unread message as read
+      unreadMessages.forEach((message) => {
+        if (message.recipientId) {
+          markAsReadMutation.mutate({
+            messageId: message.id,
+            recipientId: message.recipientId
+          });
+        }
+      });
+    }
+  }, [messages]);
 
   return (
     <div className="space-y-4">
@@ -33,11 +81,16 @@ export function ParentCampMessagesTab({ campId }: ParentCampMessagesTabProps) {
           </div>
         ) : messages?.length > 0 ? (
           <div className="space-y-4">
-            {messages.map((message: any) => (
-              <Card key={message.id} className="shadow-sm">
+            {messages.map((message) => (
+              <Card key={message.id} className={`shadow-sm ${!message.isRead ? 'border-primary' : ''}`}>
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start">
-                    <CardTitle className="text-base">{message.subject}</CardTitle>
+                    <div className="flex items-center gap-2">
+                      {!message.isRead && (
+                        <Circle className="h-2 w-2 fill-primary text-primary" />
+                      )}
+                      <CardTitle className="text-base">{message.subject}</CardTitle>
+                    </div>
                     <Badge variant="outline">
                       {format(new Date(message.createdAt), "MMM d, yyyy")}
                     </Badge>

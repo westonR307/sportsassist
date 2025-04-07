@@ -2678,17 +2678,11 @@ export async function registerRoutes(app: Express) {
       // Create recipients for the message
       const recipients = [];
       
+      // First, collect all recipients
       for (const registration of registrations) {
-        // Get parent's email for the child
         const child = await storage.getChild(registration.childId);
-        
         if (!child) continue;
         
-        const parent = await storage.getUser(child.parentId);
-        
-        if (!parent || !parent.email) continue;
-        
-        // Add recipient to the list
         recipients.push({
           messageId: newMessage.id,
           registrationId: registration.id,
@@ -2697,29 +2691,36 @@ export async function registerRoutes(app: Express) {
           isRead: false,
           emailDelivered: false
         });
-        
-        // Send email
+      }
+      
+      // Create all recipient records at once - this ensures that messages sent to "all" 
+      // actually have recipient records for everyone
+      const createdRecipients = await storage.createCampMessageRecipients(recipients);
+      console.log(`Created ${createdRecipients.length} recipient records for message ${newMessage.id}`);
+      
+      // Process emails for each recipient
+      for (const recipient of createdRecipients) {
         try {
-          const recipientRecord = await storage.createCampMessageRecipients([recipients[recipients.length - 1]]);
+          // Get the parent for sending the email
+          const parent = await storage.getUser(recipient.parentId);
+          if (!parent || !parent.email) continue;
           
-          if (recipientRecord && recipientRecord.length > 0) {
-            await sendCampMessageEmail({
-              email: parent.email,
-              recipientName: `${parent.first_name || ''} ${parent.last_name || ''}`.trim(),
-              subject,
-              content,
-              campName: camp.name,
-              senderName: newMessage.senderName || `${req.user.first_name || ''} ${req.user.last_name || ''}`.trim(),
-              organizationName: organization.name,
-              messageId: newMessage.id,
-              recipientId: recipientRecord[0].id
-            });
-            
-            // Mark as delivered
-            await storage.markCampMessageRecipientAsDelivered(recipientRecord[0].id);
-          }
+          await sendCampMessageEmail({
+            email: parent.email,
+            recipientName: `${parent.first_name || ''} ${parent.last_name || ''}`.trim(),
+            subject,
+            content,
+            campName: camp.name,
+            senderName: newMessage.senderName || `${req.user.first_name || ''} ${req.user.last_name || ''}`.trim(),
+            organizationName: organization.name,
+            messageId: newMessage.id,
+            recipientId: recipient.id
+          });
+          
+          // Mark as delivered
+          await storage.markCampMessageRecipientAsDelivered(recipient.id);
         } catch (emailError) {
-          console.error("Error sending email to recipient:", emailError);
+          console.error(`Error sending email to recipient ${recipient.id}:`, emailError);
           // Continue with other recipients if one fails
         }
       }
@@ -2829,7 +2830,8 @@ export async function registerRoutes(app: Express) {
         senderName: item.message.senderName,
         createdAt: item.message.createdAt,
         sentToAll: item.message.sentToAll,
-        isRead: item.recipient.isRead
+        isRead: item.recipient ? item.recipient.isRead : false,
+        recipientId: item.recipient ? item.recipient.id : null
       }));
       
       res.json(campMessages);
