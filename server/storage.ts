@@ -3720,7 +3720,7 @@ export class DatabaseStorage implements IStorage {
       console.log(`Checking if parent ${userId} has access to camp ${campId}`);
       
       // Check if this parent has any children registered for this camp
-      const registrations = await db
+      const registrationsData = await db
         .select()
         .from(registrations)
         .innerJoin(children, eq(registrations.childId, children.id))
@@ -3730,7 +3730,7 @@ export class DatabaseStorage implements IStorage {
         ))
         .limit(1);
       
-      const hasAccess = registrations.length > 0;
+      const hasAccess = registrationsData.length > 0;
       console.log(`Parent ${userId} ${hasAccess ? 'has' : 'does not have'} access to camp ${campId}`);
       return hasAccess;
     } catch (error) {
