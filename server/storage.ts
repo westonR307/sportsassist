@@ -3439,8 +3439,8 @@ export class DatabaseStorage implements IStorage {
 
       console.log(`Found ${userRegistrations.length} registrations for parent ${parentId} in camp ${campId}`);
       
-      // Get all messages for this camp
-      const allMessages = await db.select({
+      // First get all "sent to all" messages for this camp
+      const sentToAllMessages = await db.select({
         message: campMessages,
         recipient: campMessageRecipients
       })
@@ -3452,28 +3452,38 @@ export class DatabaseStorage implements IStorage {
           eq(campMessageRecipients.parentId, parentId)
         )
       )
-      .where(eq(campMessages.campId, campId));
-
-      // Filter the messages based on recipient criteria
-      const filteredMessages = allMessages.filter(({ message, recipient }) => {
-        // If the message was sent to all, the parent should see it
-        if (message.sentToAll) {
-          return true;
-        }
-        
-        // If the message has a recipient record for this parent, they should see it
-        if (recipient && recipient.parentId === parentId) {
-          return true;
-        }
-        
-        // Otherwise, they shouldn't see the message
-        return false;
-      });
-
-      console.log(`Found ${filteredMessages.length} messages for parent ${parentId} in camp ${campId}`);
+      .where(
+        and(
+          eq(campMessages.campId, campId),
+          eq(campMessages.sentToAll, true)
+        )
+      );
+      
+      // Then get all messages specifically targeted to this parent
+      const targetedMessages = await db.select({
+        message: campMessages,
+        recipient: campMessageRecipients
+      })
+      .from(campMessages)
+      .innerJoin(
+        campMessageRecipients, 
+        eq(campMessageRecipients.messageId, campMessages.id)
+      )
+      .where(
+        and(
+          eq(campMessages.campId, campId),
+          eq(campMessages.sentToAll, false),
+          eq(campMessageRecipients.parentId, parentId)
+        )
+      );
+      
+      // Combine both message sets
+      const allMessages = [...sentToAllMessages, ...targetedMessages];
+      
+      console.log(`Found ${allMessages.length} messages for parent ${parentId} in camp ${campId}`);
 
       // Map to ensure the correct recipient is assigned
-      const messagesWithRecipients = filteredMessages.map(({ message, recipient }) => {
+      const messagesWithRecipients = allMessages.map(({ message, recipient }) => {
         return {
           message,
           // For "sentToAll" messages that might not have a specific recipient record for this parent,
