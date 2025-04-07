@@ -2576,6 +2576,40 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ message: "Failed to fetch registrations" });
     }
   });
+  
+  // Endpoint for fetching registrations with parent information for sending messages
+  app.get("/api/camps/:id/registrations-with-parents", async (req, res) => {
+    try {
+      const campId = parseInt(req.params.id);
+      
+      // First check if the camp exists
+      const camp = await storage.getCamp(campId);
+      if (!camp) {
+        return res.status(404).json({ message: "Camp not found" });
+      }
+      
+      // Only organization staff can access this endpoint for messaging functionality
+      if (req.user) {
+        // Check if the user belongs to the organization that owns the camp
+        const isOrgStaff = (req.user.organizationId === camp.organizationId) && 
+                          ['camp_creator', 'manager', 'coach', 'volunteer'].includes(req.user.role);
+        
+        if (isOrgStaff) {
+          // Get registrations with parent information for messaging
+          const registrations = await storage.getRegistrationsWithParentInfo(campId);
+          return res.json(registrations);
+        }
+      }
+      
+      // Unauthorized access
+      return res.status(403).json({ 
+        message: "You don't have permission to access this information" 
+      });
+    } catch (error) {
+      console.error("Error fetching camp registrations with parent info:", error);
+      res.status(500).json({ message: "Failed to fetch registrations with parent information" });
+    }
+  });
 
   app.post("/api/camps/:id/messages", async (req, res) => {
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
