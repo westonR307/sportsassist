@@ -167,11 +167,7 @@ export function CampMessagesTab({
           ) : (
             <div className="py-8 text-center">
               <p className="text-muted-foreground">No messages have been sent for this camp yet.</p>
-              {hasPermission && (
-                <div className="mt-4">
-                  <SendCampMessageDialog campId={campId} campName={campName} />
-                </div>
-              )}
+              {/* We already have a send message button in the header, so removing the duplicate one here */}
             </div>
           )}
         </TabsContent>
