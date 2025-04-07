@@ -3420,48 +3420,53 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`Fetching camp messages for parent ${parentId} and camp ${campId}`);
       
-      // First get all messages for this camp
-      const messages = await db.select()
-        .from(campMessages)
-        .where(eq(campMessages.campId, campId));
+      // Check if parent has any registrations for this camp
+      const registrations = await db.select()
+        .from(registrations)
+        .innerJoin(children, eq(registrations.childId, children.id))
+        .where(
+          and(
+            eq(registrations.campId, campId),
+            eq(children.parentId, parentId)
+          )
+        );
 
-      // For each message, determine if parent should see it
-      const results = await Promise.all(messages.map(async (msg) => {
-        // If message was sent to all, include it
-        if (msg.sentToAll) {
-          return {
-            message: msg,
-            recipient: null
-          };
-        }
+      // If no registrations, parent shouldn't see any messages
+      if (registrations.length === 0) {
+        return [];
+      }
 
-        // Otherwise, check if there's a specific recipient record
-        const [recipient] = await db.select()
-          .from(campMessageRecipients)
-          .where(
-            and(
-              eq(campMessageRecipients.messageId, msg.id),
-              eq(campMessageRecipients.parentId, parentId)
-            )
-          );
+      // Get messages that were either sent to all OR specifically to this parent
+      const messages = await db.select({
+        message: campMessages,
+        recipient: campMessageRecipients
+      })
+      .from(campMessages)
+      .leftJoin(
+        campMessageRecipients,
+        and(
+          eq(campMessageRecipients.messageId, campMessages.id),
+          eq(campMessageRecipients.parentId, parentId)
+        )
+      )
+      .where(
+        and(
+          eq(campMessages.campId, campId),
+          or(
+            eq(campMessages.sentToAll, true),
+            ne(campMessageRecipients.id, null)
+          )
+        )
+      );
 
-        // Only include message if there's a recipient record
-        return recipient ? {
-          message: msg,
-          recipient
-        } : null;
-      }));
-
-      // Filter out null results and sort by creation date
-      return results.filter(result => result !== null)
+      return messages
+        .map(({ message, recipient }) => ({
+          message,
+          recipient: message.sentToAll ? null : recipient
+        }))
         .sort((a, b) => 
           new Date(b.message.createdAt).getTime() - new Date(a.message.createdAt).getTime()
         );
-
-      // Sort by creation date
-      return results.sort((a, b) => 
-        new Date(b.message.createdAt).getTime() - new Date(a.message.createdAt).getTime()
-      );
     } catch (error: any) {
       console.error(`Error fetching parent camp messages for parent ID ${parentId} and camp ID ${campId}:`, error);
       throw new Error(`Failed to fetch parent camp messages: ${error.message}`);
