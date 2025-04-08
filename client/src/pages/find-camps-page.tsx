@@ -92,12 +92,12 @@ export default function FindCampsPage() {
   const [location, setLocation] = useLocation();
   const { user, isLoading: isUserLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedSport, setSelectedSport] = useState<string>("");
-  const [selectedSkillLevel, setSelectedSkillLevel] = useState<string>("");
-  const [selectedState, setSelectedState] = useState<string>("");
-  const [selectedCity, setSelectedCity] = useState<string>("");
-  const [selectedAgeRange, setSelectedAgeRange] = useState<string>("");
-  const [selectedType, setSelectedType] = useState<string>("");
+  const [selectedSport, setSelectedSport] = useState<string>("any");
+  const [selectedSkillLevel, setSelectedSkillLevel] = useState<string>("any");
+  const [selectedState, setSelectedState] = useState<string>("any");
+  const [selectedCity, setSelectedCity] = useState<string>("any");
+  const [selectedAgeRange, setSelectedAgeRange] = useState<string>("any");
+  const [selectedType, setSelectedType] = useState<string>("any");
   const [showVirtualOnly, setShowVirtualOnly] = useState(false);
   const [sortBy, setSortBy] = useState<string>("startDate");
   const [isMobile, setIsMobile] = useState(false);
@@ -221,12 +221,12 @@ export default function FindCampsPage() {
 
   const clearAllFilters = () => {
     setSearchQuery("");
-    setSelectedSport("");
-    setSelectedSkillLevel("");
-    setSelectedState("");
-    setSelectedCity("");
-    setSelectedAgeRange("");
-    setSelectedType("");
+    setSelectedSport("any");
+    setSelectedSkillLevel("any");
+    setSelectedState("any");
+    setSelectedCity("any");
+    setSelectedAgeRange("any");
+    setSelectedType("any");
     setShowVirtualOnly(false);
   };
 
@@ -479,7 +479,7 @@ export default function FindCampsPage() {
                           <div className="grid grid-cols-2 gap-2 py-2">
                             <Button 
                               variant={selectedSport === "" ? "secondary" : "outline"} 
-                              onClick={() => setSelectedSport("")}
+                              onClick={() => setSelectedSport("any")}
                               className="justify-start"
                             >
                               All Sports
@@ -504,7 +504,7 @@ export default function FindCampsPage() {
                           <div className="grid grid-cols-2 gap-2 py-2">
                             <Button 
                               variant={selectedSkillLevel === "" ? "secondary" : "outline"} 
-                              onClick={() => setSelectedSkillLevel("")}
+                              onClick={() => setSelectedSkillLevel("any")}
                               className="justify-start"
                             >
                               Any Level
@@ -583,7 +583,7 @@ export default function FindCampsPage() {
                           <div className="grid grid-cols-2 gap-2 py-2">
                             <Button 
                               variant={selectedType === "" ? "secondary" : "outline"} 
-                              onClick={() => setSelectedType("")}
+                              onClick={() => setSelectedType("any")}
                               className="justify-start"
                             >
                               Any Type
@@ -637,7 +637,7 @@ export default function FindCampsPage() {
                           <div className="grid grid-cols-2 gap-2 py-2">
                             <Button 
                               variant={selectedAgeRange === "" ? "secondary" : "outline"} 
-                              onClick={() => setSelectedAgeRange("")}
+                              onClick={() => setSelectedAgeRange("any")}
                               className="justify-start"
                             >
                               Any Age
@@ -772,7 +772,7 @@ export default function FindCampsPage() {
                     variant="ghost" 
                     size="icon" 
                     className="h-4 w-4 p-0 hover:bg-transparent"
-                    onClick={() => setSelectedSport("")}
+                    onClick={() => setSelectedSport("any")}
                   >
                     <ChevronRight className="h-3 w-3" />
                   </Button>
@@ -785,7 +785,7 @@ export default function FindCampsPage() {
                     variant="ghost" 
                     size="icon" 
                     className="h-4 w-4 p-0 hover:bg-transparent"
-                    onClick={() => setSelectedSkillLevel("")}
+                    onClick={() => setSelectedSkillLevel("any")}
                   >
                     <ChevronRight className="h-3 w-3" />
                   </Button>
@@ -798,7 +798,7 @@ export default function FindCampsPage() {
                     variant="ghost" 
                     size="icon" 
                     className="h-4 w-4 p-0 hover:bg-transparent"
-                    onClick={() => setSelectedState("")}
+                    onClick={() => setSelectedState("any")}
                   >
                     <ChevronRight className="h-3 w-3" />
                   </Button>
@@ -811,7 +811,7 @@ export default function FindCampsPage() {
                     variant="ghost" 
                     size="icon" 
                     className="h-4 w-4 p-0 hover:bg-transparent"
-                    onClick={() => setSelectedCity("")}
+                    onClick={() => setSelectedCity("any")}
                   >
                     <ChevronRight className="h-3 w-3" />
                   </Button>
@@ -824,7 +824,7 @@ export default function FindCampsPage() {
                     variant="ghost" 
                     size="icon" 
                     className="h-4 w-4 p-0 hover:bg-transparent"
-                    onClick={() => setSelectedType("")}
+                    onClick={() => setSelectedType("any")}
                   >
                     <ChevronRight className="h-3 w-3" />
                   </Button>
@@ -837,7 +837,7 @@ export default function FindCampsPage() {
                     variant="ghost" 
                     size="icon" 
                     className="h-4 w-4 p-0 hover:bg-transparent"
-                    onClick={() => setSelectedAgeRange("")}
+                    onClick={() => setSelectedAgeRange("any")}
                   >
                     <ChevronRight className="h-3 w-3" />
                   </Button>
