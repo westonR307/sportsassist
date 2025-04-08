@@ -26,8 +26,8 @@ import { cn } from '@/lib/utils';
 
 export interface CampFilterValues {
   search?: string;
-  status?: 'active' | 'upcoming' | 'past' | 'cancelled' | '';
-  type?: 'one_on_one' | 'group' | 'team' | 'virtual' | '';
+  status?: 'active' | 'upcoming' | 'past' | 'cancelled' | 'all';
+  type?: 'one_on_one' | 'group' | 'team' | 'virtual' | 'all' | 'any';
   includeDeleted?: boolean;
 }
 
@@ -76,8 +76,8 @@ export function CampsFilter({
   const resetFilters = () => {
     const emptyFilters: CampFilterValues = {
       search: '',
-      status: '',
-      type: '',
+      status: 'all',
+      type: 'any',
       includeDeleted: false
     };
     setTempFilters(emptyFilters);
