@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -27,7 +28,7 @@ import { cn } from '@/lib/utils';
 export interface CampFilterValues {
   search?: string;
   status?: 'active' | 'upcoming' | 'past' | 'cancelled' | 'all';
-  type?: 'one_on_one' | 'group' | 'team' | 'virtual' | 'all' | 'any';
+  type?: 'one_on_one' | 'group' | 'team' | 'virtual' | 'all';
   includeDeleted?: boolean;
 }
 
@@ -44,40 +45,32 @@ export function CampsFilter({
   activeFilterCount,
   className
 }: CampsFilterProps) {
-  // Create a temporary state for filters within the popover
   const [tempFilters, setTempFilters] = React.useState<CampFilterValues>(filters);
-  
-  // Track popover open state
   const [open, setOpen] = React.useState(false);
   
-  // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newFilters = { ...filters, search: e.target.value };
     onFilterChange(newFilters);
   };
   
-  // Update temp filters when main filters change
   React.useEffect(() => {
     setTempFilters(filters);
   }, [filters]);
   
-  // Handle temp filter changes
   const handleTempFilterChange = (key: keyof CampFilterValues, value: any) => {
     setTempFilters(prev => ({ ...prev, [key]: value }));
   };
   
-  // Apply filters from popover
   const applyFilters = () => {
     onFilterChange(tempFilters);
     setOpen(false);
   };
   
-  // Reset all filters
   const resetFilters = () => {
     const emptyFilters: CampFilterValues = {
       search: '',
       status: 'all',
-      type: 'any',
+      type: 'all',
       includeDeleted: false
     };
     setTempFilters(emptyFilters);
@@ -85,7 +78,6 @@ export function CampsFilter({
     setOpen(false);
   };
   
-  // Clear a specific filter
   const clearFilter = (key: keyof CampFilterValues) => {
     const newFilters = { ...filters };
     if (key === 'search') {
@@ -93,14 +85,13 @@ export function CampsFilter({
     } else if (key === 'status') {
       newFilters.status = 'all';
     } else if (key === 'type') {
-      newFilters.type = 'any';
+      newFilters.type = 'all';
     } else if (key === 'includeDeleted') {
       newFilters.includeDeleted = false;
     }
     onFilterChange(newFilters);
   };
   
-  // Format the filter type for display
   const formatFilterType = (type: string): string => {
     const types: Record<string, string> = {
       'one_on_one': 'One-on-One',
@@ -114,7 +105,6 @@ export function CampsFilter({
   return (
     <div className={cn("flex flex-col space-y-2", className)}>
       <div className="flex items-center space-x-2">
-        {/* Search input */}
         <div className="relative flex-grow">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -137,7 +127,6 @@ export function CampsFilter({
           )}
         </div>
         
-        {/* Filter button/popover */}
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className="h-10 px-3">
@@ -154,7 +143,6 @@ export function CampsFilter({
             <div className="space-y-4">
               <h4 className="font-medium">Filter Camps</h4>
               
-              {/* Status filter */}
               <div className="space-y-2">
                 <div className="flex items-center">
                   <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
@@ -177,21 +165,20 @@ export function CampsFilter({
                 </Select>
               </div>
               
-              {/* Type filter */}
               <div className="space-y-2">
                 <div className="flex items-center">
                   <Tag className="h-4 w-4 mr-2 text-muted-foreground" />
                   <Label htmlFor="type-filter">Type</Label>
                 </div>
                 <Select
-                  value={tempFilters.type || 'any'}
+                  value={tempFilters.type || 'all'}
                   onValueChange={(value) => handleTempFilterChange('type', value)}
                 >
                   <SelectTrigger id="type-filter">
                     <SelectValue placeholder="All types" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="any">All types</SelectItem>
+                    <SelectItem value="all">All types</SelectItem>
                     <SelectItem value="one_on_one">One-on-One</SelectItem>
                     <SelectItem value="group">Group</SelectItem>
                     <SelectItem value="team">Team</SelectItem>
@@ -200,7 +187,6 @@ export function CampsFilter({
                 </Select>
               </div>
               
-              {/* Include deleted switch */}
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox" 
@@ -212,7 +198,6 @@ export function CampsFilter({
                 <Label htmlFor="include-deleted">Show deleted camps</Label>
               </div>
               
-              {/* Action buttons */}
               <div className="flex justify-between pt-2">
                 <Button variant="outline" size="sm" onClick={resetFilters}>
                   Reset All
@@ -225,8 +210,6 @@ export function CampsFilter({
           </PopoverContent>
         </Popover>
       </div>
-      
-      {/* Active filter badges */}
     </div>
   );
 }
