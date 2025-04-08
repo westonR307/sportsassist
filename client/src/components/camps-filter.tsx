@@ -101,6 +101,16 @@ export function CampsFilter({
     return types[type] || type;
   };
 
+  // Count active filters to show in the filter UI
+  const activeFilterCount = React.useMemo(() => {
+    let count = 0;
+    if (filters.search && filters.search.trim() !== '') count++;
+    if (filters.status && filters.status !== 'all' && filters.status !== null) count++;
+    if (filters.type && filters.type !== 'any' && filters.type !== null) count++;
+    if (filters.includeDeleted === true) count++;
+    return count;
+  }, [filters]);
+
   return (
     <div className={cn("flex flex-col space-y-2", className)}>
       <div className="flex items-center space-x-2">
@@ -178,7 +188,7 @@ export function CampsFilter({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value={null}>All types</SelectItem>
-                    <SelectItem value="one_on-one">One-on-One</SelectItem>
+                    <SelectItem value="one_on_one">One-on-One</SelectItem>
                     <SelectItem value="group">Group</SelectItem>
                     <SelectItem value="team">Team</SelectItem>
                     <SelectItem value="virtual">Virtual</SelectItem>
