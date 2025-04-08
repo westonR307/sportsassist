@@ -195,7 +195,6 @@ export function CampsFilter({
                     <SelectItem value="one_on_one">One-on-One</SelectItem>
                     <SelectItem value="group">Group</SelectItem>
                     <SelectItem value="team">Team</SelectItem>
-                    <SelectItem value="virtual">Virtual</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

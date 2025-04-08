@@ -39,9 +39,9 @@ export default function CampsPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const shouldShowDialog = urlParams.get('showAddDialog') === 'true';
   const [location, navigate] = useWouterLocation();
-  
+
   const [showAddCampDialog, setShowAddCampDialog] = React.useState(shouldShowDialog);
-  
+
   // Set up filter state
   const [filters, setFilters] = React.useState<CampFilterValues>({
     search: '',
@@ -49,7 +49,7 @@ export default function CampsPage() {
     type: '',
     includeDeleted: false
   });
-  
+
   // Count active filters to show in the filter UI
   const activeFilterCount = React.useMemo(() => {
     let count = 0;
@@ -59,7 +59,7 @@ export default function CampsPage() {
     if (filters.includeDeleted) count++;
     return count;
   }, [filters]);
-  
+
   // Effect to clear the URL parameter after the dialog is shown
   React.useEffect(() => {
     if (shouldShowDialog) {
@@ -67,28 +67,28 @@ export default function CampsPage() {
       navigate('/dashboard/camps', { replace: true });
     }
   }, [shouldShowDialog, navigate]);
-  
+
   const { user } = useAuth();
-  
+
   // Build the query URL with filter parameters
   const queryUrl = React.useMemo(() => {
     const url = new URL("/api/camps", window.location.origin);
-    
+
     if (filters.search) url.searchParams.append('search', filters.search);
     if (filters.status) url.searchParams.append('status', filters.status);
     if (filters.type) url.searchParams.append('type', filters.type);
     if (filters.includeDeleted) url.searchParams.append('includeDeleted', 'true');
-    
+
     return url.pathname + url.search;
   }, [filters]);
-  
+
   // Update the query key when filters change
   const { data: camps, isLoading } = useQuery<CampWithPermissions[]>({
     queryKey: [queryUrl],
     staleTime: 5000, // Only refetch after 5 seconds
     refetchOnWindowFocus: false,
   });
-  
+
   // Check if user is a camp creator or manager who can create camps
   const canCreateCamps = user && ['camp_creator', 'manager'].includes(user.role);
 
@@ -111,7 +111,7 @@ export default function CampsPage() {
           </div>
         )}
       </div>
-      
+
       {/* Camp filters */}
       <CampsFilter 
         filters={filters}
@@ -146,21 +146,21 @@ export default function CampsPage() {
           {camps.map((camp, index) => {
             // Check if user can manage this specific camp
             const canManageCamp = camp.permissions?.canManage || false;
-            
+
             // Calculate date ranges and format for better display
             const now = new Date();
             const startDate = new Date(camp.startDate);
             const endDate = new Date(camp.endDate);
             const regStartDate = new Date(camp.registrationStartDate);
             const regEndDate = new Date(camp.registrationEndDate);
-            
+
             // Calculate if registration is open, upcoming, or past
             const regStatus = now < regStartDate 
               ? "upcoming" 
               : now > regEndDate 
                 ? "closed" 
                 : "open";
-                
+
             // Calculate if camp is active, upcoming, past, or cancelled
             const campStatus = camp.isCancelled 
               ? "cancelled"
@@ -169,21 +169,20 @@ export default function CampsPage() {
                 : now > endDate 
                   ? "completed" 
                   : "active";
-                
+
             // Format duration in days
             const campDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-            
+
             // Format a more user-friendly display of the camp type
             const formatCampType = (type: string) => {
               const types: Record<string, string> = {
                 'one_on_one': 'One-on-One',
                 'group': 'Group',
-                'team': 'Team',
-                'virtual': 'Virtual'
+                'team': 'Team'
               };
               return types[type] || type;
             };
-           
+
             // We'll create two cards - one for the front and one for the back of the flip card
             const frontCard = (
               <Card className="h-full border-0 shadow-none">
@@ -193,7 +192,7 @@ export default function CampsPage() {
                   campStatus === 'cancelled' ? 'bg-red-500' : 
                   'bg-gray-400'
                 }`} />
-                
+
                 <CardHeader className="p-3 pb-1">
                   <div className="space-y-1">
                     <div className="flex justify-between items-start">
@@ -216,7 +215,7 @@ export default function CampsPage() {
                     </CardDescription>
                   </div>
                 </CardHeader>
-                
+
                 <CardContent className="p-3 pt-0 space-y-2 text-xs">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
@@ -228,17 +227,17 @@ export default function CampsPage() {
                       <span>{camp.capacity}</span>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-1">
                     <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <span className="truncate">{camp.city}, {camp.state}</span>
                   </div>
-                  
+
                   <div className="flex items-center gap-1">
                     <CalendarDays className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <span className="truncate text-muted-foreground">Click to see schedule</span>
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <Badge 
                       className={
@@ -263,13 +262,13 @@ export default function CampsPage() {
                     <span className="text-xs">${camp.price}</span>
                   </div>
                 </CardContent>
-                
+
                 <div className="absolute bottom-2 right-2 text-muted-foreground text-xs">
                   <RefreshCw className="h-3.5 w-3.5 animate-pulse" />
                 </div>
               </Card>
             );
-            
+
             const backCard = (
               <Card className="h-full border-0 shadow-none overflow-y-auto">
                 <div className={`h-2 w-full ${
@@ -278,7 +277,7 @@ export default function CampsPage() {
                   campStatus === 'cancelled' ? 'bg-red-500' : 
                   'bg-gray-400'
                 }`} />
-                
+
                 <CardHeader className="p-3 pb-1">
                   <div className="flex justify-between items-start">
                     <CardTitle className="text-base">{camp.name}</CardTitle>
@@ -297,10 +296,10 @@ export default function CampsPage() {
                     </div>
                   </div>
                 </CardHeader>
-                
+
                 <CardContent className="p-3 text-xs space-y-3">
                   <p className="text-muted-foreground">{camp.description}</p>
-                  
+
                   <div className="space-y-1">
                     <div className="flex items-center gap-1.5 font-medium">
                       <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
@@ -312,7 +311,7 @@ export default function CampsPage() {
                       <span>{endDate.toLocaleDateString()}</span>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-1">
                     <div className="flex items-center gap-1.5 font-medium">
                       <Clock className="h-3.5 w-3.5 text-muted-foreground" />
@@ -324,7 +323,7 @@ export default function CampsPage() {
                       <span>{regEndDate.toLocaleDateString()}</span>
                     </div>
                   </div>
-                  
+
                   {/* Camp Schedule Summary */}
                   <div className="space-y-1">
                     <div className="flex items-center gap-1.5 font-medium">
@@ -339,7 +338,7 @@ export default function CampsPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
                       <div className="flex items-center gap-1.5">
@@ -351,7 +350,7 @@ export default function CampsPage() {
                         <div>{camp.city}, {camp.state}</div>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-1">
                       <div className="flex items-center gap-1.5">
                         <Tag className="h-3.5 w-3.5 text-muted-foreground" />
@@ -372,7 +371,7 @@ export default function CampsPage() {
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* View Camp Button */}
                     <div className="col-span-2 mt-1">
                       <Button 
@@ -388,7 +387,7 @@ export default function CampsPage() {
                 </CardContent>
               </Card>
             );
-            
+
             // Return the flip card with both sides defined
             return (
               <div key={`camp-${camp.id}`} className="h-[220px]">
@@ -402,7 +401,7 @@ export default function CampsPage() {
           })}
         </div>
       )}
-      
+
       {/* Add Camp Dialog Component */}
       <AddCampDialog
         open={showAddCampDialog}
@@ -410,7 +409,7 @@ export default function CampsPage() {
       />
     </div>
   );
-  
+
   return (
     <DashboardLayout>
       <main className="container mx-auto px-6 py-8">
