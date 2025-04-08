@@ -906,7 +906,7 @@ export default function FindCampsPage() {
             <div className="flex flex-col items-center justify-center min-h-[300px] border rounded-lg p-8">
               <Calendar size={48} className="text-muted-foreground mb-4" />
               <h3 className="text-xl font-semibold mb-2">No Camps Found</h3>
-              <p className="text-muted-foreground text-center max-w-md mb-6">
+              <p className="text-muted-foreground text-center max-wmd">
                 We couldn'tfind any camps matching your search criteria. Try adjusting your filters or check back later.
               </p>
               <Button onClick={clearAllFilters}>Clear All Filters</Button>
