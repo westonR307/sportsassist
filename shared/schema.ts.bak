@@ -502,7 +502,43 @@ export type OrganizationSubscription = typeof organizationSubscriptions.$inferSe
 export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
 export type InsertOrganizationSubscription = z.infer<typeof insertOrganizationSubscriptionSchema>;
 
-// Tables are already exported from tables.ts
+// Re-export tables
+export {
+  organizations,
+  users,
+  invitations,
+  sports,
+  children,
+  childSports,
+  camps,
+  campStaff,
+  registrations,
+  campSports,
+  campSchedules,
+  scheduleExceptions,
+  customFields,
+  campCustomFields,
+  customFieldResponses,
+  campMetaFields,
+  attendanceRecords,
+  campSessions,
+  recurrencePatterns,
+  documents,
+  documentFields,
+  signatureRequests,
+  signatures,
+  documentAuditTrail,
+  campDocumentAgreements,
+  organizationMessages,
+  permissionSets,
+  permissions,
+  userPermissions,
+  subscriptionPlans,
+  organizationSubscriptions,
+  campMessages,
+  campMessageRecipients,
+  campMessageReplies
+};
 
 export const predefinedSports = [
   "Archery", "Badminton", "Baseball", "Basketball", "Biathlon",

@@ -1,5 +1,6 @@
 import crypto from 'crypto';
-import {
+// Import tables from tables.ts
+import { 
   users,
   camps,
   organizations,
@@ -33,6 +34,11 @@ import {
   campStaff,
   permissions,
   userPermissions,
+  sports,
+} from '@shared/tables';
+
+// Import types from schema
+import {
   type User,
   type InsertUser,
   type Organization,
@@ -88,8 +94,7 @@ import {
   type InsertSubscriptionPlan,
   type OrganizationSubscription,
   type InsertOrganizationSubscription,
-  insertCampSchema,
-  sports
+  type Sport
 } from "@shared/schema";
 import { type Role, type SportLevel, type StaffRole } from "@shared/types";
 import { db } from "./db";
@@ -517,9 +522,8 @@ export class DatabaseStorage implements IStorage {
     }
 
     // First verify the sport exists
-    const sport = await db.query.sports.findFirst({
-      where: (sports, { eq }) => eq(sports.id, campData.sportId)
-    });
+    // Get the sport directly from the sports table
+    const [sport] = await db.select().from(sports).where(eq(sports.id, campData.sportId));
 
     if (!sport) {
       throw new Error(`Sport with ID ${campData.sportId} does not exist`);
@@ -2953,8 +2957,7 @@ export class DatabaseStorage implements IStorage {
         if (campSportsData.length > 0) {
           const sportId = campSportsData[0].sportId;
           const sportData = await db.select().from(sports)
-            .where(eq(sports.id, sportId))
-            .limit(1);
+            .where(eq(sports.id, sportId));
           
           if (sportData.length > 0) {
             sportName = sportData[0].name;

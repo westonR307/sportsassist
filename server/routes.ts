@@ -4,7 +4,7 @@ import type { Express } from "express";
 import { createServer } from "http";
 import { db } from "./db";
 import { eq, inArray, gt, and, gte, lte, isNull, or, sql, desc } from "drizzle-orm";
-import { campStaff, users } from "@shared/tables";
+import { campStaff } from "@shared/tables";
 import { PLATFORM_FEE_PERCENTAGE } from "./constants";
 
 // Function to calculate subscription revenue from actual data
@@ -48,14 +48,17 @@ async function getSystemErrorRate() {
   }
 }
 import { 
-  scheduleExceptions, 
-  insertScheduleExceptionSchema, 
+  scheduleExceptions,
   sports, 
-  users, 
   organizations, 
   organizationSubscriptions, 
   camps, 
-  registrations 
+  registrations,
+  users
+} from "@shared/tables";
+
+import {
+  insertScheduleExceptionSchema
 } from "@shared/schema";
 
 // Custom HTTP error class for consistent error handling
@@ -238,12 +241,15 @@ import {
   insertCampCustomFieldSchema,
   insertCustomFieldResponseSchema,
   insertCampSessionSchema,
-  insertRecurrencePatternSchema,
-  children, 
+  insertRecurrencePatternSchema
+} from "@shared/schema";
+
+import {
+  children,
   childSports,
   campSessions,
   recurrencePatterns
-} from "@shared/schema";
+} from "@shared/tables";
 import { campSchedules, campSports, systemEvents } from "@shared/tables";
 import Stripe from "stripe";
 import { hashPassword, comparePasswords } from "./utils";
