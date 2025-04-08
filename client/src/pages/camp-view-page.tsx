@@ -577,7 +577,7 @@ function CampViewPage(props: { id?: string }) {
               {camp.name}
             </h1>
             <p className="text-muted-foreground mt-1">
-              {camp.type === "virtual" ? "Virtual Camp" : `${camp.city}, ${camp.state}`}
+              {camp.isVirtual || camp.type === "virtual" ? "Virtual" : `${camp.city}, ${camp.state}`}
             </p>
           </div>
 
@@ -800,8 +800,14 @@ function CampViewPage(props: { id?: string }) {
                     <div>
                       <h3 className="font-medium">Location</h3>
                       <p className="text-muted-foreground">
-                        {camp.streetAddress}<br />
-                        {camp.city}, {camp.state} {camp.zipCode}
+                        {camp.isVirtual || camp.type === "virtual" ? (
+                          <>Virtual</>
+                        ) : (
+                          <>
+                            {camp.streetAddress}<br />
+                            {camp.city}, {camp.state} {camp.zipCode}
+                          </>
+                        )}
                       </p>
                     </div>
                     <div>

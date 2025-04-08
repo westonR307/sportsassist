@@ -608,7 +608,7 @@ function CampCard({
         <div className="flex items-center gap-2 mb-3">
           <MapPin className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground truncate">
-            {camp.type === "virtual" ? "Online/Virtual" : `${camp.city}, ${camp.state}`}
+            {camp.isVirtual ? "Virtual" : (camp.type === "virtual" ? "Online/Virtual" : `${camp.city}, ${camp.state}`)}
           </span>
         </div>
         

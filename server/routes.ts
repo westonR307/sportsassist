@@ -202,7 +202,7 @@ function registerPublicRoutes(app: Express) {
         
         return {
           ...camp,
-          location: [camp.streetAddress, camp.city, camp.state, camp.zipCode]
+          location: camp.isVirtual ? "Virtual" : [camp.streetAddress, camp.city, camp.state, camp.zipCode]
             .filter(Boolean)
             .join(", "),
           campSports: campSportsWithDetails,
