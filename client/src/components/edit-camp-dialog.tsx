@@ -461,7 +461,6 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
                             <option value="one_on_one">One-on-One</option>
                             <option value="group">Group</option>
                             <option value="team">Team</option>
-                            <option value="virtual">Virtual</option>
                           </select>
                         </FormControl>
                         <FormMessage />
