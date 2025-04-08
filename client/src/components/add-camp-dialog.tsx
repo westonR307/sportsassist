@@ -65,9 +65,20 @@ const daysOfWeek = [
   "Saturday",
 ];
 
-const formatDateForPostgres = (dateStr: string) => {
-  const date = new Date(dateStr);
-  return date.toISOString().slice(0, 19).replace('T', ' ');
+const formatDateForPostgres = (date: Date | string) => {
+  if (date instanceof Date) {
+    // Format: YYYY-MM-DD to ensure proper UTC handling
+    return date.toISOString().split('T')[0];
+  } else if (typeof date === 'string') {
+    // If it's already in YYYY-MM-DD format, return as is
+    if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return date;
+    }
+    // Otherwise, convert to Date and format
+    const dateObj = new Date(date);
+    return dateObj.toISOString().split('T')[0];
+  }
+  return date; // Return original if not a Date or string
 };
 
 // Format a time string from 24-hour to 12-hour format (e.g., "09:00" to "9:00 AM")
@@ -139,7 +150,37 @@ export function AddCampDialog({
 
   const form = useForm<ExtendedCampSchema>({
     resolver: zodResolver(z.object({
-      ...insertCampSchema.shape,
+      name: z.string().min(1, "Name is required"),
+      description: z.string().min(1, "Description is required"),
+      streetAddress: z.string().min(1, "Street address is required").optional(),
+      city: z.string().min(1, "City is required").optional(),
+      state: z.string().length(2, "Please use 2-letter state code").optional(),
+      zipCode: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format").optional(),
+      additionalLocationDetails: z.string().optional().nullable(),
+      startDate: z.string().or(z.date()),
+      endDate: z.string().or(z.date()),
+      registrationStartDate: z.string().or(z.date()),
+      registrationEndDate: z.string().or(z.date()),
+      price: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
+      capacity: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
+      organizationId: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
+      type: z.enum(["one_on_one", "group", "team", "virtual"]),
+      visibility: z.enum(["public", "private"]).default("public"),
+      waitlistEnabled: z.boolean().default(true),
+      minAge: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
+      maxAge: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
+      repeatType: z.enum(["none", "weekly", "monthly"]).default("none"),
+      repeatCount: z.number().or(z.string().transform(val => parseInt(String(val || '0'), 10))).default(0),
+      schedules: z.array(z.object({
+        dayOfWeek: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
+        startTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format"),
+        endTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format")
+      })).min(1, "At least one schedule is required"),
+      sportId: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
+      skillLevel: z.enum(["beginner", "intermediate", "advanced", "all_levels"]),
+      isVirtual: z.boolean().optional().default(false),
+      virtualMeetingUrl: z.string().url("Please enter a valid URL").optional(),
+      // Add the custom fields for the form
       defaultStartTime: z.string().optional(),
       defaultEndTime: z.string().optional()
     })),
@@ -265,10 +306,11 @@ export function AddCampDialog({
         
         const requestData = {
           ...dataWithoutDefaults,
-          startDate: data.startDate,
-          endDate: data.endDate,
-          registrationStartDate: data.registrationStartDate,
-          registrationEndDate: data.registrationEndDate,
+          // Format dates properly for consistent handling
+          startDate: formatDateForPostgres(data.startDate),
+          endDate: formatDateForPostgres(data.endDate),
+          registrationStartDate: formatDateForPostgres(data.registrationStartDate),
+          registrationEndDate: formatDateForPostgres(data.registrationEndDate),
           organizationId: user.organizationId,
           price: Number(data.price) || 0,
           capacity: Number(data.capacity) || 20,
@@ -342,7 +384,7 @@ export function AddCampDialog({
             await new Promise(resolve => setTimeout(resolve, 100));
             
             // First make a direct API call to ensure we're working with the proper campId
-            const addedFields = metaFieldsRef.current.getFields?.() || [];
+            const addedFields = metaFieldsRef.current.getFields() || [];
             console.log(`Found ${addedFields.length} meta fields to save`, addedFields);
             
             // Save fields directly through API calls rather than relying on the component method
@@ -684,10 +726,10 @@ export function AddCampDialog({
         ...campData,
         defaultStartTime,
         defaultEndTime,
-        registrationStartDate: campData.registrationStartDate,
-        registrationEndDate: campData.registrationEndDate,
-        startDate: campData.startDate,
-        endDate: campData.endDate,
+        registrationStartDate: formatDateForPostgres(campData.registrationStartDate),
+        registrationEndDate: formatDateForPostgres(campData.registrationEndDate),
+        startDate: formatDateForPostgres(campData.startDate),
+        endDate: formatDateForPostgres(campData.endDate),
         isVirtual: campData.isVirtual || false,
         virtualMeetingUrl: campData.isVirtual ? campData.virtualMeetingUrl : undefined,
         // Create at least one schedule entry based on the default times

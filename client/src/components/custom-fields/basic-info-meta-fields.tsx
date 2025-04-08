@@ -41,6 +41,7 @@ interface BasicInfoMetaFieldsProps {
 export interface BasicInfoMetaFieldsRef {
   saveFieldsIfNeeded: () => Promise<boolean | undefined>;
   setCampId: (id: number) => void;
+  getFields: () => any[];
 }
 
 export const BasicInfoMetaFields = React.forwardRef<BasicInfoMetaFieldsRef, BasicInfoMetaFieldsProps>(({
