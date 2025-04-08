@@ -198,7 +198,7 @@ export const insertCampSchema = z.object({
   price: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
   capacity: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
   organizationId: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
-  type: z.enum(["one_on_one", "group", "team", "virtual"]),
+  type: z.enum(["one_on_one", "group", "team"]),
   visibility: z.enum(["public", "private"]).default("public"),
   waitlistEnabled: z.boolean().default(true),
   minAge: z.number().or(z.string().transform(val => parseInt(String(val), 10))),

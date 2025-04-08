@@ -1078,7 +1078,7 @@ function CampCard({ camp, onRegisterClick, isAuthenticated, onViewDetails }: Cam
   const showStartingSoon = daysUntilStart <= 7 && daysUntilStart > 0;
 
   // Check if camp is featured
-  const isFeatured = camp.visibility === "public" && camp.type !== "virtual";
+  const isFeatured = camp.visibility === "public" && !camp.isVirtual;
 
   return (
     <Card className="h-full flex flex-col overflow-hidden hover:shadow-md transition-shadow">
@@ -1190,7 +1190,7 @@ function CampListItem({ camp, onRegisterClick, isAuthenticated, onViewDetails }:
   const showStartingSoon = daysUntilStart <= 7 && daysUntilStart > 0;
 
   // Check if camp is featured
-  const isFeatured = camp.visibility === "public" && camp.type !== "virtual";
+  const isFeatured = camp.visibility === "public" && !camp.isVirtual;
 
   return (
     <div className="py-4 flex flex-col md:flex-row gap-4 hover:bg-muted/30 p-2 rounded-md cursor-pointer transition-colors" onClick={onViewDetails}>

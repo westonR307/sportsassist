@@ -904,7 +904,7 @@ function CampCard({ camp, onRegisterClick, isAuthenticated }: CampCardProps) {
   const showStartingSoon = daysUntilStart <= 7 && daysUntilStart > 0;
   
   // Check if camp is featured
-  const isFeatured = camp.visibility === "public" && camp.type !== "virtual";
+  const isFeatured = camp.visibility === "public" && !camp.isVirtual;
   
   return (
     <Card className={`overflow-hidden ${isFeatured ? 'border-primary/50 shadow-md' : ''}`}>

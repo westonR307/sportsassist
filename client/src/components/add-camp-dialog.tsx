@@ -1450,7 +1450,6 @@ export function AddCampDialog({
                             <option value="group">Group</option>
                             <option value="one_on_one">One-on-One</option>
                             <option value="team">Team</option>
-                            <option value="virtual">Virtual</option>
                           </select>
                         </FormControl>
                         <FormMessage />
