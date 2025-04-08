@@ -136,7 +136,7 @@ export default function FindCampsPage() {
       camp.description?.toLowerCase().includes(searchQuery.toLowerCase());
 
     // Sport filter
-    const hasSport = selectedSport === "" || selectedSport === "any" || 
+    const hasSport = !selectedSport || selectedSport === "any" || 
       (camp.campSports && camp.campSports.some(cs => cs.sportId && cs.sportId.toString() === selectedSport));
 
     // Skill level filter
@@ -279,7 +279,7 @@ export default function FindCampsPage() {
           </div>
 
           {/* Desktop Search & Filter Bar */}
-          <div className="hidden md:flex gap-4 mb-6">
+          <div className="hidden md:flex gap-4 mb-6 bg-muted/30 p-4 rounded-lg">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -292,16 +292,19 @@ export default function FindCampsPage() {
             </div>
 
             <Select value={selectedSport} onValueChange={setSelectedSport}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Sport" />
+              <SelectTrigger className="w-[200px] bg-background">
+                <SelectValue placeholder="Select Sport" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="any">All Sports</SelectItem>
-                {availableSports.map(sportId => (
-                  <SelectItem key={sportId} value={sportId.toString()}>
-                    {sportId !== null ? getSportName(sportId) : "Unknown Sport"}
-                  </SelectItem>
-                ))}
+                {availableSports
+                  .filter(sportId => sportId !== null)
+                  .sort((a, b) => getSportName(a).localeCompare(getSportName(b)))
+                  .map(sportId => (
+                    <SelectItem key={sportId} value={sportId.toString()}>
+                      {getSportName(sportId)}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
 
