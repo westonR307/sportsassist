@@ -156,14 +156,14 @@ export function CampsFilter({
                   <Label htmlFor="status-filter">Status</Label>
                 </div>
                 <Select
-                  value={tempFilters.status || null}
-                  onValueChange={(value) => handleTempFilterChange('status', value)}
+                  value={tempFilters.status || ""}
+                  onValueChange={(value) => handleTempFilterChange('status', value || null)}
                 >
                   <SelectTrigger id="status-filter">
                     <SelectValue placeholder="All statuses" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={null}>All statuses</SelectItem>
+                    <SelectItem value="">All statuses</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="upcoming">Upcoming</SelectItem>
                     <SelectItem value="past">Past</SelectItem>
@@ -178,14 +178,14 @@ export function CampsFilter({
                   <Label htmlFor="type-filter">Type</Label>
                 </div>
                 <Select
-                  value={tempFilters.type || null}
-                  onValueChange={(value) => handleTempFilterChange('type', value)}
+                  value={tempFilters.type || ""}
+                  onValueChange={(value) => handleTempFilterChange('type', value || null)}
                 >
                   <SelectTrigger id="type-filter">
                     <SelectValue placeholder="All types" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={null}>All types</SelectItem>
+                    <SelectItem value="">All types</SelectItem>
                     <SelectItem value="one_on_one">One-on-One</SelectItem>
                     <SelectItem value="group">Group</SelectItem>
                     <SelectItem value="team">Team</SelectItem>
