@@ -228,6 +228,7 @@ export default function FindCampsPage() {
     setSelectedAgeRange("any");
     setSelectedType("any");
     setShowVirtualOnly(false);
+    setSortBy("startDate");
   };
 
   const handleRegisterClick = (campId: number, campSlug?: string | null) => {
@@ -453,16 +454,16 @@ export default function FindCampsPage() {
                       <Filter className="h-4 w-4 mr-2" />
                       <span>Filters</span>
                     </div>
-                    {(selectedSport || selectedSkillLevel || selectedState || 
-                     selectedCity || selectedType || selectedAgeRange || showVirtualOnly) && (
+                    {(selectedSport !== "any" || selectedSkillLevel !== "any" || selectedState !== "any" || 
+                     selectedCity !== "any" || selectedType !== "any" || selectedAgeRange !== "any" || showVirtualOnly) && (
                       <Badge variant="secondary" className="ml-2">
                         {[
-                          selectedSport && "Sport",
-                          selectedSkillLevel && "Level",
-                          selectedState && "State",
-                          selectedCity && "City",
-                          selectedType && "Type",
-                          selectedAgeRange && "Age",
+                          selectedSport !== "any" && "Sport",
+                          selectedSkillLevel !== "any" && "Level",
+                          selectedState !== "any" && "State",
+                          selectedCity !== "any" && "City",
+                          selectedType !== "any" && "Type",
+                          selectedAgeRange !== "any" && "Age",
                           showVirtualOnly && "Virtual"
                         ].filter(Boolean).length}
                       </Badge>
@@ -757,11 +758,11 @@ export default function FindCampsPage() {
           </div>
 
           {/* Applied Filters */}
-          {(!!selectedSport || !!selectedSkillLevel || !!selectedState || 
-            !!selectedCity || !!selectedType || !!selectedAgeRange || showVirtualOnly) && (
+          {(selectedSport !== "any" || selectedSkillLevel !== "any" || selectedState !== "any" || 
+            selectedCity !== "any" || selectedType !== "any" || selectedAgeRange !== "any" || showVirtualOnly) && (
             <div className="flex flex-wrap gap-2 mb-6">
               <div className="text-sm font-medium mb-1 mr-2 mt-1">Active filters:</div>
-              {selectedSport && (
+              {selectedSport !== "any" && (
                 <Badge variant="secondary" className="flex items-center gap-1">
                   <span>Sport: {getSportName(Number(selectedSport))}</span>
                   <Button 
@@ -774,7 +775,7 @@ export default function FindCampsPage() {
                   </Button>
                 </Badge>
               )}
-              {selectedSkillLevel && (
+              {selectedSkillLevel !== "any" && (
                 <Badge variant="secondary" className="flex items-center gap-1">
                   <span>Level: {skillLevelNames[selectedSkillLevel as keyof typeof skillLevelNames]}</span>
                   <Button 
@@ -787,7 +788,7 @@ export default function FindCampsPage() {
                   </Button>
                 </Badge>
               )}
-              {selectedState && (
+              {selectedState !== "any" && (
                 <Badge variant="secondary" className="flex items-center gap-1">
                   <span>State: {selectedState}</span>
                   <Button 
@@ -800,7 +801,7 @@ export default function FindCampsPage() {
                   </Button>
                 </Badge>
               )}
-              {selectedCity && (
+              {selectedCity !== "any" && (
                 <Badge variant="secondary" className="flex items-center gap-1">
                   <span>City: {selectedCity}</span>
                   <Button 
@@ -813,7 +814,7 @@ export default function FindCampsPage() {
                   </Button>
                 </Badge>
               )}
-              {selectedType && (
+              {selectedType !== "any" && (
                 <Badge variant="secondary" className="flex items-center gap-1">
                   <span>Type: {selectedType.replace("_", " ")}</span>
                   <Button 
@@ -826,7 +827,7 @@ export default function FindCampsPage() {
                   </Button>
                 </Badge>
               )}
-              {selectedAgeRange && (
+              {selectedAgeRange !== "any" && (
                 <Badge variant="secondary" className="flex items-center gap-1">
                   <span>Age: {ageBrackets.find(b => b.value === selectedAgeRange)?.label}</span>
                   <Button 
@@ -852,8 +853,8 @@ export default function FindCampsPage() {
                   </Button>
                 </Badge>
               )}
-              {(selectedSport || selectedSkillLevel || selectedState || 
-                selectedCity || selectedType || selectedAgeRange || showVirtualOnly) && (
+              {(selectedSport !== "any" || selectedSkillLevel !== "any" || selectedState !== "any" || 
+                selectedCity !== "any" || selectedType !== "any" || selectedAgeRange !== "any" || showVirtualOnly) && (
                 <Button 
                   variant="ghost" 
                   size="sm" 
