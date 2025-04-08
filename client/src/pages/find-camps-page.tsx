@@ -170,7 +170,7 @@ export default function FindCampsPage() {
       )));
 
     // Virtual only filter
-    const matchesVirtual = !showVirtualOnly || camp.type === "virtual";
+    const matchesVirtual = !showVirtualOnly || camp.isVirtual;
 
     return matchesSearch && hasSport && hasSkillLevel && matchesState && 
            matchesCity && matchesType && matchesAgeRange && matchesVirtual;
@@ -1069,7 +1069,7 @@ interface CampCardProps {
 }
 
 function CampCard({ camp, onRegisterClick, isAuthenticated, onViewDetails }: CampCardProps) {  
-  const isVirtual = camp.type === "virtual";
+  const isVirtual = camp.isVirtual;
   const now = new Date();
   const startDate = new Date(camp.startDate);
   const daysUntilStart = Math.ceil((startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
@@ -1181,7 +1181,7 @@ interface CampListItemProps {
 }
 
 function CampListItem({ camp, onRegisterClick, isAuthenticated, onViewDetails }: CampListItemProps) {
-  const isVirtual = camp.type === "virtual";
+  const isVirtual = camp.isVirtual;
   const now = new Date();
   const startDate = new Date(camp.startDate);
   const daysUntilStart = Math.ceil((startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
