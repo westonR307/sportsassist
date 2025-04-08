@@ -136,24 +136,24 @@ export default function FindCampsPage() {
       camp.description?.toLowerCase().includes(searchQuery.toLowerCase());
 
     // Sport filter
-    const hasSport = !selectedSport || selectedSport === "all_sports" || 
+    const hasSport = !selectedSport || selectedSport === "any" || 
       (camp.campSports && camp.campSports.some(cs => cs.sportId && cs.sportId.toString() === selectedSport));
 
     // Skill level filter
-    const hasSkillLevel = selectedSkillLevel === "" || selectedSkillLevel === "any" || 
+    const hasSkillLevel = !selectedSkillLevel || selectedSkillLevel === "any" || 
       (camp.campSports && camp.campSports.some(cs => cs.skillLevel === selectedSkillLevel));
 
     // State filter
-    const matchesState = selectedState === "" || selectedState === "any" || camp.state === selectedState;
+    const matchesState = !selectedState || selectedState === "any" || camp.state === selectedState;
 
     // City filter
-    const matchesCity = selectedCity === "" || selectedCity === "any" || camp.city.toLowerCase().includes(selectedCity.toLowerCase());
+    const matchesCity = !selectedCity || selectedCity === "any" || camp.city.toLowerCase().includes(selectedCity.toLowerCase());
 
     // Camp type filter
-    const matchesType = selectedType === "" || selectedType === "any" || camp.type === selectedType;
+    const matchesType = !selectedType || selectedType === "any" || camp.type === selectedType;
 
     // Age range filter
-    const matchesAgeRange = selectedAgeRange === "" || selectedAgeRange === "any" || 
+    const matchesAgeRange = !selectedAgeRange || selectedAgeRange === "any" || 
       (camp.minAge && camp.maxAge && ((
         // Handle different age bracket formats
         selectedAgeRange.includes("-") ? 
@@ -197,7 +197,7 @@ export default function FindCampsPage() {
   const availableCities = Array.from(
     new Set(
       availableCamps
-        .filter(camp => selectedState === "" || camp.state === selectedState)
+        .filter(camp => !selectedState || selectedState === "any" || camp.state === selectedState)
         .map(camp => camp.city)
     )
   ).sort();
@@ -297,7 +297,7 @@ export default function FindCampsPage() {
                 <SelectValue placeholder="All Sports" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all_sports">All Sports</SelectItem>
+                <SelectItem value="any">All Sports</SelectItem>
                 {availableSports
                   .filter(sportId => sportId !== null)
                   .sort((a, b) => getSportName(a).localeCompare(getSportName(b)))
