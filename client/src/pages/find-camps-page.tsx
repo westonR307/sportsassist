@@ -136,7 +136,7 @@ export default function FindCampsPage() {
       camp.description?.toLowerCase().includes(searchQuery.toLowerCase());
 
     // Sport filter
-    const hasSport = !selectedSport || selectedSport === "any" || 
+    const hasSport = selectedSport === "all_sports" || 
       (camp.campSports && camp.campSports.some(cs => cs.sportId && cs.sportId.toString() === selectedSport));
 
     // Skill level filter
@@ -293,10 +293,10 @@ export default function FindCampsPage() {
 
             <Select value={selectedSport} onValueChange={setSelectedSport}>
               <SelectTrigger className="w-[200px] bg-background">
-                <SelectValue placeholder="Select Sport" />
+                <SelectValue placeholder="All Sports" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="any">All Sports</SelectItem>
+                <SelectItem value="all_sports">All Sports</SelectItem>
                 {availableSports
                   .filter(sportId => sportId !== null)
                   .sort((a, b) => getSportName(a).localeCompare(getSportName(b)))
