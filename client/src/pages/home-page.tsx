@@ -973,20 +973,26 @@ function CampCard({ camp, onRegisterClick, isAuthenticated }: CampCardProps) {
             </div>
           </div>
           
-          {!isVirtual && camp.location && (
-            <div className="flex items-center gap-3">
-              <MapPin className="h-5 w-5 text-muted-foreground" />
-              <div className="flex flex-col">
-                <span className="text-sm font-medium">Location</span>
-                <span className="text-sm text-muted-foreground truncate max-w-[230px]">
-                  {camp.location}
-                </span>
+          <div className="flex items-center gap-3">
+            <MapPin className="h-5 w-5 text-muted-foreground" />
+            <div className="flex flex-col">
+              <span className="text-sm font-medium">Location</span>
+              {isVirtual ? (
                 <span className="text-sm text-muted-foreground">
-                  {camp.city}, {camp.state}
+                  Virtual
                 </span>
-              </div>
+              ) : (
+                <>
+                  <span className="text-sm text-muted-foreground truncate max-w-[230px]">
+                    {camp.location}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {camp.city}, {camp.state}
+                  </span>
+                </>
+              )}
             </div>
-          )}
+          </div>
           
           <div className="flex items-center gap-3">
             <User className="h-5 w-5 text-muted-foreground" />

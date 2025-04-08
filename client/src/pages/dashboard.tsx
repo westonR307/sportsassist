@@ -624,8 +624,14 @@ function CampsDashboard() {
                         <span className="font-medium">Location</span>
                       </div>
                       <div className="ml-5 text-muted-foreground">
-                        <div>{camp.streetAddress}</div>
-                        <div>{camp.city}, {camp.state} {camp.zipCode}</div>
+                        {camp.isVirtual ? (
+                          <div>Virtual</div>
+                        ) : (
+                          <>
+                            <div>{camp.streetAddress}</div>
+                            <div>{camp.city}, {camp.state} {camp.zipCode}</div>
+                          </>
+                        )}
                       </div>
                     </div>
                     

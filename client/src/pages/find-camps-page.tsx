@@ -611,13 +611,7 @@ export default function FindCampsPage() {
                             >
                               Team
                             </Button>
-                            <Button 
-                              variant={selectedType === "virtual" ? "secondary" : "outline"} 
-                              onClick={() => setSelectedType("virtual")}
-                              className="justify-start"
-                            >
-                              Virtual
-                            </Button>
+                            {/* Virtual is now handled by isVirtual property, not as a type */}
                           </div>
                           <div className="flex items-center mt-4 space-x-2">
                             <Checkbox 
@@ -1112,7 +1106,7 @@ function CampCard({ camp, onRegisterClick, isAuthenticated, onViewDetails }: Cam
         <div className="flex items-center gap-2 mb-3">
           <MapPin className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground truncate">
-            {isVirtual ? "Online/Virtual" : `${camp.city}, ${camp.state}`}
+            {isVirtual ? "Virtual" : `${camp.city}, ${camp.state}`}
           </span>
         </div>
 
@@ -1231,7 +1225,7 @@ function CampListItem({ camp, onRegisterClick, isAuthenticated, onViewDetails }:
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
           <div className="flex items-center">
             <MapPin className="h-3.5 w-3.5 mr-1" />
-            <span>{isVirtual ? "Online/Virtual" : `${camp.city}, ${camp.state}`}</span>
+            <span>{isVirtual ? "Virtual" : `${camp.city}, ${camp.state}`}</span>
           </div>
 
           <div className="flex items-center">
