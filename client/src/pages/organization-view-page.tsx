@@ -57,33 +57,33 @@ interface Organization {
 export default function OrganizationViewPage() {
   const { slugOrName } = useParams();
   const [activeTab, setActiveTab] = useState('about');
-  
+
   // Fetch organization by slug or name
   const { data: organization, isLoading: isOrgLoading, error: orgError } = useQuery<Organization>({
     queryKey: [`/api/organizations/public/${slugOrName}`],
     enabled: !!slugOrName,
   });
-  
+
   // Once we have the organization, fetch their camps
   const { data: camps = [], isLoading: campsLoading } = useQuery<ExtendedCamp[]>({
     queryKey: [`/api/organizations/public/${slugOrName}/camps`],
     enabled: !!slugOrName,
   });
-  
+
   // Apply organization branding to the page
   useEffect(() => {
     if (organization) {
       // Apply custom CSS variables for colors if they exist
       const root = document.documentElement;
-      
+
       if (organization.primaryColor) {
         root.style.setProperty('--org-primary-color', organization.primaryColor);
       }
-      
+
       if (organization.secondaryColor) {
         root.style.setProperty('--org-secondary-color', organization.secondaryColor);
       }
-      
+
       // Clean up when component unmounts
       return () => {
         root.style.removeProperty('--org-primary-color');
@@ -102,7 +102,7 @@ export default function OrganizationViewPage() {
               Back to Find Camps
             </Link>
           </Button>
-          
+
           <div className="flex items-center gap-4">
             <Skeleton className="h-24 w-24 rounded-lg" />
             <div className="space-y-3">
@@ -113,9 +113,9 @@ export default function OrganizationViewPage() {
               </div>
             </div>
           </div>
-          
+
           <Skeleton className="h-40 w-full rounded-lg" />
-          
+
           <div>
             <Skeleton className="h-10 w-48 mb-4" />
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -148,7 +148,7 @@ export default function OrganizationViewPage() {
       </div>
     );
   }
-  
+
   // Define CSS variables for organization branding
   const orgStyles = {
     '--banner-height': '300px',
@@ -177,7 +177,7 @@ export default function OrganizationViewPage() {
         style={heroBgStyle}
       >
         <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
-        
+
         {/* Navigation Bar */}
         <div className="absolute top-4 left-4 z-20">
           <Button variant="outline" asChild className="bg-white/90 hover:bg-white">
@@ -187,7 +187,7 @@ export default function OrganizationViewPage() {
             </Link>
           </Button>
         </div>
-        
+
         {/* Organization Logo and Header */}
         <div className="container mx-auto px-4 relative z-10">
           <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
@@ -206,18 +206,18 @@ export default function OrganizationViewPage() {
                 </div>
               )}
             </div>
-            
+
             <div className="flex-1 text-center md:text-left text-white">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight">
                 {organization.displayName || organization.name}
               </h1>
-              
+
               {organization.description && (
                 <p className="mt-4 text-xl text-white/90 md:max-w-2xl">
                   {organization.description}
                 </p>
               )}
-              
+
               <div className="mt-8 flex flex-wrap items-center gap-4 justify-center md:justify-start">
                 {organization.contactEmail && (
                   <a href={`mailto:${organization.contactEmail}`} 
@@ -226,7 +226,7 @@ export default function OrganizationViewPage() {
                     <span>Contact Us</span>
                   </a>
                 )}
-                
+
                 {organization.websiteUrl && (
                   <a href={organization.websiteUrl} 
                      target="_blank" 
@@ -236,7 +236,7 @@ export default function OrganizationViewPage() {
                     <span>Visit Website</span>
                   </a>
                 )}
-                
+
                 {/* Social Media Links */}
                 {organization.socialLinks && (
                   <div className="flex items-center gap-3">
@@ -277,7 +277,7 @@ export default function OrganizationViewPage() {
               </div>
             </div>
           </div>
-          
+
           {/* Quick Stats */}
           <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 text-white text-center shadow-lg border border-white/20">
@@ -306,7 +306,7 @@ export default function OrganizationViewPage() {
           </div>
         </div>
       </div>
-      
+
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8 -mt-12 relative z-20">
         <div className="bg-background rounded-2xl shadow-xl overflow-hidden">
@@ -318,7 +318,7 @@ export default function OrganizationViewPage() {
                 <TabsTrigger value="camps">Our Camps</TabsTrigger>
               </TabsList>
             </div>
-            
+
             {/* About Tab */}
             <TabsContent value="about" className="p-6">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -341,7 +341,7 @@ export default function OrganizationViewPage() {
                       </p>
                     )}
                   </div>
-                  
+
                   <div className="bg-card rounded-xl shadow-md p-6">
                     <h2 className="text-2xl font-bold mb-4 flex items-center"
                         style={{ color: organization.primaryColor || undefined }}>
@@ -358,13 +358,13 @@ export default function OrganizationViewPage() {
                         build character, and foster a lifelong love of sports in participants of all ages and abilities.
                       </p>
                     )}
-                    
+
                     <h3 className="text-xl font-semibold mb-4 flex items-center"
                        style={{ color: organization.primaryColor || undefined }}>
                       <Award className="mr-2 h-5 w-5" />
                       Why Choose Us
                     </h3>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                       {/* Feature 1 */}
                       <div className="flex items-start">
@@ -379,7 +379,7 @@ export default function OrganizationViewPage() {
                           </p>
                         </div>
                       </div>
-                      
+
                       {/* Feature 2 */}
                       <div className="flex items-start">
                         <div className="rounded-full p-2 mr-3" 
@@ -393,7 +393,7 @@ export default function OrganizationViewPage() {
                           </p>
                         </div>
                       </div>
-                      
+
                       {/* Feature 3 */}
                       <div className="flex items-start">
                         <div className="rounded-full p-2 mr-3" 
@@ -407,7 +407,7 @@ export default function OrganizationViewPage() {
                           </p>
                         </div>
                       </div>
-                      
+
                       {/* Default fourth feature if none of the custom ones are available */}
                       {!organization.feature1Title && !organization.feature2Title && !organization.feature3Title && (
                         <div className="flex items-start">
@@ -424,7 +424,7 @@ export default function OrganizationViewPage() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="lg:col-span-1">
                   <div className="bg-card rounded-xl shadow-md p-6 sticky top-6">
                     <h3 className="text-xl font-bold mb-4 flex items-center"
@@ -432,7 +432,7 @@ export default function OrganizationViewPage() {
                       <MessageCircle className="mr-2 h-5 w-5" />
                       Contact Information
                     </h3>
-                    
+
                     <div className="space-y-4">
                       {organization.contactEmail && (
                         <div className="flex items-start">
@@ -445,7 +445,7 @@ export default function OrganizationViewPage() {
                           </div>
                         </div>
                       )}
-                      
+
                       {organization.websiteUrl && (
                         <div className="flex items-start">
                           <Globe className="h-5 w-5 mr-3 text-muted-foreground" />
@@ -457,9 +457,9 @@ export default function OrganizationViewPage() {
                           </div>
                         </div>
                       )}
-                      
+
                       <Separator className="my-4" />
-                      
+
                       <div className="flex items-start">
                         <Share2 className="h-5 w-5 mr-3 text-muted-foreground" />
                         <div>
@@ -492,9 +492,9 @@ export default function OrganizationViewPage() {
                           </div>
                         </div>
                       </div>
-                      
+
                       <Separator className="my-4" />
-                      
+
                       <Button className="w-full" 
                               style={{ 
                                 backgroundColor: organization.primaryColor || undefined,
@@ -507,7 +507,7 @@ export default function OrganizationViewPage() {
                 </div>
               </div>
             </TabsContent>
-            
+
             {/* Camps Tab */}
             <TabsContent value="camps" className="p-6">
               <div className="mb-6">
@@ -518,7 +518,7 @@ export default function OrganizationViewPage() {
                   Explore our diverse selection of camps designed to help athletes of all levels excel.
                 </p>
               </div>
-              
+
               {campsLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {[1, 2, 3].map((i) => (
@@ -550,7 +550,7 @@ export default function OrganizationViewPage() {
           </Tabs>
         </div>
       </div>
-      
+
       {/* Removed duplicate "Why Choose Us" section */}
     </div>
   );
@@ -570,13 +570,13 @@ function CampCard({
     borderTop: primaryColor ? `4px solid ${primaryColor}` : undefined,
     borderColor: primaryColor ? `${primaryColor}` : undefined,
   };
-  
+
   const buttonStyle = {
     backgroundColor: primaryColor || undefined,
     color: primaryColor ? 'white' : undefined,
     borderColor: primaryColor || undefined,
   };
-  
+
   // Badge styling
   const badgeStyle = {
     backgroundColor: secondaryColor ? `${secondaryColor}20` : 'var(--primary-foreground)',
@@ -608,17 +608,17 @@ function CampCard({
         <div className="flex items-center gap-2 mb-3">
           <MapPin className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground truncate">
-            {camp.isVirtual ? "Virtual" : (camp.type === "virtual" ? "Online/Virtual" : `${camp.city}, ${camp.state}`)}
+            {camp.isVirtual ? "Virtual" : "Location not specified"}
           </span>
         </div>
-        
+
         <div className="flex items-center gap-2 mb-3">
           <Calendar className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">
             {format(new Date(camp.startDate), "MMM d")} - {format(new Date(camp.endDate), "MMM d, yyyy")}
           </span>
         </div>
-        
+
         {camp.description && (
           <p className="text-sm text-muted-foreground line-clamp-3 mt-3">
             {camp.description}

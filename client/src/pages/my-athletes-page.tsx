@@ -69,12 +69,12 @@ export default function MyAthletesPage() {
   const handleDeleteAthlete = async (childId: number) => {
     try {
       await apiRequest("DELETE", `/api/parent/children/${childId}`);
-      
+
       toast({
         title: "Athlete deleted",
         description: "The athlete profile has been successfully deleted",
       });
-      
+
       queryClient.invalidateQueries({ queryKey: ["/api/parent/children"] });
     } catch (error) {
       toast({
@@ -89,7 +89,7 @@ export default function MyAthletesPage() {
   function AthleteCard({ child }: { child: ExtendedChild }) {
     const [profilePhotoUrl, setProfilePhotoUrl] = useState<string>(child.profilePhoto || "");
     const [uploading, setUploading] = useState(false);
-    
+
     // Mutation to update athlete profile photo
     const updateProfilePhotoMutation = useMutation({
       mutationFn: async (photoUrl: string) => {
@@ -167,7 +167,7 @@ export default function MyAthletesPage() {
         setUploading(false);
       }
     };
-    
+
     return (
       <Card className="overflow-hidden flex flex-col hover:shadow-lg transition-shadow duration-300">
         <div className="h-2 bg-gradient-to-r from-primary to-primary/70 w-full" />
@@ -186,7 +186,7 @@ export default function MyAthletesPage() {
                   <User className="h-8 w-8 text-muted-foreground" />
                 )}
               </div>
-              
+
               {/* Upload overlay */}
               <div 
                 className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
@@ -208,7 +208,7 @@ export default function MyAthletesPage() {
                 className="hidden"
               />
             </div>
-            
+
             <div className="flex-1">
               <div className="flex justify-between items-start">
                 <div>
@@ -227,7 +227,7 @@ export default function MyAthletesPage() {
               </div>
             </div>
           </div>
-          
+
           {/* Sports interests badges */}
           {child.sportsInterests && child.sportsInterests.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-4">
@@ -239,7 +239,7 @@ export default function MyAthletesPage() {
                   advanced: "bg-amber-50 text-amber-600 border-amber-200"
                 };
                 const colorClass = colors[sport.skillLevel] || "bg-gray-50 text-gray-600 border-gray-200";
-                
+
                 return (
                   <Badge 
                     key={index} 
@@ -254,7 +254,7 @@ export default function MyAthletesPage() {
             </div>
           )}
         </div>
-        
+
         <div className="px-6 py-4 bg-muted/10 flex-grow space-y-2.5">
           {child.schoolName && (
             <div className="flex items-center gap-2 text-sm">
@@ -289,8 +289,15 @@ export default function MyAthletesPage() {
               <span>Jersey/T-Shirt Size: <span className="font-medium">{child.jerseySize}</span></span>
             </div>
           )}
+          {/* Added placeholder for camp information */}
+          {child.camps && child.camps.map(camp => (
+            <div key={camp.id} className="flex items-center gap-2 text-sm">
+              <CalendarDays className="h-4 w-4 text-primary/70" />
+              <span>Camp Location: {camp.isVirtual ? "Virtual" : `${camp.city}, ${camp.state}`}</span>
+            </div>
+          ))}
         </div>
-        
+
         <div className="px-6 py-4 border-t flex justify-between gap-2">
           <Button 
             variant="outline" 
