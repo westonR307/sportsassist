@@ -185,10 +185,10 @@ export const insertScheduleExceptionSchema = z.object({
 export const insertCampSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().min(1, "Description is required"),
-  streetAddress: z.string().min(1, "Street address is required"),
-  city: z.string().min(1, "City is required"),
-  state: z.string().length(2, "Please use 2-letter state code"),
-  zipCode: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format"),
+  streetAddress: z.string().min(1, "Street address is required").optional(),
+  city: z.string().min(1, "City is required").optional(),
+  state: z.string().length(2, "Please use 2-letter state code").optional(),
+  zipCode: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format").optional(),
   additionalLocationDetails: z.string().optional().nullable(),
   startDate: createUtcSafeDateTransformer('startDate'),
   endDate: createUtcSafeDateTransformer('endDate'),
@@ -215,8 +215,24 @@ export const insertCampSchema = z.object({
     endTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format")
   })).min(1, "At least one schedule is required"),
   sportId: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
-  skillLevel: z.enum(["beginner", "intermediate", "advanced", "all_levels"])
-}).strict();
+  skillLevel: z.enum(["beginner", "intermediate", "advanced", "all_levels"]),
+  isVirtual: z.boolean().optional().default(false),
+  virtualMeetingUrl: z.string().url("Please enter a valid URL").optional()
+}).strict()
+  .refine((data) => {
+    // If it's a virtual camp, the URL is required
+    if (data.isVirtual === true && !data.virtualMeetingUrl) {
+      return false;
+    }
+    // If it's not a virtual camp, location fields are required
+    if (data.isVirtual !== true && (!data.streetAddress || !data.city || !data.state || !data.zipCode)) {
+      return false;
+    }
+    return true;
+  }, {
+    message: "For virtual camps, a meeting URL is required. For in-person camps, location details are required.",
+    path: ["isVirtual"] // This will make the error show up on the isVirtual field
+  });
 
 export const insertRegistrationSchema = createInsertSchema(registrations);
 export const insertOrganizationSchema = createInsertSchema(organizations).omit({

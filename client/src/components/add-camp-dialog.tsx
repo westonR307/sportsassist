@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -162,6 +163,8 @@ export function AddCampDialog({
       startDate: campStart,
       endDate: campEnd,
       schedules: [],
+      isVirtual: false,
+      virtualMeetingUrl: "",
       defaultStartTime: "09:00",
       defaultEndTime: "17:00",
     },
@@ -206,6 +209,8 @@ export function AddCampDialog({
               endDate: new Date(campData.endDate),
               defaultStartTime: "09:00", // Set default values
               defaultEndTime: "17:00",
+              isVirtual: campData.isVirtual || false,
+              virtualMeetingUrl: campData.virtualMeetingUrl || "",
             });
             
             // Set sport selection if available
@@ -271,6 +276,8 @@ export function AddCampDialog({
           repeatCount: Number(data.repeatCount) || 0,
           sportId: sportId, // Use the sportId from the selected sport
           skillLevel: mappedSkillLevel,
+          isVirtual: data.isVirtual || false,
+          virtualMeetingUrl: data.isVirtual ? data.virtualMeetingUrl : undefined,
           // Create at least one schedule entry based on the default times
           // This will satisfy the schema requirement while we transition to enhanced scheduling
           schedules: [
@@ -543,6 +550,18 @@ export function AddCampDialog({
       setCurrentTab("basic");
       return;
     };
+    
+    // Validate virtual meeting URL for virtual camps
+    if (data.isVirtual && !data.virtualMeetingUrl) {
+      console.log("Error: No virtual meeting URL provided for virtual camp");
+      toast({
+        title: "Error",
+        description: "Please provide a meeting URL for the virtual camp",
+        variant: "destructive",
+      });
+      setCurrentTab("location");
+      return;
+    }
 
     // Validate default start and end times for enhanced scheduling
     if (!data.defaultStartTime || !data.defaultEndTime) {
@@ -668,6 +687,8 @@ export function AddCampDialog({
         registrationEndDate: campData.registrationEndDate,
         startDate: campData.startDate,
         endDate: campData.endDate,
+        isVirtual: campData.isVirtual || false,
+        virtualMeetingUrl: campData.isVirtual ? campData.virtualMeetingUrl : undefined,
         // Create at least one schedule entry based on the default times
         schedules: [
           {
@@ -1175,65 +1196,113 @@ export function AddCampDialog({
                 <TabsContent value="location" className="space-y-4 mt-0">
                   <FormField
                     control={form.control}
-                    name="streetAddress"
+                    name="isVirtual"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Street Address</FormLabel>
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                         <FormControl>
-                          <Input {...field} placeholder="123 Main St" />
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
                         </FormControl>
-                        <FormMessage />
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>
+                            This is a virtual camp
+                          </FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Check this box if the camp will be held virtually through a meeting link or videoconference.
+                          </p>
+                        </div>
                       </FormItem>
                     )}
                   />
 
-                  <div className="grid grid-cols-3 gap-4">
+                  {form.watch("isVirtual") ? (
                     <FormField
                       control={form.control}
-                      name="city"
+                      name="virtualMeetingUrl"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>City</FormLabel>
+                          <FormLabel>Virtual Meeting URL <span className="text-red-500">*</span></FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="City" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="state"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>State</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="CA" maxLength={2} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="zipCode"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>ZIP Code</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              placeholder="12345"
-                              pattern="\d{5}(-\d{4})?"
+                            <Input 
+                              {...field} 
+                              placeholder="https://zoom.us/j/123456789" 
+                              required
                             />
                           </FormControl>
                           <FormMessage />
+                          <p className="text-sm text-muted-foreground">
+                            Enter the URL where participants will join the virtual camp.
+                          </p>
                         </FormItem>
                       )}
                     />
-                  </div>
+                  ) : (
+                    <>
+                      <FormField
+                        control={form.control}
+                        name="streetAddress"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Street Address <span className="text-red-500">*</span></FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="123 Main St" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="grid grid-cols-3 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="city"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>City <span className="text-red-500">*</span></FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="City" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="state"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>State <span className="text-red-500">*</span></FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="CA" maxLength={2} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="zipCode"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>ZIP Code <span className="text-red-500">*</span></FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  placeholder="12345"
+                                  pattern="\d{5}(-\d{4})?"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </>
+                  )}
 
                   <FormField
                     control={form.control}
@@ -1266,12 +1335,22 @@ export function AddCampDialog({
                     <Button
                       type="button"
                       onClick={async () => {
-                        const isValid = await form.trigger([
-                          "streetAddress",
-                          "city",
-                          "state",
-                          "zipCode",
-                        ]);
+                        const isVirtual = form.getValues("isVirtual");
+                        let isValid;
+                        
+                        if (isVirtual) {
+                          // If virtual, only validate virtual meeting URL
+                          isValid = await form.trigger(["virtualMeetingUrl"]);
+                        } else {
+                          // If physical, validate physical location fields
+                          isValid = await form.trigger([
+                            "streetAddress",
+                            "city",
+                            "state",
+                            "zipCode",
+                          ]);
+                        }
+                        
                         if (isValid) {
                           setCurrentTab("settings");
                         }

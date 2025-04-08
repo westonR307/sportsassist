@@ -74,6 +74,8 @@ export const camps = pgTable("camps", {
   cancelReason: text("cancel_reason"),
   repeatCount: integer("repeat_count").notNull().default(0),
   slug: text("slug").unique(),
+  isVirtual: boolean("is_virtual").notNull().default(false),
+  virtualMeetingUrl: text("virtual_meeting_url"),
 });
 
 export const campSchedules = pgTable("camp_schedules", {
