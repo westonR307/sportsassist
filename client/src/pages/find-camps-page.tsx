@@ -103,7 +103,7 @@ export default function FindCampsPage() {
   const [isMobile, setIsMobile] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedCamp, setSelectedCamp] = useState<ExtendedCamp | null>(null);
-  
+
   // Check if on mobile on component mount
   useEffect(() => {
     const checkIsMobile = () => {
@@ -121,7 +121,7 @@ export default function FindCampsPage() {
 
   // Get today's date
   const now = new Date();
-  
+
   // Filter out past camps (end date before today)
   const availableCamps = camps.filter(camp => 
     new Date(camp.endDate) >= now && 
@@ -134,24 +134,24 @@ export default function FindCampsPage() {
     const matchesSearch = searchQuery === "" || 
       camp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       camp.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     // Sport filter
     const hasSport = selectedSport === "" || selectedSport === "any" || 
       (camp.campSports && camp.campSports.some(cs => cs.sportId && cs.sportId.toString() === selectedSport));
-    
+
     // Skill level filter
     const hasSkillLevel = selectedSkillLevel === "" || selectedSkillLevel === "any" || 
       (camp.campSports && camp.campSports.some(cs => cs.skillLevel === selectedSkillLevel));
-    
+
     // State filter
     const matchesState = selectedState === "" || selectedState === "any" || camp.state === selectedState;
-    
+
     // City filter
     const matchesCity = selectedCity === "" || selectedCity === "any" || camp.city.toLowerCase().includes(selectedCity.toLowerCase());
-    
+
     // Camp type filter
     const matchesType = selectedType === "" || selectedType === "any" || camp.type === selectedType;
-    
+
     // Age range filter
     const matchesAgeRange = selectedAgeRange === "" || selectedAgeRange === "any" || 
       (camp.minAge && camp.maxAge && ((
@@ -168,10 +168,10 @@ export default function FindCampsPage() {
             return !isNaN(min) && camp.minAge <= min;
           })()
       )));
-    
+
     // Virtual only filter
     const matchesVirtual = !showVirtualOnly || camp.type === "virtual";
-    
+
     return matchesSearch && hasSport && hasSkillLevel && matchesState && 
            matchesCity && matchesType && matchesAgeRange && matchesVirtual;
   });
@@ -232,12 +232,12 @@ export default function FindCampsPage() {
 
   const handleRegisterClick = (campId: number, campSlug?: string | null) => {
     console.log("Navigating to camp details with:", campSlug ? `slug: ${campSlug}` : `ID: ${campId}`);
-    
+
     // Determine the URL path based on whether we have a slug
     const campPath = campSlug 
       ? `/register/camp/slug/${campSlug}`
       : `/register/camp/${campId}`;
-    
+
     if (!user) {
       // Redirect to auth page with return URL
       setLocation(`/auth?returnTo=${campPath}`);
@@ -257,7 +257,7 @@ export default function FindCampsPage() {
           </div>
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold">Find Camps</h2>
-            
+
             <div className="flex items-center gap-2">
               <Button
                 variant={viewMode === "grid" ? "default" : "outline"}
@@ -277,7 +277,7 @@ export default function FindCampsPage() {
               </Button>
             </div>
           </div>
-          
+
           {/* Desktop Search & Filter Bar */}
           <div className="hidden md:flex gap-4 mb-6">
             <div className="relative flex-1">
@@ -290,7 +290,7 @@ export default function FindCampsPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            
+
             <Select value={selectedSport} onValueChange={setSelectedSport}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Sport" />
@@ -304,7 +304,7 @@ export default function FindCampsPage() {
                 ))}
               </SelectContent>
             </Select>
-            
+
             <Select value={selectedState} onValueChange={setSelectedState}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="State" />
@@ -318,7 +318,7 @@ export default function FindCampsPage() {
                 ))}
               </SelectContent>
             </Select>
-            
+
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="flex gap-2">
@@ -343,7 +343,7 @@ export default function FindCampsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   {selectedState && (
                     <div className="grid gap-2">
                       <h4 className="font-medium">City</h4>
@@ -362,7 +362,7 @@ export default function FindCampsPage() {
                       </Select>
                     </div>
                   )}
-                  
+
                   <div className="grid gap-2">
                     <h4 className="font-medium">Age Group</h4>
                     <Select value={selectedAgeRange} onValueChange={setSelectedAgeRange}>
@@ -379,7 +379,7 @@ export default function FindCampsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="grid gap-2">
                     <h4 className="font-medium">Camp Type</h4>
                     <Select value={selectedType} onValueChange={setSelectedType}>
@@ -395,7 +395,7 @@ export default function FindCampsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     <Checkbox 
                       id="virtual-only" 
@@ -407,7 +407,7 @@ export default function FindCampsPage() {
                       Virtual Camps Only
                     </Label>
                   </div>
-                  
+
                   <Button 
                     variant="outline"
                     onClick={clearAllFilters}
@@ -417,7 +417,7 @@ export default function FindCampsPage() {
                 </div>
               </PopoverContent>
             </Popover>
-            
+
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Sort by" />
@@ -429,7 +429,7 @@ export default function FindCampsPage() {
               </SelectContent>
             </Select>
           </div>
-          
+
           {/* Mobile Search & Filter UI */}
           <div className="md:hidden space-y-4 mb-6">
             <div className="relative">
@@ -442,7 +442,7 @@ export default function FindCampsPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            
+
             <div className="flex gap-2">
               <Sheet>
                 <SheetTrigger asChild>
@@ -478,7 +478,7 @@ export default function FindCampsPage() {
                         <AccordionContent>
                           <div className="grid grid-cols-2 gap-2 py-2">
                             <Button 
-                              variant={selectedSport === "" ? "secondary" : "outline"} 
+                              variant={selectedSport === "any" ? "secondary" : "outline"} 
                               onClick={() => setSelectedSport("any")}
                               className="justify-start"
                             >
@@ -497,13 +497,13 @@ export default function FindCampsPage() {
                           </div>
                         </AccordionContent>
                       </AccordionItem>
-                      
+
                       <AccordionItem value="skill">
                         <AccordionTrigger>Skill Level</AccordionTrigger>
                         <AccordionContent>
                           <div className="grid grid-cols-2 gap-2 py-2">
                             <Button 
-                              variant={selectedSkillLevel === "" ? "secondary" : "outline"} 
+                              variant={selectedSkillLevel === "any" ? "secondary" : "outline"} 
                               onClick={() => setSelectedSkillLevel("any")}
                               className="justify-start"
                             >
@@ -533,7 +533,7 @@ export default function FindCampsPage() {
                           </div>
                         </AccordionContent>
                       </AccordionItem>
-                      
+
                       <AccordionItem value="location">
                         <AccordionTrigger>Location</AccordionTrigger>
                         <AccordionContent>
@@ -554,7 +554,7 @@ export default function FindCampsPage() {
                                 </SelectContent>
                               </Select>
                             </div>
-                            
+
                             {selectedState && (
                               <div className="space-y-2">
                                 <h4 className="font-medium">City</h4>
@@ -576,13 +576,13 @@ export default function FindCampsPage() {
                           </div>
                         </AccordionContent>
                       </AccordionItem>
-                      
+
                       <AccordionItem value="type">
                         <AccordionTrigger>Camp Type</AccordionTrigger>
                         <AccordionContent>
                           <div className="grid grid-cols-2 gap-2 py-2">
                             <Button 
-                              variant={selectedType === "" ? "secondary" : "outline"} 
+                              variant={selectedType === "any" ? "secondary" : "outline"} 
                               onClick={() => setSelectedType("any")}
                               className="justify-start"
                             >
@@ -630,13 +630,13 @@ export default function FindCampsPage() {
                           </div>
                         </AccordionContent>
                       </AccordionItem>
-                      
+
                       <AccordionItem value="age">
                         <AccordionTrigger>Age Group</AccordionTrigger>
                         <AccordionContent>
                           <div className="grid grid-cols-2 gap-2 py-2">
                             <Button 
-                              variant={selectedAgeRange === "" ? "secondary" : "outline"} 
+                              variant={selectedAgeRange === "any" ? "secondary" : "outline"} 
                               onClick={() => setSelectedAgeRange("any")}
                               className="justify-start"
                             >
@@ -655,7 +655,7 @@ export default function FindCampsPage() {
                           </div>
                         </AccordionContent>
                       </AccordionItem>
-                      
+
                       <AccordionItem value="sort">
                         <AccordionTrigger>Sort By</AccordionTrigger>
                         <AccordionContent>
@@ -685,7 +685,7 @@ export default function FindCampsPage() {
                         </AccordionContent>
                       </AccordionItem>
                     </Accordion>
-                    
+
                     <div className="flex justify-between items-center fixed bottom-0 left-0 right-0 p-4 bg-background border-t">
                       <Button 
                         variant="outline"
@@ -700,7 +700,7 @@ export default function FindCampsPage() {
                   </div>
                 </SheetContent>
               </Sheet>
-              
+
               <Sheet>
                 <SheetTrigger asChild>
                   <Button variant="outline" className="flex items-center">
@@ -740,7 +740,7 @@ export default function FindCampsPage() {
                   </div>
                 </SheetContent>
               </Sheet>
-              
+
               <div className="flex gap-1">
                 <Button
                   variant={viewMode === "grid" ? "default" : "outline"}
@@ -759,7 +759,7 @@ export default function FindCampsPage() {
               </div>
             </div>
           </div>
-          
+
           {/* Applied Filters */}
           {(selectedSport || selectedSkillLevel || selectedState || 
             selectedCity || selectedType || selectedAgeRange || showVirtualOnly) && (
@@ -907,7 +907,7 @@ export default function FindCampsPage() {
               <Calendar size={48} className="text-muted-foreground mb-4" />
               <h3 className="text-xl font-semibold mb-2">No Camps Found</h3>
               <p className="text-muted-foreground text-center max-w-md mb-6">
-                We couldn't find any camps matching your search criteria. Try adjusting your filters or check back later.
+                We couldn'tfind any camps matching your search criteria. Try adjusting your filters or check back later.
               </p>
               <Button onClick={clearAllFilters}>Clear All Filters</Button>
             </div>
@@ -962,7 +962,7 @@ export default function FindCampsPage() {
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-2">
                     <Calendar className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
                     <div>
@@ -972,7 +972,7 @@ export default function FindCampsPage() {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-2">
                     <Clock className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
                     <div>
@@ -983,7 +983,7 @@ export default function FindCampsPage() {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-2">
                     <User className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
                     <div>
@@ -993,7 +993,7 @@ export default function FindCampsPage() {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-2">
                     <User className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
                     <div>
@@ -1003,7 +1003,7 @@ export default function FindCampsPage() {
                       </p>
                     </div>
                   </div>
-                  
+
                   {selectedCamp.coaches && selectedCamp.coaches.length > 0 && (
                     <div className="flex items-start gap-2">
                       <Users className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
@@ -1032,14 +1032,14 @@ export default function FindCampsPage() {
                       </div>
                     </div>
                   )}
-                  
+
                   <Separator />
-                  
+
                   <div>
                     <h4 className="text-sm font-medium mb-2">Description</h4>
                     <p className="text-sm text-muted-foreground">{selectedCamp.description}</p>
                   </div>
-                  
+
                   <div className="mt-6 pt-4 border-t flex justify-between items-center">
                     <p className="text-xl font-bold">${selectedCamp.price}</p>
                     <Button onClick={() => {
@@ -1071,13 +1071,13 @@ function CampCard({ camp, onRegisterClick, isAuthenticated, onViewDetails }: Cam
   const now = new Date();
   const startDate = new Date(camp.startDate);
   const daysUntilStart = Math.ceil((startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  
+
   // Show "Starting soon" badge if camp starts within 7 days
   const showStartingSoon = daysUntilStart <= 7 && daysUntilStart > 0;
-  
+
   // Check if camp is featured
   const isFeatured = camp.visibility === "public" && camp.type !== "virtual";
-  
+
   return (
     <Card className="h-full flex flex-col overflow-hidden hover:shadow-md transition-shadow">
       <CardHeader className="p-4 pb-2 space-y-2">
@@ -1113,14 +1113,14 @@ function CampCard({ camp, onRegisterClick, isAuthenticated, onViewDetails }: Cam
             {isVirtual ? "Online/Virtual" : `${camp.city}, ${camp.state}`}
           </span>
         </div>
-        
+
         <div className="flex items-center gap-2 mb-3">
           <Calendar className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">
             {format(new Date(camp.startDate), "MMM d")} - {format(new Date(camp.endDate), "MMM d, yyyy")}
           </span>
         </div>
-        
+
         <div className="flex items-center gap-2 mb-3">
           <Clock className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">
@@ -1128,21 +1128,21 @@ function CampCard({ camp, onRegisterClick, isAuthenticated, onViewDetails }: Cam
             {camp.defaultEndTime ? format(new Date(`2022-01-01T${camp.defaultEndTime}`), "h:mm a") : "Varies"}
           </span>
         </div>
-        
+
         <div className="flex items-center gap-2 mb-3">
           <User className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">
             Ages {camp.minAge} - {camp.maxAge}
           </span>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <User className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground capitalize">
             {camp.type.replace("_", " ")}
           </span>
         </div>
-        
+
         {camp.description && (
           <p className="text-sm text-muted-foreground line-clamp-2 mt-3">
             {camp.description}
@@ -1183,13 +1183,13 @@ function CampListItem({ camp, onRegisterClick, isAuthenticated, onViewDetails }:
   const now = new Date();
   const startDate = new Date(camp.startDate);
   const daysUntilStart = Math.ceil((startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  
+
   // Show "Starting soon" badge if camp starts within 7 days
   const showStartingSoon = daysUntilStart <= 7 && daysUntilStart > 0;
-  
+
   // Check if camp is featured
   const isFeatured = camp.visibility === "public" && camp.type !== "virtual";
-  
+
   return (
     <div className="py-4 flex flex-col md:flex-row gap-4 hover:bg-muted/30 p-2 rounded-md cursor-pointer transition-colors" onClick={onViewDetails}>
       <div className="flex-1 min-w-0">
@@ -1207,7 +1207,7 @@ function CampListItem({ camp, onRegisterClick, isAuthenticated, onViewDetails }:
             </Badge>
           )}
         </div>
-        
+
         <div className="flex flex-wrap gap-1.5 mb-2">
           {camp.campSports && camp.campSports.length > 0 ? (
             camp.campSports.map((sport, index) => (
@@ -1221,33 +1221,33 @@ function CampListItem({ camp, onRegisterClick, isAuthenticated, onViewDetails }:
             </Badge>
           )}
         </div>
-        
+
         <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
           {camp.description}
         </p>
-        
+
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
           <div className="flex items-center">
             <MapPin className="h-3.5 w-3.5 mr-1" />
             <span>{isVirtual ? "Online/Virtual" : `${camp.city}, ${camp.state}`}</span>
           </div>
-          
+
           <div className="flex items-center">
             <Calendar className="h-3.5 w-3.5 mr-1" />
             <span>{format(new Date(camp.startDate), "MMM d")} - {format(new Date(camp.endDate), "MMM d")}</span>
           </div>
-          
+
           <div className="flex items-center">
             <User className="h-3.5 w-3.5 mr-1" />
             <span>Ages {camp.minAge} - {camp.maxAge}</span>
           </div>
-          
+
           <div className="flex items-center">
             <span className="capitalize">{camp.type.replace("_", " ")}</span>
           </div>
         </div>
       </div>
-      
+
       <div className="flex items-center gap-2 md:flex-col md:items-end justify-between">
         <p className="text-lg font-bold">${camp.price}</p>
         <div className="flex gap-2">
