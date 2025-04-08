@@ -34,14 +34,12 @@ export interface CampFilterValues {
 interface CampsFilterProps {
   filters: CampFilterValues;
   onFilterChange: (filters: CampFilterValues) => void;
-  activeFilterCount: number;
   className?: string;
 }
 
 export function CampsFilter({ 
   filters, 
   onFilterChange, 
-  activeFilterCount,
   className
 }: CampsFilterProps) {
   const [tempFilters, setTempFilters] = React.useState<CampFilterValues>(filters);
