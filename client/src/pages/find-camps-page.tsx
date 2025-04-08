@@ -92,12 +92,12 @@ export default function FindCampsPage() {
   const [location, setLocation] = useLocation();
   const { user, isLoading: isUserLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedSport, setSelectedSport] = useState<string>("all_sports");
-  const [selectedSkillLevel, setSelectedSkillLevel] = useState<string>("any");
-  const [selectedState, setSelectedState] = useState<string>("any");
-  const [selectedCity, setSelectedCity] = useState<string>("any");
-  const [selectedAgeRange, setSelectedAgeRange] = useState<string>("any");
-  const [selectedType, setSelectedType] = useState<string>("any");
+  const [selectedSport, setSelectedSport] = useState<string>("");
+  const [selectedSkillLevel, setSelectedSkillLevel] = useState<string>("");
+  const [selectedState, setSelectedState] = useState<string>("");
+  const [selectedCity, setSelectedCity] = useState<string>("");
+  const [selectedAgeRange, setSelectedAgeRange] = useState<string>("");
+  const [selectedType, setSelectedType] = useState<string>("");
   const [showVirtualOnly, setShowVirtualOnly] = useState(false);
   const [sortBy, setSortBy] = useState<string>("startDate");
   const [isMobile, setIsMobile] = useState(false);
@@ -764,8 +764,8 @@ export default function FindCampsPage() {
           </div>
 
           {/* Applied Filters */}
-          {(selectedSport || selectedSkillLevel || selectedState || 
-            selectedCity || selectedType || selectedAgeRange || showVirtualOnly) && (
+          {(!!selectedSport || !!selectedSkillLevel || !!selectedState || 
+            !!selectedCity || !!selectedType || !!selectedAgeRange || showVirtualOnly) && (
             <div className="flex flex-wrap gap-2 mb-6">
               <div className="text-sm font-medium mb-1 mr-2 mt-1">Active filters:</div>
               {selectedSport && (
