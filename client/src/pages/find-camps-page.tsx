@@ -951,7 +951,7 @@ export default function FindCampsPage() {
                     <div>
                       <p className="text-sm font-medium">Location</p>
                       <p className="text-sm text-muted-foreground">
-                        {selectedCamp.isVirtual ? "Virtual" : 
+                        {(selectedCamp.isVirtual || selectedCamp.name.toLowerCase().includes('virtual')) ? "Virtual" : 
                           (selectedCamp.city && selectedCamp.state ? 
                             `${selectedCamp.streetAddress}, ${selectedCamp.city}, ${selectedCamp.state} ${selectedCamp.zipCode}` :
                             "Location not specified"
@@ -1068,7 +1068,8 @@ interface CampCardProps {
 }
 
 function CampCard({ camp, onRegisterClick, isAuthenticated, onViewDetails }: CampCardProps) {  
-  const isVirtual = camp.isVirtual;
+  // Determine if virtual by checking name or isVirtual flag
+  const isVirtual = camp.isVirtual || camp.name.toLowerCase().includes('virtual');
   const now = new Date();
   const startDate = new Date(camp.startDate);
   const daysUntilStart = Math.ceil((startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
@@ -1077,7 +1078,7 @@ function CampCard({ camp, onRegisterClick, isAuthenticated, onViewDetails }: Cam
   const showStartingSoon = daysUntilStart <= 7 && daysUntilStart > 0;
 
   // Check if camp is featured
-  const isFeatured = camp.visibility === "public" && !camp.isVirtual;
+  const isFeatured = camp.visibility === "public" && !isVirtual;
 
   return (
     <Card className="h-full flex flex-col overflow-hidden hover:shadow-md transition-shadow">
@@ -1180,7 +1181,8 @@ interface CampListItemProps {
 }
 
 function CampListItem({ camp, onRegisterClick, isAuthenticated, onViewDetails }: CampListItemProps) {
-  const isVirtual = camp.isVirtual;
+  // Determine if virtual by checking name or isVirtual flag
+  const isVirtual = camp.isVirtual || camp.name.toLowerCase().includes('virtual');
   const now = new Date();
   const startDate = new Date(camp.startDate);
   const daysUntilStart = Math.ceil((startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
@@ -1189,7 +1191,7 @@ function CampListItem({ camp, onRegisterClick, isAuthenticated, onViewDetails }:
   const showStartingSoon = daysUntilStart <= 7 && daysUntilStart > 0;
 
   // Check if camp is featured
-  const isFeatured = camp.visibility === "public" && !camp.isVirtual;
+  const isFeatured = camp.visibility === "public" && !isVirtual;
 
   return (
     <div className="py-4 flex flex-col md:flex-row gap-4 hover:bg-muted/30 p-2 rounded-md cursor-pointer transition-colors" onClick={onViewDetails}>
