@@ -138,7 +138,8 @@ export function AddCampDialog({
   };
 
   const form = useForm<ExtendedCampSchema>({
-    resolver: zodResolver(insertCampSchema.extend({
+    resolver: zodResolver(z.object({
+      ...insertCampSchema.shape,
       defaultStartTime: z.string().optional(),
       defaultEndTime: z.string().optional()
     })),
