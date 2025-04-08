@@ -92,7 +92,7 @@ export default function FindCampsPage() {
   const [location, setLocation] = useLocation();
   const { user, isLoading: isUserLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedSport, setSelectedSport] = useState<string>("any");
+  const [selectedSport, setSelectedSport] = useState<string>("all_sports");
   const [selectedSkillLevel, setSelectedSkillLevel] = useState<string>("any");
   const [selectedState, setSelectedState] = useState<string>("any");
   const [selectedCity, setSelectedCity] = useState<string>("any");
@@ -136,7 +136,7 @@ export default function FindCampsPage() {
       camp.description?.toLowerCase().includes(searchQuery.toLowerCase());
 
     // Sport filter
-    const hasSport = selectedSport === "all_sports" || 
+    const hasSport = !selectedSport || selectedSport === "all_sports" || 
       (camp.campSports && camp.campSports.some(cs => cs.sportId && cs.sportId.toString() === selectedSport));
 
     // Skill level filter
