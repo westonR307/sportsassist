@@ -147,7 +147,7 @@ export default function FindCampsPage() {
     const matchesState = !selectedState || selectedState === "any" || camp.state === selectedState;
 
     // City filter
-    const matchesCity = !selectedCity || selectedCity === "any" || camp.city.toLowerCase().includes(selectedCity.toLowerCase());
+    const matchesCity = !selectedCity || selectedCity === "any" || (camp.city && camp.city.toLowerCase().includes(selectedCity.toLowerCase()));
 
     // Camp type filter
     const matchesType = !selectedType || selectedType === "any" || camp.type === selectedType;
@@ -199,6 +199,7 @@ export default function FindCampsPage() {
       availableCamps
         .filter(camp => !selectedState || selectedState === "any" || camp.state === selectedState)
         .map(camp => camp.city)
+        .filter(city => city) // Filter out null or undefined cities
     )
   ).sort();
 
