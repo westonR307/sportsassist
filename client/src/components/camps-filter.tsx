@@ -91,9 +91,9 @@ export function CampsFilter({
     if (key === 'search') {
       newFilters.search = '';
     } else if (key === 'status') {
-      newFilters.status = '';
+      newFilters.status = 'all';
     } else if (key === 'type') {
-      newFilters.type = '';
+      newFilters.type = 'any';
     } else if (key === 'includeDeleted') {
       newFilters.includeDeleted = false;
     }
@@ -226,65 +226,6 @@ export function CampsFilter({
       </div>
       
       {/* Active filter badges */}
-      {activeFilterCount > 0 && (
-        <div className="flex flex-wrap gap-2 mt-2">
-          {filters.status && (
-            <Badge variant="secondary" className="flex items-center gap-1 px-2">
-              Status: {filters.status}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-4 w-4 p-0 ml-1"
-                onClick={() => clearFilter('status')}
-              >
-                <X className="h-3 w-3" />
-                <span className="sr-only">Remove status filter</span>
-              </Button>
-            </Badge>
-          )}
-          
-          {filters.type && (
-            <Badge variant="secondary" className="flex items-center gap-1 px-2">
-              Type: {formatFilterType(filters.type)}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-4 w-4 p-0 ml-1"
-                onClick={() => clearFilter('type')}
-              >
-                <X className="h-3 w-3" />
-                <span className="sr-only">Remove type filter</span>
-              </Button>
-            </Badge>
-          )}
-          
-          {filters.includeDeleted && (
-            <Badge variant="secondary" className="flex items-center gap-1 px-2">
-              Including deleted
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-4 w-4 p-0 ml-1"
-                onClick={() => clearFilter('includeDeleted')}
-              >
-                <X className="h-3 w-3" />
-                <span className="sr-only">Remove deleted filter</span>
-              </Button>
-            </Badge>
-          )}
-          
-          {(filters.status || filters.type || filters.includeDeleted) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-xs"
-              onClick={resetFilters}
-            >
-              Clear all
-            </Button>
-          )}
-        </div>
-      )}
     </div>
   );
 }
