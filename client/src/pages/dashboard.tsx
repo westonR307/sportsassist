@@ -57,16 +57,8 @@ interface Organization {
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useWouterLocation();
   const { user, logoutMutation } = useAuth();
-  const wouterLocation = useWouterLocation()[0];
-  
-  // State for sidebar
+  // Initialize sidebar closed by default (safer for mobile)
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
-  const [isHovering, setIsHovering] = React.useState(false);
-  const [userActive, setUserActive] = React.useState(true);
-  const [isDesktop, setIsDesktop] = React.useState(false);
-  const sidebarRef = React.useRef<HTMLDivElement>(null);
-  const activityTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
-  const hoverTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   
   // Load organization data if the user has an organizationId
   const { data: organization } = useQuery<Organization>({
@@ -74,124 +66,26 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
     enabled: !!user?.organizationId,
   });
   
-  // Helper function to check if screen is desktop size
-  const checkIfDesktop = () => window.innerWidth >= 1024;
-  
-  // Setup resize listener and initial sidebar state
+  // Set sidebar state based on screen size on initial load
   React.useEffect(() => {
-    const handleResize = () => {
-      const desktop = checkIfDesktop();
-      setIsDesktop(desktop);
-      
-      // On mobile, always close sidebar when resizing
-      if (!desktop && sidebarOpen) {
+    const isDesktop = window.innerWidth >= 1024; // 1024px is the lg breakpoint in Tailwind
+    setSidebarOpen(isDesktop);
+    
+    // Also close sidebar when navigation happens (for mobile)
+    const handleRouteChange = () => {
+      if (window.innerWidth < 1024) {
         setSidebarOpen(false);
       }
-      // On desktop switching from mobile, open sidebar
-      else if (desktop && !isDesktop) {
-        setSidebarOpen(true);
-      }
     };
     
-    // Initial setup
-    setIsDesktop(checkIfDesktop());
-    setSidebarOpen(checkIfDesktop());
-    
-    // Add resize listener
-    window.addEventListener('resize', handleResize);
+    // Listen for location changes
+    window.addEventListener('popstate', handleRouteChange);
     
     return () => {
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('popstate', handleRouteChange);
     };
-  }, [isDesktop]);
-  
-  // Close sidebar on navigation for mobile devices
-  React.useEffect(() => {
-    if (!isDesktop) {
-      setSidebarOpen(false);
-    }
-  }, [wouterLocation, isDesktop]);
-  
-  // Handle user activity tracking for auto-collapse on inactivity
-  React.useEffect(() => {
-    const INACTIVITY_TIMEOUT = 60000; // 1 minute of inactivity before collapsing sidebar
-    
-    const resetActivityTimeout = () => {
-      setUserActive(true);
-      
-      // Clear existing timeout
-      if (activityTimeoutRef.current) {
-        clearTimeout(activityTimeoutRef.current);
-      }
-      
-      // Set new timeout
-      activityTimeoutRef.current = setTimeout(() => {
-        // Only auto-collapse on desktop when user has been inactive
-        if (isDesktop && sidebarOpen && !isHovering) {
-          setSidebarOpen(false);
-        }
-        setUserActive(false);
-      }, INACTIVITY_TIMEOUT);
-    };
-    
-    // Track user activity
-    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-    activityEvents.forEach(event => {
-      window.addEventListener(event, resetActivityTimeout);
-    });
-    
-    // Initial setup
-    resetActivityTimeout();
-    
-    return () => {
-      if (activityTimeoutRef.current) {
-        clearTimeout(activityTimeoutRef.current);
-      }
-      
-      activityEvents.forEach(event => {
-        window.removeEventListener(event, resetActivityTimeout);
-      });
-    };
-  }, [isDesktop, sidebarOpen, isHovering]);
-  
-  // Handle hover effects for the sidebar (desktop only)
-  const handleSidebarMouseEnter = () => {
-    if (!isDesktop) return;
-    
-    setIsHovering(true);
-    
-    // Clear any existing hover timeout
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-      hoverTimeoutRef.current = null;
-    }
-    
-    // Expand sidebar on hover after a short delay
-    if (!sidebarOpen) {
-      hoverTimeoutRef.current = setTimeout(() => {
-        setSidebarOpen(true);
-      }, 300); // 300ms delay before expanding
-    }
-  };
-  
-  const handleSidebarMouseLeave = () => {
-    if (!isDesktop) return;
-    
-    setIsHovering(false);
-    
-    // Clear any pending hover expansion
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-      hoverTimeoutRef.current = null;
-    }
-    
-    // Auto-collapse after a delay if the user is in non-interactive areas
-    if (!userActive) {
-      setTimeout(() => {
-        setSidebarOpen(false);
-      }, 1000); // 1 second delay before collapsing
-    }
-  };
+  }, []);
+  const wouterLocation = useWouterLocation()[0];
 
   // Parent and athlete users don't have organizationId
   const isParentOrAthlete = user?.role === 'parent' || user?.role === 'athlete';
@@ -214,9 +108,6 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 
       {/* Sidebar */}
       <div
-        ref={sidebarRef}
-        onMouseEnter={handleSidebarMouseEnter}
-        onMouseLeave={handleSidebarMouseLeave}
         className={`
         fixed left-0 top-0 h-screen bg-white border-r 
         transition-all duration-300 ease-in-out z-40
@@ -302,139 +193,114 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
           </button>
           {/* Settings dropdown */}
           <div className="relative">
-            {/* Add state to track if the settings menu is expanded */}
-            {React.useMemo(() => {
-              // Define a state to track settings menu expansion
-              const [settingsExpanded, setSettingsExpanded] = React.useState(false);
-              
-              // Determine if the current location is in a settings page
-              const isInSettingsSection = 
+            <button
+              onClick={() => {
+                navigate("/dashboard/settings");
+                // Close sidebar on mobile after navigation
+                if (window.innerWidth < 1024) setSidebarOpen(false);
+              }}
+              className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
                 wouterLocation.startsWith("/dashboard/settings") || 
                 wouterLocation === "/dashboard/permissions" || 
                 wouterLocation === "/custom-fields" || 
                 wouterLocation === "/dashboard/organization-profile" || 
                 wouterLocation === "/dashboard/stripe-connect" || 
-                wouterLocation === "/dashboard/subscription-plans";
-              
-              // Auto-expand settings when navigating to a settings page
-              React.useEffect(() => {
-                if (isInSettingsSection) {
-                  setSettingsExpanded(true);
-                }
-              }, [isInSettingsSection]);
-              
-              return (
-                <>
+                wouterLocation === "/dashboard/subscription-plans" ? "bg-gray-100" : ""
+              }`}
+            >
+              <Settings className="h-5 w-5 flex-shrink-0" />
+              <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Settings</span>
+            </button>
+            
+            {/* Settings Sub-items */}
+            {sidebarOpen && (
+              <div className="pl-6 mt-1 space-y-1">
+                {/* Permission Management Link - Only visible to camp creators */}
+                {user?.role === "camp_creator" && (
                   <button
                     onClick={() => {
-                      if (sidebarOpen) {
-                        // Toggle expansion when sidebar is open
-                        setSettingsExpanded(!settingsExpanded);
-                      } else {
-                        // When sidebar is closed, just open it on first click
-                        setSidebarOpen(true);
-                      }
+                      navigate("/dashboard/permissions");
+                      // Close sidebar on mobile after navigation
+                      if (window.innerWidth < 1024) setSidebarOpen(false);
                     }}
                     className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
-                      isInSettingsSection ? "bg-gray-100" : ""
+                      wouterLocation === "/dashboard/permissions" ? "bg-gray-100" : ""
                     }`}
                   >
-                    <Settings className="h-5 w-5 flex-shrink-0" />
-                    <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Settings</span>
+                    <ShieldCheck className="h-5 w-5 flex-shrink-0" />
+                    <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Permissions</span>
                   </button>
-                  
-                  {/* Settings Sub-items - only show when both sidebar is open and settings is expanded */}
-                  {sidebarOpen && settingsExpanded && (
-                    <div className="pl-6 mt-1 space-y-1">
-                      {/* Permission Management Link - Only visible to camp creators */}
-                      {user?.role === "camp_creator" && (
-                        <button
-                          onClick={() => {
-                            navigate("/dashboard/permissions");
-                            // Close sidebar on mobile after navigation
-                            if (window.innerWidth < 1024) setSidebarOpen(false);
-                          }}
-                          className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
-                            wouterLocation === "/dashboard/permissions" ? "bg-gray-100" : ""
-                          }`}
-                        >
-                          <ShieldCheck className="h-5 w-5 flex-shrink-0" />
-                          <span>Permissions</span>
-                        </button>
-                      )}
-                      
-                      {/* Custom Fields Link */}
-                      {(user?.role === "camp_creator" || user?.role === "manager") && (
-                        <button
-                          onClick={() => {
-                            navigate("/custom-fields");
-                            // Close sidebar on mobile after navigation
-                            if (window.innerWidth < 1024) setSidebarOpen(false);
-                          }}
-                          className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
-                            wouterLocation === "/custom-fields" ? "bg-gray-100" : ""
-                          }`}
-                        >
-                          <FileText className="h-5 w-5 flex-shrink-0" />
-                          <span>Custom Fields</span>
-                        </button>
-                      )}
-                      
-                      {/* Organization Profile Link */}
-                      {(user?.role === "camp_creator" || user?.role === "manager") && (
-                        <button
-                          onClick={() => {
-                            navigate("/dashboard/organization-profile");
-                            // Close sidebar on mobile after navigation
-                            if (window.innerWidth < 1024) setSidebarOpen(false);
-                          }}
-                          className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
-                            wouterLocation === "/dashboard/organization-profile" ? "bg-gray-100" : ""
-                          }`}
-                        >
-                          <Users2 className="h-5 w-5 flex-shrink-0" />
-                          <span>Organization Profile</span>
-                        </button>
-                      )}
-                      
-                      {/* Stripe Connect Link - Only visible to camp creators */}
-                      {user?.role === "camp_creator" && (
-                        <button
-                          onClick={() => {
-                            navigate("/dashboard/stripe-connect");
-                            // Close sidebar on mobile after navigation
-                            if (window.innerWidth < 1024) setSidebarOpen(false);
-                          }}
-                          className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
-                            wouterLocation === "/dashboard/stripe-connect" ? "bg-gray-100" : ""
-                          }`}
-                        >
-                          <DollarSign className="h-5 w-5 flex-shrink-0" />
-                          <span>Stripe Connect</span>
-                        </button>
-                      )}
-                      
-                      {/* Subscription Plans Link - Only visible to camp creators */}
-                      {user?.role === "camp_creator" && (
-                        <button
-                          onClick={() => {
-                            navigate("/dashboard/subscription-plans");
-                            // Close sidebar on mobile after navigation
-                            if (window.innerWidth < 1024) setSidebarOpen(false);
-                          }}
-                          className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
-                            wouterLocation === "/dashboard/subscription-plans" ? "bg-gray-100" : ""
-                          }`}
-                        >
-                          <CreditCard className="h-5 w-5 flex-shrink-0" />
-                          <span>Subscription Plans</span>
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </>
-              );
-            }, [wouterLocation, sidebarOpen, user?.role, navigate])}
+                )}
+                
+                {/* Custom Fields Link */}
+                {(user?.role === "camp_creator" || user?.role === "manager") && (
+                  <button
+                    onClick={() => {
+                      navigate("/custom-fields");
+                      // Close sidebar on mobile after navigation
+                      if (window.innerWidth < 1024) setSidebarOpen(false);
+                    }}
+                    className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
+                      wouterLocation === "/custom-fields" ? "bg-gray-100" : ""
+                    }`}
+                  >
+                    <FileText className="h-5 w-5 flex-shrink-0" />
+                    <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Custom Fields</span>
+                  </button>
+                )}
+                
+                {/* Organization Profile Link */}
+                {(user?.role === "camp_creator" || user?.role === "manager") && (
+                  <button
+                    onClick={() => {
+                      navigate("/dashboard/organization-profile");
+                      // Close sidebar on mobile after navigation
+                      if (window.innerWidth < 1024) setSidebarOpen(false);
+                    }}
+                    className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
+                      wouterLocation === "/dashboard/organization-profile" ? "bg-gray-100" : ""
+                    }`}
+                  >
+                    <Users2 className="h-5 w-5 flex-shrink-0" />
+                    <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Organization Profile</span>
+                  </button>
+                )}
+                
+                {/* Stripe Connect Link - Only visible to camp creators */}
+                {user?.role === "camp_creator" && (
+                  <button
+                    onClick={() => {
+                      navigate("/dashboard/stripe-connect");
+                      // Close sidebar on mobile after navigation
+                      if (window.innerWidth < 1024) setSidebarOpen(false);
+                    }}
+                    className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
+                      wouterLocation === "/dashboard/stripe-connect" ? "bg-gray-100" : ""
+                    }`}
+                  >
+                    <DollarSign className="h-5 w-5 flex-shrink-0" />
+                    <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Stripe Connect</span>
+                  </button>
+                )}
+                
+                {/* Subscription Plans Link - Only visible to camp creators */}
+                {user?.role === "camp_creator" && (
+                  <button
+                    onClick={() => {
+                      navigate("/dashboard/subscription-plans");
+                      // Close sidebar on mobile after navigation
+                      if (window.innerWidth < 1024) setSidebarOpen(false);
+                    }}
+                    className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
+                      wouterLocation === "/dashboard/subscription-plans" ? "bg-gray-100" : ""
+                    }`}
+                  >
+                    <CreditCard className="h-5 w-5 flex-shrink-0" />
+                    <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Subscription Plans</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
           
           {/* Documents Link */}
