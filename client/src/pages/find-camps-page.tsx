@@ -194,14 +194,12 @@ export default function FindCampsPage() {
   ).sort();
 
   // Get unique cities from filtered (by state) camps
-  const availableCities = Array.from(new Set(camps.map((camp) => camp.city).filter((city) => city && city.trim() !== "")));
-
-// Array.from(
+  const availableCities = Array.from(
     new Set(
       availableCamps
         .filter(camp => !selectedState || selectedState === "any" || camp.state === selectedState)
         .map(camp => camp.city)
-        .filter(city => city) // Filter out null or undefined cities
+        .filter(city => city && city.trim() !== "") // Filter out null, undefined, or empty cities
     )
   ).sort();
 
