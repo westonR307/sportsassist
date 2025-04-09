@@ -194,7 +194,9 @@ export default function FindCampsPage() {
   ).sort();
 
   // Get unique cities from filtered (by state) camps
-  const availableCities = Array.from(
+  const availableCities = Array.from(new Set(camps.map((camp) => camp.city).filter((city) => city && city.trim() !== "")));
+
+// Array.from(
     new Set(
       availableCamps
         .filter(camp => !selectedState || selectedState === "any" || camp.state === selectedState)
@@ -359,7 +361,7 @@ export default function FindCampsPage() {
                         <SelectContent>
                           <SelectItem value="any">Any City</SelectItem>
                           {availableCities.map(city => (
-                            <SelectItem key={city} value={city}>
+                            <SelectItem key={city} value={city || 'VIRTUAL'}>
                               {city}
                             </SelectItem>
                           ))}
@@ -569,7 +571,7 @@ export default function FindCampsPage() {
                                   <SelectContent>
                                     <SelectItem value="any">Any City</SelectItem>
                                     {availableCities.map(city => (
-                                      <SelectItem key={city} value={city}>
+                                      <SelectItem key={city} value={city || 'VIRTUAL'}>
                                         {city}
                                       </SelectItem>
                                     ))}
