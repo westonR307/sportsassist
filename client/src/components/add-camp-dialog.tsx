@@ -332,8 +332,13 @@ export function AddCampDialog({
         const sportId = parseInt(selectedSport) || 1;
         const mappedSkillLevel = skillLevelMap[skillLevel] || "beginner";
 
+        // Make a copy of the data and exclude any potential defaultStartTime/defaultEndTime properties
+        // Use type assertion to bypass TypeScript errors
+        const dataObj = data as any;
+        const { defaultStartTime, defaultEndTime, ...dataWithoutDefaults } = dataObj;
+        
         const requestData = {
-          ...data,
+          ...dataWithoutDefaults,
           // Format dates properly for consistent handling
           startDate: formatDateForPostgres(data.startDate),
           endDate: formatDateForPostgres(data.endDate),
@@ -707,9 +712,12 @@ export function AddCampDialog({
       level: skillLevel
     });
     try {
-      // Format dates as ISO strings
+      // Format dates as ISO strings and remove defaultStartTime/defaultEndTime
+      // Use type assertion to bypass TypeScript errors
+      const dataObj = data as any;
+      const { defaultStartTime, defaultEndTime, ...dataWithoutDefaults } = dataObj;
       const formattedData = {
-        ...data,
+        ...dataWithoutDefaults,
         registrationStartDate: formatDateForPostgres(data.registrationStartDate),
         registrationEndDate: formatDateForPostgres(data.registrationEndDate),
         startDate: formatDateForPostgres(data.startDate),
