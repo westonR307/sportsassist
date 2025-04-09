@@ -143,8 +143,9 @@ export default function FindCampsPage() {
     const hasSkillLevel = !selectedSkillLevel || selectedSkillLevel === "any" || 
       (camp.campSports && camp.campSports.some(cs => cs.skillLevel === selectedSkillLevel));
 
-    // State filter
-    const matchesState = !selectedState || selectedState === "any" || camp.state === selectedState;
+    // State filter - handle virtual camps
+    const matchesState = !selectedState || selectedState === "any" || 
+      (selectedState === "Virtual" ? camp.isVirtual : camp.state === selectedState);
 
     // City filter
     const matchesCity = !selectedCity || selectedCity === "any" || (camp.city && camp.city.toLowerCase().includes(selectedCity.toLowerCase()));
@@ -188,9 +189,13 @@ export default function FindCampsPage() {
     return 0;
   });
 
-  // Get unique states from available camps
+  // Get unique states from available camps, marking virtual camps appropriately
   const availableStates = Array.from(
-    new Set(availableCamps.map(camp => camp.state))
+    new Set(
+      availableCamps.map(camp => 
+        camp.isVirtual ? "Virtual" : camp.state
+      ).filter(state => state && state.trim() !== "")
+    )
   ).sort();
 
   // Get unique cities from filtered (by state) camps
