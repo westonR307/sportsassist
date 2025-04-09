@@ -22,7 +22,7 @@ export default function HomePage() {
             <div className="inline-block px-4 py-1 mb-6 bg-primary/20 rounded-full">
               <span className="text-sm font-medium text-primary">Your athlete's journey starts here</span>
             </div>
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 gradient-text gradient-bg-modern">
+            <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 gradient-text bg-gradient-to-r from-primary to-primary/70">
               Find the Perfect Sports Camp for Your Athlete
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
@@ -88,7 +88,7 @@ export default function HomePage() {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="camp-card p-6 hover-lift">
-              <div className="w-14 h-14 rounded-2xl gradient-bg-modern flex items-center justify-center mb-6">
+              <div className="w-14 h-14 rounded-2xl gradient-bg-blue flex items-center justify-center mb-6">
                 <Search className="h-7 w-7 text-white" />
               </div>
               <h3 className="text-xl font-semibold mb-3">Find the Perfect Fit</h3>
@@ -110,7 +110,7 @@ export default function HomePage() {
             </div>
             
             <div className="camp-card p-6 hover-lift">
-              <div className="w-14 h-14 rounded-2xl gradient-bg-modern flex items-center justify-center mb-6">
+              <div className="w-14 h-14 rounded-2xl gradient-bg-blue flex items-center justify-center mb-6">
                 <MapPin className="h-7 w-7 text-white" />
               </div>
               <h3 className="text-xl font-semibold mb-3">Local or Virtual Options</h3>
@@ -132,7 +132,7 @@ export default function HomePage() {
             </div>
             
             <div className="camp-card p-6 hover-lift">
-              <div className="w-14 h-14 rounded-2xl gradient-bg-modern flex items-center justify-center mb-6">
+              <div className="w-14 h-14 rounded-2xl gradient-bg-blue flex items-center justify-center mb-6">
                 <Calendar className="h-7 w-7 text-white" />
               </div>
               <h3 className="text-xl font-semibold mb-3">Convenient Scheduling</h3>
@@ -157,7 +157,7 @@ export default function HomePage() {
       </section>
 
       {/* Enhanced CTA Section */}
-      <section className="gradient-bg-modern text-white py-20 relative overflow-hidden">
+      <section className="gradient-bg-blue text-white py-20 relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzBhNiA2IDAgMSAxLTEyIDAgNiA2IDAgMCAxIDEyIDB6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-15"></div>
         
         <div className="container relative mx-auto px-4 text-center">
