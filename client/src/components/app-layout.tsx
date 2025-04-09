@@ -476,11 +476,11 @@ export function AppLayout({ children, showBackButton = false, showNavigation = t
       <div
         className={`
         transition-all duration-300 ease-in-out w-full
-        ${showNavigation ? (sidebarOpen ? "lg:pl-64" : "lg:pl-16") : ""}
+        ${showNavigation ? (sidebarOpen ? "lg:ml-64" : "lg:ml-16") : ""}
         pt-16 lg:pt-0
       `}
       >
-        <main className="px-4 py-8 w-full max-w-7xl mx-auto">{children}</main>
+        <main className="px-4 py-8 w-full max-w-screen-xl">{children}</main>
       </div>
 
       {/* Mobile Overlay */}
