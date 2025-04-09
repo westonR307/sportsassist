@@ -406,7 +406,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getOrganizationStaff(orgId: number): Promise<User[]> {
-    // Instead of using Array ANY, use OR conditions for each role
+    // Include all relevant organization roles, including camp_creator/admin roles
     return await db.select()
       .from(users)
       .where(
@@ -415,7 +415,9 @@ export class DatabaseStorage implements IStorage {
           or(
             eq(users.role, "coach" as Role),
             eq(users.role, "manager" as Role),
-            eq(users.role, "volunteer" as Role)
+            eq(users.role, "volunteer" as Role),
+            eq(users.role, "camp_creator" as Role),
+            eq(users.role, "admin" as Role)
           )
         )
       );
