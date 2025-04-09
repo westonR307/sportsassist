@@ -402,11 +402,11 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
       <div
         className={`
         transition-all duration-300 ease-in-out
-        ${sidebarOpen ? "lg:pl-64" : "lg:pl-16"}
-        pt-16 lg:pt-0
+        ${sidebarOpen ? "lg:ml-64" : "lg:ml-16"}
+        pt-16 lg:pt-4
       `}
       >
-        <main className="container mx-auto px-6 py-8">{children}</main>
+        <main className="px-4 py-6">{children}</main>
       </div>
 
       {/* Mobile Overlay */}

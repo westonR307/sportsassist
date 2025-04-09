@@ -412,7 +412,7 @@ export default function CampsPage() {
 
   return (
     <DashboardLayout>
-      <main className="w-full px-4 py-8">
+      <main className="w-full">
         {campsContent}
       </main>
     </DashboardLayout>
