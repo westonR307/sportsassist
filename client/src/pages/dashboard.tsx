@@ -200,49 +200,108 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
                 if (window.innerWidth < 1024) setSidebarOpen(false);
               }}
               className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
-                wouterLocation.startsWith("/dashboard/settings") || wouterLocation === "/dashboard/permissions" ? "bg-gray-100" : ""
+                wouterLocation.startsWith("/dashboard/settings") || 
+                wouterLocation === "/dashboard/permissions" || 
+                wouterLocation === "/custom-fields" || 
+                wouterLocation === "/dashboard/organization-profile" || 
+                wouterLocation === "/dashboard/stripe-connect" || 
+                wouterLocation === "/dashboard/subscription-plans" ? "bg-gray-100" : ""
               }`}
             >
               <Settings className="h-5 w-5 flex-shrink-0" />
               <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Settings</span>
             </button>
             
-            {/* Permission Management Link - Only visible to camp creators */}
-            {user?.role === "camp_creator" && (
-              <div className="pl-6 mt-1">
-                <button
-                  onClick={() => {
-                    navigate("/dashboard/permissions");
-                    // Close sidebar on mobile after navigation
-                    if (window.innerWidth < 1024) setSidebarOpen(false);
-                  }}
-                  className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
-                    wouterLocation === "/dashboard/permissions" ? "bg-gray-100" : ""
-                  }`}
-                >
-                  <ShieldCheck className="h-5 w-5 flex-shrink-0" />
-                  <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Permissions</span>
-                </button>
+            {/* Settings Sub-items */}
+            {sidebarOpen && (
+              <div className="pl-6 mt-1 space-y-1">
+                {/* Permission Management Link - Only visible to camp creators */}
+                {user?.role === "camp_creator" && (
+                  <button
+                    onClick={() => {
+                      navigate("/dashboard/permissions");
+                      // Close sidebar on mobile after navigation
+                      if (window.innerWidth < 1024) setSidebarOpen(false);
+                    }}
+                    className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
+                      wouterLocation === "/dashboard/permissions" ? "bg-gray-100" : ""
+                    }`}
+                  >
+                    <ShieldCheck className="h-5 w-5 flex-shrink-0" />
+                    <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Permissions</span>
+                  </button>
+                )}
+                
+                {/* Custom Fields Link */}
+                {(user?.role === "camp_creator" || user?.role === "manager") && (
+                  <button
+                    onClick={() => {
+                      navigate("/custom-fields");
+                      // Close sidebar on mobile after navigation
+                      if (window.innerWidth < 1024) setSidebarOpen(false);
+                    }}
+                    className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
+                      wouterLocation === "/custom-fields" ? "bg-gray-100" : ""
+                    }`}
+                  >
+                    <FileText className="h-5 w-5 flex-shrink-0" />
+                    <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Custom Fields</span>
+                  </button>
+                )}
+                
+                {/* Organization Profile Link */}
+                {(user?.role === "camp_creator" || user?.role === "manager") && (
+                  <button
+                    onClick={() => {
+                      navigate("/dashboard/organization-profile");
+                      // Close sidebar on mobile after navigation
+                      if (window.innerWidth < 1024) setSidebarOpen(false);
+                    }}
+                    className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
+                      wouterLocation === "/dashboard/organization-profile" ? "bg-gray-100" : ""
+                    }`}
+                  >
+                    <Users2 className="h-5 w-5 flex-shrink-0" />
+                    <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Organization Profile</span>
+                  </button>
+                )}
+                
+                {/* Stripe Connect Link - Only visible to camp creators */}
+                {user?.role === "camp_creator" && (
+                  <button
+                    onClick={() => {
+                      navigate("/dashboard/stripe-connect");
+                      // Close sidebar on mobile after navigation
+                      if (window.innerWidth < 1024) setSidebarOpen(false);
+                    }}
+                    className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
+                      wouterLocation === "/dashboard/stripe-connect" ? "bg-gray-100" : ""
+                    }`}
+                  >
+                    <DollarSign className="h-5 w-5 flex-shrink-0" />
+                    <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Stripe Connect</span>
+                  </button>
+                )}
+                
+                {/* Subscription Plans Link - Only visible to camp creators */}
+                {user?.role === "camp_creator" && (
+                  <button
+                    onClick={() => {
+                      navigate("/dashboard/subscription-plans");
+                      // Close sidebar on mobile after navigation
+                      if (window.innerWidth < 1024) setSidebarOpen(false);
+                    }}
+                    className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
+                      wouterLocation === "/dashboard/subscription-plans" ? "bg-gray-100" : ""
+                    }`}
+                  >
+                    <CreditCard className="h-5 w-5 flex-shrink-0" />
+                    <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Subscription Plans</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
-          
-          {/* Custom Fields Link */}
-          {user?.role === "camp_creator" || user?.role === "manager" ? (
-            <button
-              onClick={() => {
-                navigate("/custom-fields");
-                // Close sidebar on mobile after navigation
-                if (window.innerWidth < 1024) setSidebarOpen(false);
-              }}
-              className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
-                wouterLocation === "/custom-fields" ? "bg-gray-100" : ""
-              }`}
-            >
-              <FileText className="h-5 w-5 flex-shrink-0" />
-              <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Custom Fields</span>
-            </button>
-          ) : null}
           
           {/* Documents Link */}
           {user?.role === "camp_creator" || user?.role === "manager" ? (
@@ -261,23 +320,6 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
             </button>
           ) : null}
           
-          {/* Organization Profile Link */}
-          {user?.role === "camp_creator" || user?.role === "manager" ? (
-            <button
-              onClick={() => {
-                navigate("/dashboard/organization-profile");
-                // Close sidebar on mobile after navigation
-                if (window.innerWidth < 1024) setSidebarOpen(false);
-              }}
-              className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
-                wouterLocation === "/dashboard/organization-profile" ? "bg-gray-100" : ""
-              }`}
-            >
-              <Users2 className="h-5 w-5 flex-shrink-0" />
-              <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Organization Profile</span>
-            </button>
-          ) : null}
-          
           {/* Messages Link */}
           {user?.role === "camp_creator" || user?.role === "manager" ? (
             <button
@@ -292,40 +334,6 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
             >
               <MessageSquare className="h-5 w-5 flex-shrink-0" />
               <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Messages</span>
-            </button>
-          ) : null}
-          
-          {/* Stripe Connect Link - Only visible to camp creators */}
-          {user?.role === "camp_creator" ? (
-            <button
-              onClick={() => {
-                navigate("/dashboard/stripe-connect");
-                // Close sidebar on mobile after navigation
-                if (window.innerWidth < 1024) setSidebarOpen(false);
-              }}
-              className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
-                wouterLocation === "/dashboard/stripe-connect" ? "bg-gray-100" : ""
-              }`}
-            >
-              <DollarSign className="h-5 w-5 flex-shrink-0" />
-              <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Stripe Connect</span>
-            </button>
-          ) : null}
-
-          {/* Subscription Plans Link - Only visible to camp creators */}
-          {user?.role === "camp_creator" ? (
-            <button
-              onClick={() => {
-                navigate("/dashboard/subscription-plans");
-                // Close sidebar on mobile after navigation
-                if (window.innerWidth < 1024) setSidebarOpen(false);
-              }}
-              className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
-                wouterLocation === "/dashboard/subscription-plans" ? "bg-gray-100" : ""
-              }`}
-            >
-              <CreditCard className="h-5 w-5 flex-shrink-0" />
-              <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Subscription Plans</span>
             </button>
           ) : null}
           
