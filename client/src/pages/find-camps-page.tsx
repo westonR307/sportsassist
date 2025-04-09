@@ -315,12 +315,14 @@ export default function FindCampsPage() {
                 <SelectValue placeholder="State" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="any">All States</SelectItem>
-                {availableStates.map(state => (
-                  <SelectItem key={state} value={state}>
-                    {state}
-                  </SelectItem>
-                ))}
+                <SelectItem value="any">Any State</SelectItem>
+                {availableStates
+                  .filter(state => state && state.trim() !== '')
+                  .map(state => (
+                    <SelectItem key={state} value={state}>
+                      {state}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
 
@@ -550,11 +552,13 @@ export default function FindCampsPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="any">Any State</SelectItem>
-                                  {availableStates.map(state => (
-                                    <SelectItem key={state} value={state}>
-                                      {state}
-                                    </SelectItem>
-                                  ))}
+                                  {availableStates
+                                    .filter(state => state && state.trim() !== '')
+                                    .map(state => (
+                                      <SelectItem key={state} value={state}>
+                                        {state}
+                                      </SelectItem>
+                                    ))}
                                 </SelectContent>
                               </Select>
                             </div>
