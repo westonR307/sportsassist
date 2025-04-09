@@ -56,8 +56,8 @@ interface Organization {
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useWouterLocation();
-  const { user, logoutMutation } = useAuth();
   const wouterLocation = useWouterLocation()[0];
+  const { user, logoutMutation } = useAuth();
   
   // State for sidebar
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
@@ -73,6 +73,10 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
     queryKey: [`/api/organizations/${user?.organizationId}`],
     enabled: !!user?.organizationId,
   });
+  
+  // Skip the layout for non-parent/athlete roles without organization
+  const isParentOrAthlete = user?.role === 'parent' || user?.role === 'athlete';
+  if (!isParentOrAthlete && !user?.organizationId) return null;
   
   // Helper function to check if screen is desktop size
   const checkIfDesktop = () => window.innerWidth >= 1024;
@@ -103,7 +107,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
     return () => {
       window.removeEventListener('resize', handleResize);
     };
-  }, [isDesktop]);
+  }, [isDesktop, sidebarOpen]);
   
   // Close sidebar on navigation for mobile devices
   React.useEffect(() => {
@@ -192,12 +196,6 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
       }, 1000); // 1 second delay before collapsing
     }
   };
-
-  // Parent and athlete users don't have organizationId
-  const isParentOrAthlete = user?.role === 'parent' || user?.role === 'athlete';
-  
-  // Only check for organizationId for non-parent/athlete roles
-  if (!isParentOrAthlete && !user?.organizationId) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
