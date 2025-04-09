@@ -34,6 +34,7 @@ import {
   Clipboard,
   X,
   MessageSquare,
+  User,
 } from "lucide-react";
 import { GiBaseballBat } from "react-icons/gi";
 import { useLocation as useWouterLocation } from "wouter";
@@ -59,6 +60,8 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logoutMutation } = useAuth();
   // Initialize sidebar closed by default (safer for mobile)
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  // Initialize settings menu as collapsed
+  const [settingsExpanded, setSettingsExpanded] = React.useState(false);
   
   // Load organization data if the user has an organizationId
   const { data: organization } = useQuery<Organization>({
@@ -191,15 +194,14 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
             <Users className="h-5 w-5 flex-shrink-0" />
             <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Team</span>
           </button>
-          {/* Settings dropdown */}
+          {/* Settings dropdown with toggle */}
           <div className="relative">
+            {/* Settings Header with toggle */}
             <button
               onClick={() => {
-                navigate("/dashboard/settings");
-                // Close sidebar on mobile after navigation
-                if (window.innerWidth < 1024) setSidebarOpen(false);
+                setSettingsExpanded(!settingsExpanded);
               }}
-              className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
+              className={`flex justify-between w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
                 wouterLocation.startsWith("/dashboard/settings") || 
                 wouterLocation === "/dashboard/permissions" || 
                 wouterLocation === "/custom-fields" || 
@@ -208,13 +210,43 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
                 wouterLocation === "/dashboard/subscription-plans" ? "bg-gray-100" : ""
               }`}
             >
-              <Settings className="h-5 w-5 flex-shrink-0" />
-              <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Settings</span>
+              <div className="flex items-center gap-2">
+                <Settings className="h-5 w-5 flex-shrink-0" />
+                <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Settings</span>
+              </div>
+              {sidebarOpen && (
+                <div className="flex items-center text-gray-400">
+                  {settingsExpanded ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-down">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-right">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  )}
+                </div>
+              )}
             </button>
             
             {/* Settings Sub-items */}
-            {sidebarOpen && (
+            {sidebarOpen && settingsExpanded && (
               <div className="pl-6 mt-1 space-y-1">
+                {/* Account Settings Link */}
+                <button
+                  onClick={() => {
+                    navigate("/dashboard/settings");
+                    // Close sidebar on mobile after navigation
+                    if (window.innerWidth < 1024) setSidebarOpen(false);
+                  }}
+                  className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
+                    wouterLocation === "/dashboard/settings" ? "bg-gray-100" : ""
+                  }`}
+                >
+                  <User className="h-5 w-5 flex-shrink-0" />
+                  <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Account Settings</span>
+                </button>
+              
                 {/* Permission Management Link - Only visible to camp creators */}
                 {user?.role === "camp_creator" && (
                   <button
