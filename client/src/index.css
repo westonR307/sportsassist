@@ -20,63 +20,6 @@
   .rotate-y-180 {
     transform: rotateY(180deg);
   }
-
-  /* Add smooth hover transitions */
-  .hover-lift {
-    @apply transition-transform duration-300 ease-out;
-  }
-  .hover-lift:hover {
-    transform: translateY(-4px);
-  }
-
-  /* Card shadows */
-  .card-shadow {
-    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.1);
-  }
-  
-  .card-shadow-hover {
-    @apply transition-shadow duration-300;
-    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.1);
-  }
-  .card-shadow-hover:hover {
-    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.15);
-  }
-
-  /* Gradient backgrounds */
-  .gradient-bg-blue {
-    background: linear-gradient(135deg, hsl(204 85% 40%) 0%, hsl(212 100% 35%) 100%);
-  }
-  
-  .gradient-text {
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
-  }
-}
-
-@layer components {
-  /* Enhanced button styles */
-  .btn-sports {
-    @apply rounded-lg font-medium transition-all duration-200 
-           hover:shadow-lg active:scale-95 active:shadow-inner;
-  }
-  
-  /* Sport-specific badge styles */
-  .sport-badge {
-    @apply inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full;
-  }
-  
-  /* Card styles */
-  .camp-card {
-    @apply rounded-xl overflow-hidden card-shadow-hover 
-           transition-all duration-300 border border-border;
-  }
-  
-  /* Event/date badge styles */
-  .date-badge {
-    @apply flex flex-col items-center justify-center text-center 
-           rounded-md w-14 h-14 bg-primary/10 text-primary font-semibold;
-  }
 }
 
 @layer base {
@@ -86,22 +29,6 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
-  }
-  
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold tracking-tight;
-  }
-  
-  h1 {
-    @apply text-3xl md:text-4xl;
-  }
-  
-  h2 {
-    @apply text-2xl md:text-3xl;
-  }
-  
-  h3 {
-    @apply text-xl md:text-2xl;
   }
   
   /* React Day Picker Custom Styles */
@@ -122,11 +49,6 @@
   .rdp-day_selected:hover {
     background-color: var(--primary);
     color: var(--primary-foreground);
-    @apply transition-colors;
-  }
-  
-  .rdp-day:hover:not(.rdp-day_selected) {
-    @apply bg-primary/10 transition-colors;
   }
   
   /* Simple Time Input Custom Styling */
@@ -135,7 +57,6 @@
     letter-spacing: 0.01em;
     text-align: center;
     cursor: default;
-    @apply transition-all duration-200;
   }
   
   .time-input:focus {
