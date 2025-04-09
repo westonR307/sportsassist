@@ -480,7 +480,7 @@ export function AppLayout({ children, showBackButton = false, showNavigation = t
         pt-16 lg:pt-8 overflow-x-hidden
       `}
       >
-        <main className="px-4 py-8 max-w-full">{children}</main>
+        <main className="px-2 py-6 max-w-full">{children}</main>
       </div>
 
       {/* Mobile Overlay */}
