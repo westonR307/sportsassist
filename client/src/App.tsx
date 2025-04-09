@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
+import { AppLayout } from "@/components/app-layout";
 
 // Import pages
 import HomePage from "@/pages/simplified-home-page";
@@ -91,10 +92,26 @@ function Router() {
       
       <Route path="/auth" component={AuthPage} />
       <Route path="/login" component={() => <Redirect to="/auth" />} />
-      <Route path="/find-camps" component={FindCampsPage} />
-      <Route path="/organization/:slugOrName" component={OrganizationViewPage} />
-      <Route path="/org/:slug" component={OrganizationPublicPage} />
-      <Route path="/invitations/:token/accept" component={InvitationAcceptPage} />
+      <Route path="/find-camps" component={() => (
+        <AppLayout showBackButton={true} showNavigation={false}>
+          <FindCampsPage />
+        </AppLayout>
+      )} />
+      <Route path="/organization/:slugOrName" component={(params) => (
+        <AppLayout showBackButton={true} showNavigation={false}>
+          <OrganizationViewPage {...params} />
+        </AppLayout>
+      )} />
+      <Route path="/org/:slug" component={(params) => (
+        <AppLayout showBackButton={true} showNavigation={false}>
+          <OrganizationPublicPage {...params} />
+        </AppLayout>
+      )} />
+      <Route path="/invitations/:token/accept" component={(params) => (
+        <AppLayout showBackButton={true} showNavigation={false}>
+          <InvitationAcceptPage {...params} />
+        </AppLayout>
+      )} />
       <ProtectedRoute path="/dashboard" component={DashboardRouter} />
       <ProtectedRoute 
         path="/dashboard/my-athletes" 
@@ -190,7 +207,11 @@ function Router() {
       <ProtectedRoute path="/documents/view/:id" component={DocumentViewPage} />
       <ProtectedRoute path="/documents/:id" component={DocumentViewPage} />
       <ProtectedRoute path="/documents/:id/edit" component={DocumentEditPage} />
-      <Route path="/sign/:token" component={SignaturePage} />
+      <Route path="/sign/:token" component={(params) => (
+        <AppLayout showBackButton={true} showNavigation={false}>
+          <SignaturePage {...params} />
+        </AppLayout>
+      )} />
       
       {/* Admin routes - protected for platform_admin role only */}
       <ProtectedRoute 
