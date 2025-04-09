@@ -1115,21 +1115,8 @@ export function AddCampDialog({
                       </TabsList>
                       
                       <TabsContent value="enhanced" className="pt-4">
-                        <div className="p-3 bg-muted rounded-md mb-4">
-                          <p className="text-sm">
-                            Our calendar-based scheduling system allows you to create a flexible camp schedule.
-                            After creating the camp, you'll be able to:
-                          </p>
-                          <ul className="list-disc ml-5 mt-2 text-sm space-y-1">
-                            <li>Click on dates to add sessions</li>
-                            <li>Set specific start and end times for each day</li>
-                            <li>Create recurring patterns for regular sessions</li>
-                            <li>Manage individual sessions</li>
-                          </ul>
-                        </div>
-                        
                         {form.watch('startDate') && form.watch('endDate') ? (
-                          <div className="mt-4">
+                          <div>
                             <div className="grid gap-3 mb-4">
                               <div className="grid grid-cols-2 gap-2">
                                 <div>
@@ -1139,7 +1126,6 @@ export function AddCampDialog({
                                     type="time"
                                     defaultValue="09:00"
                                     onChange={(e) => {
-                                      // This sets a default start time that will be used when clicking on days
                                       form.setValue('defaultStartTime', e.target.value);
                                     }}
                                   />
@@ -1151,7 +1137,6 @@ export function AddCampDialog({
                                     type="time"
                                     defaultValue="17:00"
                                     onChange={(e) => {
-                                      // This sets a default end time that will be used when clicking on days
                                       form.setValue('defaultEndTime', e.target.value);
                                     }}
                                   />
@@ -1159,71 +1144,40 @@ export function AddCampDialog({
                               </div>
                             </div>
                             
-                            <div className="text-sm mb-4">
-                              <p>Now you can schedule camp sessions directly by using the calendar below. Set your default start and end times, then click on dates to add sessions.</p>
-                            </div>
-                            
                             <div className="border rounded-md p-4">
                               <div className="calendar-container">
-                                {form.watch('startDate') && form.watch('endDate') ? (
-                                  <div>
-                                    <div className="text-center py-4 mb-4">
-                                      <p>Schedule your camp sessions using the calendar below.</p>
-                                      <p className="mt-2 text-sm">
-                                        The default session time will be from {formatTimeFor12Hour(form.watch('defaultStartTime') || '09:00')} to {formatTimeFor12Hour(form.watch('defaultEndTime') || '17:00')} for days you select.
-                                      </p>
-                                    </div>
-                                    
-                                    {/* Interactive calendar scheduler component */}
-                                    <div>
-                                      {/* We're using a temporary camp ID until the actual camp is created */}
-                                      <CalendarScheduler
-                                        campId={tempCampId}
-                                        startDate={new Date(form.watch('startDate'))}
-                                        endDate={new Date(form.watch('endDate'))}
-                                        sessions={plannedSessions}
-                                        onSave={() => {
-                                          // This gets called when sessions are added or deleted
-                                          console.log("Sessions planned:", plannedSessions);
-                                        }}
-                                        canManage={true}
-                                        // Override the add and delete methods to work with local state instead of API calls
-                                        customHandlers={{
-                                          addSession: (sessionData) => {
-                                            // Create a new session with a temporary ID
-                                            const newSession = {
-                                              ...sessionData,
-                                              id: Date.now(), // Use timestamp as temporary ID
-                                              campId: tempCampId,
-                                              status: "active"
-                                            };
-                                            setPlannedSessions([...plannedSessions, newSession]);
-                                            return Promise.resolve(newSession);
-                                          },
-                                          deleteSession: (sessionId) => {
-                                            setPlannedSessions(plannedSessions.filter(s => s.id !== sessionId));
-                                            return Promise.resolve(true);
-                                          }
-                                        }}
-                                      />
-                                      
-                                      <div className="mt-4 text-sm text-muted-foreground">
-                                        <p className="font-medium">How to use the calendar:</p>
-                                        <ol className="list-decimal pl-5 space-y-1 mt-2">
-                                          <li>Select a date on the calendar</li>
-                                          <li>Set the start and end times</li>
-                                          <li>Click "Add Session at Selected Times"</li>
-                                          <li>Your sessions will be created when you submit the camp</li>
-                                        </ol>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="text-center py-4 text-muted-foreground">
-                                    <p>Please set your camp's start and end dates first.</p>
-                                    <p className="mt-2 text-sm">Once dates are set, you'll be able to configure the camp schedule.</p>
-                                  </div>
-                                )}
+                                <div className="text-center py-2 mb-2">
+                                  <p className="text-sm">
+                                    The default session time will be from {formatTimeFor12Hour(form.watch('defaultStartTime') || '09:00')} to {formatTimeFor12Hour(form.watch('defaultEndTime') || '17:00')} for days you select.
+                                  </p>
+                                </div>
+                                
+                                <CalendarScheduler
+                                  campId={tempCampId}
+                                  startDate={new Date(form.watch('startDate'))}
+                                  endDate={new Date(form.watch('endDate'))}
+                                  sessions={plannedSessions}
+                                  onSave={() => {
+                                    console.log("Sessions planned:", plannedSessions);
+                                  }}
+                                  canManage={true}
+                                  customHandlers={{
+                                    addSession: (sessionData) => {
+                                      const newSession = {
+                                        ...sessionData,
+                                        id: Date.now(),
+                                        campId: tempCampId,
+                                        status: "active"
+                                      };
+                                      setPlannedSessions([...plannedSessions, newSession]);
+                                      return Promise.resolve(newSession);
+                                    },
+                                    deleteSession: (sessionId) => {
+                                      setPlannedSessions(plannedSessions.filter(s => s.id !== sessionId));
+                                      return Promise.resolve(true);
+                                    }
+                                  }}
+                                />
                               </div>
                             </div>
                           </div>
@@ -1241,8 +1195,6 @@ export function AddCampDialog({
                           </div>
                         )}
                       </TabsContent>
-                      
-                      {/* Legacy scheduling content removed */}
                     </Tabs>
                   </div>
 
@@ -1257,7 +1209,6 @@ export function AddCampDialog({
                     <Button
                       type="button"
                       onClick={() => {
-                        // Enhanced scheduling validation
                         if (!form.watch('defaultStartTime') || !form.watch('defaultEndTime')) {
                           toast({
                             title: "Warning",
