@@ -181,8 +181,7 @@ export function AddCampDialog({
     skillLevel: "beginner" | "intermediate" | "advanced" | "all_levels";
     isVirtual?: boolean;
     virtualMeetingUrl?: string;
-    defaultStartTime: string;
-    defaultEndTime: string;
+    // Default times are now handled in the CalendarScheduler component
   };
 
   const form = useForm<ExtendedCampSchema>({
@@ -216,10 +215,7 @@ export function AddCampDialog({
       sportId: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
       skillLevel: z.enum(["beginner", "intermediate", "advanced", "all_levels"]),
       isVirtual: z.boolean().optional().default(false),
-      virtualMeetingUrl: z.string().url("Please enter a valid URL").optional(),
-      // Add the custom fields for the form
-      defaultStartTime: z.string().optional(),
-      defaultEndTime: z.string().optional()
+      virtualMeetingUrl: z.string().url("Please enter a valid URL").optional()
     })),
     defaultValues: {
       name: "",
@@ -244,8 +240,7 @@ export function AddCampDialog({
       schedules: [],
       isVirtual: false,
       virtualMeetingUrl: "",
-      defaultStartTime: "09:00",
-      defaultEndTime: "17:00",
+      // Default times are now handled in the CalendarScheduler component
     },
   });
   
@@ -286,8 +281,7 @@ export function AddCampDialog({
               registrationEndDate: new Date(campData.registrationEndDate),
               startDate: new Date(campData.startDate),
               endDate: new Date(campData.endDate),
-              defaultStartTime: "09:00", // Set default values
-              defaultEndTime: "17:00",
+              // Default times are now handled in the CalendarScheduler component
               isVirtual: campData.isVirtual || false,
               virtualMeetingUrl: campData.virtualMeetingUrl || "",
             });
@@ -338,11 +332,8 @@ export function AddCampDialog({
         const sportId = parseInt(selectedSport) || 1;
         const mappedSkillLevel = skillLevelMap[skillLevel] || "beginner";
 
-        // Extract and remove defaultStartTime and defaultEndTime from data
-        const { defaultStartTime, defaultEndTime, ...dataWithoutDefaults } = data;
-        
         const requestData = {
-          ...dataWithoutDefaults,
+          ...data,
           // Format dates properly for consistent handling
           startDate: formatDateForPostgres(data.startDate),
           endDate: formatDateForPostgres(data.endDate),
@@ -358,13 +349,13 @@ export function AddCampDialog({
           skillLevel: mappedSkillLevel,
           isVirtual: data.isVirtual || false,
           virtualMeetingUrl: data.isVirtual ? data.virtualMeetingUrl : undefined,
-          // Create at least one schedule entry based on the default times
+          // Create at least one schedule entry based on hardcoded default times
           // This will satisfy the schema requirement while we transition to enhanced scheduling
           schedules: [
             {
               dayOfWeek: 0, // Sunday as default
-              startTime: defaultStartTime || "09:00",
-              endTime: defaultEndTime || "17:00"
+              startTime: "09:00", // Using hardcoded default time
+              endTime: "17:00" // Using hardcoded default time
             }
           ]
         };
@@ -643,41 +634,8 @@ export function AddCampDialog({
       return;
     }
 
-    // Validate default start and end times for enhanced scheduling
-    if (!data.defaultStartTime || !data.defaultEndTime) {
-      console.log("Error: No default times set for scheduling");
-      toast({
-        title: "Error",
-        description: "Please set default start and end times for scheduling",
-        variant: "destructive",
-      });
-      setCurrentTab("schedule");
-      return;
-    }
-
-    // Validate default time format
-    const defaultStart = new Date(`1970-01-01T${data.defaultStartTime}`);
-    const defaultEnd = new Date(`1970-01-01T${data.defaultEndTime}`);
-
-    if (isNaN(defaultStart.getTime()) || isNaN(defaultEnd.getTime())) {
-      toast({
-        title: "Error",
-        description: "Invalid default time format",
-        variant: "destructive",
-      });
-      setCurrentTab("schedule");
-      return;
-    }
-
-    if (defaultEnd <= defaultStart) {
-      toast({
-        title: "Error",
-        description: "Default end time must be after default start time",
-        variant: "destructive",
-      });
-      setCurrentTab("schedule");
-      return;
-    }
+    // Default time validation is no longer needed since default times
+    // are now handled directly in the CalendarScheduler component
 
     // Validate dates
     const regStartDate = new Date(data.registrationStartDate);
@@ -722,59 +680,48 @@ export function AddCampDialog({
       return;
     }
 
-    // Extract defaultStartTime/defaultEndTime when logging for first call
-    const { defaultStartTime: defStart, defaultEndTime: defEnd, ...submittingData } = data;
-
     console.log("Submitting form with data:", { 
-      ...submittingData, 
+      ...data, 
       // Create at least one schedule entry based on the default times
       schedules: [
         {
           dayOfWeek: 0, // Sunday as default
-          startTime: defStart,
-          endTime: defEnd
+          startTime: "09:00", // Using hardcoded default time
+          endTime: "17:00" // Using hardcoded default time
         }
       ],
       sportId: parseInt(selectedSport) || 1,
       skillLevel: skillLevelMap[skillLevel] 
     });
-
-    // Extract defaultStartTime/defaultEndTime when logging to avoid confusion
-    const { defaultStartTime, defaultEndTime, ...dataForLog } = data;
     
     console.log("About to call mutation with data", { 
-      ...dataForLog, 
+      ...data, 
       schedules: [
         {
           dayOfWeek: 0, // Sunday as default
-          startTime: defaultStartTime,
-          endTime: defaultEndTime
+          startTime: "09:00", // Using hardcoded default time
+          endTime: "17:00" // Using hardcoded default time
         }
       ],
       sport: selectedSport,
       level: skillLevel
     });
     try {
-      // Extract defaultStartTime and defaultEndTime fields, then pass the rest to the mutation
-      const { defaultStartTime, defaultEndTime, ...campData } = data;
-      
       // Format dates as ISO strings
       const formattedData = {
-        ...campData,
-        defaultStartTime,
-        defaultEndTime,
-        registrationStartDate: formatDateForPostgres(campData.registrationStartDate),
-        registrationEndDate: formatDateForPostgres(campData.registrationEndDate),
-        startDate: formatDateForPostgres(campData.startDate),
-        endDate: formatDateForPostgres(campData.endDate),
-        isVirtual: campData.isVirtual || false,
-        virtualMeetingUrl: campData.isVirtual ? campData.virtualMeetingUrl : undefined,
-        // Create at least one schedule entry based on the default times
+        ...data,
+        registrationStartDate: formatDateForPostgres(data.registrationStartDate),
+        registrationEndDate: formatDateForPostgres(data.registrationEndDate),
+        startDate: formatDateForPostgres(data.startDate),
+        endDate: formatDateForPostgres(data.endDate),
+        isVirtual: data.isVirtual || false,
+        virtualMeetingUrl: data.isVirtual ? data.virtualMeetingUrl : undefined,
+        // Create at least one schedule entry based on hardcoded default times
         schedules: [
           {
             dayOfWeek: 0, // Sunday as default
-            startTime: defaultStartTime,
-            endTime: defaultEndTime
+            startTime: "09:00", // Using hardcoded default time
+            endTime: "17:00" // Using hardcoded default time
           }
         ]
       };
@@ -1116,41 +1063,10 @@ export function AddCampDialog({
                       
                       <TabsContent value="enhanced" className="pt-4">
                         {form.watch('startDate') && form.watch('endDate') ? (
-                          <div>
-                            <div className="grid gap-3 mb-4">
-                              <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                  <Label htmlFor="defaultStartTime">Default Start Time</Label>
-                                  <Input
-                                    id="defaultStartTime"
-                                    type="time"
-                                    defaultValue="09:00"
-                                    onChange={(e) => {
-                                      form.setValue('defaultStartTime', e.target.value);
-                                    }}
-                                  />
-                                </div>
-                                <div>
-                                  <Label htmlFor="defaultEndTime">Default End Time</Label>
-                                  <Input
-                                    id="defaultEndTime"
-                                    type="time"
-                                    defaultValue="17:00"
-                                    onChange={(e) => {
-                                      form.setValue('defaultEndTime', e.target.value);
-                                    }}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                            
+                          <div>                            
                             <div className="border rounded-md p-4">
                               <div className="calendar-container">
-                                <div className="text-center py-2 mb-2">
-                                  <p className="text-sm">
-                                    The default session time will be from {formatTimeFor12Hour(form.watch('defaultStartTime') || '09:00')} to {formatTimeFor12Hour(form.watch('defaultEndTime') || '17:00')} for days you select.
-                                  </p>
-                                </div>
+                                {/* Default times are now handled automatically */}
                                 
                                 <CalendarScheduler
                                   campId={tempCampId}
@@ -1163,6 +1079,8 @@ export function AddCampDialog({
                                   canManage={true}
                                   customHandlers={{
                                     addSession: (sessionData) => {
+                                      // Default times are now hardcoded in the component
+                                      
                                       const newSession = {
                                         ...sessionData,
                                         id: Date.now(),
@@ -1209,14 +1127,6 @@ export function AddCampDialog({
                     <Button
                       type="button"
                       onClick={() => {
-                        if (!form.watch('defaultStartTime') || !form.watch('defaultEndTime')) {
-                          toast({
-                            title: "Warning",
-                            description: "Please set default start and end times.",
-                            variant: "destructive",
-                          });
-                          return;
-                        }
                         setCurrentTab("location");
                       }}
                     >
@@ -1618,16 +1528,8 @@ export function AddCampDialog({
                           return;
                         }
                         
-                        if (!form.watch('defaultStartTime') || !form.watch('defaultEndTime')) {
-                          console.log("Please set default start and end times");
-                          toast({
-                            title: "Error",
-                            description: "Please set default start and end times for scheduling",
-                            variant: "destructive",
-                          });
-                          setCurrentTab("schedule");
-                          return;
-                        }
+                        // Default times are now hardcoded to 09:00 and 17:00
+                        // No need for validation here
                         
                         // Get form data
                         const data = form.getValues();
@@ -1636,12 +1538,8 @@ export function AddCampDialog({
                         // Call mutation manually - using empty schedules array
                         // This is just a placeholder since we're now using the enhanced scheduling
                         // The camp creation API still expects a schedules array
-                        const defaultStartTime = form.watch('defaultStartTime') || "09:00";
-                        const defaultEndTime = form.watch('defaultEndTime') || "17:00";
                         createCampMutation.mutate({ 
                           ...data, 
-                          defaultStartTime,
-                          defaultEndTime,
                           schedules: [] // We're not using regular schedules anymore
                         });
                       }}
