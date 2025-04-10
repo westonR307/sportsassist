@@ -563,6 +563,7 @@ export class DatabaseStorage implements IStorage {
         maxAge: parseInt(String(campData.maxAge), 10),
         repeatType: campData.repeatType || "none",
         repeatCount: parseInt(String(campData.repeatCount || '0'), 10),
+        schedulingType: campData.schedulingType || "fixed",
         slug: slug // Add the unique slug
       }).returning();
 
@@ -772,6 +773,7 @@ export class DatabaseStorage implements IStorage {
           ...(campData.maxAge !== undefined && { maxAge: campData.maxAge }),
           ...(campData.repeatType !== undefined && { repeatType: campData.repeatType }),
           ...(campData.repeatCount !== undefined && { repeatCount: campData.repeatCount }),
+          ...(campData.schedulingType !== undefined && { schedulingType: campData.schedulingType }),
         })
         .where(eq(camps.id, id))
         .returning();
