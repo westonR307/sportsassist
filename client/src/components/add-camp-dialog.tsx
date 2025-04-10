@@ -787,7 +787,8 @@ export function AddCampDialog({
                   if (data.isVirtual && (!data.virtualMeetingUrl || !data.virtualMeetingUrl.trim())) {
                     form.setValue("virtualMeetingUrl", "https://meet.google.com/example");
                   } else if (!data.isVirtual) {
-                    form.setValue("virtualMeetingUrl", "");
+                    // For non-virtual camps, set to null to avoid validation errors
+                    form.setValue("virtualMeetingUrl", null);
                   }
                   
                   // Trigger validation on all fields

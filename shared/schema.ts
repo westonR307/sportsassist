@@ -231,14 +231,14 @@ export const insertCampSchema = z.object({
   sportId: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
   skillLevel: z.enum(["beginner", "intermediate", "advanced", "all_levels"]),
   isVirtual: z.boolean().optional().default(false),
-  virtualMeetingUrl: z.string().url("Please enter a valid URL").optional()
+  virtualMeetingUrl: z.string().url("Please enter a valid URL").optional().nullable()
 }).strict()
   .refine((data) => {
     // If it's a virtual camp, the URL is required
     if (data.isVirtual === true && !data.virtualMeetingUrl) {
       return false;
     }
-    // If it's not a virtual camp, location fields are required
+    // If it's not a virtual camp, location fields are required but we don't validate virtualMeetingUrl
     if (data.isVirtual !== true && (!data.streetAddress || !data.city || !data.state || !data.zipCode)) {
       return false;
     }
