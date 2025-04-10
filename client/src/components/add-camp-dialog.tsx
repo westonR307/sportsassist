@@ -360,11 +360,11 @@ export function AddCampDialog({
           virtualMeetingUrl: data.isVirtual ? data.virtualMeetingUrl : undefined,
           schedulingType: selectedSchedulingType, // Explicitly set the scheduling type
         };
-        
+
         // Handle different scheduling types
         if (selectedSchedulingType === 'fixed') {
           console.log("Processing fixed schedule camp");
-          
+
           // For fixed scheduling, we need schedules
           if (plannedSessions.length > 0) {
             // If we have planned sessions, use them to create schedules
@@ -387,7 +387,7 @@ export function AddCampDialog({
           // For availability-based camps, we still need an empty schedules array 
           // to satisfy the schema, but will manage actual scheduling via availability slots
           requestData.schedules = [];
-          
+
           // Availability-based camps don't support waitlists
           requestData.waitlistEnabled = false;
         }
@@ -399,7 +399,7 @@ export function AddCampDialog({
           console.log("About to send POST request to /api/camps with data:", requestData);
           const responseData = await apiRequest("POST", "/api/camps", requestData);
           console.log("Camp created successfully:", responseData);
-          
+
           // Now create all the planned sessions for this camp
           if (plannedSessions.length > 0 && responseData.id) {
             console.log(`Creating ${plannedSessions.length} sessions for camp ${responseData.id}`);
@@ -613,24 +613,22 @@ export function AddCampDialog({
     console.log("Is submitting:", submitting); // Debug if submitting state is working
 
     // Explicitly set required values before validation
-    
-    // Set organizationId from user context
-    if (user?.organizationId) {
-      form.setValue("organizationId", user.organizationId);
-    } else {
+
+    // Set required fields before validation
+    if (!user?.organizationId) {
       toast({
-        title: "Missing Information",
-        description: "Organization ID is required but not available in user context",
+        title: "Error",
+        description: "Organization ID is missing",
         variant: "destructive",
       });
-      console.error("User organizationId is missing", user);
       return;
     }
-    
-    // Set sportId explicitly in the form data
-    if (selectedSport) {
-      form.setValue("sportId", parseInt(selectedSport));
-    } else {
+
+    // Set organizationId
+    form.setValue("organizationId", user.organizationId);
+
+    // Set sportId
+    if (!selectedSport) {
       toast({
         title: "Missing Information",
         description: "Please select a sport for this camp",
@@ -638,14 +636,23 @@ export function AddCampDialog({
       });
       return;
     }
+    form.setValue("sportId", parseInt(selectedSport));
 
-    // Set skillLevel explicitly in the form data using the mapped enum value
-    const mappedSkillLevel = skillLevelMap[skillLevel] as "beginner" | "intermediate" | "advanced" | "all_levels";
+    // Set skillLevel
+    const mappedSkillLevel = skillLevelMap[skillLevel];
+    if (!mappedSkillLevel) {
+      toast({
+        title: "Missing Information", 
+        description: "Please select a skill level",
+        variant: "destructive",
+      });
+      return;
+    }
     form.setValue("skillLevel", mappedSkillLevel);
-    
-    // Ensure these values are reflected in the form's data
+
+    // Trigger validation for these fields
     await form.trigger(["organizationId", "sportId", "skillLevel"]);
-    
+
     // Debug whether the values were properly set
     console.log("Updated form values:", {
       organizationId: form.getValues("organizationId"),
@@ -671,16 +678,16 @@ export function AddCampDialog({
       // Not a virtual camp, set an empty string (not null or undefined)
       form.setValue("virtualMeetingUrl", "");
       console.log("Set empty string for virtualMeetingUrl in non-virtual camp");
-      
+
       // Remove any validation errors for virtualMeetingUrl
       form.clearErrors("virtualMeetingUrl");
     }
-    
+
     // Only trigger validation for virtual camps
     if (data.isVirtual) {
       await form.trigger("virtualMeetingUrl");
     }
-    
+
     console.log("Virtual meeting URL value after processing:", form.getValues("virtualMeetingUrl"));
 
     // Format all dates consistently and ensure data types are correct
@@ -707,10 +714,10 @@ export function AddCampDialog({
       try {
         // Handle scheduling based on type - add explicit type checking for debugging
         console.log(`Processing camp with scheduling type: ${selectedSchedulingType}`);
-        
+
         if (selectedSchedulingType === 'fixed') {
           console.log("Fixed schedule camp - checking sessions:", plannedSessions);
-          
+
           if (plannedSessions.length === 0) {
             toast({
               title: "Error",
@@ -719,22 +726,22 @@ export function AddCampDialog({
             });
             return;
           }
-          
+
           // Process sessions for fixed schedule camps
           formattedData.schedules = plannedSessions.map(session => {
             const dayOfWeek = new Date(session.sessionDate).getDay();
             const startTime = session.startTime.substring(0, 5);
             const endTime = session.endTime.substring(0, 5);
-            
+
             console.log(`Processed session: day=${dayOfWeek}, start=${startTime}, end=${endTime}`);
-            
+
             return {
               dayOfWeek,
               startTime,
               endTime
             };
           });
-          
+
           console.log("Final schedules for fixed camp:", formattedData.schedules);
         } else {
           console.log("Availability-based camp - sending empty schedules array");
@@ -743,10 +750,10 @@ export function AddCampDialog({
 
         // Log final data before sending
         console.log("Calling mutation with formatted data:", JSON.stringify(formattedData, null, 2));
-        
+
         // Force the schedulingType to be explicitly set to ensure it's not overridden
         formattedData.schedulingType = selectedSchedulingType;
-        
+
         // Call the mutation
         await createCampMutation.mutateAsync(formattedData);
       } catch (error) {
@@ -777,7 +784,7 @@ export function AddCampDialog({
                 console.log("Form errors:", form.formState.errors);
                 form.handleSubmit(async (data) => {
                   console.log("Form submit handler called with data:", data);
-                  
+
                   // Force-set required values one last time before submission
                   // Always set organizationId
                   if (user?.organizationId) {
@@ -786,7 +793,7 @@ export function AddCampDialog({
                     // Fallback to 1 if user context doesn't have organizationId
                     form.setValue("organizationId", 1);
                   }
-                  
+
                   // Always set sportId
                   if (selectedSport) {
                     form.setValue("sportId", parseInt(selectedSport));
@@ -797,7 +804,7 @@ export function AddCampDialog({
                     // Last resort fallback
                     form.setValue("sportId", 1);
                   }
-                  
+
                   // Always set skillLevel 
                   if (skillLevel) {
                     const mappedSkillLevel = skillLevelMap[skillLevel] as "beginner" | "intermediate" | "advanced" | "all_levels";
@@ -806,10 +813,10 @@ export function AddCampDialog({
                     // Default to all_levels if not set
                     form.setValue("skillLevel", "all_levels");
                   }
-                  
+
                   // Set schedulingType
                   form.setValue("schedulingType", selectedSchedulingType);
-                  
+
                   // Handle virtual meeting URL for virtual camps
                   if (data.isVirtual && (!data.virtualMeetingUrl || !data.virtualMeetingUrl.trim())) {
                     form.setValue("virtualMeetingUrl", "https://meet.google.com/example");
@@ -819,30 +826,30 @@ export function AddCampDialog({
                     // Also clear any validation errors related to the virtual meeting URL field
                     form.clearErrors("virtualMeetingUrl");
                   }
-                  
+
                   // Ensure additionalLocationDetails is properly set to an empty string if null or undefined
                   if (data.additionalLocationDetails === null || data.additionalLocationDetails === undefined) {
                     form.setValue("additionalLocationDetails", "");
                   }
-                  
+
                   // Ensure required fields are properly set
                   if (user?.organizationId) {
                     form.setValue("organizationId", user.organizationId);
                   }
-                  
+
                   // Make sure sportId is set (select first sport if needed)
                   if (!data.sportId && sportsList.length > 0) {
                     const firstSportId = sportsList[0].id;
                     form.setValue("sportId", firstSportId);
                     setSelectedSport(String(firstSportId));
                   }
-                  
+
                   // Ensure skillLevel is set
                   if (!data.skillLevel) {
                     const mappedSkillLevel = skillLevelMap[skillLevel] as "beginner" | "intermediate" | "advanced" | "all_levels" || "all_levels";
                     form.setValue("skillLevel", mappedSkillLevel);
                   }
-                  
+
                   // Log values after fixing them
                   console.log("Fixed values:", {
                     organizationId: form.getValues("organizationId"),
@@ -850,10 +857,10 @@ export function AddCampDialog({
                     skillLevel: form.getValues("skillLevel"),
                     virtualMeetingUrl: form.getValues("virtualMeetingUrl")
                   });
-                  
+
                   // Trigger validation on all fields
                   await form.trigger();
-                  
+
                   // Check again if we have validation errors
                   if (Object.keys(form.formState.errors).length > 0) {
                     console.error("Form still has validation errors after trying to fix:", form.formState.errors);
@@ -864,7 +871,7 @@ export function AddCampDialog({
                     });
                     return;
                   }
-                  
+
                   // All set - submit the form
                   onSubmit(form.getValues());
                 }, (errors) => {
@@ -1523,7 +1530,7 @@ export function AddCampDialog({
                           console.log("Debug Form Trigger - Selected sport:", selectedSport);
                           console.log("Debug Form Trigger - Selected scheduling type:", selectedSchedulingType);
                           console.log("Debug Form Trigger - Form errors:", form.formState.errors);
-                          
+
                           // Manually check all fields
                           form.trigger().then(isValid => {
                             if (isValid) {
