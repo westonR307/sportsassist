@@ -652,32 +652,37 @@ export function AddCampDialog({
         endDate: formattedEndDate,
         isVirtual: data.isVirtual || false,
         virtualMeetingUrl: data.isVirtual ? data.virtualMeetingUrl : undefined,
-        // Maintain the scheduling type selected by the user
         schedulingType: selectedSchedulingType,
-        repeatType: "none" // Add default repeatType since removed from form
+        repeatType: "none"
       };
 
-      // Let the server handle schedule generation for availability-based camps
+      // Handle scheduling based on type
       if (selectedSchedulingType === "fixed") {
-        // For fixed scheduling type, include the schedules 
-        formattedData.schedules = plannedSessions.length > 0 ? 
-          // If we have planned sessions, convert them to schedules
-          plannedSessions.map(session => ({
-            dayOfWeek: new Date(session.sessionDate).getDay(),
-            startTime: session.startTime,
-            endTime: session.endTime
-          })) :
-          // Otherwise use a default schedule
-          [
-            {
-              dayOfWeek: 0, // Sunday as default
-              startTime: "09:00", // Using hardcoded default time
-              endTime: "17:00" // Using hardcoded default time
-            }
-          ];
+        if (plannedSessions.length === 0) {
+          toast({
+            title: "Error",
+            description: "Please add at least one session to the schedule",
+            variant: "destructive",
+          });
+          return;
+        }
+        // Convert planned sessions to schedules format
+        formattedData.schedules = plannedSessions.map(session => ({
+          dayOfWeek: new Date(session.sessionDate).getDay(),
+          startTime: session.startTime.substring(0, 5), // Ensure HH:mm format
+          endTime: session.endTime.substring(0, 5)
+        }));
       } else {
-        // For availability-based camps, send an empty array
-        // The server will add a dummy schedule as needed
+        // For availability-based camps, validate slots
+        if (availabilitySlots.length === 0) {
+          toast({
+            title: "Error",
+            description: "Please add at least one availability slot",
+            variant: "destructive",
+          });
+          return;
+        }
+        // Send empty schedules array - availability slots will be handled separately
         formattedData.schedules = [];
       }
 
