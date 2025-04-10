@@ -427,10 +427,10 @@ export function AddCampDialog({
               
               return apiRequest("POST", `/api/camps/${data.id}/availability-slots`, {
                 campId: data.id,
-                date: formattedDate,
+                slotDate: formattedDate,
                 startTime: slot.startTime,
                 endTime: slot.endTime,
-                capacity: slot.capacity,
+                maxBookings: slot.capacity, // Server expects maxBookings instead of capacity
               });
             });
             
