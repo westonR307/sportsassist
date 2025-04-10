@@ -1129,39 +1129,23 @@ export function AddCampDialog({
                       <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-medium">Scheduling Type</h3>
                       </div>
-
-                      <FormField
-                        control={form.control}
-                        name="schedulingType"
-                        render={({ field }) => (
-                          <FormItem className="space-y-3">
-                            <FormControl>
-                              <RadioGroup
-                                onValueChange={field.onChange}
-                                defaultValue={field.value}
-                                value={field.value}
-                                className="flex flex-col space-y-1"
-                              >
-                                <div className="flex items-center space-x-2">
-                                  <RadioGroupItem value="fixed" id="fixed" />
-                                  <Label htmlFor="fixed" className="font-medium">Fixed Schedule</Label>
-                                  <span className="text-sm text-muted-foreground ml-2">
-                                    Predefined days and times for all participants
-                                  </span>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <RadioGroupItem value="availability" id="availability" />
-                                  <Label htmlFor="availability" className="font-medium">Availability-Based</Label>
-                                  <span className="text-sm text-muted-foreground ml-2">
-                                    Similar to Calendly, participants book available time slots
-                                  </span>
-                                </div>
-                              </RadioGroup>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      
+                      <div className="py-2 px-4 bg-muted/50 rounded-md mb-4">
+                        <p className="text-sm font-medium">Selected: {selectedSchedulingType === 'fixed' ? 'Fixed Schedule' : 'Availability-Based'}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {selectedSchedulingType === 'fixed' 
+                            ? 'Predefined days and times for all participants' 
+                            : 'Similar to Calendly, participants book available time slots'}
+                        </p>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          onClick={() => setShowTypeSelection(true)}
+                          className="px-0 py-1 h-auto text-xs"
+                        >
+                          Change scheduling type
+                        </Button>
+                      </div>
                       
                       {form.watch('schedulingType') === 'availability' && (
                         <div className="mt-4 border rounded-md p-4">
