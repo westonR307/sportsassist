@@ -983,9 +983,8 @@ export function AddCampDialog({
                                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                               >
                                 <option value="group">Group</option>
-                                <option value="one_on-one">One-on-One</option>
+                                <option value="one_on_one">One-on-One</option>
                                 <option value="team">Team</option>
-                                <option value="virtual">Virtual</option>
                               </select>
                             </FormControl>
                             <FormMessage />
