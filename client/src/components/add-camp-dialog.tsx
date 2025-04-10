@@ -499,15 +499,11 @@ export function AddCampDialog({
                 
                 const slotPromise = apiRequest("POST", `/api/camps/${data.id}/availability-slots`, slotData)
                   .then(async (response: Response) => {
-                    if (response.ok) {
-                      const jsonResponse = await response.json();
-                      console.log("Slot creation response:", jsonResponse);
-                      return jsonResponse;
-                    } else {
-                      const errorText = await response.text();
-                      console.error(`API error creating slot: ${response.status} - ${errorText}`);
-                      throw new Error(errorText || "Failed to create availability slot");
-                    }
+                    // apiRequest already throws if response is not OK
+                    // Now we need to parse the JSON response
+                    const jsonResponse = await response.json();
+                    console.log("Slot creation response:", jsonResponse);
+                    return jsonResponse;
                   })
                   .catch((slotError: any) => {
                     console.error(`Error creating slot with date ${slot.date}:`, slotError);
@@ -645,15 +641,10 @@ export function AddCampDialog({
               documentId: selectedDocumentId
             })
             .then(async (response: Response) => {
-              if (response.ok) {
-                const jsonResponse = await response.json();
-                console.log("Document agreement associated successfully", jsonResponse);
-                return jsonResponse;
-              } else {
-                const errorText = await response.text();
-                console.error(`API error associating document: ${response.status} - ${errorText}`);
-                throw new Error(errorText || "Failed to associate document agreement");
-              }
+              // apiRequest already throws if response is not OK
+              const jsonResponse = await response.json();
+              console.log("Document agreement associated successfully", jsonResponse);
+              return jsonResponse;
             })
             .catch((error: any) => {
               console.error("Error associating document agreement:", error);
