@@ -672,10 +672,11 @@ export function AddCampDialog({
       }
 
       // Wait for all promises to complete before finishing
+      let localPromises = promises; // Store the reference locally to avoid scope issues
       try {
         // Wait for all collected promises to complete if there are any
-        if (Array.isArray(promises) && promises.length > 0) {
-          await Promise.all(promises);
+        if (Array.isArray(localPromises) && localPromises.length > 0) {
+          await Promise.all(localPromises);
           console.log("All post-creation tasks completed successfully");
         } else {
           console.log("No post-creation tasks to complete");
@@ -1670,12 +1671,18 @@ export function AddCampDialog({
                           </div>
                         </div>
 
-                        {user?.organizationId && (
+                        {tempCampId && tempCampId > 0 ? (
                           <DocumentAgreementsSelector
-                            organizationId={user.organizationId}
-                            selectedDocumentId={selectedDocumentId}
-                            onSelect={setSelectedDocumentId}
+                            campId={tempCampId}
+                            onDocumentSelect={setSelectedDocumentId}
+                            isNewCamp={true}
                           />
+                        ) : (
+                          <div className="text-center p-6 border border-dashed rounded-md">
+                            <p className="text-sm text-muted-foreground">
+                              Document agreements will be available after saving initial camp details.
+                            </p>
+                          </div>
                         )}
                       </div>
                     </div>
