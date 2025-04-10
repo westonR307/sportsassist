@@ -615,17 +615,43 @@ export function AddCampDialog({
       sport: selectedSport,
       level: skillLevel
     });
+
     try {
       // Format dates as ISO strings and remove defaultStartTime/defaultEndTime
       // Use type assertion to bypass TypeScript errors
       const dataObj = data as any;
       const { defaultStartTime, defaultEndTime, ...dataWithoutDefaults } = dataObj;
+      
+      // Debug the dates before formatting
+      console.log("Original date values:", {
+        registrationStartDate: data.registrationStartDate,
+        registrationEndDate: data.registrationEndDate,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        registrationStartDateType: typeof data.registrationStartDate,
+        startDateType: typeof data.startDate
+      });
+      
+      // Format the dates with our helper function
+      const formattedRegistrationStartDate = formatDateForPostgres(data.registrationStartDate);
+      const formattedRegistrationEndDate = formatDateForPostgres(data.registrationEndDate);
+      const formattedStartDate = formatDateForPostgres(data.startDate);
+      const formattedEndDate = formatDateForPostgres(data.endDate);
+      
+      // Debug the formatted dates
+      console.log("Formatted date values:", {
+        registrationStartDate: formattedRegistrationStartDate, 
+        registrationEndDate: formattedRegistrationEndDate,
+        startDate: formattedStartDate,
+        endDate: formattedEndDate
+      });
+      
       const formattedData = {
         ...dataWithoutDefaults,
-        registrationStartDate: formatDateForPostgres(data.registrationStartDate),
-        registrationEndDate: formatDateForPostgres(data.registrationEndDate),
-        startDate: formatDateForPostgres(data.startDate),
-        endDate: formatDateForPostgres(data.endDate),
+        registrationStartDate: formattedRegistrationStartDate,
+        registrationEndDate: formattedRegistrationEndDate,
+        startDate: formattedStartDate,
+        endDate: formattedEndDate,
         isVirtual: data.isVirtual || false,
         virtualMeetingUrl: data.isVirtual ? data.virtualMeetingUrl : undefined,
         // Create at least one schedule entry based on hardcoded default times
@@ -637,6 +663,8 @@ export function AddCampDialog({
           }
         ]
       };
+      
+      console.log("Final formattedData being sent to the server:", formattedData);
       
       // Cast to any to bypass TypeScript type check since we've already ensured data formatting is correct
       createCampMutation.mutate(formattedData as any);
