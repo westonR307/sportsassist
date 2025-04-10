@@ -64,6 +64,7 @@ export const camps = pgTable("camps", {
   waitlistEnabled: boolean("waitlist_enabled").notNull().default(true),
   type: text("type").$type<CampType>().notNull(),
   visibility: text("visibility").$type<CampVisibility>().notNull().default("public"),
+  schedulingType: text("scheduling_type").$type<SchedulingType>().notNull().default("fixed"),
   minAge: integer("min_age").notNull(),
   maxAge: integer("max_age").notNull(),
   repeatType: text("repeat_type").$type<RepeatType>().notNull().default("none"),
@@ -475,6 +476,48 @@ export const campMessageReplies = pgTable("camp_message_replies", {
   campId: integer("camp_id").references(() => camps.id).notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   isRead: boolean("is_read").notNull().default(false),
+});
+
+// Tables for availability-based scheduling (Calendly-style)
+export const availabilitySlots = pgTable("availability_slots", {
+  id: serial("id").primaryKey(),
+  campId: integer("camp_id").references(() => camps.id).notNull(),
+  creatorId: integer("creator_id").references(() => users.id).notNull(),
+  slotDate: timestamp("slot_date").notNull(),
+  startTime: time("start_time").notNull(),
+  endTime: time("end_time").notNull(),
+  durationMinutes: integer("duration_minutes").notNull().default(60),
+  status: text("status").$type<AvailabilityStatus>().notNull().default("available"),
+  maxBookings: integer("max_bookings").notNull().default(1),
+  currentBookings: integer("current_bookings").notNull().default(0),
+  notes: text("notes"),
+  bufferBefore: integer("buffer_before").default(0), // Buffer time in minutes before slot
+  bufferAfter: integer("buffer_after").default(0), // Buffer time in minutes after slot
+  isRecurring: boolean("is_recurring").notNull().default(false),
+  recurrenceRule: text("recurrence_rule"), // iCalendar RRULE format for recurring slots
+  recurrenceEndDate: timestamp("recurrence_end_date"),
+  parentSlotId: integer("parent_slot_id").references(() => availabilitySlots.id), // For recurring instances
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const slotBookings = pgTable("slot_bookings", {
+  id: serial("id").primaryKey(),
+  slotId: integer("slot_id").references(() => availabilitySlots.id).notNull(),
+  registrationId: integer("registration_id").references(() => registrations.id),
+  childId: integer("child_id").references(() => children.id).notNull(),
+  parentId: integer("parent_id").references(() => users.id).notNull(),
+  status: text("status").$type<BookingStatus>().notNull().default("confirmed"),
+  bookingDate: timestamp("booking_date").notNull().defaultNow(),
+  cancelledAt: timestamp("cancelled_at"),
+  cancelReason: text("cancel_reason"),
+  rescheduledFromId: integer("rescheduled_from_id").references(() => slotBookings.id),
+  notes: text("notes"),
+  notificationSent: boolean("notification_sent").notNull().default(false),
+  reminderSent: boolean("reminder_sent").notNull().default(false),
+  feedbackSent: boolean("feedback_sent").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 // Permission management tables

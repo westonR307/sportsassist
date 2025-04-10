@@ -4,10 +4,13 @@ export type Gender = "male" | "female" | "other" | "prefer_not_to_say";
 export type ContactMethod = "email" | "sms" | "app";
 export type CampType = "one_on_one" | "group" | "team";
 export type CampVisibility = "public" | "private";
+export type SchedulingType = "fixed" | "availability";
 export type RepeatType = "none" | "daily" | "weekly" | "biweekly" | "monthly" | "custom";
 export type RecurrencePattern = "all_days" | "weekdays" | "weekends" | "specific_days" | "custom";
 export type StaffRole = "manager" | "coach" | "volunteer";
 export type CampStatus = "active" | "cancelled" | "deleted";
+export type AvailabilityStatus = "available" | "booked" | "unavailable";
+export type BookingStatus = "confirmed" | "cancelled" | "rescheduled" | "waitlisted";
 
 // Permission system types
 export type ResourceType = 
