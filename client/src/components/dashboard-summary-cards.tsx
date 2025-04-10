@@ -172,7 +172,9 @@ function DashboardSummaryCards() {
                 {todaySessions.map((session) => (
                   <Link 
                     key={session.id} 
-                    href={`/camps/${session.campId}`}
+                    href={session.camp.slug 
+                      ? `/dashboard/camps/slug/${session.camp.slug}` 
+                      : `/dashboard/camps/${session.campId}`}
                     className="block text-xs hover:underline text-primary truncate"
                   >
                     {formatTime(session.startTime)} - {session.camp.name}
