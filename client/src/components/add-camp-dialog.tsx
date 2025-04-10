@@ -421,21 +421,39 @@ export function AddCampDialog({
           try {
             console.log(`Saving ${availabilitySlots.length} availability slots for camp ${data.id}`);
             
-            const slotPromises = availabilitySlots.map(slot => {
-              // Format date for PostgreSQL
-              const formattedDate = formatDateForPostgres(slot.date);
-              
-              return apiRequest("POST", `/api/camps/${data.id}/availability-slots`, {
-                campId: data.id,
-                slotDate: formattedDate,
-                startTime: slot.startTime,
-                endTime: slot.endTime,
-                maxBookings: slot.capacity, // Server expects maxBookings instead of capacity
-              });
-            });
+            // Process slots one by one to better identify issues
+            for (const slot of availabilitySlots) {
+              try {
+                // Format date for PostgreSQL
+                const formattedDate = formatDateForPostgres(slot.date);
+                
+                console.log("Sending availability slot data:", {
+                  campId: data.id,
+                  slotDate: formattedDate,
+                  startTime: slot.startTime,
+                  endTime: slot.endTime,
+                  maxBookings: slot.capacity
+                });
+                
+                const response = await apiRequest("POST", `/api/camps/${data.id}/availability-slots`, {
+                  campId: data.id,
+                  slotDate: formattedDate,
+                  startTime: slot.startTime,
+                  endTime: slot.endTime,
+                  maxBookings: slot.capacity // Server expects maxBookings instead of capacity
+                });
+                
+                console.log("Slot creation response:", response);
+              } catch (slotError) {
+                console.error(`Error creating slot with date ${slot.date}:`, slotError);
+              }
+            }
             
-            await Promise.all(slotPromises);
-            console.log("All availability slots saved successfully");
+            console.log("All availability slots processed");
+            toast({
+              title: "Success",
+              description: "Availability slots saved successfully!",
+            });
           } catch (error) {
             console.error("Error saving availability slots:", error);
             toast({
@@ -1184,9 +1202,27 @@ export function AddCampDialog({
                               campId={tempCampId}
                               startDate={new Date(form.getValues().startDate)}
                               endDate={new Date(form.getValues().endDate)}
-                              onSessionsChange={sessions => {
-                                console.log("Sessions changed:", sessions);
-                                setPlannedSessions(sessions);
+                              sessions={plannedSessions}
+                              onSave={() => console.log("Save triggered from calendar")}
+                              canManage={true}
+                              customHandlers={{
+                                addSession: async (sessionData) => {
+                                  // Create a new planned session
+                                  const newSession = {
+                                    ...sessionData,
+                                    id: Date.now(), // Temporary ID
+                                    campId: tempCampId
+                                  };
+                                  console.log("Adding planned session:", newSession);
+                                  setPlannedSessions([...plannedSessions, newSession]);
+                                  return newSession;
+                                },
+                                deleteSession: async (sessionId) => {
+                                  // Remove from planned sessions
+                                  console.log("Removing planned session:", sessionId);
+                                  setPlannedSessions(plannedSessions.filter(s => s.id !== sessionId));
+                                  return true;
+                                }
                               }}
                             />
                           </div>

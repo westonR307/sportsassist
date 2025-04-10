@@ -36,6 +36,7 @@ const roleLabels: Record<StaffRole, string> = {
 export interface CampStaffSelectorRef {
   getSelectedStaff: () => { userId: number, role: string }[];
   clearSelectedStaff: () => void;
+  saveStaffAssignments: (campId: number) => Promise<void>;
 }
 
 const CampStaffSelector = forwardRef<CampStaffSelectorRef, CampStaffSelectorProps>(
