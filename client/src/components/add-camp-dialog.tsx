@@ -1315,6 +1315,29 @@ export function AddCampDialog({
                         Previous
                       </Button>
                       <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          // Manual form validation and submission for debugging
+                          console.log("Debug Form Trigger - Current form state:", form.getValues());
+                          console.log("Debug Form Trigger - Selected sport:", selectedSport);
+                          console.log("Debug Form Trigger - Selected scheduling type:", selectedSchedulingType);
+                          console.log("Debug Form Trigger - Form errors:", form.formState.errors);
+                          
+                          // Manually check all fields
+                          form.trigger().then(isValid => {
+                            if (isValid) {
+                              console.log("Form is valid, manually submitting...");
+                              onSubmit(form.getValues() as ExtendedCampSchema);
+                            } else {
+                              console.log("Form validation failed", form.formState.errors);
+                            }
+                          });
+                        }}
+                      >
+                        Debug Submit
+                      </Button>
+                      <Button
                         type="submit"
                         disabled={submitting}
                         className="flex items-center gap-1"
