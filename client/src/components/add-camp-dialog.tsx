@@ -336,6 +336,7 @@ export function AddCampDialog({
         const dataObj = data as any;
         const { defaultStartTime, defaultEndTime, ...dataWithoutDefaults } = dataObj;
 
+        // Create the base request data object
         const requestData = {
           ...dataWithoutDefaults,
           // Format dates properly for consistent handling
@@ -345,7 +346,7 @@ export function AddCampDialog({
           registrationEndDate: formatDateForPostgres(data.registrationEndDate),
           organizationId: user.organizationId,
           price: Number(data.price) || 0,
-          capacity: Number(data.capacity) || 20,
+          capacity: selectedSchedulingType === 'fixed' ? (Number(data.capacity) || 20) : 999,
           minAge: Number(data.minAge) || 5,
           maxAge: Number(data.maxAge) || 18,
           repeatCount: Number(data.repeatCount) || 0,
@@ -353,16 +354,39 @@ export function AddCampDialog({
           skillLevel: mappedSkillLevel,
           isVirtual: data.isVirtual || false,
           virtualMeetingUrl: data.isVirtual ? data.virtualMeetingUrl : undefined,
-          // Create at least one schedule entry based on hardcoded default times
-          // This will satisfy the schema requirement while we transition to enhanced scheduling
-          schedules: [
-            {
-              dayOfWeek: 0, // Sunday as default
-              startTime: "09:00", // Using hardcoded default time
-              endTime: "17:00" // Using hardcoded default time
-            }
-          ]
+          schedulingType: selectedSchedulingType, // Explicitly set the scheduling type
         };
+        
+        // Handle different scheduling types
+        if (selectedSchedulingType === 'fixed') {
+          console.log("Processing fixed schedule camp");
+          
+          // For fixed scheduling, we need schedules
+          if (plannedSessions.length > 0) {
+            // If we have planned sessions, use them to create schedules
+            requestData.schedules = plannedSessions.map(session => ({
+              dayOfWeek: new Date(session.sessionDate).getDay(),
+              startTime: session.startTime.substring(0, 5),
+              endTime: session.endTime.substring(0, 5)
+            }));
+          } else {
+            // Fallback to default schedule
+            requestData.schedules = [
+              {
+                dayOfWeek: 0, // Sunday as default
+                startTime: "09:00", // Using hardcoded default time
+                endTime: "17:00" // Using hardcoded default time
+              }
+            ];
+          }
+        } else {
+          // For availability-based camps, we still need an empty schedules array 
+          // to satisfy the schema, but will manage actual scheduling via availability slots
+          requestData.schedules = [];
+          
+          // Availability-based camps don't support waitlists
+          requestData.waitlistEnabled = false;
+        }
 
         console.log("Creating camp with data:", JSON.stringify(requestData, null, 2));
 
@@ -590,11 +614,11 @@ export function AddCampDialog({
       return;
     }
 
-    // Format all dates consistently
+    // Format all dates consistently and ensure data types are correct
     const formattedData = {
       ...data,
       sportId: parseInt(selectedSport || '0'),
-      skillLevel: skillLevelMap[skillLevel],
+      skillLevel: skillLevelMap[skillLevel] as "beginner" | "intermediate" | "advanced" | "all_levels", // Cast to expected enum type
       schedulingType: selectedSchedulingType,
       registrationStartDate: formatDateForPostgres(data.registrationStartDate),
       registrationEndDate: formatDateForPostgres(data.registrationEndDate),
