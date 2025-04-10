@@ -686,10 +686,10 @@ export function AddCampDialog({
     // Format all dates consistently and ensure data types are correct
     const formattedData = {
       ...data,
-      sportId: parseInt(selectedSport || '0'),
-      skillLevel: skillLevelMap[skillLevel] as "beginner" | "intermediate" | "advanced" | "all_levels", // Cast to expected enum type
+      sportId: parseInt(String(selectedSport || form.getValues("sportId") || '0')),
+      skillLevel: (skillLevelMap[skillLevel] || form.getValues("skillLevel") || "all_levels") as "beginner" | "intermediate" | "advanced" | "all_levels", 
       schedulingType: selectedSchedulingType,
-      organizationId: user?.organizationId || 0, // Add organizationId from user context
+      organizationId: user?.organizationId || form.getValues("organizationId") || 1, // Ensure organizationId is set
       virtualMeetingUrl: data.isVirtual ? form.getValues("virtualMeetingUrl") : "", // Get the possibly updated URL
       registrationStartDate: formatDateForPostgres(data.registrationStartDate),
       registrationEndDate: formatDateForPostgres(data.registrationEndDate),
@@ -824,6 +824,32 @@ export function AddCampDialog({
                   if (data.additionalLocationDetails === null || data.additionalLocationDetails === undefined) {
                     form.setValue("additionalLocationDetails", "");
                   }
+                  
+                  // Ensure required fields are properly set
+                  if (user?.organizationId) {
+                    form.setValue("organizationId", user.organizationId);
+                  }
+                  
+                  // Make sure sportId is set (select first sport if needed)
+                  if (!data.sportId && sportsList.length > 0) {
+                    const firstSportId = sportsList[0].id;
+                    form.setValue("sportId", firstSportId);
+                    setSelectedSport(String(firstSportId));
+                  }
+                  
+                  // Ensure skillLevel is set
+                  if (!data.skillLevel) {
+                    const mappedSkillLevel = skillLevelMap[skillLevel] as "beginner" | "intermediate" | "advanced" | "all_levels" || "all_levels";
+                    form.setValue("skillLevel", mappedSkillLevel);
+                  }
+                  
+                  // Log values after fixing them
+                  console.log("Fixed values:", {
+                    organizationId: form.getValues("organizationId"),
+                    sportId: form.getValues("sportId"),
+                    skillLevel: form.getValues("skillLevel"),
+                    virtualMeetingUrl: form.getValues("virtualMeetingUrl")
+                  });
                   
                   // Trigger validation on all fields
                   await form.trigger();
