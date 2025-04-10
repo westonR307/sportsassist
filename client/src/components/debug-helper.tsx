@@ -49,16 +49,26 @@ export function DebugHelper() {
       const data = JSON.parse(campData)
 
       // Make the API request
-      const result = await apiRequest("POST", "/api/camps", data)
-
-      // Get the response
-      const contentType = result.headers.get("content-type");
-      let responseData;
-      
-      if (contentType && contentType.includes("application/json")) {
-        responseData = await result.json();
-      } else {
-        responseData = await result.text();
+      try {
+        const result = await apiRequest("POST", "/api/camps", data);
+        console.log("Camp creation response:", result);
+        
+        // Since apiRequest already handles JSON parsing, we can use the result directly
+        setResponse(JSON.stringify(result, null, 2));
+        
+        toast({
+          title: "Success",
+          description: "Camp created successfully",
+        });
+      } catch (error) {
+        console.error("Camp creation error:", error);
+        setResponse(JSON.stringify(error, null, 2));
+        
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create camp",
+          variant: "destructive",
+        });
       }
 
       const formattedResponse = typeof responseData === 'string' 

@@ -53,7 +53,12 @@ export const apiRequest = async (
 
     return response;
   } catch (error) {
-    console.error(`API Request to ${path} failed:`, error);
+    console.error(`API Request to ${path} failed:`, {
+      error,
+      requestBody: body ? JSON.stringify(body) : undefined,
+      method,
+      path
+    });
 
     if (error instanceof Error) {
       if (error.message.includes("NetworkError") || error.message.includes("Failed to fetch")) {
