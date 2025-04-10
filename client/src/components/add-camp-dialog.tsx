@@ -1496,7 +1496,10 @@ export function AddCampDialog({
                               startDate={new Date(form.getValues().startDate)}
                               endDate={new Date(form.getValues().endDate)}
                               sessions={plannedSessions}
-                              onSave={() => console.log("Save triggered from calendar")}
+                              onSave={() => {
+                                // Only log the save event, but don't trigger form submission
+                                console.log("Save triggered from calendar, sessions count:", plannedSessions.length);
+                              }}
                               canManage={true}
                               customHandlers={{
                                 addSession: async (sessionData) => {
