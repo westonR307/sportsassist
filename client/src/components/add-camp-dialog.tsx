@@ -460,7 +460,7 @@ export function AddCampDialog({
       // Save custom meta fields
       if (data.id) {
         // Create a promise array to track all the async operations
-        const promises = [];
+        const promises: Promise<any>[] = [];
 
         // Save availability slots if schedulingType is 'availability'
         if (form.getValues('schedulingType') === 'availability' && availabilitySlots.length > 0) {
@@ -491,10 +491,10 @@ export function AddCampDialog({
                   startTime: slot.startTime,
                   endTime: slot.endTime,
                   maxBookings: slot.capacity // Server expects maxBookings instead of capacity
-                }).then(response => {
+                }).then((response: any) => {
                   console.log("Slot creation response:", response);
                   return response;
-                }).catch(slotError => {
+                }).catch((slotError: any) => {
                   console.error(`Error creating slot with date ${slot.date}:`, slotError);
                   throw slotError; // Re-throw to mark this promise as rejected
                 });
@@ -629,11 +629,11 @@ export function AddCampDialog({
               campId: data.id,
               documentId: selectedDocumentId
             })
-            .then(response => {
+            .then((response: any) => {
               console.log("Document agreement associated successfully", response);
               return response;
             })
-            .catch(error => {
+            .catch((error: any) => {
               console.error("Error associating document agreement:", error);
               toast({
                 title: "Warning",
@@ -657,9 +657,13 @@ export function AddCampDialog({
 
       // Wait for all promises to complete before finishing
       try {
-        // Wait for all collected promises to complete
-        await Promise.all(promises);
-        console.log("All post-creation tasks completed successfully");
+        // Wait for all collected promises to complete if there are any
+        if (promises && promises.length > 0) {
+          await Promise.all(promises);
+          console.log("All post-creation tasks completed successfully");
+        } else {
+          console.log("No post-creation tasks to complete");
+        }
       } catch (error) {
         console.error("Error in post-creation tasks:", error);
       } finally {
