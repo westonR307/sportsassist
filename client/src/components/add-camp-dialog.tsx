@@ -608,7 +608,10 @@ export function AddCampDialog({
     console.log("Form submitted with data:", data);
     console.log("Is submitting:", submitting); // Debug if submitting state is working
 
-    if (!selectedSport) {
+    // Set sportId explicitly in the form data
+    if (selectedSport) {
+      form.setValue("sportId", parseInt(selectedSport));
+    } else {
       toast({
         title: "Missing Information",
         description: "Please select a sport for this camp",
@@ -617,12 +620,31 @@ export function AddCampDialog({
       return;
     }
 
+    // Set skillLevel explicitly in the form data using the mapped enum value
+    form.setValue("skillLevel", skillLevelMap[skillLevel] as "beginner" | "intermediate" | "advanced" | "all_levels");
+
+    // For virtual camps, ensure virtualMeetingUrl is valid
+    if (data.isVirtual) {
+      // Check if a valid URL is provided for virtual meetings
+      if (!data.virtualMeetingUrl || !data.virtualMeetingUrl.trim()) {
+        form.setValue("virtualMeetingUrl", "https://meet.google.com/example"); // Set a default URL pattern 
+      } else if (!data.virtualMeetingUrl.startsWith('http')) {
+        // Prepend https:// if the URL doesn't start with http or https
+        form.setValue("virtualMeetingUrl", `https://${data.virtualMeetingUrl}`);
+      }
+    } else {
+      // Not a virtual camp, clear the URL field
+      form.setValue("virtualMeetingUrl", "");
+    }
+
     // Format all dates consistently and ensure data types are correct
     const formattedData = {
       ...data,
       sportId: parseInt(selectedSport || '0'),
       skillLevel: skillLevelMap[skillLevel] as "beginner" | "intermediate" | "advanced" | "all_levels", // Cast to expected enum type
       schedulingType: selectedSchedulingType,
+      organizationId: user?.organizationId || 0, // Add organizationId from user context
+      virtualMeetingUrl: data.isVirtual ? form.getValues("virtualMeetingUrl") : "", // Get the possibly updated URL
       registrationStartDate: formatDateForPostgres(data.registrationStartDate),
       registrationEndDate: formatDateForPostgres(data.registrationEndDate),
       startDate: formatDateForPostgres(data.startDate),
