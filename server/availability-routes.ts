@@ -92,7 +92,7 @@ export default function registerAvailabilityRoutes(app: Express) {
     } catch (error) {
       console.error("==========================================");
       console.error("Error creating availability slot:", error);
-      console.error("Camp ID:", id);
+      console.error("Camp ID from params:", req.params.id);
       console.error("Request user:", req.user);
       console.error("Request body:", req.body);
       console.error("==========================================");
