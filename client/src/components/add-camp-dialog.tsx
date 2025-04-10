@@ -647,8 +647,11 @@ export function AddCampDialog({
         schedulingType: selectedSchedulingType
       };
       
+      console.log("Selected scheduling type:", selectedSchedulingType);
+      
       // Let the server handle schedule generation for availability-based camps
       if (selectedSchedulingType === "fixed") {
+        console.log("Fixed schedule camp mode - adding schedules");
         // For fixed scheduling type, include the schedules 
         formattedData.schedules = plannedSessions.length > 0 ? 
           // If we have planned sessions, convert them to schedules
@@ -665,7 +668,9 @@ export function AddCampDialog({
               endTime: "17:00" // Using hardcoded default time
             }
           ];
+        console.log("Fixed camp schedules:", formattedData.schedules);
       } else {
+        console.log("Availability-based camp mode - sending empty schedules array");
         // For availability-based camps, send an empty array
         // The server will add a dummy schedule as needed
         formattedData.schedules = [];
