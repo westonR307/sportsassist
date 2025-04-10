@@ -29,7 +29,10 @@ export function AvailabilitySlotManager({
   slots,
   onSlotsChange
 }: AvailabilitySlotManagerProps) {
-  const [newDate, setNewDate] = useState<string>(format(new Date(campStartDate), "yyyy-MM-dd"));
+  // Set initial date with noon time to avoid timezone issues
+  const initialDate = new Date(campStartDate);
+  initialDate.setHours(12, 0, 0, 0);
+  const [newDate, setNewDate] = useState<string>(format(initialDate, "yyyy-MM-dd"));
   const [newStartTime, setNewStartTime] = useState<string>("09:00");
   const [newEndTime, setNewEndTime] = useState<string>("10:00");
   const [newCapacity, setNewCapacity] = useState<number>(1);
@@ -54,10 +57,17 @@ export function AvailabilitySlotManager({
   // Generate date options between camp start and end dates
   const generateDateOptions = () => {
     const dateOptions = [];
-    let currentDate = new Date(campStartDate);
-    const endDate = new Date(campEndDate);
+    
+    // Create dates with time set to noon to avoid timezone issues
+    const startDateWithoutTime = new Date(campStartDate);
+    startDateWithoutTime.setHours(12, 0, 0, 0);
+    
+    const endDateWithoutTime = new Date(campEndDate);
+    endDateWithoutTime.setHours(12, 0, 0, 0);
+    
+    let currentDate = startDateWithoutTime;
 
-    while (currentDate <= endDate) {
+    while (currentDate <= endDateWithoutTime) {
       dateOptions.push({
         value: format(currentDate, "yyyy-MM-dd"),
         label: format(currentDate, "MMM dd, yyyy (EEEE)")
