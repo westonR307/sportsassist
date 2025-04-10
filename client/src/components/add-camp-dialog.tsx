@@ -243,10 +243,31 @@ export function AddCampDialog({
       isVirtual: false,
       virtualMeetingUrl: "",
       schedulingType: "fixed",
+      // Set default values for required fields that were causing validation errors
+      organizationId: user?.organizationId || 1,
+      sportId: 1, // Will be updated when sport is selected
+      skillLevel: "all_levels", // Default skill level
       // Default times are now handled in the CalendarScheduler component
     },
   });
 
+  // Effect to set organization ID directly in the form when the component mounts
+  useEffect(() => {
+    if (user?.organizationId) {
+      form.setValue("organizationId", user.organizationId, { shouldValidate: true });
+      console.log("Set organizationId to", user.organizationId);
+    }
+  }, [user, form]);
+
+  // Effect to set initial skillLevel value
+  useEffect(() => {
+    const mappedSkillLevel = skillLevelMap[skillLevel];
+    if (mappedSkillLevel) {
+      form.setValue("skillLevel", mappedSkillLevel, { shouldValidate: true });
+      console.log("Initial skillLevel set to", mappedSkillLevel);
+    }
+  }, [form, skillLevel]);
+  
   // Effect to check for duplicate camp data from localStorage
   useEffect(() => {
     if (open) {
@@ -986,9 +1007,15 @@ export function AddCampDialog({
                         <FormLabel>Sport</FormLabel>
                         <select
                           value={selectedSport || ""}
-                          onChange={(e) =>
-                            setSelectedSport(e.target.value || null)
-                          }
+                          onChange={(e) => {
+                            const value = e.target.value || null;
+                            setSelectedSport(value);
+                            // Immediately set sportId in the form when it changes
+                            if (value) {
+                              form.setValue("sportId", parseInt(value), { shouldValidate: true });
+                              console.log("Set sportId to", parseInt(value));
+                            }
+                          }}
                           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                         >
                           <option value="" disabled>
@@ -1011,7 +1038,16 @@ export function AddCampDialog({
                         <FormLabel>Skill Level</FormLabel>
                         <select
                           value={skillLevel}
-                          onChange={(e) => setSkillLevel(e.target.value)}
+                          onChange={(e) => {
+                            const newSkillLevel = e.target.value;
+                            setSkillLevel(newSkillLevel);
+                            // Immediately set skillLevel in the form when it changes
+                            const mappedSkillLevel = skillLevelMap[newSkillLevel];
+                            if (mappedSkillLevel) {
+                              form.setValue("skillLevel", mappedSkillLevel, { shouldValidate: true });
+                              console.log("Set skillLevel to", mappedSkillLevel);
+                            }
+                          }}
                           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                         >
                           {uiSkillLevels.map((level) => (
