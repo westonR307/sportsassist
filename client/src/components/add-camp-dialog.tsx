@@ -457,10 +457,12 @@ export function AddCampDialog({
     onSuccess: async (data) => {
       console.log("Camp created successfully with data:", data);
 
+      // Initialize an array to track all post-creation promises
+      const promises: Promise<any>[] = [];
+      
       // Save custom meta fields
       if (data.id) {
-        // Create a promise array to track all the async operations
-        let promises: Promise<any>[] = [];
+        // We already have the promises array initialized above
 
         // Save availability slots if schedulingType is 'availability'
         if (form.getValues('schedulingType') === 'availability' && availabilitySlots.length > 0) {
@@ -679,10 +681,8 @@ export function AddCampDialog({
       // Wait for all promises to complete before finishing
       try {
         // Run all collected promises if they exist
-        // Use the promises array that was defined at line 463
-        const promisesArray = promises;
-        if (Array.isArray(promisesArray) && promisesArray.length > 0) {
-          await Promise.all(promisesArray);
+        if (Array.isArray(promises) && promises.length > 0) {
+          await Promise.all(promises);
           console.log("All post-creation tasks completed successfully");
         } else {
           console.log("No post-creation tasks to complete");
