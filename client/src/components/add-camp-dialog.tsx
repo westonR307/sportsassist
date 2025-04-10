@@ -878,7 +878,7 @@ export function AddCampDialog({
                                 type="number"
                                 {...field}
                                 value={field.value === 0 ? "" : field.value}
-                                onChange{(e) => {
+                                onChange={(e) => {
                                   // Allow actual empty values but convert valid inputs to numbers
                                   const value = e.target.value.trim();
                                   field.onChange(value ? parseInt(value) : '');
