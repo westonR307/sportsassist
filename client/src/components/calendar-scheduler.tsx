@@ -66,7 +66,7 @@ export function CalendarScheduler({
   // Format dates properly
   const campStartDate = startDate instanceof Date ? startDate : new Date(startDate);
   const campEndDate = endDate instanceof Date ? endDate : new Date(endDate);
-  
+
   // Sync with initialSessions when they change (from parent)
   useEffect(() => {
     setSessions(initialSessions);
@@ -83,81 +83,43 @@ export function CalendarScheduler({
     console.log("- ISO date/time:", now.toISOString());
   }, []);
 
-  // Enhanced function to normalize dates to YYYY-MM-DD format with more comprehensive debugging and handling
+  // Function to normalize dates to YYYY-MM-DD format consistently in local timezone
   const normalizeDate = (date: Date | string): string => {
-    let d: Date;
-    let originalDateString = typeof date === 'string' ? date : date.toString();
-    
-    // For ISO string dates like "2025-04-02T00:00:00.000Z"
-    if (typeof date === 'string' && date.includes('T')) {
-      try {
-        // Extract the date part directly from ISO string to avoid timezone issues
-        const datePart = date.split('T')[0];
-        console.log(`[NormalizeDate] ISO string detected: ${date} → extracted date part: ${datePart}`);
-        return datePart;
-      } catch (error) {
-        console.error(`[NormalizeDate] Error parsing ISO string: ${date}`, error);
-      }
-    }
-    
     try {
-      // For all other cases, parse the date and then extract components in UTC
-      if (typeof date === 'string') {
-        // Check for simple YYYY-MM-DD format
-        if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-          console.log(`[NormalizeDate] Simple YYYY-MM-DD format detected: ${date}, returning as is`);
-          return date;
-        }
-        
-        d = new Date(date);
-        console.log(`[NormalizeDate] Parsed string date: ${date} → Date object: ${d.toString()}`);
-      } else {
-        d = date;
-        console.log(`[NormalizeDate] Using Date object directly: ${d.toString()}`);
+      let d: Date;
+
+      // If already in YYYY-MM-DD format, return as is
+      if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return date;
       }
-      
-      // Create a stable UTC date at noon to avoid any DST or timezone shifts
-      // This is crucial for consistent date representation regardless of local timezone
-      const utcDate = new Date(Date.UTC(
-        d.getFullYear(),
-        d.getMonth(),
-        d.getDate(),
-        12, 0, 0 // Use noon to avoid any daylight saving time issues
-      ));
-      
-      // Format as YYYY-MM-DD based on UTC values
-      const year = utcDate.getUTCFullYear();
-      const month = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
-      const day = String(utcDate.getUTCDate()).padStart(2, '0');
-      
-      const result = `${year}-${month}-${day}`;
-      console.log(`[NormalizeDate] Final result: ${originalDateString} → UTC date: ${utcDate.toISOString()} → Normalized: ${result}`);
-      return result;
+
+      // Convert to Date object if string
+      d = typeof date === 'string' ? new Date(date) : date;
+
+      // Use local date values to avoid timezone shifts
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+
+      return `${year}-${month}-${day}`;
     } catch (error) {
-      console.error(`[NormalizeDate] Error normalizing date: ${originalDateString}`, error);
-      // In case of error, try to return something reasonable rather than crashing
-      if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) {
-        // If it starts with YYYY-MM-DD pattern, return just that part
-        return date.substring(0, 10);
-      }
-      // Last resort fallback to today's date
-      const today = new Date();
-      return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      console.error('Error normalizing date:', error);
+      return '';
     }
   };
-  
+
   // Update selected date sessions when date or sessions change
   useEffect(() => {
     if (selectedDate && sessions.length > 0) {
       // Instead of using isSameDay which can have timezone issues,
       // normalize both dates to YYYY-MM-DD strings and compare
       const selectedDateStr = normalizeDate(selectedDate);
-      
+
       const sessionsOnSelectedDate = sessions.filter(session => {
         const sessionDateStr = normalizeDate(session.sessionDate);
         return sessionDateStr === selectedDateStr;
       });
-      
+
       setSelectedDateSessions(sessionsOnSelectedDate);
     } else {
       setSelectedDateSessions([]);
@@ -186,10 +148,10 @@ export function CalendarScheduler({
 
     try {
       setIsLoading(true);
-      
+
       // Use our enhanced normalization function for consistent date formatting
       const formattedDate = normalizeDate(selectedDate);
-      
+
       console.log(`[AddSession] Creating session with normalized date: ${formattedDate}`);
       console.log(`[AddSession] Original selected date: ${selectedDate.toString()}`);
       console.log(`[AddSession] Selected date timezone info:`, {
@@ -200,7 +162,7 @@ export function CalendarScheduler({
         minutes: selectedDate.getMinutes(),
         timezoneOffset: selectedDate.getTimezoneOffset()
       });
-      
+
       // Format the date as YYYY-MM-DD with no time component to avoid timezone issues
       const sessionData = {
         campId: campId,
@@ -211,7 +173,7 @@ export function CalendarScheduler({
       };
 
       let createdSession;
-      
+
       // Use custom handler if provided, otherwise use fetch
       if (customHandlers?.addSession) {
         console.log("Using custom handler to add session");
@@ -232,18 +194,18 @@ export function CalendarScheduler({
 
         createdSession = await response.json();
       }
-      
+
       // Optimistically update the UI by adding the new session to our local state
       // This gives immediate feedback without waiting for the query cache to refresh
       const newSession: SimpleCampSession = {
         ...createdSession,
         sessionDate: selectedDate
       };
-      
+
       // Update the local sessions list to include the new session
       const updatedSessions = [...sessions, newSession];
       setSessions(updatedSessions);
-      
+
       // Also update the selected date sessions to show in the right panel immediately
       setSelectedDateSessions(prev => [...prev, newSession]);
 
@@ -251,12 +213,12 @@ export function CalendarScheduler({
       if (!customHandlers?.addSession) {
         queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'sessions'] });
       }
-      
+
       // Call onSave to notify parent component (in case they need to update state)
       if (onSave) {
         onSave();
       }
-      
+
       toast({
         title: "Session added",
         description: `Session added on ${format(selectedDate, "MMMM d, yyyy")} from ${formatTimeForDisplay(startTime)} to ${formatTimeForDisplay(endTime)}`,
@@ -280,7 +242,7 @@ export function CalendarScheduler({
       setIsLoading(true);
 
       let success = false;
-      
+
       // Use custom handler if provided, otherwise use fetch
       if (customHandlers?.deleteSession) {
         console.log("Using custom handler to delete session");
@@ -297,21 +259,21 @@ export function CalendarScheduler({
         if (!response.ok) {
           throw new Error("Failed to delete session");
         }
-        
+
         success = true;
       }
 
       // Immediately update the UI by removing the deleted session from local state
       setSelectedDateSessions(prev => prev.filter(session => session.id !== sessionId));
-      
+
       // Also update the full sessions list
       setSessions(prev => prev.filter(session => session.id !== sessionId));
-      
+
       // Only invalidate query cache if we're not using custom handlers
       if (!customHandlers?.deleteSession) {
         queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'sessions'] });
       }
-      
+
       // Call onSave to notify parent component (in case they need to update state)
       if (onSave) {
         onSave();
@@ -350,12 +312,12 @@ export function CalendarScheduler({
   const renderDayContent = (day: Date) => {
     // Use our normalized date approach for consistent date comparison
     const dayStr = normalizeDate(day);
-    
+
     const sessionsOnDay = sessions.filter(session => {
       const sessionDateStr = normalizeDate(session.sessionDate);
       return sessionDateStr === dayStr;
     });
-    
+
     if (sessionsOnDay.length > 0) {
       return (
         <div className="relative w-full h-full">
@@ -413,7 +375,7 @@ export function CalendarScheduler({
                 ? `Sessions on ${format(selectedDate, "MMMM d, yyyy")}`
                 : "Select a date"}
             </h3>
-            
+
             {canManage && selectedDate && (
               <div className="grid gap-3 mb-4">
                 <div className="grid grid-cols-2 gap-2">
@@ -436,7 +398,7 @@ export function CalendarScheduler({
                     />
                   </div>
                 </div>
-                
+
                 <Button 
                   onClick={addSession}
                   disabled={isLoading}
@@ -446,9 +408,9 @@ export function CalendarScheduler({
                 </Button>
               </div>
             )}
-            
+
             <Separator className="my-2" />
-            
+
             {selectedDateSessions.length > 0 ? (
               <div className="space-y-2">
                 {selectedDateSessions.map((session) => (
@@ -462,7 +424,7 @@ export function CalendarScheduler({
                         {formatTimeForDisplay(session.startTime as string)} - {formatTimeForDisplay(session.endTime as string)}
                       </span>
                     </div>
-                    
+
                     {canManage && (
                       <TooltipProvider>
                         <Tooltip>
