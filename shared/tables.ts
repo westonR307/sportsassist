@@ -8,7 +8,8 @@ import {
   type DocumentType, type DocumentStatus, 
   type SignatureStatus, type SignatureFieldType,
   type DynamicFieldSource, type AuditAction,
-  type ResourceType, type PermissionAction, type PermissionScope
+  type ResourceType, type PermissionAction, type PermissionScope,
+  type SchedulingType, type AvailabilityStatus, type BookingStatus
 } from "./types";
 
 // Define the table structure for the new enhanced camp session scheduling
