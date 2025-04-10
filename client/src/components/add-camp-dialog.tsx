@@ -390,25 +390,29 @@ export function AddCampDialog({
 
         console.log("Creating camp with data:", JSON.stringify(requestData, null, 2));
 
-        // The apiRequest function automatically parses JSON responses
-        const response = await apiRequest("POST", "/api/camps", requestData);
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to create camp');
+        try {
+          // Use apiRequest to send the request
+          const response = await apiRequest("POST", "/api/camps", requestData);
+          // Parse the JSON response
+          const responseData = await response.json();
+          console.log("Camp created successfully:", responseData);
+          return responseData;
+        } catch (error) {
+          console.error("API request failed:", error);
+          throw error;
         }
-        console.log("Camp created successfully:", response);
 
         // Now create all the planned sessions for this camp
-        if (plannedSessions.length > 0 && response.id) {
-          console.log(`Creating ${plannedSessions.length} sessions for camp ${response.id}`);
+        if (plannedSessions.length > 0 && responseData.id) {
+          console.log(`Creating ${plannedSessions.length} sessions for camp ${responseData.id}`);
 
           // Create a batch of promises to create all sessions
           const sessionPromises = plannedSessions.map(session => {
             // Prepare session data for API call, removing temporary ID
             const { id, campId, ...sessionData } = session;
-            return apiRequest("POST", `/api/camps/${response.id}/sessions`, {
+            return apiRequest("POST", `/api/camps/${responseData.id}/sessions`, {
               ...sessionData,
-              campId: response.id,
+              campId: responseData.id,
               // Format date properly for PostgreSQL
               date: sessionData.date instanceof Date ? formatDateForPostgres(sessionData.date) : sessionData.date
             });
@@ -419,7 +423,7 @@ export function AddCampDialog({
           console.log("All sessions created successfully!");
         }
 
-        return response;
+        return responseData;
       } catch (error: any) {
         console.error("Camp creation error:", error);
         throw error;
