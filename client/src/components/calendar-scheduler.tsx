@@ -214,10 +214,8 @@ export function CalendarScheduler({
         queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'sessions'] });
       }
 
-      // Call onSave to notify parent component (in case they need to update state)
-      if (onSave) {
-        onSave();
-      }
+      // We don't call onSave here anymore to prevent premature form submission
+      // when adding sessions in fixed scheduling mode
 
       toast({
         title: "Session added",
@@ -274,10 +272,8 @@ export function CalendarScheduler({
         queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'sessions'] });
       }
 
-      // Call onSave to notify parent component (in case they need to update state)
-      if (onSave) {
-        onSave();
-      }
+      // We don't call onSave here anymore to prevent premature form submission
+      // when deleting sessions in fixed scheduling mode
 
       toast({
         title: "Session deleted",
