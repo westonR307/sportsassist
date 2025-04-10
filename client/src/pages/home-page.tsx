@@ -204,13 +204,17 @@ export default function HomePage() {
     setShowVirtualOnly(false);
   };
 
-  const handleRegisterClick = (campId: number) => {
+  const handleRegisterClick = (camp: ExtendedCamp) => {
+    const url = camp.slug 
+      ? `/dashboard/camps/slug/${camp.slug}` 
+      : `/dashboard/camps/${camp.id}`;
+    
     if (!user) {
       // Redirect to auth page with return URL
-      setLocation(`/auth?returnTo=/dashboard/camps/${campId}`);
+      setLocation(`/auth?returnTo=${url}`);
     } else {
       // Directly go to camp details
-      setLocation(`/dashboard/camps/${campId}`);
+      setLocation(url);
     }
   };
 
@@ -775,7 +779,7 @@ export default function HomePage() {
                 <CampCard 
                   key={camp.id} 
                   camp={camp} 
-                  onRegisterClick={() => handleRegisterClick(camp.id)}
+                  onRegisterClick={() => handleRegisterClick(camp)}
                   isAuthenticated={!!user}
                 />
               ))}
