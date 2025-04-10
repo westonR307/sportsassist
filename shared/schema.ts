@@ -213,7 +213,7 @@ export const insertCampSchema = z.object({
   cancelledAt: z.date().optional().nullable(),
   cancelReason: z.string().optional().nullable(),
   maxAge: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
-  repeatType: z.enum(["none", "weekly", "monthly"]).default("none"),
+  repeatType: z.enum(["none", "weekly", "monthly"]).default("none").optional(),
   repeatCount: z.number().or(z.string().transform(val => parseInt(String(val || '0'), 10))).default(0),
   schedules: z.array(z.object({
     dayOfWeek: z.number().or(z.string().transform(val => parseInt(String(val), 10))),

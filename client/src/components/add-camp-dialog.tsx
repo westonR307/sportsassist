@@ -88,7 +88,7 @@ const formatTimeFor12Hour = (timeStr: string): string => {
 const DateInput = ({ field, ...props }: { field: any }) => {
   // Use our dedicated utility for consistent date handling
   const formattedValue = normalizeDate(field.value);
-  
+
   return (
     <Input
       type="date"
@@ -128,7 +128,7 @@ export function AddCampDialog({
   const [duplicateData, setDuplicateData] = useState<any>(null);
   const [selectedStaff, setSelectedStaff] = useState<{userId: number, role: string}[]>([]); // Store selected staff members
   const [availabilitySlots, setAvailabilitySlots] = useState<{date: Date, startTime: string, endTime: string, capacity: number}[]>([]); // Store availability slots
-  
+
   // New state for camp creation flow
   const [showTypeSelection, setShowTypeSelection] = useState(true);
   const [selectedSchedulingType, setSelectedSchedulingType] = useState<"fixed" | "availability">("fixed");
@@ -242,7 +242,7 @@ export function AddCampDialog({
       // Default times are now handled in the CalendarScheduler component
     },
   });
-  
+
   // Effect to check for duplicate camp data from localStorage
   useEffect(() => {
     if (open) {
@@ -253,11 +253,11 @@ export function AddCampDialog({
           const duplicateData = JSON.parse(duplicateDataString);
           console.log("Found duplicate camp data:", duplicateData);
           setDuplicateData(duplicateData);
-          
+
           // Populate form with the duplicate camp data
           if (duplicateData.camp) {
             const campData = duplicateData.camp;
-            
+
             // Set form values
             form.reset({
               ...form.getValues(),
@@ -284,23 +284,23 @@ export function AddCampDialog({
               isVirtual: campData.isVirtual || false,
               virtualMeetingUrl: campData.virtualMeetingUrl || "",
             });
-            
+
             // Set sport selection if available
             if (campData.sportId) {
               setSelectedSport(String(campData.sportId));
             }
-            
+
             // Set custom fields
             if (duplicateData.customFields && duplicateData.customFields.length > 0) {
               setSelectedCustomFields(duplicateData.customFields.map((field: any) => field.customFieldId));
             }
-            
+
             // Show success message
             toast({
               title: "Camp Data Loaded",
               description: "Duplicated camp data has been loaded. You can now edit and save the new camp.",
             });
-            
+
             // Clear localStorage after loading
             localStorage.removeItem('duplicateCampData');
           }
@@ -335,7 +335,7 @@ export function AddCampDialog({
         // Use type assertion to bypass TypeScript errors
         const dataObj = data as any;
         const { defaultStartTime, defaultEndTime, ...dataWithoutDefaults } = dataObj;
-        
+
         const requestData = {
           ...dataWithoutDefaults,
           // Format dates properly for consistent handling
@@ -365,15 +365,15 @@ export function AddCampDialog({
         };
 
         console.log("Creating camp with data:", JSON.stringify(requestData, null, 2));
-        
+
         // The apiRequest function automatically parses JSON responses
         const response = await apiRequest("POST", "/api/camps", requestData);
         console.log("Camp created successfully:", response);
-        
+
         // Now create all the planned sessions for this camp
         if (plannedSessions.length > 0 && response.id) {
           console.log(`Creating ${plannedSessions.length} sessions for camp ${response.id}`);
-          
+
           // Create a batch of promises to create all sessions
           const sessionPromises = plannedSessions.map(session => {
             // Prepare session data for API call, removing temporary ID
@@ -385,12 +385,12 @@ export function AddCampDialog({
               date: sessionData.date instanceof Date ? formatDateForPostgres(sessionData.date) : sessionData.date
             });
           });
-          
+
           // Wait for all sessions to be created
           await Promise.all(sessionPromises);
           console.log("All sessions created successfully!");
         }
-        
+
         return response;
       } catch (error: any) {
         console.error("Camp creation error:", error);
@@ -401,20 +401,20 @@ export function AddCampDialog({
     },
     onSuccess: async (data) => {
       console.log("Camp created successfully with data:", data);
-      
+
       // Save custom meta fields
       if (data.id) {
         // Save availability slots if schedulingType is 'availability'
         if (form.getValues('schedulingType') === 'availability' && availabilitySlots.length > 0) {
           try {
             console.log(`Saving ${availabilitySlots.length} availability slots for camp ${data.id}`);
-            
+
             // Process slots one by one to better identify issues
             for (const slot of availabilitySlots) {
               try {
                 // Format date for PostgreSQL
                 const formattedDate = formatDateForPostgres(slot.date);
-                
+
                 console.log("Sending availability slot data:", {
                   campId: data.id,
                   slotDate: formattedDate,
@@ -422,7 +422,7 @@ export function AddCampDialog({
                   endTime: slot.endTime,
                   maxBookings: slot.capacity
                 });
-                
+
                 const response = await apiRequest("POST", `/api/camps/${data.id}/availability-slots`, {
                   campId: data.id,
                   slotDate: formattedDate,
@@ -430,13 +430,13 @@ export function AddCampDialog({
                   endTime: slot.endTime,
                   maxBookings: slot.capacity // Server expects maxBookings instead of capacity
                 });
-                
+
                 console.log("Slot creation response:", response);
               } catch (slotError) {
                 console.error(`Error creating slot with date ${slot.date}:`, slotError);
               }
             }
-            
+
             console.log("All availability slots processed");
             toast({
               title: "Success",
@@ -451,7 +451,7 @@ export function AddCampDialog({
             });
           }
         }
-        
+
         // Save the staff assignments
         if (campStaffRef.current) {
           try {
@@ -467,7 +467,7 @@ export function AddCampDialog({
             });
           }
         }
-                
+
         console.log(`Camp creation successful - Starting meta fields save process for camp ID: ${data.id}`);
         if (metaFieldsRef.current) {
           console.log("metaFieldsRef is available, proceeding with save...");
@@ -475,14 +475,14 @@ export function AddCampDialog({
             // Set the campId for the meta fields component and save
             console.log(`Setting camp ID ${data.id} in metaFieldsRef`);
             metaFieldsRef.current.setCampId(data.id);
-            
+
             // Force a small delay to ensure state updates properly
             await new Promise(resolve => setTimeout(resolve, 100));
-            
+
             // First make a direct API call to ensure we're working with the proper campId
             const addedFields = metaFieldsRef.current.getFields() || [];
             console.log(`Found ${addedFields.length} meta fields to save`, addedFields);
-            
+
             // Save fields directly through API calls rather than relying on the component method
             if (addedFields.length > 0) {
               console.log(`Directly saving ${addedFields.length} meta fields for camp ${data.id}`);
@@ -494,7 +494,7 @@ export function AddCampDialog({
                     response: field.response || null,
                     responseArray: field.responseArray || null,
                   });
-                  
+
                   await apiRequest("POST", "/api/camp-custom-fields", {
                     customFieldId: field.customFieldId,
                     campId: data.id,
@@ -509,7 +509,7 @@ export function AddCampDialog({
             } else {
               console.log("No meta fields to save");
             }
-            
+
           } catch (error) {
             console.error("Error saving meta fields:", error);
             toast({
@@ -519,7 +519,7 @@ export function AddCampDialog({
             });
           }
         }
-        
+
         // Associate the document agreement if selected
         if (selectedDocumentId) {
           try {
@@ -538,12 +538,12 @@ export function AddCampDialog({
           }
         }
       }
-      
+
       toast({
         title: "Success",
         description: "Camp created successfully!",
       });
-      
+
       // Reset form
       form.reset();
       setSelectedSport(null);
@@ -556,10 +556,10 @@ export function AddCampDialog({
       setTempCampId(-1);
       setSelectedStaff([]);
       setAvailabilitySlots([]);
-      
+
       // Close dialog
       onOpenChange(false);
-      
+
       // Refresh camps list
       queryClient.invalidateQueries({ queryKey: ['/api/camps'] });
     },
@@ -576,7 +576,7 @@ export function AddCampDialog({
   // When a user submits the form
   const onSubmit = async (data: ExtendedCampSchema) => {
     console.log("Form submitted with data:", data);
-    
+
     if (!selectedSport) {
       toast({
         title: "Missing Information",
@@ -585,12 +585,12 @@ export function AddCampDialog({
       });
       return;
     }
-    
+
     // Prep the data
     data.sportId = parseInt(selectedSport);
     data.skillLevel = skillLevelMap[skillLevel]; 
     data.schedulingType = selectedSchedulingType;
-    
+
     console.log("About to call mutation with data", { 
       ...data, 
       schedules: [
@@ -609,7 +609,7 @@ export function AddCampDialog({
       // Use type assertion to bypass TypeScript errors
       const dataObj = data as any;
       const { defaultStartTime, defaultEndTime, ...dataWithoutDefaults } = dataObj;
-      
+
       // Debug the dates before formatting
       console.log("Original date values:", {
         registrationStartDate: data.registrationStartDate,
@@ -619,13 +619,13 @@ export function AddCampDialog({
         registrationStartDateType: typeof data.registrationStartDate,
         startDateType: typeof data.startDate
       });
-      
+
       // Format the dates with our helper function
       const formattedRegistrationStartDate = formatDateForPostgres(data.registrationStartDate);
       const formattedRegistrationEndDate = formatDateForPostgres(data.registrationEndDate);
       const formattedStartDate = formatDateForPostgres(data.startDate);
       const formattedEndDate = formatDateForPostgres(data.endDate);
-      
+
       // Debug the formatted dates
       console.log("Formatted date values:", {
         registrationStartDate: formattedRegistrationStartDate, 
@@ -633,7 +633,7 @@ export function AddCampDialog({
         startDate: formattedStartDate,
         endDate: formattedEndDate
       });
-      
+
       // Prepare base formatted data
       const formattedData = {
         ...dataWithoutDefaults,
@@ -644,14 +644,12 @@ export function AddCampDialog({
         isVirtual: data.isVirtual || false,
         virtualMeetingUrl: data.isVirtual ? data.virtualMeetingUrl : undefined,
         // Maintain the scheduling type selected by the user
-        schedulingType: selectedSchedulingType
+        schedulingType: selectedSchedulingType,
+        repeatType: "none" // Add default repeatType since removed from form
       };
-      
-      console.log("Selected scheduling type:", selectedSchedulingType);
-      
+
       // Let the server handle schedule generation for availability-based camps
       if (selectedSchedulingType === "fixed") {
-        console.log("Fixed schedule camp mode - adding schedules");
         // For fixed scheduling type, include the schedules 
         formattedData.schedules = plannedSessions.length > 0 ? 
           // If we have planned sessions, convert them to schedules
@@ -668,16 +666,14 @@ export function AddCampDialog({
               endTime: "17:00" // Using hardcoded default time
             }
           ];
-        console.log("Fixed camp schedules:", formattedData.schedules);
       } else {
-        console.log("Availability-based camp mode - sending empty schedules array");
         // For availability-based camps, send an empty array
         // The server will add a dummy schedule as needed
         formattedData.schedules = [];
       }
-      
+
       console.log("Final formattedData being sent to the server:", formattedData);
-      
+
       // Cast to any to bypass TypeScript type check since we've already ensured data formatting is correct
       createCampMutation.mutate(formattedData as any);
       console.log("Mutation called successfully");
@@ -719,7 +715,7 @@ export function AddCampDialog({
                     Back to Type Selection
                   </Button>
                 </div>
-                
+
                 <Tabs
                   defaultValue="basic"
                   className="w-full"
@@ -965,7 +961,7 @@ export function AddCampDialog({
                           )}
                         />
                       )}
-                      
+
                       {selectedSchedulingType === 'availability' && (
                         <FormItem>
                           <FormLabel>Capacity</FormLabel>
@@ -987,7 +983,7 @@ export function AddCampDialog({
                                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                               >
                                 <option value="group">Group</option>
-                                <option value="one_on_one">One-on-One</option>
+                                <option value="one_on-one">One-on-One</option>
                                 <option value="team">Team</option>
                                 <option value="virtual">Virtual</option>
                               </select>
@@ -997,7 +993,7 @@ export function AddCampDialog({
                         )}
                       />
                     </div>
-                    
+
                     {/* Camp staff management */}
                     <div className="mt-8 border-t pt-6">
                       <div className="flex justify-between items-center mb-4">
@@ -1018,7 +1014,7 @@ export function AddCampDialog({
                         />
                       )}
                     </div>
-                    
+
                     {/* Add the custom meta fields component */}
                     <div className="mt-8 border-t pt-6">
                       <div className="flex justify-between items-center mb-4">
@@ -1040,7 +1036,7 @@ export function AddCampDialog({
                         />
                       )}
                     </div>
-                    
+
                     <div className="flex justify-end space-x-2 pt-4">
                       <Button
                         type="button"
@@ -1187,7 +1183,7 @@ export function AddCampDialog({
                       <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-medium">Scheduling Type</h3>
                       </div>
-                      
+
                       <div className="py-2 px-4 bg-muted/50 rounded-md mb-4">
                         <p className="text-sm font-medium">Selected: {selectedSchedulingType === 'fixed' ? 'Fixed Schedule' : 'Availability-Based'}</p>
                         <p className="text-xs text-muted-foreground mt-1">
@@ -1204,21 +1200,21 @@ export function AddCampDialog({
                           Change scheduling type
                         </Button>
                       </div>
-                      
+
                       {form.watch('schedulingType') === 'availability' && (
                         <div className="mt-4 border rounded-md p-4">
                           <h3 className="text-lg font-medium mb-4">Availability Slots</h3>
                           <p className="text-sm text-muted-foreground mb-4">
                             Create available time slots that participants can book, similar to Calendly.
                           </p>
-                          
+
                           <AvailabilitySlotManager
                             campStartDate={new Date(form.getValues().startDate)}
                             campEndDate={new Date(form.getValues().endDate)}
                             slots={availabilitySlots}
                             onSlotsChange={setAvailabilitySlots}
                           />
-                          
+
                           {availabilitySlots.length > 0 && (
                             <div className="mt-4 p-3 bg-muted/50 rounded-md">
                               <p className="text-sm font-medium mb-2">Created {availabilitySlots.length} availability slots</p>
@@ -1236,7 +1232,7 @@ export function AddCampDialog({
                           <p className="text-sm text-muted-foreground mb-4">
                             Create a fixed schedule for all participants. Sessions will be generated based on the schedule.
                           </p>
-                          
+
                           <div className="space-y-4">
                             <CalendarScheduler
                               campId={tempCampId}
@@ -1323,7 +1319,7 @@ export function AddCampDialog({
                             </p>
                           </div>
                         </div>
-                      
+
                         {user?.organizationId && (
                           <DocumentAgreementsSelector
                             organizationId={user.organizationId}
