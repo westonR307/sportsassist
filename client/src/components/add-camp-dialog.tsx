@@ -610,51 +610,47 @@ export function AddCampDialog({
   // When a user submits the form
   const onSubmit = async (data: ExtendedCampSchema) => {
     console.log("Form submitted with data:", data);
-    console.log("Is submitting:", submitting); // Debug if submitting state is working
+    
+    try {
+      // Set required fields
+      if (!user?.organizationId) {
+        throw new Error("Organization ID is missing");
+      }
+      
+      if (!selectedSport) {
+        throw new Error("Please select a sport for this camp");
+      }
+      
+      const mappedSkillLevel = skillLevelMap[skillLevel];
+      if (!mappedSkillLevel) {
+        throw new Error("Please select a skill level");
+      }
 
-    // Explicitly set required values before validation
+      // Set values and wait for them to be applied
+      await form.setValue("organizationId", user.organizationId, { shouldValidate: true });
+      await form.setValue("sportId", parseInt(selectedSport), { shouldValidate: true });
+      await form.setValue("skillLevel", mappedSkillLevel, { shouldValidate: true });
 
-    // Set required fields before validation
-    if (!user?.organizationId) {
+      // Force validation of these fields
+      const isValid = await form.trigger(["organizationId", "sportId", "skillLevel"]);
+      
+      if (!isValid) {
+        console.error("Validation failed:", form.formState.errors);
+        throw new Error("Please check all required fields");
+      }
+
+    } catch (error) {
+      console.error("Form validation error:", error);
       toast({
         title: "Error",
-        description: "Organization ID is missing",
+        description: error instanceof Error ? error.message : "Please check all required fields",
         variant: "destructive",
       });
       return;
     }
 
-    // Set organizationId
-    form.setValue("organizationId", user.organizationId);
-
-    // Set sportId
-    if (!selectedSport) {
-      toast({
-        title: "Missing Information",
-        description: "Please select a sport for this camp",
-        variant: "destructive",
-      });
-      return;
-    }
-    form.setValue("sportId", parseInt(selectedSport));
-
-    // Set skillLevel
-    const mappedSkillLevel = skillLevelMap[skillLevel];
-    if (!mappedSkillLevel) {
-      toast({
-        title: "Missing Information", 
-        description: "Please select a skill level",
-        variant: "destructive",
-      });
-      return;
-    }
-    form.setValue("skillLevel", mappedSkillLevel);
-
-    // Trigger validation for these fields
-    await form.trigger(["organizationId", "sportId", "skillLevel"]);
-
-    // Debug whether the values were properly set
-    console.log("Updated form values:", {
+    // Log the final form values for debugging
+    console.log("Final form values:", {
       organizationId: form.getValues("organizationId"),
       sportId: form.getValues("sportId"),
       skillLevel: form.getValues("skillLevel")
