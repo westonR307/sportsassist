@@ -705,9 +705,13 @@ export function AddCampDialog({
             <Form {...form}>
               <form onSubmit={(event) => {
                 console.log("Form submit event triggered");
+                // Log form validation errors
+                console.log("Form errors:", form.formState.errors);
                 form.handleSubmit((data) => {
                   console.log("Form submit handler called with data:", data);
                   onSubmit(data);
+                }, (errors) => {
+                  console.error("Form validation failed:", errors);
                 })(event);
               }} className="space-y-6">
                 {/* Back button to return to selection screen */}
