@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { PlusCircle, Trash2, Calendar, Clock } from "lucide-react";
-import { format, addDays, setHours, setMinutes, parseISO } from "date-fns";
+import { PlusCircle, Trash2, Calendar, Clock, Timer } from "lucide-react";
+import { format, addDays, setHours, setMinutes, parseISO, addMinutes } from "date-fns";
 
 interface AvailabilitySlot {
   id?: number;
@@ -23,6 +23,22 @@ interface AvailabilitySlotManagerProps {
   onSlotsChange: (slots: AvailabilitySlot[]) => void;
 }
 
+// Duration options in 15-minute increments (in minutes)
+const DURATION_OPTIONS = [
+  { value: 15, label: "15 minutes" },
+  { value: 30, label: "30 minutes" },
+  { value: 45, label: "45 minutes" },
+  { value: 60, label: "1 hour" },
+  { value: 75, label: "1 hour 15 minutes" },
+  { value: 90, label: "1 hour 30 minutes" },
+  { value: 105, label: "1 hour 45 minutes" },
+  { value: 120, label: "2 hours" },
+  { value: 150, label: "2 hours 30 minutes" },
+  { value: 180, label: "3 hours" },
+  { value: 210, label: "3 hours 30 minutes" },
+  { value: 240, label: "4 hours" },
+];
+
 export function AvailabilitySlotManager({
   campStartDate,
   campEndDate,
@@ -34,14 +50,26 @@ export function AvailabilitySlotManager({
   initialDate.setHours(12, 0, 0, 0);
   const [newDate, setNewDate] = useState<string>(format(initialDate, "yyyy-MM-dd"));
   const [newStartTime, setNewStartTime] = useState<string>("09:00");
-  const [newEndTime, setNewEndTime] = useState<string>("10:00");
+  const [newDuration, setNewDuration] = useState<number>(60); // Default to 1 hour
   const [newCapacity, setNewCapacity] = useState<number>(1);
 
+  // Calculate end time based on start time and duration
+  const calculateEndTime = (startTime: string, durationMinutes: number): string => {
+    const [hours, minutes] = startTime.split(':').map(part => parseInt(part, 10));
+    const startDate = new Date();
+    startDate.setHours(hours, minutes, 0, 0);
+    
+    const endDate = addMinutes(startDate, durationMinutes);
+    return format(endDate, "HH:mm");
+  };
+
   const addSlot = () => {
+    const endTime = calculateEndTime(newStartTime, newDuration);
+    
     const newSlot: AvailabilitySlot = {
       date: parseISO(newDate),
       startTime: newStartTime,
-      endTime: newEndTime,
+      endTime: endTime,
       capacity: newCapacity
     };
 
@@ -110,6 +138,40 @@ export function AvailabilitySlotManager({
     return format(date, "h:mm a");
   };
 
+  // Calculate the duration between start and end time in minutes
+  const calculateDuration = (startTime: string, endTime: string): number => {
+    const [startHours, startMinutes] = startTime.split(':').map(part => parseInt(part, 10));
+    const [endHours, endMinutes] = endTime.split(':').map(part => parseInt(part, 10));
+    
+    const startDate = new Date();
+    startDate.setHours(startHours, startMinutes, 0, 0);
+    
+    const endDate = new Date();
+    endDate.setHours(endHours, endMinutes, 0, 0);
+    
+    // If end time is earlier than start time, assume it's the next day
+    if (endDate < startDate) {
+      endDate.setDate(endDate.getDate() + 1);
+    }
+    
+    const diffMs = endDate.getTime() - startDate.getTime();
+    return Math.round(diffMs / (1000 * 60)); // Convert ms to minutes
+  };
+
+  // Format a duration in minutes to a human-readable string
+  const formatDuration = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    
+    if (hours === 0) {
+      return `${mins} min`;
+    } else if (mins === 0) {
+      return hours === 1 ? `${hours} hour` : `${hours} hours`;
+    } else {
+      return `${hours}h ${mins}m`;
+    }
+  };
+
   return (
     <div className="space-y-4">
       <Card>
@@ -156,21 +218,27 @@ export function AvailabilitySlotManager({
 
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
-                <Clock className="text-muted-foreground h-4 w-4" />
-                <Label htmlFor="end-time">End Time</Label>
+                <Timer className="text-muted-foreground h-4 w-4" />
+                <Label htmlFor="duration">Duration</Label>
               </div>
-              <Select value={newEndTime} onValueChange={setNewEndTime}>
+              <Select 
+                value={newDuration.toString()} 
+                onValueChange={(value) => setNewDuration(parseInt(value, 10))}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="End time" />
+                  <SelectValue placeholder="Select duration" />
                 </SelectTrigger>
                 <SelectContent>
-                  {timeOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
+                  {DURATION_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value.toString()}>
                       {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                End time: {formatTime(calculateEndTime(newStartTime, newDuration))}
+              </p>
             </div>
           </div>
 
@@ -193,7 +261,7 @@ export function AvailabilitySlotManager({
             type="button" 
             onClick={addSlot} 
             className="w-full"
-            disabled={!newDate || !newStartTime || !newEndTime || newCapacity < 1}
+            disabled={!newDate || !newStartTime || newDuration < 15 || newCapacity < 1}
           >
             <PlusCircle className="mr-2 h-4 w-4" /> Add Slot
           </Button>
@@ -214,7 +282,10 @@ export function AvailabilitySlotManager({
                       {format(new Date(slot.date), "MMM dd, yyyy (EEEE)")}
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      {formatTime(slot.startTime)} - {formatTime(slot.endTime)} | Capacity: {slot.capacity}
+                      {formatTime(slot.startTime)} - {formatTime(slot.endTime)} 
+                      <span className="ml-1">({formatDuration(calculateDuration(slot.startTime, slot.endTime))})</span> 
+                      <span className="mx-1">|</span> 
+                      <span>Capacity: {slot.capacity}</span>
                     </div>
                   </div>
                   <Button variant="ghost" size="icon" onClick={() => removeSlot(index)}>
