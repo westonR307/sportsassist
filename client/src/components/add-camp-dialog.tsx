@@ -907,6 +907,15 @@ export function AddCampDialog({
                           )}
                         />
                       )}
+                      
+                      {selectedSchedulingType === 'availability' && (
+                        <FormItem>
+                          <FormLabel>Capacity</FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Capacity is managed per time slot in availability mode
+                          </p>
+                        </FormItem>
+                      )}
 
                       <FormField
                         control={form.control}
@@ -1200,28 +1209,30 @@ export function AddCampDialog({
                         </div>
                       )}
 
-                      <FormField
-                        control={form.control}
-                        name="waitlistEnabled"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 mt-6">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel>
-                                Enable waitlist when camp reaches capacity
-                              </FormLabel>
-                              <p className="text-sm text-muted-foreground">
-                                If checked, parents can join a waitlist when the camp is full
-                              </p>
-                            </div>
-                          </FormItem>
-                        )}
-                      />
+                      {form.watch('schedulingType') === 'fixed' && (
+                        <FormField
+                          control={form.control}
+                          name="waitlistEnabled"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 mt-6">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel>
+                                  Enable waitlist when camp reaches capacity
+                                </FormLabel>
+                                <p className="text-sm text-muted-foreground">
+                                  If checked, parents can join a waitlist when the camp is full
+                                </p>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                      )}
 
                       <FormField
                         control={form.control}
