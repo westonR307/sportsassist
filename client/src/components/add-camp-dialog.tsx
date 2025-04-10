@@ -641,7 +641,17 @@ export function AddCampDialog({
         });
         return;
       }
-      await form.setValue("skillLevel", mappedSkillLevel, { shouldValidate: true });
+      
+      // Type check to ensure the value is one of the valid enum values
+      if (mappedSkillLevel === "beginner" || 
+          mappedSkillLevel === "intermediate" || 
+          mappedSkillLevel === "advanced" || 
+          mappedSkillLevel === "all_levels") {
+        await form.setValue("skillLevel", mappedSkillLevel, { shouldValidate: true });
+      } else {
+        // Default to all_levels if mapping is invalid
+        await form.setValue("skillLevel", "all_levels", { shouldValidate: true });
+      }
 
       // Force validation of these specific fields first
       await form.trigger(["organizationId", "sportId", "skillLevel"]);
@@ -799,30 +809,39 @@ export function AddCampDialog({
                   // Force-set required values one last time before submission
                   // Always set organizationId
                   if (user?.organizationId) {
-                    form.setValue("organizationId", user.organizationId);
+                    form.setValue("organizationId", user.organizationId, { shouldValidate: true });
                   } else {
                     // Fallback to 1 if user context doesn't have organizationId
-                    form.setValue("organizationId", 1);
+                    form.setValue("organizationId", 1, { shouldValidate: true });
                   }
 
                   // Always set sportId
                   if (selectedSport) {
-                    form.setValue("sportId", parseInt(selectedSport));
+                    form.setValue("sportId", parseInt(selectedSport), { shouldValidate: true });
                   } else if (sportsList.length > 0) {
                     // Use the first sport in the list as default
-                    form.setValue("sportId", sportsList[0].id);
+                    form.setValue("sportId", sportsList[0].id, { shouldValidate: true });
                   } else {
                     // Last resort fallback
-                    form.setValue("sportId", 1);
+                    form.setValue("sportId", 1, { shouldValidate: true });
                   }
 
                   // Always set skillLevel 
                   if (skillLevel) {
-                    const mappedSkillLevel = skillLevelMap[skillLevel] as "beginner" | "intermediate" | "advanced" | "all_levels";
-                    form.setValue("skillLevel", mappedSkillLevel);
+                    // Explicitly convert to the enum type
+                    const mappedSkillLevel = skillLevelMap[skillLevel];
+                    if (mappedSkillLevel === "beginner" || 
+                        mappedSkillLevel === "intermediate" || 
+                        mappedSkillLevel === "advanced" || 
+                        mappedSkillLevel === "all_levels") {
+                      form.setValue("skillLevel", mappedSkillLevel, { shouldValidate: true });
+                    } else {
+                      // Default to all_levels if skill level mapping is invalid
+                      form.setValue("skillLevel", "all_levels", { shouldValidate: true });
+                    }
                   } else {
                     // Default to all_levels if not set
-                    form.setValue("skillLevel", "all_levels");
+                    form.setValue("skillLevel", "all_levels", { shouldValidate: true });
                   }
 
                   // Set schedulingType
@@ -857,8 +876,16 @@ export function AddCampDialog({
 
                   // Ensure skillLevel is set
                   if (!data.skillLevel) {
-                    const mappedSkillLevel = skillLevelMap[skillLevel] as "beginner" | "intermediate" | "advanced" | "all_levels" || "all_levels";
-                    form.setValue("skillLevel", mappedSkillLevel);
+                    // Get mapped skill level, defaulting to "all_levels" if mapping is invalid
+                    const mappedSkillLevel = skillLevelMap[skillLevel];
+                    if (mappedSkillLevel === "beginner" || 
+                        mappedSkillLevel === "intermediate" || 
+                        mappedSkillLevel === "advanced" || 
+                        mappedSkillLevel === "all_levels") {
+                      form.setValue("skillLevel", mappedSkillLevel, { shouldValidate: true });
+                    } else {
+                      form.setValue("skillLevel", "all_levels", { shouldValidate: true });
+                    }
                   }
 
                   // Log values after fixing them
