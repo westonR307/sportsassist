@@ -212,7 +212,11 @@ export function AddCampDialog({
       sportId: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
       skillLevel: z.enum(["beginner", "intermediate", "advanced", "all_levels"]),
       isVirtual: z.boolean().optional().default(false),
-      virtualMeetingUrl: z.string().url("Please enter a valid URL").optional(),
+      virtualMeetingUrl: z.union([
+        z.string().url("Please enter a valid URL"),
+        z.string().length(0), // Empty string for non-virtual camps
+        z.literal("") // Another way to match empty string
+      ]).optional(),
       schedulingType: z.enum(["fixed", "availability"]).default("fixed")
     })),
     defaultValues: {
@@ -649,26 +653,32 @@ export function AddCampDialog({
       skillLevel: form.getValues("skillLevel")
     });
 
-    // For virtual camps, ensure virtualMeetingUrl is valid
+    // Handle virtual meeting URL based on camp type
     if (data.isVirtual) {
-      // Check if a valid URL is provided for virtual meetings
+      // This is a virtual camp, ensure a valid URL is provided
       if (!data.virtualMeetingUrl || !data.virtualMeetingUrl.trim()) {
+        // No URL provided for virtual camp, set a default
         const defaultUrl = "https://meet.google.com/example";
         form.setValue("virtualMeetingUrl", defaultUrl);
         console.log("Setting default virtual meeting URL:", defaultUrl);
       } else if (!data.virtualMeetingUrl.startsWith('http')) {
-        // Prepend https:// if the URL doesn't start with http or https
+        // URL doesn't start with http/https, prepend https://
         const fixedUrl = `https://${data.virtualMeetingUrl}`;
         form.setValue("virtualMeetingUrl", fixedUrl);
         console.log("Fixed virtual meeting URL format:", fixedUrl);
       }
-      
-      // Ensure the virtualMeetingUrl value is properly validated
-      await form.trigger("virtualMeetingUrl");
     } else {
-      // Not a virtual camp, clear the URL field
+      // Not a virtual camp, set an empty string (not null or undefined)
       form.setValue("virtualMeetingUrl", "");
-      console.log("Cleared virtual meeting URL for non-virtual camp");
+      console.log("Set empty string for virtualMeetingUrl in non-virtual camp");
+      
+      // Remove any validation errors for virtualMeetingUrl
+      form.clearErrors("virtualMeetingUrl");
+    }
+    
+    // Only trigger validation for virtual camps
+    if (data.isVirtual) {
+      await form.trigger("virtualMeetingUrl");
     }
     
     console.log("Virtual meeting URL value after processing:", form.getValues("virtualMeetingUrl"));
@@ -806,6 +816,8 @@ export function AddCampDialog({
                   } else if (!data.isVirtual) {
                     // For non-virtual camps, set to empty string instead of null to maintain type safety
                     form.setValue("virtualMeetingUrl", "");
+                    // Also clear any validation errors related to the virtual meeting URL field
+                    form.clearErrors("virtualMeetingUrl");
                   }
                   
                   // Ensure additionalLocationDetails is properly set to an empty string if null or undefined
