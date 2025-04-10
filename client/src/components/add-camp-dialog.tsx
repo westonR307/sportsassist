@@ -208,7 +208,7 @@ export function AddCampDialog({
         dayOfWeek: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
         startTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format"),
         endTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format")
-      })).min(1, "At least one schedule is required"),
+      })),
       sportId: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
       skillLevel: z.enum(["beginner", "intermediate", "advanced", "all_levels"]),
       isVirtual: z.boolean().optional().default(false),

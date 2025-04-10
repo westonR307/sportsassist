@@ -246,6 +246,16 @@ export const insertCampSchema = z.object({
   }, {
     message: "For virtual camps, a meeting URL is required. For in-person camps, location details are required.",
     path: ["isVirtual"] // This will make the error show up on the isVirtual field
+  })
+  .refine((data) => {
+    // If it's a fixed scheduling type camp, at least one schedule is required
+    if (data.schedulingType === "fixed" && (!data.schedules || data.schedules.length === 0)) {
+      return false;
+    }
+    return true;
+  }, {
+    message: "For fixed scheduling camps, at least one schedule is required.",
+    path: ["schedules"] // This will make the error show up on the schedules field
   });
 
 export const insertRegistrationSchema = createInsertSchema(registrations);
