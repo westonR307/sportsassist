@@ -485,26 +485,32 @@ export function AddCampDialog({
                 });
 
                 // Create the promise for this slot creation and add to array
-                const slotPromise = apiRequest("POST", `/api/camps/${data.id}/availability-slots`, {
-                  campId: data.id,
+                const slotData = {
                   slotDate: formattedDate,
                   startTime: slot.startTime,
                   endTime: slot.endTime,
-                  maxBookings: slot.capacity // Server expects maxBookings instead of capacity
-                }).then(async (response: Response) => {
-                  if (response.ok) {
-                    const jsonResponse = await response.json();
-                    console.log("Slot creation response:", jsonResponse);
-                    return jsonResponse;
-                  } else {
-                    const errorText = await response.text();
-                    console.error(`API error creating slot: ${response.status} - ${errorText}`);
-                    throw new Error(errorText || "Failed to create availability slot");
-                  }
-                }).catch((slotError: any) => {
-                  console.error(`Error creating slot with date ${slot.date}:`, slotError);
-                  throw slotError; // Re-throw to mark this promise as rejected
-                });
+                  maxBookings: slot.capacity, // Server expects maxBookings instead of capacity
+                  notes: "" // Add required fields based on the server API endpoint
+                };
+                
+                console.log("Sending availability slot with data:", slotData);
+                
+                const slotPromise = apiRequest("POST", `/api/camps/${data.id}/availability-slots`, slotData)
+                  .then(async (response: Response) => {
+                    if (response.ok) {
+                      const jsonResponse = await response.json();
+                      console.log("Slot creation response:", jsonResponse);
+                      return jsonResponse;
+                    } else {
+                      const errorText = await response.text();
+                      console.error(`API error creating slot: ${response.status} - ${errorText}`);
+                      throw new Error(errorText || "Failed to create availability slot");
+                    }
+                  })
+                  .catch((slotError: any) => {
+                    console.error(`Error creating slot with date ${slot.date}:`, slotError);
+                    throw slotError; // Re-throw to mark this promise as rejected
+                  });
                 
                 slotPromises.push(slotPromise);
               } catch (slotError) {
@@ -657,9 +663,8 @@ export function AddCampDialog({
               throw error; // Re-throw to mark this promise as rejected
             });
             
-            if (promises) {
-              promises.push(docPromise);
-            }
+            // Add to the promises array that was defined outside
+            promises.push(docPromise);
           } catch (error) {
             console.error("Error preparing document agreement association:", error);
             toast({
@@ -673,9 +678,11 @@ export function AddCampDialog({
 
       // Wait for all promises to complete before finishing
       try {
-        // Run all collected promises if there are any
-        if (Array.isArray(promises) && promises.length > 0) {
-          await Promise.all(promises);
+        // Run all collected promises if they exist
+        // Use the promises array that was defined at line 463
+        const promisesArray = promises;
+        if (Array.isArray(promisesArray) && promisesArray.length > 0) {
+          await Promise.all(promisesArray);
           console.log("All post-creation tasks completed successfully");
         } else {
           console.log("No post-creation tasks to complete");
