@@ -459,12 +459,18 @@ export function AddCampDialog({
 
       // Save custom meta fields
       if (data.id) {
+        // Create a promise array to track all the async operations
+        const promises = [];
+
         // Save availability slots if schedulingType is 'availability'
         if (form.getValues('schedulingType') === 'availability' && availabilitySlots.length > 0) {
           try {
             console.log(`Saving ${availabilitySlots.length} availability slots for camp ${data.id}`);
 
-            // Process slots one by one to better identify issues
+            // Create an array to store all promises for slot creation
+            const slotPromises = [];
+
+            // Process slots one by one and collect promises
             for (const slot of availabilitySlots) {
               try {
                 // Format date for PostgreSQL
@@ -478,25 +484,52 @@ export function AddCampDialog({
                   maxBookings: slot.capacity
                 });
 
-                const response = await apiRequest("POST", `/api/camps/${data.id}/availability-slots`, {
+                // Create the promise for this slot creation and add to array
+                const slotPromise = apiRequest("POST", `/api/camps/${data.id}/availability-slots`, {
                   campId: data.id,
                   slotDate: formattedDate,
                   startTime: slot.startTime,
                   endTime: slot.endTime,
                   maxBookings: slot.capacity // Server expects maxBookings instead of capacity
+                }).then(response => {
+                  console.log("Slot creation response:", response);
+                  return response;
+                }).catch(slotError => {
+                  console.error(`Error creating slot with date ${slot.date}:`, slotError);
+                  throw slotError; // Re-throw to mark this promise as rejected
                 });
-
-                console.log("Slot creation response:", response);
+                
+                slotPromises.push(slotPromise);
               } catch (slotError) {
-                console.error(`Error creating slot with date ${slot.date}:`, slotError);
+                console.error(`Error preparing slot with date ${slot.date}:`, slotError);
               }
             }
 
-            console.log("All availability slots processed");
-            toast({
-              title: "Success",
-              description: "Availability slots saved successfully!",
-            });
+            // Add the slot creation promise array to the main promises array
+            promises.push(
+              // Wait for all slot promises to complete (succeed or fail)
+              Promise.allSettled(slotPromises).then(results => {
+                const successful = results.filter(r => r.status === 'fulfilled').length;
+                const failed = results.filter(r => r.status === 'rejected').length;
+                
+                console.log(`All availability slots processed - ${successful} successful, ${failed} failed`);
+                
+                if (successful > 0) {
+                  toast({
+                    title: "Success",
+                    description: failed > 0 
+                      ? `Camp created with ${successful} slots. ${failed} slots failed to save.`
+                      : "Camp and availability slots saved successfully!",
+                  });
+                } else if (failed > 0) {
+                  toast({
+                    title: "Warning",
+                    description: "Camp created but there was an issue saving availability slots.",
+                    variant: "destructive",
+                  });
+                }
+              })
+            );
           } catch (error) {
             console.error("Error saving availability slots:", error);
             toast({
@@ -510,11 +543,24 @@ export function AddCampDialog({
         // Save the staff assignments
         if (campStaffRef.current) {
           try {
-            // Ask the component to save its data with the new camp ID
-            await campStaffRef.current.saveStaffAssignments(data.id);
-            console.log("Staff assignments saved successfully");
+            // Create a promise for staff assignment saving and add it to the promises array
+            const staffPromise = campStaffRef.current.saveStaffAssignments(data.id)
+              .then(() => {
+                console.log("Staff assignments saved successfully");
+              })
+              .catch((error) => {
+                console.error("Error saving staff assignments:", error);
+                toast({
+                  title: "Warning",
+                  description: "Camp created but there was an issue saving staff assignments.",
+                  variant: "destructive",
+                });
+                throw error; // Re-throw to mark this promise as rejected
+              });
+            
+            promises.push(staffPromise);
           } catch (error) {
-            console.error("Error saving staff assignments:", error);
+            console.error("Error preparing staff assignment save:", error);
             toast({
               title: "Warning",
               description: "Camp created but there was an issue saving staff assignments.",
@@ -578,13 +624,28 @@ export function AddCampDialog({
         // Associate the document agreement if selected
         if (selectedDocumentId) {
           try {
-            await apiRequest("POST", "/api/camp-document-agreements", {
+            // Create a promise for document agreement association and add to promises array
+            const docPromise = apiRequest("POST", "/api/camp-document-agreements", {
               campId: data.id,
               documentId: selectedDocumentId
+            })
+            .then(response => {
+              console.log("Document agreement associated successfully", response);
+              return response;
+            })
+            .catch(error => {
+              console.error("Error associating document agreement:", error);
+              toast({
+                title: "Warning",
+                description: "Camp created but there was an issue associating the document agreement.",
+                variant: "destructive"
+              });
+              throw error; // Re-throw to mark this promise as rejected
             });
-            console.log("Document agreement associated successfully");
+            
+            promises.push(docPromise);
           } catch (error) {
-            console.error("Error associating document agreement:", error);
+            console.error("Error preparing document agreement association:", error);
             toast({
               title: "Warning",
               description: "Camp created but there was an issue associating the document agreement.",
@@ -594,29 +655,38 @@ export function AddCampDialog({
         }
       }
 
-      toast({
-        title: "Success",
-        description: "Camp created successfully!",
-      });
+      // Wait for all promises to complete before finishing
+      try {
+        // Wait for all collected promises to complete
+        await Promise.all(promises);
+        console.log("All post-creation tasks completed successfully");
+      } catch (error) {
+        console.error("Error in post-creation tasks:", error);
+      } finally {
+        toast({
+          title: "Success",
+          description: "Camp created successfully!",
+        });
 
-      // Reset form
-      form.reset();
-      setSelectedSport(null);
-      setSkillLevel("Beginner");
-      setSchedules([]);
-      setPlannedSessions([]);
-      setSelectedDocumentId(null);
-      setSelectedCustomFields([]);
-      setCustomFieldDetails({});
-      setTempCampId(-1);
-      setSelectedStaff([]);
-      setAvailabilitySlots([]);
+        // Reset form
+        form.reset();
+        setSelectedSport(null);
+        setSkillLevel("Beginner");
+        setSchedules([]);
+        setPlannedSessions([]);
+        setSelectedDocumentId(null);
+        setSelectedCustomFields([]);
+        setCustomFieldDetails({});
+        setTempCampId(-1);
+        setSelectedStaff([]);
+        setAvailabilitySlots([]);
 
-      // Close dialog
-      onOpenChange(false);
+        // Close dialog
+        onOpenChange(false);
 
-      // Refresh camps list
-      queryClient.invalidateQueries({ queryKey: ['/api/camps'] });
+        // Refresh camps list
+        queryClient.invalidateQueries({ queryKey: ['/api/camps'] });
+      }
     },
     onError: (error: any) => {
       console.error("Camp creation error:", error);
