@@ -491,9 +491,16 @@ export function AddCampDialog({
                   startTime: slot.startTime,
                   endTime: slot.endTime,
                   maxBookings: slot.capacity // Server expects maxBookings instead of capacity
-                }).then((response: any) => {
-                  console.log("Slot creation response:", response);
-                  return response;
+                }).then(async (response: Response) => {
+                  if (response.ok) {
+                    const jsonResponse = await response.json();
+                    console.log("Slot creation response:", jsonResponse);
+                    return jsonResponse;
+                  } else {
+                    const errorText = await response.text();
+                    console.error(`API error creating slot: ${response.status} - ${errorText}`);
+                    throw new Error(errorText || "Failed to create availability slot");
+                  }
                 }).catch((slotError: any) => {
                   console.error(`Error creating slot with date ${slot.date}:`, slotError);
                   throw slotError; // Re-throw to mark this promise as rejected
@@ -629,9 +636,16 @@ export function AddCampDialog({
               campId: data.id,
               documentId: selectedDocumentId
             })
-            .then((response: any) => {
-              console.log("Document agreement associated successfully", response);
-              return response;
+            .then(async (response: Response) => {
+              if (response.ok) {
+                const jsonResponse = await response.json();
+                console.log("Document agreement associated successfully", jsonResponse);
+                return jsonResponse;
+              } else {
+                const errorText = await response.text();
+                console.error(`API error associating document: ${response.status} - ${errorText}`);
+                throw new Error(errorText || "Failed to associate document agreement");
+              }
             })
             .catch((error: any) => {
               console.error("Error associating document agreement:", error);
