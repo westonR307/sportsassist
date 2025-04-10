@@ -1187,18 +1187,30 @@ export async function registerRoutes(app: Express) {
 
       console.log("Preparing data for schema validation:", JSON.stringify(validationData, null, 2));
 
-      // Ensure schedules are properly formatted
-      if (Array.isArray(validationData.schedules)) {
-        validationData.schedules = validationData.schedules.map(schedule => ({
-          dayOfWeek: parseInt(String(schedule.dayOfWeek), 10),
-          startTime: String(schedule.startTime).padStart(5, '0'),
-          endTime: String(schedule.endTime).padStart(5, '0')
-        }));
+      // Check if this is an availability-based camp
+      if (validationData.schedulingType === "availability") {
+        console.log("Availability-based camp detected, no fixed schedules required");
+        // For availability-based camps, we don't need fixed schedules
+        // But still need to provide a dummy schedule to satisfy the schema
+        validationData.schedules = [{
+          dayOfWeek: 0, // Sunday
+          startTime: "09:00",
+          endTime: "17:00"
+        }];
       } else {
-        console.error("No schedules provided");
-        return res.status(400).json({
-          message: "At least one schedule is required for the camp"
-        });
+        // For fixed schedule camps, ensure schedules are properly formatted
+        if (Array.isArray(validationData.schedules)) {
+          validationData.schedules = validationData.schedules.map(schedule => ({
+            dayOfWeek: parseInt(String(schedule.dayOfWeek), 10),
+            startTime: String(schedule.startTime).padStart(5, '0'),
+            endTime: String(schedule.endTime).padStart(5, '0')
+          }));
+        } else {
+          console.error("No schedules provided for fixed schedule camp");
+          return res.status(400).json({
+            message: "At least one schedule is required for fixed schedule camps"
+          });
+        }
       }
 
       const parsed = insertCampSchema.safeParse(validationData);
