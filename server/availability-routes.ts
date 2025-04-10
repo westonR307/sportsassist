@@ -26,10 +26,15 @@ export default function registerAvailabilityRoutes(app: Express) {
   app.post("/api/camps/:id/availability-slots", async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
-      const { slotDate, startTime, endTime, maxBookings, notes, bufferBefore, bufferAfter } = req.body;
+      console.log("Received availability slot creation request for camp", id);
+      console.log("Request body:", JSON.stringify(req.body));
+      console.log("User:", req.user);
+      
+      const { slotDate, startTime, endTime, maxBookings, notes, bufferBefore, bufferAfter, creatorId } = req.body;
       
       // Validate required fields
       if (!slotDate || !startTime || !endTime) {
+        console.log("Missing required fields in availability slot request");
         return res.status(400).json({ message: "Missing required fields" });
       }
       
