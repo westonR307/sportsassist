@@ -25,8 +25,11 @@ export function ProtectedRoute({
   return (
     <Route path={path}>
       {(params) => {
-        // Ensure params is an object
-        const routeParams = params || {};
+        // Ensure params is an object and includes the path params
+        const routeParams = {
+          ...params,
+          id: params?.id || params?.["*"]
+        };
         console.log("Full route params:", routeParams);
         
         // Early return for loading state
@@ -70,13 +73,13 @@ export function ProtectedRoute({
         if (showNavigation) {
           return (
             <AppLayout showBackButton={showBackButton}>
-              <Component {...routeParams} />
+              <Component id={routeParams.id} {...routeParams} />
             </AppLayout>
           );
         }
         
         // Otherwise, render the component directly
-        return <Component {...routeParams} />;
+        return <Component id={routeParams.id} {...routeParams} />;
       }}
     </Route>
   );
