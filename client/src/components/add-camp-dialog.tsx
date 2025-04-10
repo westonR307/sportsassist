@@ -610,16 +610,16 @@ export function AddCampDialog({
   // When a user submits the form
   const onSubmit = async (data: ExtendedCampSchema) => {
     console.log("Form submitted with data:", data);
-    
+
     try {
       // Set and validate required fields first
       if (!user?.organizationId) {
         throw new Error("Organization ID is missing");
       }
 
-      // Set organizationId
-      form.setValue("organizationId", user.organizationId);
-      
+      // Set organizationId and wait for it to be applied
+      await form.setValue("organizationId", user.organizationId, { shouldValidate: true });
+
       // Validate and set sport
       if (!selectedSport) {
         toast({
@@ -629,8 +629,8 @@ export function AddCampDialog({
         });
         return;
       }
-      form.setValue("sportId", parseInt(selectedSport));
-      
+      await form.setValue("sportId", parseInt(selectedSport), { shouldValidate: true });
+
       // Validate and set skill level
       const mappedSkillLevel = skillLevelMap[skillLevel];
       if (!mappedSkillLevel) {
@@ -641,11 +641,14 @@ export function AddCampDialog({
         });
         return;
       }
-      form.setValue("skillLevel", mappedSkillLevel);
+      await form.setValue("skillLevel", mappedSkillLevel, { shouldValidate: true });
 
-      // Validate all fields
+      // Force validation of these specific fields first
+      await form.trigger(["organizationId", "sportId", "skillLevel"]);
+
+      // Then validate all fields
       const isValid = await form.trigger();
-      
+
       if (!isValid) {
         console.error("Validation failed:", form.formState.errors);
         throw new Error("Please check all required fields");
