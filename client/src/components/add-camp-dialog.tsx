@@ -672,11 +672,10 @@ export function AddCampDialog({
       }
 
       // Wait for all promises to complete before finishing
-      let localPromises = promises; // Store the reference locally to avoid scope issues
       try {
-        // Wait for all collected promises to complete if there are any
-        if (Array.isArray(localPromises) && localPromises.length > 0) {
-          await Promise.all(localPromises);
+        // Run all collected promises if there are any
+        if (Array.isArray(promises) && promises.length > 0) {
+          await Promise.all(promises);
           console.log("All post-creation tasks completed successfully");
         } else {
           console.log("No post-creation tasks to complete");
