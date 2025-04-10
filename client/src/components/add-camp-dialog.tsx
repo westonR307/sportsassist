@@ -368,6 +368,10 @@ export function AddCampDialog({
 
         // The apiRequest function automatically parses JSON responses
         const response = await apiRequest("POST", "/api/camps", requestData);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to create camp');
+        }
         console.log("Camp created successfully:", response);
 
         // Now create all the planned sessions for this camp
@@ -626,7 +630,7 @@ export function AddCampDialog({
         }
 
         console.log("Calling mutation with formatted data:", formattedData);
-        createCampMutation.mutate(formattedData);
+        await createCampMutation.mutateAsync(formattedData);
       } catch (error) {
         console.error("Error calling mutation:", error);
       }
@@ -874,7 +878,7 @@ export function AddCampDialog({
                                 type="number"
                                 {...field}
                                 value={field.value === 0 ? "" : field.value}
-                                onChange={(e) => {
+                                onChange{(e) => {
                                   // Allow actual empty values but convert valid inputs to numbers
                                   const value = e.target.value.trim();
                                   field.onChange(value ? parseInt(value) : '');
