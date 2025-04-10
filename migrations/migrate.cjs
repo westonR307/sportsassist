@@ -1,24 +1,29 @@
-import { Pool } from '@neondatabase/serverless';
-import dotenv from 'dotenv';
+const { Pool } = require('pg');
+require('dotenv').config();
 
-dotenv.config();
+if (!process.env.DATABASE_URL) {
+  console.error('DATABASE_URL environment variable is not set.');
+  process.exit(1);
+}
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
-async function main() {
+async function runMigration() {
   try {
-    console.log('Beginning availability-based scheduling migration...');
-
-    // 1. Add scheduling_type column to camps table
-    console.log('Adding scheduling_type column to camps table...');
+    console.log('Starting database migration...');
+    
+    // Add scheduling_type column to camps
+    console.log('1. Adding scheduling_type column to camps table...');
     await pool.query(`
       ALTER TABLE camps
       ADD COLUMN IF NOT EXISTS scheduling_type TEXT NOT NULL DEFAULT 'fixed'
     `);
     console.log('scheduling_type column added successfully.');
 
-    // 2. Create availability_slots table
-    console.log('Creating availability_slots table...');
+    // Create availability_slots table
+    console.log('2. Creating availability_slots table...');
     await pool.query(`
       CREATE TABLE IF NOT EXISTS availability_slots (
         id SERIAL PRIMARY KEY,
@@ -44,8 +49,8 @@ async function main() {
     `);
     console.log('availability_slots table created successfully.');
 
-    // 3. Create slot_bookings table
-    console.log('Creating slot_bookings table...');
+    // Create slot_bookings table
+    console.log('3. Creating slot_bookings table...');
     await pool.query(`
       CREATE TABLE IF NOT EXISTS slot_bookings (
         id SERIAL PRIMARY KEY,
@@ -68,16 +73,12 @@ async function main() {
     `);
     console.log('slot_bookings table created successfully.');
 
-    console.log('Migration completed successfully!');
+    console.log('Migration completed successfully.');
+    process.exit(0);
   } catch (error) {
     console.error('Migration failed:', error);
     process.exit(1);
   }
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch((error) => {
-    console.error('Unexpected error:', error);
-    process.exit(1);
-  });
+runMigration();
