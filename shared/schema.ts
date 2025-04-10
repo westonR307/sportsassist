@@ -222,11 +222,12 @@ export const insertCampSchema = z.object({
   maxAge: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
   repeatType: z.enum(["none", "weekly", "monthly"]).default("none").optional(),
   repeatCount: z.number().or(z.string().transform(val => parseInt(String(val || '0'), 10))).default(0),
+  schedulingType: z.enum(["fixed", "availability"]).default("fixed"),
   schedules: z.array(z.object({
     dayOfWeek: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
     startTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format"),
     endTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format")
-  })).min(1, "At least one schedule is required"),
+  })),
   sportId: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
   skillLevel: z.enum(["beginner", "intermediate", "advanced", "all_levels"]),
   isVirtual: z.boolean().optional().default(false),
