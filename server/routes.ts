@@ -1131,6 +1131,41 @@ export async function registerRoutes(app: Express) {
       }
 
       // Prepare data for validation
+      // Debug the incoming date strings
+      console.log("Received date values:", {
+        startDate: req.body.startDate,
+        endDate: req.body.endDate,
+        registrationStartDate: req.body.registrationStartDate,
+        registrationEndDate: req.body.registrationEndDate,
+        typeOfStartDate: typeof req.body.startDate
+      });
+      
+      // Safe date parsing function
+      const safeParseDate = (dateStr: string) => {
+        try {
+          console.log(`Parsing date string: "${dateStr}"`);
+          
+          // If it's already in YYYY-MM-DD format, use it directly
+          if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            console.log(`Date already in proper format: ${dateStr}`);
+            return dateStr;
+          }
+          
+          // Otherwise parse it with explicit approach
+          const date = new Date(dateStr);
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const formattedDate = `${year}-${month}-${day}`;
+          
+          console.log(`Parsed date "${dateStr}" to: ${formattedDate}`);
+          return formattedDate;
+        } catch (error) {
+          console.error(`Error parsing date "${dateStr}":`, error);
+          return dateStr; // Return original if parsing fails
+        }
+      };
+      
       const validationData = {
         ...req.body,
         organizationId: parseInt(String(req.user.organizationId), 10),
@@ -1142,11 +1177,12 @@ export async function registerRoutes(app: Express) {
         waitlistEnabled: req.body.waitlistEnabled !== false,
         visibility: req.body.visibility || "public",
         repeatType: req.body.repeatType || "none",
-        startDate: new Date(req.body.startDate).toISOString(),
-        endDate: new Date(req.body.endDate).toISOString(),
-        registrationStartDate: new Date(req.body.registrationStartDate).toISOString(),
-        registrationEndDate: new Date(req.body.registrationEndDate).toISOString(),
-        type: req.body.type || "group"
+        startDate: safeParseDate(req.body.startDate),
+        endDate: safeParseDate(req.body.endDate),
+        registrationStartDate: safeParseDate(req.body.registrationStartDate),
+        registrationEndDate: safeParseDate(req.body.registrationEndDate),
+        type: req.body.type || "group",
+        schedulingType: req.body.schedulingType || "fixed"
       };
 
       console.log("Preparing data for schema validation:", JSON.stringify(validationData, null, 2));

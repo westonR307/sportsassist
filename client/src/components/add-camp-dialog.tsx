@@ -106,12 +106,54 @@ const formatTimeFor12Hour = (timeStr: string): string => {
 
 // Custom date input component to handle Date objects correctly
 const DateInput = ({ field, ...props }: { field: any }) => {
+  // Enhanced date formatting function
+  const formatDateValue = (value: any): string => {
+    if (!value) return '';
+    
+    // If already a string in YYYY-MM-DD format, return as is
+    if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      console.log(`DateInput: Date value already in correct format - ${value}`);
+      return value;
+    }
+    
+    try {
+      // Convert to Date object if it's not already
+      const date = value instanceof Date ? value : new Date(value);
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.error(`DateInput: Invalid date value - ${value}`);
+        return '';
+      }
+      
+      // Format using explicit year, month, day components to avoid timezone issues
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      
+      const formattedDate = `${year}-${month}-${day}`;
+      console.log(`DateInput: Formatted date ${value} to ${formattedDate}`);
+      
+      return formattedDate;
+    } catch (error) {
+      console.error(`DateInput: Error formatting date ${value}`, error);
+      return '';
+    }
+  };
+  
+  // Apply the enhanced formatting
+  const formattedValue = formatDateValue(field.value);
+  
   return (
     <Input
       type="date"
       {...field}
       {...props}
-      value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : field.value}
+      value={formattedValue}
+      onChange={(e) => {
+        console.log(`DateInput: Input change event: ${e.target.value}`);
+        field.onChange(e.target.value);
+      }}
     />
   );
 };
