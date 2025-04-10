@@ -26,9 +26,11 @@ export default function registerAvailabilityRoutes(app: Express) {
   app.post("/api/camps/:id/availability-slots", async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
+      console.log("==========================================");
       console.log("Received availability slot creation request for camp", id);
       console.log("Request body:", JSON.stringify(req.body));
-      console.log("User:", req.user);
+      console.log("Authenticated user:", req.user ? `ID: ${req.user.id}, Role: ${req.user.role}` : "No authenticated user");
+      console.log("==========================================");
       
       const { slotDate, startTime, endTime, maxBookings, notes, bufferBefore, bufferAfter, creatorId } = req.body;
       
@@ -70,7 +72,7 @@ export default function registerAvailabilityRoutes(app: Express) {
       // Create the availability slot
       const slot = await db.insert(availabilitySlots).values({
         campId: parseInt(id, 10),
-        creatorId: req.user.id,
+        creatorId: creatorId || req.user.id, // Use provided creatorId if available, otherwise use authenticated user
         slotDate: new Date(slotDate),
         startTime,
         endTime,
@@ -88,8 +90,13 @@ export default function registerAvailabilityRoutes(app: Express) {
         throw new Error("Failed to create availability slot");
       }
     } catch (error) {
+      console.error("==========================================");
       console.error("Error creating availability slot:", error);
-      res.status(500).json({ message: "Failed to create availability slot" });
+      console.error("Camp ID:", id);
+      console.error("Request user:", req.user);
+      console.error("Request body:", req.body);
+      console.error("==========================================");
+      res.status(500).json({ message: "Failed to create availability slot", error: String(error) });
     }
   });
   
