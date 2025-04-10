@@ -877,7 +877,7 @@ export function AddCampDialog({
                                 onChange={(e) => {
                                   // Allow actual empty values but convert valid inputs to numbers
                                   const value = e.target.value.trim();
-                                  field.onChange(value ? parseInt(value) : '');
+                                  field.onChangevalue ? parseInt(value) : '');
                                 }}
                                 min={0}
                               />
@@ -933,7 +933,7 @@ export function AddCampDialog({
                                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                               >
                                 <option value="group">Group</option>
-                                <option value="one_on_one">One-on-One</option>
+                                <option value="one_on-one">One-on-One</option>
                                 <option value="team">Team</option>
                               </select>
                             </FormControl>

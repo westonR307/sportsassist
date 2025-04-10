@@ -25,6 +25,9 @@ export function ProtectedRoute({
   return (
     <Route path={path}>
       {(params) => {
+        console.log("Full route params:", params);
+        
+        // Early return for loading state
         if (isLoading) {
           return (
             <div className="flex items-center justify-center min-h-screen">
