@@ -460,7 +460,7 @@ export function AddCampDialog({
       // Save custom meta fields
       if (data.id) {
         // Create a promise array to track all the async operations
-        const promises: Promise<any>[] = [];
+        let promises: Promise<any>[] = [];
 
         // Save availability slots if schedulingType is 'availability'
         if (form.getValues('schedulingType') === 'availability' && availabilitySlots.length > 0) {
@@ -657,7 +657,9 @@ export function AddCampDialog({
               throw error; // Re-throw to mark this promise as rejected
             });
             
-            promises.push(docPromise);
+            if (promises) {
+              promises.push(docPromise);
+            }
           } catch (error) {
             console.error("Error preparing document agreement association:", error);
             toast({
@@ -672,7 +674,7 @@ export function AddCampDialog({
       // Wait for all promises to complete before finishing
       try {
         // Wait for all collected promises to complete if there are any
-        if (promises && promises.length > 0) {
+        if (Array.isArray(promises) && promises.length > 0) {
           await Promise.all(promises);
           console.log("All post-creation tasks completed successfully");
         } else {
