@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "../contexts/auth-context";
+import { useAuth } from "@/hooks/use-auth";
 
 export function useUser() {
   const { user, isAuthenticated } = useAuth();

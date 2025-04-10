@@ -725,9 +725,12 @@ function CampViewPage(props: { id?: string }) {
         </div>
 
         <Tabs defaultValue="details" className="space-y-6">
-          <TabsList className={`grid w-full max-w-md ${hasPermission ? 'grid-cols-4' : 'grid-cols-2'}`}>
+          <TabsList className={`grid w-full max-w-md ${hasPermission ? 'grid-cols-5' : 'grid-cols-3'}`}>
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="registrations">Registrations</TabsTrigger>
+            {camp?.schedulingType === "availability" && (
+              <TabsTrigger value="availability">Availability</TabsTrigger>
+            )}
             {hasPermission && (
               <TabsTrigger value="attendance">Attendance</TabsTrigger>
             )}
@@ -1220,6 +1223,32 @@ function CampViewPage(props: { id?: string }) {
               ) : (
                 <CampMessagesTab campId={camp.id} campName={camp.name} hasPermission={hasPermission} />
               )}
+            </TabsContent>
+          )}
+          
+          {camp?.schedulingType === "availability" && (
+            <TabsContent value="availability" className="space-y-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>
+                    Availability Schedule
+                  </CardTitle>
+                  {hasPermission && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/manage/camps/${camp.id}/availability`)}
+                      className="h-8"
+                    >
+                      <CalendarDays className="h-4 w-4 mr-2" />
+                      Manage Availability
+                    </Button>
+                  )}
+                </CardHeader>
+                <CardContent>
+                  <CampAvailabilityTab campId={camp.id} />
+                </CardContent>
+              </Card>
             </TabsContent>
           )}
         </Tabs>
