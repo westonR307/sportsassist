@@ -97,29 +97,78 @@ export default function registerAvailabilityRoutes(app: Express) {
       console.error("Camp ID from params:", campId);
       console.error("Request user:", req.user);
       console.error("Request body:", req.body);
+      
+      // Try to provide more specific error information
+      let errorMessage = "Failed to create availability slot";
+      let errorStatus = 500;
+      
+      if (error instanceof Error) {
+        if (error.message.includes("foreign key constraint")) {
+          errorMessage = "Invalid camp ID or creator ID provided";
+          errorStatus = 400;
+        } else if (error.message.includes("duplicate key")) {
+          errorMessage = "A slot with these details already exists";
+          errorStatus = 409;
+        } else if (error.message.includes("violates check constraint")) {
+          errorMessage = "Invalid slot data - check time format or duration";
+          errorStatus = 400;
+        } else {
+          // Include the actual error message for better debugging
+          errorMessage = `${errorMessage}: ${error.message}`;
+        }
+      }
+      
+      console.error("Responding with error:", errorMessage);
       console.error("==========================================");
-      res.status(500).json({ message: "Failed to create availability slot", error: String(error) });
+      
+      res.status(errorStatus).json({ 
+        message: errorMessage, 
+        error: String(error),
+        campId: campId, // Echo back the campId for debugging
+        requestTime: new Date().toISOString()
+      });
     }
   });
   
   // Get availability slots for a camp
   app.get("/api/camps/:id/availability-slots", async (req: Request, res: Response) => {
+    const campId = req.params.id;
     try {
-      const { id } = req.params;
+      console.log(`Fetching availability slots for camp ${campId}`);
+      
+      // Verify the camp exists first
+      const camp = await db.query.camps.findFirst({
+        where: eq(camps.id, parseInt(campId, 10))
+      });
+      
+      if (!camp) {
+        console.error(`Camp not found with ID: ${campId}`);
+        return res.status(404).json({ 
+          message: "Camp not found", 
+          campId: campId,
+          requestTime: new Date().toISOString()
+        });
+      }
       
       // Get availability slots for the camp
       const slots = await db.query.availabilitySlots.findMany({
-        where: eq(availabilitySlots.campId, parseInt(id, 10)),
+        where: eq(availabilitySlots.campId, parseInt(campId, 10)),
         orderBy: [
           asc(availabilitySlots.slotDate),
           asc(availabilitySlots.startTime)
         ]
       });
       
+      console.log(`Found ${slots.length} availability slots for camp ${campId}`);
       res.json(slots);
     } catch (error) {
-      console.error("Error fetching availability slots:", error);
-      res.status(500).json({ message: "Failed to fetch availability slots" });
+      console.error(`Error fetching availability slots for camp ${campId}:`, error);
+      res.status(500).json({ 
+        message: "Failed to fetch availability slots", 
+        error: String(error),
+        campId: campId,
+        requestTime: new Date().toISOString()
+      });
     }
   });
   

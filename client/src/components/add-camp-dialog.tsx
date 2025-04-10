@@ -498,16 +498,46 @@ export function AddCampDialog({
                 
                 console.log("Sending availability slot with data:", slotData);
                 
-                const slotPromise = apiRequest("POST", `/api/camps/${data.id}/availability-slots`, slotData)
-                  .then(async (response: Response) => {
-                    // apiRequest already throws if response is not OK
-                    // Now we need to parse the JSON response
+                // Calculate duration in minutes for better data consistency
+                const calculateDurationMinutes = () => {
+                  const [startHours, startMinutes] = slot.startTime.split(':').map(part => parseInt(part, 10));
+                  const [endHours, endMinutes] = slot.endTime.split(':').map(part => parseInt(part, 10));
+                  
+                  const startTotalMinutes = startHours * 60 + startMinutes;
+                  const endTotalMinutes = endHours * 60 + endMinutes;
+                  
+                  return endTotalMinutes - startTotalMinutes;
+                };
+                
+                const enhancedSlotData = {
+                  ...slotData,
+                  durationMinutes: calculateDurationMinutes(),
+                  bufferBefore: 0,
+                  bufferAfter: 0
+                };
+                
+                console.log("Sending enhanced availability slot with data:", enhancedSlotData);
+                
+                const slotPromise = fetch(`/api/camps/${data.id}/availability-slots`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(enhancedSlotData),
+                  credentials: 'include'
+                })
+                  .then(async (response) => {
+                    if (!response.ok) {
+                      const errorText = await response.text();
+                      console.error(`Server error (${response.status}): ${errorText}`);
+                      throw new Error(`Server returned ${response.status}: ${errorText}`);
+                    }
                     const jsonResponse = await response.json();
                     console.log("Slot creation response:", jsonResponse);
                     return jsonResponse;
                   })
                   .catch((slotError: any) => {
-                    console.error(`Error creating slot with date ${slot.date}:`, slotError);
+                    console.error(`Error creating slot with date ${formattedDate}:`, slotError);
                     throw slotError; // Re-throw to mark this promise as rejected
                   });
                 
