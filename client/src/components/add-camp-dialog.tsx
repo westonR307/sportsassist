@@ -391,10 +391,9 @@ export function AddCampDialog({
         console.log("Creating camp with data:", JSON.stringify(requestData, null, 2));
 
         try {
-          // Use apiRequest to send the request
-          const response = await apiRequest("POST", "/api/camps", requestData);
-          // Parse the JSON response
-          const responseData = await response.json();
+          // Use apiRequest from @/lib/api.ts which directly returns JSON data
+          console.log("About to send POST request to /api/camps with data:", requestData);
+          const responseData = await apiRequest("POST", "/api/camps", requestData);
           console.log("Camp created successfully:", responseData);
           
           // Now create all the planned sessions for this camp
