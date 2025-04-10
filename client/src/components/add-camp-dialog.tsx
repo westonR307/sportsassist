@@ -139,6 +139,10 @@ export function AddCampDialog({
   const [duplicateData, setDuplicateData] = useState<any>(null);
   const [selectedStaff, setSelectedStaff] = useState<{userId: number, role: string}[]>([]); // Store selected staff members
   const [availabilitySlots, setAvailabilitySlots] = useState<{date: Date, startTime: string, endTime: string, capacity: number}[]>([]); // Store availability slots
+  
+  // New state for camp creation flow
+  const [showTypeSelection, setShowTypeSelection] = useState(true);
+  const [selectedSchedulingType, setSelectedSchedulingType] = useState<"fixed" | "availability">("fixed");
   const metaFieldsRef = useRef<BasicInfoMetaFieldsRef>(null);
   const campStaffRef = useRef<React.ElementRef<typeof CampStaffSelector>>(null); // Ref for CampStaffSelector component
 
