@@ -10,12 +10,20 @@ import {
 } from "@shared/tables";
 import { Role, AvailabilityStatus, BookingStatus } from "@shared/types";
 
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id: number;
+    role: Role;
+    organizationId?: number;
+  }
+}
+
 /**
  * Register availability slot routes
  */
 export default function registerAvailabilityRoutes(app: Express) {
   // Create availability slot
-  app.post("/api/camps/:id/availability-slots", async (req: Request, res: Response) => {
+  app.post("/api/camps/:id/availability-slots", async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
       const { slotDate, startTime, endTime, maxBookings, notes, bufferBefore, bufferAfter } = req.body;
@@ -36,14 +44,14 @@ export default function registerAvailabilityRoutes(app: Express) {
       
       // Check if user is organization admin or camp creator
       if (!req.user || 
-          (req.user.role !== "admin" && 
+          (req.user.role !== "platform_admin" && 
            req.user.organizationId !== camp.organizationId)) {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
       // Calculate duration in minutes
-      const startTimeParts = startTime.split(':').map(part => parseInt(part, 10));
-      const endTimeParts = endTime.split(':').map(part => parseInt(part, 10));
+      const startTimeParts = startTime.split(':').map((part: string) => parseInt(part, 10));
+      const endTimeParts = endTime.split(':').map((part: string) => parseInt(part, 10));
       
       const startMinutes = startTimeParts[0] * 60 + startTimeParts[1];
       const endMinutes = endTimeParts[0] * 60 + endTimeParts[1];
@@ -66,10 +74,14 @@ export default function registerAvailabilityRoutes(app: Express) {
         notes,
         bufferBefore: bufferBefore || 0,
         bufferAfter: bufferAfter || 0,
-        status: "available"
+        status: "available" as AvailabilityStatus
       }).returning();
       
-      res.status(201).json(slot[0]);
+      if (slot && slot.length > 0) {
+        res.status(201).json(slot[0]);
+      } else {
+        throw new Error("Failed to create availability slot");
+      }
     } catch (error) {
       console.error("Error creating availability slot:", error);
       res.status(500).json({ message: "Failed to create availability slot" });
@@ -98,7 +110,7 @@ export default function registerAvailabilityRoutes(app: Express) {
   });
   
   // Update an availability slot
-  app.patch("/api/camps/:id/availability-slots/:slotId", async (req: Request, res: Response) => {
+  app.patch("/api/camps/:id/availability-slots/:slotId", async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id, slotId } = req.params;
       const { startTime, endTime, maxBookings, notes, status, bufferBefore, bufferAfter } = req.body;
@@ -114,7 +126,7 @@ export default function registerAvailabilityRoutes(app: Express) {
       
       // Check if user is organization admin or camp creator
       if (!req.user || 
-          (req.user.role !== "admin" && 
+          (req.user.role !== "platform_admin" && 
            req.user.organizationId !== camp.organizationId)) {
         return res.status(403).json({ message: "Unauthorized" });
       }
@@ -134,8 +146,8 @@ export default function registerAvailabilityRoutes(app: Express) {
       // Calculate duration in minutes if times are provided
       let durationMinutes = existingSlot.durationMinutes;
       if (startTime && endTime) {
-        const startTimeParts = startTime.split(':').map(part => parseInt(part, 10));
-        const endTimeParts = endTime.split(':').map(part => parseInt(part, 10));
+        const startTimeParts = startTime.split(':').map((part: string) => parseInt(part, 10));
+        const endTimeParts = endTime.split(':').map((part: string) => parseInt(part, 10));
         
         const startMinutes = startTimeParts[0] * 60 + startTimeParts[1];
         const endMinutes = endTimeParts[0] * 60 + endTimeParts[1];
@@ -155,7 +167,7 @@ export default function registerAvailabilityRoutes(app: Express) {
           durationMinutes,
           maxBookings: maxBookings !== undefined ? maxBookings : existingSlot.maxBookings,
           notes: notes !== undefined ? notes : existingSlot.notes,
-          status: status || existingSlot.status,
+          status: (status as AvailabilityStatus) || existingSlot.status,
           bufferBefore: bufferBefore !== undefined ? bufferBefore : existingSlot.bufferBefore,
           bufferAfter: bufferAfter !== undefined ? bufferAfter : existingSlot.bufferAfter,
           updatedAt: new Date()
@@ -166,7 +178,11 @@ export default function registerAvailabilityRoutes(app: Express) {
         ))
         .returning();
       
-      res.json(updatedSlot[0]);
+      if (updatedSlot && updatedSlot.length > 0) {
+        res.json(updatedSlot[0]);
+      } else {
+        throw new Error("Failed to update availability slot");
+      }
     } catch (error) {
       console.error("Error updating availability slot:", error);
       res.status(500).json({ message: "Failed to update availability slot" });
@@ -174,7 +190,7 @@ export default function registerAvailabilityRoutes(app: Express) {
   });
   
   // Delete an availability slot
-  app.delete("/api/camps/:id/availability-slots/:slotId", async (req: Request, res: Response) => {
+  app.delete("/api/camps/:id/availability-slots/:slotId", async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id, slotId } = req.params;
       
@@ -189,7 +205,7 @@ export default function registerAvailabilityRoutes(app: Express) {
       
       // Check if user is organization admin or camp creator
       if (!req.user || 
-          (req.user.role !== "admin" && 
+          (req.user.role !== "platform_admin" && 
            req.user.organizationId !== camp.organizationId)) {
         return res.status(403).json({ message: "Unauthorized" });
       }
@@ -228,10 +244,14 @@ export default function registerAvailabilityRoutes(app: Express) {
   });
   
   // Book an availability slot
-  app.post("/api/camps/:id/availability-slots/:slotId/book", async (req: Request, res: Response) => {
+  app.post("/api/camps/:id/availability-slots/:slotId/book", async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id, slotId } = req.params;
       const { childId, notes } = req.body;
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       
       if (!childId) {
         return res.status(400).json({ message: "Child ID is required" });
@@ -265,19 +285,23 @@ export default function registerAvailabilityRoutes(app: Express) {
         childId: parseInt(childId, 10),
         parentId: req.user.id,
         notes,
-        status: "confirmed",
+        status: "confirmed" as BookingStatus,
         bookingDate: new Date()
       }).returning();
       
-      // Update slot booking count
-      await db.update(availabilitySlots)
-        .set({
-          currentBookings: slot.currentBookings + 1,
-          status: slot.currentBookings + 1 >= slot.maxBookings ? "booked" : "available"
-        })
-        .where(eq(availabilitySlots.id, parseInt(slotId, 10)));
-      
-      res.status(201).json(booking[0]);
+      if (booking && booking.length > 0) {
+        // Update slot booking count
+        await db.update(availabilitySlots)
+          .set({
+            currentBookings: slot.currentBookings + 1,
+            status: slot.currentBookings + 1 >= slot.maxBookings ? "booked" as AvailabilityStatus : "available" as AvailabilityStatus
+          })
+          .where(eq(availabilitySlots.id, parseInt(slotId, 10)));
+        
+        res.status(201).json(booking[0]);
+      } else {
+        throw new Error("Failed to create booking");
+      }
     } catch (error) {
       console.error("Error booking slot:", error);
       res.status(500).json({ message: "Failed to book slot" });
@@ -285,10 +309,14 @@ export default function registerAvailabilityRoutes(app: Express) {
   });
   
   // Cancel a booking
-  app.post("/api/slot-bookings/:bookingId/cancel", async (req: Request, res: Response) => {
+  app.post("/api/slot-bookings/:bookingId/cancel", async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { bookingId } = req.params;
       const { cancelReason } = req.body;
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       
       // Get the booking
       const booking = await db.query.slotBookings.findFirst({
@@ -303,7 +331,7 @@ export default function registerAvailabilityRoutes(app: Express) {
       }
       
       // Check if user is the parent who made the booking or an admin
-      if (req.user.id !== booking.parentId && req.user.role !== "admin") {
+      if (req.user.id !== booking.parentId && req.user.role !== "platform_admin") {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
@@ -315,22 +343,26 @@ export default function registerAvailabilityRoutes(app: Express) {
       // Update booking
       const updatedBooking = await db.update(slotBookings)
         .set({
-          status: "cancelled",
+          status: "cancelled" as BookingStatus,
           cancelledAt: new Date(),
           cancelReason
         })
         .where(eq(slotBookings.id, parseInt(bookingId, 10)))
         .returning();
       
-      // Update slot booking count and status
-      await db.update(availabilitySlots)
-        .set({
-          currentBookings: booking.slot.currentBookings - 1,
-          status: "available"
-        })
-        .where(eq(availabilitySlots.id, booking.slotId));
-      
-      res.json(updatedBooking[0]);
+      if (updatedBooking && updatedBooking.length > 0) {
+        // Update slot booking count and status
+        await db.update(availabilitySlots)
+          .set({
+            currentBookings: booking.slot.currentBookings - 1,
+            status: "available" as AvailabilityStatus
+          })
+          .where(eq(availabilitySlots.id, booking.slotId));
+        
+        res.json(updatedBooking[0]);
+      } else {
+        throw new Error("Failed to cancel booking");
+      }
     } catch (error) {
       console.error("Error cancelling booking:", error);
       res.status(500).json({ message: "Failed to cancel booking" });
@@ -338,7 +370,7 @@ export default function registerAvailabilityRoutes(app: Express) {
   });
   
   // Get all bookings for a parent
-  app.get("/api/parent/bookings", async (req: Request, res: Response) => {
+  app.get("/api/parent/bookings", async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user || req.user.role !== "parent") {
         return res.status(403).json({ message: "Unauthorized" });
@@ -379,7 +411,7 @@ export default function registerAvailabilityRoutes(app: Express) {
   });
   
   // Get all bookings for a camp
-  app.get("/api/camps/:id/bookings", async (req: Request, res: Response) => {
+  app.get("/api/camps/:id/bookings", async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
       
@@ -394,7 +426,7 @@ export default function registerAvailabilityRoutes(app: Express) {
       
       // Check if user is organization admin or camp creator
       if (!req.user || 
-          (req.user.role !== "admin" && 
+          (req.user.role !== "platform_admin" && 
            req.user.organizationId !== camp.organizationId)) {
         return res.status(403).json({ message: "Unauthorized" });
       }
