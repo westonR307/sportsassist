@@ -411,6 +411,36 @@ export function AddCampDialog({
       
       // Save custom meta fields
       if (data.id) {
+        // Save availability slots if schedulingType is 'availability'
+        if (form.getValues('schedulingType') === 'availability' && availabilitySlots.length > 0) {
+          try {
+            console.log(`Saving ${availabilitySlots.length} availability slots for camp ${data.id}`);
+            
+            const slotPromises = availabilitySlots.map(slot => {
+              // Format date for PostgreSQL
+              const formattedDate = formatDateForPostgres(slot.date);
+              
+              return apiRequest("POST", `/api/camps/${data.id}/availability-slots`, {
+                campId: data.id,
+                date: formattedDate,
+                startTime: slot.startTime,
+                endTime: slot.endTime,
+                capacity: slot.capacity,
+              });
+            });
+            
+            await Promise.all(slotPromises);
+            console.log("All availability slots saved successfully");
+          } catch (error) {
+            console.error("Error saving availability slots:", error);
+            toast({
+              title: "Warning",
+              description: "Camp created but there was an issue saving availability slots.",
+              variant: "destructive",
+            });
+          }
+        }
+        
         console.log(`Camp creation successful - Starting meta fields save process for camp ID: ${data.id}`);
         if (metaFieldsRef.current) {
           console.log("metaFieldsRef is available, proceeding with save...");
@@ -553,6 +583,7 @@ export function AddCampDialog({
       setPlannedSessions([]); // Reset planned sessions
       setSelectedDocumentId(null); // Reset selected document
       setSelectedCustomFields([]); // Reset selected custom fields
+      setAvailabilitySlots([]); // Reset availability slots
       if (campStaffRef.current) {
         campStaffRef.current.clearSelectedStaff(); // Clear selected staff members
       }
@@ -1103,12 +1134,29 @@ export function AddCampDialog({
                     />
                     
                     {form.watch('schedulingType') === 'availability' && (
-                      <div className="mt-4 p-4 border rounded-md">
+                      <div className="mt-4 border rounded-md p-4">
                         <h3 className="text-lg font-medium mb-4">Availability Slots</h3>
                         <p className="text-sm text-muted-foreground mb-4">
-                          This feature lets you create time slots that participants can book individually.
-                          Coming soon in the next update.
+                          Create available time slots that participants can book, similar to Calendly.
                         </p>
+                        
+                        <AvailabilitySlotManager
+                          campStartDate={new Date(form.getValues().startDate)}
+                          campEndDate={new Date(form.getValues().endDate)}
+                          slots={availabilitySlots}
+                          onSlotsChange={setAvailabilitySlots}
+                        />
+                        
+                        {availabilitySlots.length > 0 && (
+                          <div className="mt-4 p-3 bg-muted/50 rounded-md">
+                            <p className="text-sm font-medium">
+                              Created {availabilitySlots.length} availability slot{availabilitySlots.length !== 1 ? 's' : ''}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              These slots will be saved when you create the camp.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
                     
