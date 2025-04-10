@@ -5,7 +5,10 @@ import {
   camps,
   availabilitySlots,
   slotBookings,
+  users,
+  children
 } from "@shared/tables";
+import { Role, AvailabilityStatus, BookingStatus } from "@shared/types";
 
 /**
  * Register availability slot routes
