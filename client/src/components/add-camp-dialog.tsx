@@ -769,16 +769,33 @@ export function AddCampDialog({
                   console.log("Form submit handler called with data:", data);
                   
                   // Force-set required values one last time before submission
+                  // Always set organizationId
                   if (user?.organizationId) {
                     form.setValue("organizationId", user.organizationId);
+                  } else {
+                    // Fallback to 1 if user context doesn't have organizationId
+                    form.setValue("organizationId", 1);
                   }
                   
+                  // Always set sportId
                   if (selectedSport) {
                     form.setValue("sportId", parseInt(selectedSport));
+                  } else if (sportsList.length > 0) {
+                    // Use the first sport in the list as default
+                    form.setValue("sportId", sportsList[0].id);
+                  } else {
+                    // Last resort fallback
+                    form.setValue("sportId", 1);
                   }
                   
-                  const mappedSkillLevel = skillLevelMap[skillLevel] as "beginner" | "intermediate" | "advanced" | "all_levels";
-                  form.setValue("skillLevel", mappedSkillLevel);
+                  // Always set skillLevel 
+                  if (skillLevel) {
+                    const mappedSkillLevel = skillLevelMap[skillLevel] as "beginner" | "intermediate" | "advanced" | "all_levels";
+                    form.setValue("skillLevel", mappedSkillLevel);
+                  } else {
+                    // Default to all_levels if not set
+                    form.setValue("skillLevel", "all_levels");
+                  }
                   
                   // Set schedulingType
                   form.setValue("schedulingType", selectedSchedulingType);
@@ -787,8 +804,13 @@ export function AddCampDialog({
                   if (data.isVirtual && (!data.virtualMeetingUrl || !data.virtualMeetingUrl.trim())) {
                     form.setValue("virtualMeetingUrl", "https://meet.google.com/example");
                   } else if (!data.isVirtual) {
-                    // For non-virtual camps, set to null to avoid validation errors
-                    form.setValue("virtualMeetingUrl", null);
+                    // For non-virtual camps, set to empty string instead of null to maintain type safety
+                    form.setValue("virtualMeetingUrl", "");
+                  }
+                  
+                  // Ensure additionalLocationDetails is properly set to an empty string if null or undefined
+                  if (data.additionalLocationDetails === null || data.additionalLocationDetails === undefined) {
+                    form.setValue("additionalLocationDetails", "");
                   }
                   
                   // Trigger validation on all fields
@@ -1266,6 +1288,7 @@ export function AddCampDialog({
                               <FormControl>
                                 <Textarea
                                   {...field}
+                                  value={field.value || ''} 
                                   placeholder="E.g., Field #3, North Entrance, Classroom 101"
                                 />
                               </FormControl>
