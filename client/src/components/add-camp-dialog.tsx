@@ -589,111 +589,47 @@ export function AddCampDialog({
     // Format all dates consistently
     const formattedData = {
       ...data,
-      startDate: formatDateForPostgres(data.startDate),
-      endDate: formatDateForPostgres(data.endDate),
-      registrationStartDate: formatDateForPostgres(data.registrationStartDate),
-      registrationEndDate: formatDateForPostgres(data.registrationEndDate),
-      sportId: parseInt(selectedSport),
+      sportId: parseInt(selectedSport || '0'),
       skillLevel: skillLevelMap[skillLevel],
       schedulingType: selectedSchedulingType,
+      registrationStartDate: formatDateForPostgres(data.registrationStartDate),
+      registrationEndDate: formatDateForPostgres(data.registrationEndDate),
+      startDate: formatDateForPostgres(data.startDate),
+      endDate: formatDateForPostgres(data.endDate)
     };
 
-    console.log("Formatted submission data:", formattedData);
-
     console.log("About to call mutation with data", { 
-      ...data, 
-      schedules: [
-        {
-          dayOfWeek: 0, // Sunday as default
-          startTime: "09:00", // Using hardcoded default time
-          endTime: "17:00" // Using hardcoded default time
-        }
-      ],
-      sport: selectedSport,
-      level: skillLevel
-    });
-
-    try {
-      // Format dates as ISO strings and remove defaultStartTime/defaultEndTime
-      // Use type assertion to bypass TypeScript errors
-      const dataObj = data as any;
-      const { defaultStartTime, defaultEndTime, ...dataWithoutDefaults } = dataObj;
-
-      // Debug the dates before formatting
-      console.log("Original date values:", {
-        registrationStartDate: data.registrationStartDate,
-        registrationEndDate: data.registrationEndDate,
-        startDate: data.startDate,
-        endDate: data.endDate,
-        registrationStartDateType: typeof data.registrationStartDate,
-        startDateType: typeof data.startDate
+        ...data,
+        sportId: parseInt(selectedSport || '0'),
+        skillLevel: skillLevelMap[skillLevel],
+        schedulingType: selectedSchedulingType
       });
 
-      // Format the dates with our helper function
-      const formattedRegistrationStartDate = formatDateForPostgres(data.registrationStartDate);
-      const formattedRegistrationEndDate = formatDateForPostgres(data.registrationEndDate);
-      const formattedStartDate = formatDateForPostgres(data.startDate);
-      const formattedEndDate = formatDateForPostgres(data.endDate);
-
-      // Debug the formatted dates
-      console.log("Formatted date values:", {
-        registrationStartDate: formattedRegistrationStartDate, 
-        registrationEndDate: formattedRegistrationEndDate,
-        startDate: formattedStartDate,
-        endDate: formattedEndDate
-      });
-
-      // Prepare base formatted data
-      const formattedData = {
-        ...dataWithoutDefaults,
-        registrationStartDate: formattedRegistrationStartDate,
-        registrationEndDate: formattedRegistrationEndDate,
-        startDate: formattedStartDate,
-        endDate: formattedEndDate,
-        isVirtual: data.isVirtual || false,
-        virtualMeetingUrl: data.isVirtual ? data.virtualMeetingUrl : undefined,
-        schedulingType: selectedSchedulingType,
-        repeatType: "none"
-      };
-
-      // Handle scheduling based on type
-      if (selectedSchedulingType === "fixed") {
-        if (plannedSessions.length === 0) {
-          toast({
-            title: "Error",
-            description: "Please add at least one session to the schedule",
-            variant: "destructive",
-          });
-          return;
+      try {
+        // Handle scheduling based on type
+        if (selectedSchedulingType === 'fixed') {
+          if (plannedSessions.length === 0) {
+            toast({
+              title: "Error",
+              description: "Please add at least one session to the schedule",
+              variant: "destructive",
+            });
+            return;
+          }
+          formattedData.schedules = plannedSessions.map(session => ({
+            dayOfWeek: new Date(session.sessionDate).getDay(),
+            startTime: session.startTime.substring(0, 5),
+            endTime: session.endTime.substring(0, 5)
+          }));
+        } else {
+          formattedData.schedules = [];
         }
-        // Convert planned sessions to schedules format
-        formattedData.schedules = plannedSessions.map(session => ({
-          dayOfWeek: new Date(session.sessionDate).getDay(),
-          startTime: session.startTime.substring(0, 5), // Ensure HH:mm format
-          endTime: session.endTime.substring(0, 5)
-        }));
-      } else {
-        // For availability-based camps, validate slots
-        if (availabilitySlots.length === 0) {
-          toast({
-            title: "Error",
-            description: "Please add at least one availability slot",
-            variant: "destructive",
-          });
-          return;
-        }
-        // Send empty schedules array - availability slots will be handled separately
-        formattedData.schedules = [];
+
+        console.log("Calling mutation with formatted data:", formattedData);
+        createCampMutation.mutate(formattedData);
+      } catch (error) {
+        console.error("Error calling mutation:", error);
       }
-
-      console.log("Final formattedData being sent to the server:", formattedData);
-
-      // Cast to any to bypass TypeScript type check since we've already ensured data formatting is correct
-      createCampMutation.mutate(formattedData as any);
-      console.log("Mutation called successfully");
-    } catch (error) {
-      console.error("Error calling mutation:", error);
-    }
   };
 
   return (
