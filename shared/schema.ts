@@ -36,7 +36,9 @@ import {
   systemEvents,
   campMessages,
   campMessageRecipients,
-  campMessageReplies
+  campMessageReplies,
+  availabilitySlots,
+  slotBookings
 } from "./tables";
 
 // Import types
@@ -50,7 +52,10 @@ import {
   RepeatType,
   StaffRole,
   FieldType,
-  ValidationType
+  ValidationType,
+  SchedulingType,
+  AvailabilityStatus,
+  BookingStatus
 } from "./types";
 
 export const publicRoles = ["platform_admin", "camp_creator", "parent", "athlete"] as const;
@@ -501,6 +506,44 @@ export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
 export type OrganizationSubscription = typeof organizationSubscriptions.$inferSelect;
 export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
 export type InsertOrganizationSubscription = z.infer<typeof insertOrganizationSubscriptionSchema>;
+
+// Availability-based scheduling schemas and types
+export const insertAvailabilitySlotSchema = createInsertSchema(availabilitySlots).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  currentBookings: true,
+}).extend({
+  slotDate: createUtcSafeDateTransformer('slotDate'),
+  startTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format"),
+  endTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format"),
+  status: z.enum(["available", "booked", "unavailable"]).default("available"),
+  recurrenceRule: z.string().optional(),
+  recurrenceEndDate: z.preprocess(
+    (val) => val === null || val === undefined ? null : val,
+    z.union([z.null(), createUtcSafeDateTransformer('recurrenceEndDate')])
+  ).optional()
+});
+
+export const insertSlotBookingSchema = createInsertSchema(slotBookings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  bookingDate: true,
+  cancelledAt: true,
+  notificationSent: true,
+  reminderSent: true,
+  feedbackSent: true
+}).extend({
+  status: z.enum(["confirmed", "cancelled", "rescheduled", "waitlisted"]).default("confirmed"),
+  cancelReason: z.string().optional(),
+  notes: z.string().optional()
+});
+
+export type AvailabilitySlot = typeof availabilitySlots.$inferSelect;
+export type SlotBooking = typeof slotBookings.$inferSelect;
+export type InsertAvailabilitySlot = z.infer<typeof insertAvailabilitySlotSchema>;
+export type InsertSlotBooking = z.infer<typeof insertSlotBookingSchema>;
 
 // Tables are already exported from tables.ts
 
