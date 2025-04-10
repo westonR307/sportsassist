@@ -38,6 +38,7 @@ import { DocumentAgreementsSelector } from "@/components/document-agreements-sel
 import { AddCampCustomFieldButtonDialog } from "@/components/custom-fields/add-camp-custom-field-button-dialog";
 import { BasicInfoMetaFields, BasicInfoMetaFieldsRef } from "@/components/custom-fields/basic-info-meta-fields";
 import CampStaffSelector from "@/components/camp-staff-selector";
+import { CampTypeSelection } from "@/components/camp-type-selection";
 
 
 // Map UI skill levels to schema skill levels
@@ -445,6 +446,22 @@ export function AddCampDialog({
           }
         }
         
+        // Save the staff assignments
+        if (campStaffRef.current) {
+          try {
+            // Ask the component to save its data with the new camp ID
+            await campStaffRef.current.saveStaffAssignments(data.id);
+            console.log("Staff assignments saved successfully");
+          } catch (error) {
+            console.error("Error saving staff assignments:", error);
+            toast({
+              title: "Warning",
+              description: "Camp created but there was an issue saving staff assignments.",
+              variant: "destructive",
+            });
+          }
+        }
+                
         console.log(`Camp creation successful - Starting meta fields save process for camp ID: ${data.id}`);
         if (metaFieldsRef.current) {
           console.log("metaFieldsRef is available, proceeding with save...");
@@ -472,273 +489,101 @@ export function AddCampDialog({
                     responseArray: field.responseArray || null,
                   });
                   
-                  await apiRequest("POST", `/api/camps/${data.id}/meta-fields`, {
+                  await apiRequest("POST", "/api/camp-custom-fields", {
                     customFieldId: field.customFieldId,
                     campId: data.id,
                     response: field.response || null,
                     responseArray: field.responseArray || null,
                   });
-                  console.log(`Successfully saved field ${field.customFieldId} to camp ${data.id}`);
-                } catch (fieldError) {
-                  console.error(`Error saving individual field ${field.customFieldId}:`, fieldError);
+                } catch (innerError) {
+                  console.error(`Error saving meta field ${field.customFieldId}:`, innerError);
                 }
               }
-              console.log("All meta fields saved via direct API calls");
+              console.log("All meta fields saved successfully");
+            } else {
+              console.log("No meta fields to save");
             }
             
-            // Also try the original method as a fallback
-            const saveResult = await metaFieldsRef.current.saveFieldsIfNeeded();
-            console.log(`Meta fields save result from component method: ${saveResult}`);
-            
-            // If we have duplicated meta fields, save those as well
-            if (duplicateData?.metaFields && duplicateData.metaFields.length > 0) {
-              console.log(`Duplicating ${duplicateData.metaFields.length} meta fields for new camp ${data.id}`);
-              const metaFieldPromises = duplicateData.metaFields.map((metaField: any) => {
-                // Copy the meta field but with the new camp ID
-                const { id, campId, ...metaFieldData } = metaField;
-                return apiRequest('POST', `/api/camps/${data.id}/meta-fields`, {
-                  ...metaFieldData,
-                  campId: data.id
-                });
-              });
-              await Promise.all(metaFieldPromises);
-              console.log("Duplicated meta fields saved successfully");
-            }
           } catch (error) {
             console.error("Error saving meta fields:", error);
             toast({
+              title: "Warning", 
+              description: "Camp created but there was an issue saving meta fields.",
+              variant: "destructive"
+            });
+          }
+        }
+        
+        // Associate the document agreement if selected
+        if (selectedDocumentId) {
+          try {
+            await apiRequest("POST", "/api/camp-document-agreements", {
+              campId: data.id,
+              documentId: selectedDocumentId
+            });
+            console.log("Document agreement associated successfully");
+          } catch (error) {
+            console.error("Error associating document agreement:", error);
+            toast({
               title: "Warning",
-              description: "Camp created but there was an issue saving custom meta fields.",
-              variant: "destructive",
+              description: "Camp created but there was an issue associating the document agreement.",
+              variant: "destructive"
             });
           }
         }
       }
       
-      // If a document was selected for agreement, save that relationship
-      if (selectedDocumentId && data.id) {
-        try {
-          console.log(`Setting document agreement ${selectedDocumentId} for camp ${data.id}`);
-          await apiRequest('PUT', `/api/camps/${data.id}/agreements`, {
-            documentId: selectedDocumentId
-          });
-          console.log("Document agreement saved successfully");
-        } catch (error) {
-          console.error("Error saving document agreement:", error);
-          toast({
-            title: "Warning",
-            description: "Camp created but there was an issue saving the document agreement.",
-            variant: "destructive",
-          });
-        }
-      }
-
-      // If custom fields were selected, associate them with the camp
-      if (selectedCustomFields.length > 0 && data.id) {
-        try {
-          console.log(`Setting ${selectedCustomFields.length} custom fields for camp ${data.id}`);
-          await Promise.all(selectedCustomFields.map(fieldId => 
-            apiRequest('POST', `/api/camps/${data.id}/custom-fields`, { 
-              customFieldId: fieldId,
-              required: true
-            })
-          ));
-          console.log("Custom fields associated successfully");
-        } catch (error) {
-          console.error("Error associating custom fields:", error);
-          toast({
-            title: "Warning",
-            description: "Camp created but there was an issue setting up custom fields.",
-            variant: "destructive",
-          });
-        }
-      }
-
-      // If staff members were selected, associate them with the camp
-      if (campStaffRef.current && data.id) {
-        try {
-          const selectedStaff = campStaffRef.current.getSelectedStaff();
-          if (selectedStaff.length > 0) {
-            console.log(`Setting ${selectedStaff.length} staff members for camp ${data.id}`);
-            await Promise.all(selectedStaff.map(staff => 
-              apiRequest('POST', `/api/camps/${data.id}/staff`, { 
-                userId: staff.userId,
-                role: staff.role
-              })
-            ));
-            console.log("Staff members associated successfully");
-          }
-        } catch (error) {
-          console.error("Error associating staff members:", error);
-          toast({
-            title: "Warning",
-            description: "Camp created but there was an issue associating staff members.",
-            variant: "destructive",
-          });
-        }
-      }
-      
-      queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
-      onOpenChange(false);
-      form.reset();
-      setSchedules([]);
-      setSelectedSport(null);
-      setSkillLevel("Beginner");
-      setPlannedSessions([]); // Reset planned sessions
-      setSelectedDocumentId(null); // Reset selected document
-      setSelectedCustomFields([]); // Reset selected custom fields
-      setAvailabilitySlots([]); // Reset availability slots
-      if (campStaffRef.current) {
-        campStaffRef.current.clearSelectedStaff(); // Clear selected staff members
-      }
       toast({
         title: "Success",
-        description: "Camp created successfully",
+        description: "Camp created successfully!",
       });
+      
+      // Reset form
+      form.reset();
+      setSelectedSport(null);
+      setSkillLevel("Beginner");
+      setSchedules([]);
+      setPlannedSessions([]);
+      setSelectedDocumentId(null);
+      setSelectedCustomFields([]);
+      setCustomFieldDetails({});
+      setTempCampId(-1);
+      setSelectedStaff([]);
+      setAvailabilitySlots([]);
+      
+      // Close dialog
+      onOpenChange(false);
+      
+      // Refresh camps list
+      queryClient.invalidateQueries({ queryKey: ['/api/camps'] });
     },
     onError: (error: any) => {
       console.error("Camp creation error:", error);
-      let errorMessage = "Failed to create camp";
-
-      // Our apiRequest throws Error objects with message property
-      if (error.message) {
-        errorMessage = error.message;
-      }
-
       toast({
         title: "Error",
-        description: errorMessage,
+        description: error?.message || "Failed to create camp. Please try again.",
         variant: "destructive",
       });
     },
   });
 
-  const addSchedule = () => {
-    setSchedules([...schedules, { dayOfWeek: 0, startTime: "09:00", endTime: "17:00" }]);
-  };
-
-  const removeSchedule = (index: number) => {
-    setSchedules(schedules.filter((_, i) => i !== index));
-  };
-
-  const updateSchedule = (index: number, field: keyof Schedule, value: string | number) => {
-    const newSchedules = [...schedules];
-    newSchedules[index] = { ...newSchedules[index], [field]: value };
-    setSchedules(newSchedules);
-  };
-  
-  // Handle adding a custom field to the registration form
-  const handleAddCustomField = async (fieldId: number) => {
-    // Check if the field is already selected
-    if (!selectedCustomFields.includes(fieldId)) {
-      setSelectedCustomFields([...selectedCustomFields, fieldId]);
-      
-      // If we don't have the field details, fetch them
-      if (!customFieldDetails[fieldId] && user?.organizationId) {
-        try {
-          const response = await fetch(`/api/organizations/${user.organizationId}/custom-fields/${fieldId}`);
-          if (response.ok) {
-            const fieldData = await response.json();
-            setCustomFieldDetails(prev => ({
-              ...prev,
-              [fieldId]: {
-                label: fieldData.label,
-                isInternal: fieldData.isInternal
-              }
-            }));
-          }
-        } catch (error) {
-          console.error("Error fetching field details:", error);
-        }
-      }
-    }
-  };
-
+  // When a user submits the form
   const onSubmit = async (data: ExtendedCampSchema) => {
     console.log("Form submitted with data:", data);
     
     if (!selectedSport) {
-      console.log("Error: No sport selected");
       toast({
-        title: "Error",
-        description: "Please select a sport",
+        title: "Missing Information",
+        description: "Please select a sport for this camp",
         variant: "destructive",
       });
-      setCurrentTab("basic");
       return;
-    };
+    }
     
-    // Validate virtual meeting URL for virtual camps
-    if (data.isVirtual && !data.virtualMeetingUrl) {
-      console.log("Error: No virtual meeting URL provided for virtual camp");
-      toast({
-        title: "Error",
-        description: "Please provide a meeting URL for the virtual camp",
-        variant: "destructive",
-      });
-      setCurrentTab("location");
-      return;
-    }
-
-    // Default time validation is no longer needed since default times
-    // are now handled directly in the CalendarScheduler component
-
-    // Validate dates
-    const regStartDate = new Date(data.registrationStartDate);
-    const regEndDate = new Date(data.registrationEndDate);
-    const startDate = new Date(data.startDate);
-    const endDate = new Date(data.endDate);
-
-    if (isNaN(regStartDate.getTime()) || isNaN(regEndDate.getTime()) || 
-        isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-      toast({
-        title: "Error",
-        description: "Invalid date format",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (regEndDate <= regStartDate) {
-      toast({
-        title: "Error",
-        description: "Registration end date must be after registration start date",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (endDate <= startDate) {
-      toast({
-        title: "Error",
-        description: "Camp end date must be after camp start date",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (startDate <= regEndDate) {
-      toast({
-        title: "Error",
-        description: "Camp start date must be after registration end date",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    console.log("Submitting form with data:", { 
-      ...data, 
-      // Create at least one schedule entry based on the default times
-      schedules: [
-        {
-          dayOfWeek: 0, // Sunday as default
-          startTime: "09:00", // Using hardcoded default time
-          endTime: "17:00" // Using hardcoded default time
-        }
-      ],
-      sportId: parseInt(selectedSport) || 1,
-      skillLevel: skillLevelMap[skillLevel] 
-    });
+    // Prep the data
+    data.sportId = parseInt(selectedSport);
+    data.skillLevel = skillLevelMap[skillLevel]; 
+    data.schedulingType = selectedSchedulingType;
     
     console.log("About to call mutation with data", { 
       ...data, 
@@ -790,892 +635,663 @@ export function AddCampDialog({
           <DialogTitle>Add New Camp</DialogTitle>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <Tabs
-                defaultValue="basic"
-                className="w-full"
-                value={currentTab}
-                onValueChange={setCurrentTab}
-              >
-                <TabsList className="grid grid-cols-4 mb-4 sticky top-0 bg-background z-10">
-                  <TabsTrigger value="basic">Information</TabsTrigger>
-                  <TabsTrigger value="schedule">Schedule</TabsTrigger>
-                  <TabsTrigger value="location">Location</TabsTrigger>
-                  <TabsTrigger value="settings">Settings</TabsTrigger>
-                </TabsList>
+          {showTypeSelection ? (
+            <CampTypeSelection
+              onSelect={(type) => {
+                setSelectedSchedulingType(type);
+                setShowTypeSelection(false);
+                form.setValue("schedulingType", type);
+              }}
+            />
+          ) : (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {/* Back button to return to selection screen */}
+                <div className="mb-4">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setShowTypeSelection(true)}
+                    className="flex items-center"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                      <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                    Back to Type Selection
+                  </Button>
+                </div>
+                
+                <Tabs
+                  defaultValue="basic"
+                  className="w-full"
+                  value={currentTab}
+                  onValueChange={setCurrentTab}
+                >
+                  <TabsList className="grid grid-cols-3 mb-4 sticky top-0 bg-background z-10">
+                    <TabsTrigger value="basic">Information</TabsTrigger>
+                    <TabsTrigger value="location">Location</TabsTrigger>
+                    <TabsTrigger value="schedule">Scheduling</TabsTrigger>
+                  </TabsList>
 
-                <TabsContent value="basic" className="space-y-4 mt-0">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
+                  <TabsContent value="basic" className="space-y-4 mt-0">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Camp Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Enter camp name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              {...field}
+                              placeholder="Describe the camp"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="space-y-4">
                       <FormItem>
-                        <FormLabel>Camp Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Enter camp name" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Description</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            {...field}
-                            placeholder="Describe the camp"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="space-y-4">
-                    <FormItem>
-                      <FormLabel>Sport</FormLabel>
-                      <select
-                        value={selectedSport || ""}
-                        onChange={(e) =>
-                          setSelectedSport(e.target.value || null)
-                        }
-                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                      >
-                        <option value="" disabled>
-                          Select a sport...
-                        </option>
-                        {sportsList.map((sport) => (
-                          <option key={sport.id} value={sport.id}>
-                            {sport.name}
+                        <FormLabel>Sport</FormLabel>
+                        <select
+                          value={selectedSport || ""}
+                          onChange={(e) =>
+                            setSelectedSport(e.target.value || null)
+                          }
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                        >
+                          <option value="" disabled>
+                            Select a sport...
                           </option>
-                        ))}
-                      </select>
-                      {selectedSport && (
-                        <div className="mt-1 text-sm text-green-600">
-                          Selected: {sportsList.find(s => s.id === parseInt(selectedSport))?.name}
-                        </div>
-                      )}
-                    </FormItem>
-
-                    <FormItem>
-                      <FormLabel>Skill Level</FormLabel>
-                      <select
-                        value={skillLevel}
-                        onChange={(e) => setSkillLevel(e.target.value)}
-                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                      >
-                        {uiSkillLevels.map((level) => (
-                          <option key={level} value={level}>
-                            {level}
-                          </option>
-                        ))}
-                      </select>
-                    </FormItem>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="registrationStartDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Registration Start</FormLabel>
-                          <FormControl>
-                            <DateInput field={field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="registrationEndDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Registration End</FormLabel>
-                          <FormControl>
-                            <DateInput field={field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="startDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Camp Start Date</FormLabel>
-                          <FormControl>
-                            <DateInput field={field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="endDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Camp End Date</FormLabel>
-                          <FormControl>
-                            <DateInput field={field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="minAge"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Minimum Age</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              {...field}
-                              value={field.value === 0 ? "" : field.value}
-                              onChange={(e) => {
-                                // Allow actual empty values but convert valid inputs to numbers
-                                const value = e.target.value.trim();
-                                field.onChange(value ? parseInt(value) : '');
-                              }}
-                              min={1}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="maxAge"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Maximum Age</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              {...field}
-                              value={field.value === 0 ? "" : field.value}
-                              onChange={(e) => {
-                                // Allow actual empty values but convert valid inputs to numbers
-                                const value = e.target.value.trim();
-                                field.onChange(value ? parseInt(value) : '');
-                              }}
-                              min={1}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="price"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Price ($)</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              {...field}
-                              value={field.value === 0 ? "" : field.value}
-                              onChange={(e) => {
-                                // Allow actual empty values but convert valid inputs to numbers
-                                const value = e.target.value.trim();
-                                field.onChange(value ? parseInt(value) : '');
-                              }}
-                              min={0}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="capacity"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Capacity</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              {...field}
-                              min={1}
-                              onChange={(e) => {
-                                // Allow actual empty values but convert valid inputs to numbers
-                                const value = e.target.value.trim();
-                                field.onChange(value ? parseInt(value) : '');
-                              }}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  {/* Camp staff management */}
-                  <div className="mt-8 border-t pt-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <div>
-                        <h3 className="text-lg font-medium">Camp Staff</h3>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Assign coaches and staff members to this camp.
-                          Note: Staff assignments will be saved when the camp is created.
-                        </p>
-                      </div>
-                    </div>
-                    {user?.organizationId && (
-                      <CampStaffSelector
-                        ref={campStaffRef}
-                        campId={tempCampId} // We use the temporary ID for initial selection
-                        organizationId={user.organizationId}
-                        isNew={true} // Flag to indicate this is a new camp
-                      />
-                    )}
-                  </div>
-                  
-                  {/* Add the custom meta fields component */}
-                  <div className="mt-8 border-t pt-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <div>
-                        <h3 className="text-lg font-medium">Additional Information</h3>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Add custom fields to provide more details about your camp.
-                          Click "Save Fields" after adding your custom fields. 
-                          They will be permanently saved when you create the camp.
-                        </p>
-                      </div>
-                    </div>
-                    {user?.organizationId && (
-                      <BasicInfoMetaFields
-                        ref={metaFieldsRef}
-                        organizationId={user.organizationId}
-                        // Show the save button exactly like in edit camp dialog
-                        showSaveButton={true}
-                      />
-                    )}
-                  </div>
-                  
-                  <div className="flex justify-end space-x-2 pt-4">
-                    <Button
-                      type="button"
-                      onClick={async () => {
-                        const isValid = await form.trigger([
-                          "name",
-                          "description",
-                        ]);
-                        if (isValid) {
-                          setCurrentTab("schedule");
-                        }
-                      }}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="schedule" className="space-y-4 mt-0">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-medium">Scheduling Type</h3>
-                    </div>
-
-                    <FormField
-                      control={form.control}
-                      name="schedulingType"
-                      render={({ field }) => (
-                        <FormItem className="space-y-3">
-                          <FormControl>
-                            <RadioGroup
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                              className="flex flex-col space-y-1"
-                            >
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="fixed" id="fixed" />
-                                <Label htmlFor="fixed" className="font-medium">Fixed Schedule</Label>
-                                <span className="text-sm text-muted-foreground ml-2">
-                                  Predefined days and times for all participants
-                                </span>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="availability" id="availability" />
-                                <Label htmlFor="availability" className="font-medium">Availability-Based</Label>
-                                <span className="text-sm text-muted-foreground ml-2">
-                                  Similar to Calendly, participants book available time slots
-                                </span>
-                              </div>
-                            </RadioGroup>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    {form.watch('schedulingType') === 'availability' && (
-                      <div className="mt-4 border rounded-md p-4">
-                        <h3 className="text-lg font-medium mb-4">Availability Slots</h3>
-                        <p className="text-sm text-muted-foreground mb-4">
-                          Create available time slots that participants can book, similar to Calendly.
-                        </p>
-                        
-                        <AvailabilitySlotManager
-                          campStartDate={new Date(form.getValues().startDate)}
-                          campEndDate={new Date(form.getValues().endDate)}
-                          slots={availabilitySlots}
-                          onSlotsChange={setAvailabilitySlots}
-                        />
-                        
-                        {availabilitySlots.length > 0 && (
-                          <div className="mt-4 p-3 bg-muted/50 rounded-md">
-                            <p className="text-sm font-medium">
-                              Created {availabilitySlots.length} availability slot{availabilitySlots.length !== 1 ? 's' : ''}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              These slots will be saved when you create the camp.
-                            </p>
+                          {sportsList.map((sport) => (
+                            <option key={sport.id} value={sport.id}>
+                              {sport.name}
+                            </option>
+                          ))}
+                        </select>
+                        {selectedSport && (
+                          <div className="mt-1 text-sm text-green-600">
+                            Selected: {sportsList.find(s => s.id === parseInt(selectedSport))?.name}
                           </div>
                         )}
-                      </div>
-                    )}
-                    
-                    {form.watch('schedulingType') === 'fixed' && (
-                      <div className="mt-4">
-                        <div className="flex justify-between items-center mb-4">
-                          <h3 className="text-lg font-medium">Calendar Scheduling</h3>
-                        </div>
-
-                        <Tabs defaultValue="enhanced">
-                          <TabsList className="hidden">
-                            <TabsTrigger value="enhanced">Calendar Scheduling</TabsTrigger>
-                          </TabsList>
-                          
-                          <TabsContent value="enhanced" className="pt-4">
-                            {form.watch('startDate') && form.watch('endDate') ? (
-                              <div>                            
-                                <div className="border rounded-md p-4">
-                                  <div className="calendar-container">
-                                    {/* Default times are now handled automatically */}
-                                    
-                                    <CalendarScheduler
-                                      campId={tempCampId}
-                                      startDate={new Date(form.watch('startDate'))}
-                                      endDate={new Date(form.watch('endDate'))}
-                                      sessions={plannedSessions}
-                                      onSave={() => {
-                                        console.log("Sessions planned:", plannedSessions);
-                                      }}
-                                      canManage={true}
-                                      customHandlers={{
-                                        addSession: (sessionData) => {
-                                          // Default times are now hardcoded in the component
-                                          const newSession = {
-                                            ...sessionData,
-                                            id: Date.now(),
-                                            campId: tempCampId,
-                                            status: "active"
-                                          };
-                                          setPlannedSessions([...plannedSessions, newSession]);
-                                          return Promise.resolve(newSession);
-                                        },
-                                        deleteSession: (sessionId) => {
-                                          setPlannedSessions(plannedSessions.filter(s => s.id !== sessionId));
-                                          return Promise.resolve(true);
-                                        }
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="text-center py-6 text-muted-foreground">
-                                <p>Please set your camp start and end dates in the Information tab first.</p>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  onClick={() => setCurrentTab("basic")}
-                                  className="mt-4"
-                                >
-                                  Go to Information Tab
-                                </Button>
-                              </div>
-                            )}
-                          </TabsContent>
-                        </Tabs>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex justify-between space-x-2 pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setCurrentTab("basic")}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        setCurrentTab("location");
-                      }}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="location" className="space-y-4 mt-0">
-                  <FormField
-                    control={form.control}
-                    name="isVirtual"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>
-                            This is a virtual camp
-                          </FormLabel>
-                          <p className="text-sm text-muted-foreground">
-                            Check this box if the camp will be held virtually through a meeting link or videoconference.
-                          </p>
-                        </div>
                       </FormItem>
-                    )}
-                  />
 
-                  {form.watch("isVirtual") ? (
-                    <FormField
-                      control={form.control}
-                      name="virtualMeetingUrl"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Virtual Meeting URL <span className="text-red-500">*</span></FormLabel>
-                          <FormControl>
-                            <Input 
-                              {...field} 
-                              placeholder="https://zoom.us/j/123456789" 
-                              required
-                            />
-                          </FormControl>
-                          <FormMessage />
-                          <p className="text-sm text-muted-foreground">
-                            Enter the URL where participants will join the virtual camp.
-                          </p>
-                        </FormItem>
-                      )}
-                    />
-                  ) : (
-                    <>
+                      <FormItem>
+                        <FormLabel>Skill Level</FormLabel>
+                        <select
+                          value={skillLevel}
+                          onChange={(e) => setSkillLevel(e.target.value)}
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                        >
+                          {uiSkillLevels.map((level) => (
+                            <option key={level} value={level}>
+                              {level}
+                            </option>
+                          ))}
+                        </select>
+                      </FormItem>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
-                        name="streetAddress"
+                        name="registrationStartDate"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Street Address <span className="text-red-500">*</span></FormLabel>
+                            <FormLabel>Registration Start</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="123 Main St" />
+                              <DateInput field={field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
 
-                      <div className="grid grid-cols-3 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="city"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>City <span className="text-red-500">*</span></FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="City" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                      <FormField
+                        control={form.control}
+                        name="registrationEndDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Registration End</FormLabel>
+                            <FormControl>
+                              <DateInput field={field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
 
-                        <FormField
-                          control={form.control}
-                          name="state"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>State <span className="text-red-500">*</span></FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="CA" maxLength={2} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="startDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Camp Start Date</FormLabel>
+                            <FormControl>
+                              <DateInput field={field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
+                      <FormField
+                        control={form.control}
+                        name="endDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Camp End Date</FormLabel>
+                            <FormControl>
+                              <DateInput field={field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="minAge"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Minimum Age</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                {...field}
+                                value={field.value === 0 ? "" : field.value}
+                                onChange={(e) => {
+                                  // Allow actual empty values but convert valid inputs to numbers
+                                  const value = e.target.value.trim();
+                                  field.onChange(value ? parseInt(value) : '');
+                                }}
+                                min={1}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="maxAge"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Maximum Age</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                {...field}
+                                value={field.value === 0 ? "" : field.value}
+                                onChange={(e) => {
+                                  // Allow actual empty values but convert valid inputs to numbers
+                                  const value = e.target.value.trim();
+                                  field.onChange(value ? parseInt(value) : '');
+                                }}
+                                min={1}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="price"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Price ($)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                {...field}
+                                value={field.value === 0 ? "" : field.value}
+                                onChange={(e) => {
+                                  // Allow actual empty values but convert valid inputs to numbers
+                                  const value = e.target.value.trim();
+                                  field.onChange(value ? parseInt(value) : '');
+                                }}
+                                min={0}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {selectedSchedulingType === 'fixed' && (
                         <FormField
                           control={form.control}
-                          name="zipCode"
+                          name="capacity"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>ZIP Code <span className="text-red-500">*</span></FormLabel>
+                              <FormLabel>Capacity</FormLabel>
                               <FormControl>
                                 <Input
+                                  type="number"
                                   {...field}
-                                  placeholder="12345"
-                                  pattern="\d{5}(-\d{4})?"
+                                  min={1}
+                                  onChange={(e) => {
+                                    // Allow actual empty values but convert valid inputs to numbers
+                                    const value = e.target.value.trim();
+                                    field.onChange(value ? parseInt(value) : '');
+                                  }}
                                 />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
+                      )}
+
+                      <FormField
+                        control={form.control}
+                        name="type"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Camp Type</FormLabel>
+                            <FormControl>
+                              <select
+                                {...field}
+                                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                              >
+                                <option value="group">Group</option>
+                                <option value="one_on_one">One-on-One</option>
+                                <option value="team">Team</option>
+                                <option value="virtual">Virtual</option>
+                              </select>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    {/* Camp staff management */}
+                    <div className="mt-8 border-t pt-6">
+                      <div className="flex justify-between items-center mb-4">
+                        <div>
+                          <h3 className="text-lg font-medium">Camp Staff</h3>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Assign coaches and staff members to this camp.
+                            Note: Staff assignments will be saved when the camp is created.
+                          </p>
+                        </div>
                       </div>
-                    </>
-                  )}
+                      {user?.organizationId && (
+                        <CampStaffSelector
+                          ref={campStaffRef}
+                          campId={tempCampId} // We use the temporary ID for initial selection
+                          organizationId={user.organizationId}
+                          isNew={true} // Flag to indicate this is a new camp
+                        />
+                      )}
+                    </div>
+                    
+                    {/* Add the custom meta fields component */}
+                    <div className="mt-8 border-t pt-6">
+                      <div className="flex justify-between items-center mb-4">
+                        <div>
+                          <h3 className="text-lg font-medium">Additional Information</h3>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Add custom fields to provide more details about your camp.
+                            Click "Save Fields" after adding your custom fields. 
+                            They will be permanently saved when you create the camp.
+                          </p>
+                        </div>
+                      </div>
+                      {user?.organizationId && (
+                        <BasicInfoMetaFields
+                          ref={metaFieldsRef}
+                          organizationId={user.organizationId}
+                          // Show the save button exactly like in edit camp dialog
+                          showSaveButton={true}
+                        />
+                      )}
+                    </div>
+                    
+                    <div className="flex justify-end space-x-2 pt-4">
+                      <Button
+                        type="button"
+                        onClick={() => setCurrentTab("location")}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </TabsContent>
 
-                  <FormField
-                    control={form.control}
-                    name="additionalLocationDetails"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Additional Location Information</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            {...field}
-                            placeholder="Any additional details about the location"
-                            value={field.value || ''}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="flex justify-between space-x-2 pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setCurrentTab("schedule");
-                      }}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={async () => {
-                        const isVirtual = form.getValues("isVirtual");
-                        let isValid;
-                        
-                        if (isVirtual) {
-                          // If virtual, only validate virtual meeting URL
-                          isValid = await form.trigger(["virtualMeetingUrl"]);
-                        } else {
-                          // If physical, validate physical location fields
-                          isValid = await form.trigger([
-                            "streetAddress",
-                            "city",
-                            "state",
-                            "zipCode",
-                          ]);
-                        }
-                        
-                        if (isValid) {
-                          setCurrentTab("settings");
-                        }
-                      }}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="settings" className="space-y-4 mt-0">
-                  <FormField
-                    control={form.control}
-                    name="type"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Camp Type</FormLabel>
-                        <FormControl>
-                          <select
-                            {...field}
-                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                          >
-                            <option value="group">Group</option>
-                            <option value="one_on_one">One-on-One</option>
-                            <option value="team">Team</option>
-                          </select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="visibility"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Visibility</FormLabel>
-                        <FormControl>
-                          <select
-                            {...field}
-                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                          >
-                            <option value="public">Public</option>
-                            <option value="private">Private</option>
-                          </select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="waitlistEnabled"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center space-x-2">
-                        <FormControl>
-                          <input
-                            type="checkbox"
-                            checked={field.value}
-                            onChange={field.onChange}
-                            className="h-4 w-4"
-                          />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          Enable waitlist when camp is full
-                        </FormLabel>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="repeatType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Repeat Schedule</FormLabel>
-                        <FormControl>
-                          <select
-                            {...field}
-                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                          >
-                            <option value="none">No Repeat</option>
-                            <option value="weekly">Weekly</option>
-                            <option value="monthly">Monthly</option>
-                          </select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {form.watch("repeatType") !== "none" && (
+                  <TabsContent value="location" className="space-y-4 mt-0">
                     <FormField
                       control={form.control}
-                      name="repeatCount"
+                      name="isVirtual"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            Number of{" "}
-                            {form.watch("repeatType") === "weekly"
-                              ? "Weeks"
-                              : "Months"}{" "}
-                            to Repeat
-                          </FormLabel>
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                           <FormControl>
-                            <Input
-                              type="number"
-                              {...field}
-                              value={field.value || ""}
-                              onChange={(e) =>
-                                field.onChange(
-                                  e.target.value === ""
-                                    ? 0
-                                    : parseInt(e.target.value),
-                                )
-                              }
-                              min={0}
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
                             />
                           </FormControl>
-                          <FormMessage />
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>
+                              This is a virtual camp (conducted online)
+                            </FormLabel>
+                          </div>
                         </FormItem>
                       )}
                     />
-                  )}
 
-                  <div className="border-t pt-4 mt-6 mb-4">
-                    <h3 className="text-lg font-medium mb-4 flex items-center">
-                      <FileText className="mr-2 h-5 w-5" /> 
-                      Document Agreements
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Select a document that participants must sign when registering for this camp.
-                    </p>
-                    
-                    {/* We use the isNewCamp flag to prevent API calls and store the selection */}
-                    <DocumentAgreementsSelector 
-                      campId={tempCampId}
-                      isNewCamp={true}
-                      onDocumentSelect={setSelectedDocumentId}
-                    />
-                  </div>
-                  
-                  <div className="border-t pt-4 mt-6 mb-4">
-                    <h3 className="text-lg font-medium mb-4 flex items-center">
-                      <Layers className="mr-2 h-5 w-5" /> 
-                      Registration Custom Fields
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Add custom fields for participants to fill out during registration.
-                    </p>
-                    
-                    {user?.organizationId && (
-                      <div>
-                        <div className="mb-4">
-                          <AddCampCustomFieldButtonDialog
-                            organizationId={user.organizationId}
-                            onFieldSelected={handleAddCustomField}
-                            variant="outline"
-                            label="Add Custom Registration Field"
-                            size="default"
+                    {form.watch('isVirtual') ? (
+                      <FormField
+                        control={form.control}
+                        name="virtualMeetingUrl"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Virtual Meeting URL</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="https://zoom.us/j/123456789" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ) : (
+                      <>
+                        <FormField
+                          control={form.control}
+                          name="streetAddress"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Street Address</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="123 Main St" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <div className="grid grid-cols-3 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="city"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>City</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="City" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="state"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>State</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="NY" maxLength={2} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="zipCode"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>ZIP Code</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="12345" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
                           />
                         </div>
-                        
-                        {selectedCustomFields.length > 0 ? (
-                          <div className="space-y-2 mt-4">
-                            <h4 className="text-sm font-medium">Selected Fields:</h4>
-                            <div className="grid gap-2">
-                              {selectedCustomFields.map((fieldId) => (
-                                <div 
-                                  key={fieldId} 
-                                  className="flex items-center justify-between bg-muted p-2 rounded-md"
-                                >
-                                  <div className="flex items-center flex-1">
-                                    <span className="text-sm">
-                                      {customFieldDetails[fieldId]?.label || `Custom Field #${fieldId}`}
-                                    </span>
-                                    {customFieldDetails[fieldId]?.isInternal && (
-                                      <Badge variant="secondary" className="ml-2 text-xs">
-                                        Internal
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                      setSelectedCustomFields(
-                                        selectedCustomFields.filter((id) => id !== fieldId)
-                                      );
-                                    }}
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
+
+                        <FormField
+                          control={form.control}
+                          name="additionalLocationDetails"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Additional Location Details</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  {...field}
+                                  placeholder="E.g., Field #3, North Entrance, Classroom 101"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </>
+                    )}
+
+                    <div className="flex justify-between space-x-2 pt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setCurrentTab("basic")}
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={() => setCurrentTab("schedule")}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="schedule" className="space-y-4 mt-0">
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-medium">Scheduling Type</h3>
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="schedulingType"
+                        render={({ field }) => (
+                          <FormItem className="space-y-3">
+                            <FormControl>
+                              <RadioGroup
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                                value={field.value}
+                                className="flex flex-col space-y-1"
+                              >
+                                <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="fixed" id="fixed" />
+                                  <Label htmlFor="fixed" className="font-medium">Fixed Schedule</Label>
+                                  <span className="text-sm text-muted-foreground ml-2">
+                                    Predefined days and times for all participants
+                                  </span>
                                 </div>
-                              ))}
-                            </div>
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground italic">
-                            No custom fields selected yet. Click the button above to add fields.
+                                <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="availability" id="availability" />
+                                  <Label htmlFor="availability" className="font-medium">Availability-Based</Label>
+                                  <span className="text-sm text-muted-foreground ml-2">
+                                    Similar to Calendly, participants book available time slots
+                                  </span>
+                                </div>
+                              </RadioGroup>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      {form.watch('schedulingType') === 'availability' && (
+                        <div className="mt-4 border rounded-md p-4">
+                          <h3 className="text-lg font-medium mb-4">Availability Slots</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            Create available time slots that participants can book, similar to Calendly.
                           </p>
+                          
+                          <AvailabilitySlotManager
+                            campStartDate={new Date(form.getValues().startDate)}
+                            campEndDate={new Date(form.getValues().endDate)}
+                            slots={availabilitySlots}
+                            onSlotsChange={setAvailabilitySlots}
+                          />
+                          
+                          {availabilitySlots.length > 0 && (
+                            <div className="mt-4 p-3 bg-muted/50 rounded-md">
+                              <p className="text-sm font-medium mb-2">Created {availabilitySlots.length} availability slots</p>
+                              <p className="text-xs text-muted-foreground">
+                                These slots will be saved when you create the camp. Participants will be able to book these slots.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {form.watch('schedulingType') === 'fixed' && (
+                        <div className="mt-4 border rounded-md p-4">
+                          <h3 className="text-lg font-medium mb-4">Fixed Schedule</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            Create a fixed schedule for all participants. Sessions will be generated based on the schedule.
+                          </p>
+                          
+                          <div className="space-y-4">
+                            <CalendarScheduler
+                              campId={tempCampId}
+                              startDate={new Date(form.getValues().startDate)}
+                              endDate={new Date(form.getValues().endDate)}
+                              onSessionsChange={sessions => {
+                                console.log("Sessions changed:", sessions);
+                                setPlannedSessions(sessions);
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      <FormField
+                        control={form.control}
+                        name="waitlistEnabled"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 mt-6">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>
+                                Enable waitlist when camp reaches capacity
+                              </FormLabel>
+                              <p className="text-sm text-muted-foreground">
+                                If checked, parents can join a waitlist when the camp is full
+                              </p>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="visibility"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Visibility</FormLabel>
+                            <FormControl>
+                              <select
+                                {...field}
+                                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                              >
+                                <option value="public">Public</option>
+                                <option value="private">Private (Invite Only)</option>
+                              </select>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="mt-6 border-t pt-6">
+                        <div className="flex justify-between items-center mb-4">
+                          <div>
+                            <h3 className="text-lg font-medium">Document Agreement</h3>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Select a document agreement that participants must sign when registering.
+                            </p>
+                          </div>
+                        </div>
+                      
+                        {user?.organizationId && (
+                          <DocumentAgreementsSelector
+                            organizationId={user.organizationId}
+                            selectedDocumentId={selectedDocumentId}
+                            onSelect={setSelectedDocumentId}
+                          />
                         )}
                       </div>
-                    )}
-                  </div>
+                    </div>
 
-                  <div className="flex justify-between pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setCurrentTab("location");
-                      }}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        console.log("Submit button clicked manually");
-                        if (!selectedSport) {
-                          console.log("Please select a sport");
-                          toast({
-                            title: "Error",
-                            description: "Please select a sport",
-                            variant: "destructive",
-                          });
-                          return;
-                        }
-                        
-                        // Default times are now hardcoded to 09:00 and 17:00
-                        // No need for validation here
-                        
-                        // Get form data
-                        const data = form.getValues();
-                        console.log("Form data:", data);
-                        
-                        // Call mutation manually - using empty schedules array
-                        // This is just a placeholder since we're now using the enhanced scheduling
-                        // The camp creation API still expects a schedules array
-                        createCampMutation.mutate({ 
-                          ...data, 
-                          schedules: [] // We're not using regular schedules anymore
-                        });
-                      }}
-                      disabled={createCampMutation.isPending || submitting} // Disable button while submitting
-                    >
-                      {createCampMutation.isPending || submitting ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Creating...
-                        </>
-                      ) : (
-                        "Create Camp"
-                      )}
-                    </Button>
-                  </div>
-                </TabsContent>
-
-
-              </Tabs>
-            </form>
-          </Form>
+                    <div className="flex justify-between space-x-2 pt-6">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setCurrentTab("location")}
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={submitting}
+                        className="flex items-center gap-1"
+                      >
+                        {submitting ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" /> Creating...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-4 w-4" /> Create Camp
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </form>
+            </Form>
+          )}
         </div>
       </DialogContent>
     </Dialog>
