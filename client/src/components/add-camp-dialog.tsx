@@ -46,7 +46,7 @@ import { CampTypeSelection } from "@/components/camp-type-selection";
 const uiSkillLevels = ["Beginner", "Intermediate", "Advanced", "All Levels"];
 
 // Map UI skill levels to schema skill levels
-const skillLevelMap: Record<string, string> = {
+const skillLevelMap: Record<string, "beginner" | "intermediate" | "advanced" | "all_levels"> = {
   Beginner: "beginner",
   Intermediate: "intermediate",
   Advanced: "advanced",
