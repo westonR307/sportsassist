@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { sportsMap, sportsList } from "@shared/sports-utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { normalizeDate, formatDateForPostgres } from "@/lib/date-utils";
 import {
   Dialog,
   DialogContent,
@@ -68,28 +69,7 @@ const daysOfWeek = [
   "Saturday",
 ];
 
-const formatDateForPostgres = (date: Date | string) => {
-  if (date instanceof Date) {
-    // Format as YYYY-MM-DD but ensure we're using local timezone
-    // to prevent date shift issues
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  } else if (typeof date === 'string') {
-    // If it's already in YYYY-MM-DD format, return as is
-    if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      return date;
-    }
-    // Otherwise, convert to Date and format using local timezone
-    const dateObj = new Date(date);
-    const year = dateObj.getFullYear();
-    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const day = String(dateObj.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-  return date; // Return original if not a Date or string
-};
+// Removed local formatDateForPostgres function - now imported from date-utils.ts
 
 // Format a time string from 24-hour to 12-hour format (e.g., "09:00" to "9:00 AM")
 const formatTimeFor12Hour = (timeStr: string): string => {
@@ -104,45 +84,10 @@ const formatTimeFor12Hour = (timeStr: string): string => {
   }
 };
 
-// Custom date input component to handle Date objects correctly
+// Custom date input component for form fields
 const DateInput = ({ field, ...props }: { field: any }) => {
-  // Enhanced date formatting function
-  const formatDateValue = (value: any): string => {
-    if (!value) return '';
-    
-    // If already a string in YYYY-MM-DD format, return as is
-    if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      console.log(`DateInput: Date value already in correct format - ${value}`);
-      return value;
-    }
-    
-    try {
-      // Convert to Date object if it's not already
-      const date = value instanceof Date ? value : new Date(value);
-      
-      // Check if date is valid
-      if (isNaN(date.getTime())) {
-        console.error(`DateInput: Invalid date value - ${value}`);
-        return '';
-      }
-      
-      // Format using explicit year, month, day components to avoid timezone issues
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      
-      const formattedDate = `${year}-${month}-${day}`;
-      console.log(`DateInput: Formatted date ${value} to ${formattedDate}`);
-      
-      return formattedDate;
-    } catch (error) {
-      console.error(`DateInput: Error formatting date ${value}`, error);
-      return '';
-    }
-  };
-  
-  // Apply the enhanced formatting
-  const formattedValue = formatDateValue(field.value);
+  // Use our dedicated utility for consistent date handling
+  const formattedValue = normalizeDate(field.value);
   
   return (
     <Input
@@ -152,6 +97,7 @@ const DateInput = ({ field, ...props }: { field: any }) => {
       value={formattedValue}
       onChange={(e) => {
         console.log(`DateInput: Input change event: ${e.target.value}`);
+        // Store the raw string value directly to avoid any manipulation
         field.onChange(e.target.value);
       }}
     />
