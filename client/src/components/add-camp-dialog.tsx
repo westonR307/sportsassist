@@ -608,6 +608,21 @@ export function AddCampDialog({
     console.log("Form submitted with data:", data);
     console.log("Is submitting:", submitting); // Debug if submitting state is working
 
+    // Explicitly set required values before validation
+    
+    // Set organizationId from user context
+    if (user?.organizationId) {
+      form.setValue("organizationId", user.organizationId);
+    } else {
+      toast({
+        title: "Missing Information",
+        description: "Organization ID is required but not available in user context",
+        variant: "destructive",
+      });
+      console.error("User organizationId is missing", user);
+      return;
+    }
+    
     // Set sportId explicitly in the form data
     if (selectedSport) {
       form.setValue("sportId", parseInt(selectedSport));
@@ -621,21 +636,42 @@ export function AddCampDialog({
     }
 
     // Set skillLevel explicitly in the form data using the mapped enum value
-    form.setValue("skillLevel", skillLevelMap[skillLevel] as "beginner" | "intermediate" | "advanced" | "all_levels");
+    const mappedSkillLevel = skillLevelMap[skillLevel] as "beginner" | "intermediate" | "advanced" | "all_levels";
+    form.setValue("skillLevel", mappedSkillLevel);
+    
+    // Ensure these values are reflected in the form's data
+    await form.trigger(["organizationId", "sportId", "skillLevel"]);
+    
+    // Debug whether the values were properly set
+    console.log("Updated form values:", {
+      organizationId: form.getValues("organizationId"),
+      sportId: form.getValues("sportId"),
+      skillLevel: form.getValues("skillLevel")
+    });
 
     // For virtual camps, ensure virtualMeetingUrl is valid
     if (data.isVirtual) {
       // Check if a valid URL is provided for virtual meetings
       if (!data.virtualMeetingUrl || !data.virtualMeetingUrl.trim()) {
-        form.setValue("virtualMeetingUrl", "https://meet.google.com/example"); // Set a default URL pattern 
+        const defaultUrl = "https://meet.google.com/example";
+        form.setValue("virtualMeetingUrl", defaultUrl);
+        console.log("Setting default virtual meeting URL:", defaultUrl);
       } else if (!data.virtualMeetingUrl.startsWith('http')) {
         // Prepend https:// if the URL doesn't start with http or https
-        form.setValue("virtualMeetingUrl", `https://${data.virtualMeetingUrl}`);
+        const fixedUrl = `https://${data.virtualMeetingUrl}`;
+        form.setValue("virtualMeetingUrl", fixedUrl);
+        console.log("Fixed virtual meeting URL format:", fixedUrl);
       }
+      
+      // Ensure the virtualMeetingUrl value is properly validated
+      await form.trigger("virtualMeetingUrl");
     } else {
       // Not a virtual camp, clear the URL field
       form.setValue("virtualMeetingUrl", "");
+      console.log("Cleared virtual meeting URL for non-virtual camp");
     }
+    
+    console.log("Virtual meeting URL value after processing:", form.getValues("virtualMeetingUrl"));
 
     // Format all dates consistently and ensure data types are correct
     const formattedData = {
@@ -729,11 +765,54 @@ export function AddCampDialog({
                 console.log("Form submit event triggered");
                 // Log form validation errors
                 console.log("Form errors:", form.formState.errors);
-                form.handleSubmit((data) => {
+                form.handleSubmit(async (data) => {
                   console.log("Form submit handler called with data:", data);
-                  onSubmit(data);
+                  
+                  // Force-set required values one last time before submission
+                  if (user?.organizationId) {
+                    form.setValue("organizationId", user.organizationId);
+                  }
+                  
+                  if (selectedSport) {
+                    form.setValue("sportId", parseInt(selectedSport));
+                  }
+                  
+                  const mappedSkillLevel = skillLevelMap[skillLevel] as "beginner" | "intermediate" | "advanced" | "all_levels";
+                  form.setValue("skillLevel", mappedSkillLevel);
+                  
+                  // Set schedulingType
+                  form.setValue("schedulingType", selectedSchedulingType);
+                  
+                  // Handle virtual meeting URL for virtual camps
+                  if (data.isVirtual && (!data.virtualMeetingUrl || !data.virtualMeetingUrl.trim())) {
+                    form.setValue("virtualMeetingUrl", "https://meet.google.com/example");
+                  } else if (!data.isVirtual) {
+                    form.setValue("virtualMeetingUrl", "");
+                  }
+                  
+                  // Trigger validation on all fields
+                  await form.trigger();
+                  
+                  // Check again if we have validation errors
+                  if (Object.keys(form.formState.errors).length > 0) {
+                    console.error("Form still has validation errors after trying to fix:", form.formState.errors);
+                    toast({
+                      title: "Form validation failed",
+                      description: "Please check all required fields are filled correctly.",
+                      variant: "destructive"
+                    });
+                    return;
+                  }
+                  
+                  // All set - submit the form
+                  onSubmit(form.getValues());
                 }, (errors) => {
                   console.error("Form validation failed:", errors);
+                  toast({
+                    title: "Form validation failed",
+                    description: "Please check all required fields are filled correctly.",
+                    variant: "destructive"
+                  });
                 })(event);
               }} className="space-y-6">
                 {/* Back button to return to selection screen */}
