@@ -62,28 +62,35 @@ export const publicRoles = ["platform_admin", "camp_creator", "parent", "athlete
 
 // Common UTC-safe date transformation function to ensure consistency
 const createUtcSafeDateTransformer = (fieldName: string) => {
-  return z.string().or(z.date()).transform(val => {
-    console.log(`[${fieldName} Debug] Processing ${fieldName}: ${String(val)}`);
-    
+  return z.union([
+    z.string(),
+    z.date(),
+    z.custom<Date>((val) => val instanceof Date)
+  ]).transform(val => {
+    console.log(`[${fieldName} Debug] Processing ${fieldName}:`, val);
+
+    // If already a Date object, return as is
     if (val instanceof Date) {
-      console.log(`[${fieldName} Debug] Value is Date object: ${val.toISOString()}`);
       return val;
     }
-    
-    // Handle YYYY-MM-DD format without timezone issues
-    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const [year, month, day] = val.split('-').map(Number);
-      
-      // Create a date in UTC at noon to avoid date shifts
-      const utcDate = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
-      console.log(`[${fieldName} Debug] Parsed YYYY-MM-DD string: ${val} → UTC date: ${utcDate.toISOString()}`);
-      return utcDate;
+
+    // Convert string to Date
+    if (typeof val === 'string') {
+      // Handle YYYY-MM-DD format
+      if (val.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [year, month, day] = val.split('-').map(Number);
+        return new Date(Date.UTC(year, month - 1, day));
+      }
+
+      // Parse other date string formats
+      const date = new Date(val);
+      if (isNaN(date.getTime())) {
+        throw new Error(`Invalid date for ${fieldName}: ${val}`);
+      }
+      return date;
     }
-    
-    // For other string formats, parse using UTC to avoid timezone shifts
-    const date = new Date(val);
-    console.log(`[${fieldName} Debug] Fallback parsing: ${String(val)} → ${date.toISOString()}`);
-    return date;
+
+    throw new Error(`Invalid date value for ${fieldName}`);
   });
 };
 

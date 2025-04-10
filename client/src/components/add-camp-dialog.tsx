@@ -586,10 +586,19 @@ export function AddCampDialog({
       return;
     }
 
-    // Prep the data
-    data.sportId = parseInt(selectedSport);
-    data.skillLevel = skillLevelMap[skillLevel]; 
-    data.schedulingType = selectedSchedulingType;
+    // Format all dates consistently
+    const formattedData = {
+      ...data,
+      startDate: formatDateForPostgres(data.startDate),
+      endDate: formatDateForPostgres(data.endDate),
+      registrationStartDate: formatDateForPostgres(data.registrationStartDate),
+      registrationEndDate: formatDateForPostgres(data.registrationEndDate),
+      sportId: parseInt(selectedSport),
+      skillLevel: skillLevelMap[skillLevel],
+      schedulingType: selectedSchedulingType,
+    };
+
+    console.log("Formatted submission data:", formattedData);
 
     console.log("About to call mutation with data", { 
       ...data, 
