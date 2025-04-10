@@ -51,7 +51,49 @@ const CampStaffSelector = forwardRef<CampStaffSelectorRef, CampStaffSelectorProp
     // Expose methods through the ref
     useImperativeHandle(ref, () => ({
       getSelectedStaff: () => selectedStaff,
-      clearSelectedStaff: () => setSelectedStaff([])
+      clearSelectedStaff: () => setSelectedStaff([]),
+      saveStaffAssignments: async (newCampId: number) => {
+        console.log(`Saving staff assignments for camp ID: ${newCampId}`);
+        
+        if (selectedStaff.length === 0) {
+          console.log("No staff to save - skipping staff assignment save");
+          return;
+        }
+
+        try {
+          // Save each staff member assignment for the new camp
+          const promises = selectedStaff.map(async (staff) => {
+            console.log(`Adding staff member ${staff.userId} as ${staff.role} to camp ${newCampId}`);
+            
+            const response = await fetch(`/api/camps/${newCampId}/staff`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                userId: staff.userId,
+                role: staff.role
+              }),
+            });
+            
+            if (!response.ok) {
+              const error = await response.json();
+              throw new Error(error.message || "Failed to add staff member");
+            }
+            
+            return response.json();
+          });
+          
+          await Promise.all(promises);
+          console.log(`Successfully saved ${selectedStaff.length} staff assignments`);
+          
+          // Clear the staff list after saving
+          setSelectedStaff([]);
+        } catch (error) {
+          console.error("Error saving staff assignments:", error);
+          throw error;
+        }
+      }
     }));
 
     // Add temporary staff for new camp
