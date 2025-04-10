@@ -492,7 +492,8 @@ export function AddCampDialog({
                   startTime: slot.startTime,
                   endTime: slot.endTime,
                   maxBookings: slot.capacity, // Server expects maxBookings instead of capacity
-                  notes: "" // Add required fields based on the server API endpoint
+                  notes: "", // Add required fields based on the server API endpoint
+                  creatorId: user?.id // Add the creator ID from the authenticated user
                 };
                 
                 console.log("Sending availability slot with data:", slotData);
