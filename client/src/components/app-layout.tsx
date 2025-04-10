@@ -473,14 +473,17 @@ export function AppLayout({ children, showBackButton = false, showNavigation = t
       )}
 
       {/* Main Content */}
-      <div
-        className={`
-        transition-all duration-300 ease-in-out flex-1
-        ${showNavigation ? (sidebarOpen ? "lg:ml-64" : "lg:ml-16") : ""}
-        pt-16 lg:pt-4 overflow-x-hidden
-      `}
+      <div 
+        className="flex-1 min-h-screen bg-gray-50"
+        style={{
+          marginLeft: showNavigation 
+            ? (sidebarOpen ? 'calc(100% * 0.16667)' : '4rem') 
+            : '0',
+          paddingTop: '4rem',
+          transition: 'margin-left 0.3s ease-in-out'
+        }}
       >
-        <main className="px-4 py-6 max-w-full">{children}</main>
+        <main className="px-6 py-6 max-w-full">{children}</main>
       </div>
 
       {/* Mobile Overlay */}
