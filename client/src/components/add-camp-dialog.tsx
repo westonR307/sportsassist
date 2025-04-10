@@ -610,8 +610,12 @@ export function AddCampDialog({
       });
 
       try {
-        // Handle scheduling based on type
+        // Handle scheduling based on type - add explicit type checking for debugging
+        console.log(`Processing camp with scheduling type: ${selectedSchedulingType}`);
+        
         if (selectedSchedulingType === 'fixed') {
+          console.log("Fixed schedule camp - checking sessions:", plannedSessions);
+          
           if (plannedSessions.length === 0) {
             toast({
               title: "Error",
@@ -620,16 +624,35 @@ export function AddCampDialog({
             });
             return;
           }
-          formattedData.schedules = plannedSessions.map(session => ({
-            dayOfWeek: new Date(session.sessionDate).getDay(),
-            startTime: session.startTime.substring(0, 5),
-            endTime: session.endTime.substring(0, 5)
-          }));
+          
+          // Process sessions for fixed schedule camps
+          formattedData.schedules = plannedSessions.map(session => {
+            const dayOfWeek = new Date(session.sessionDate).getDay();
+            const startTime = session.startTime.substring(0, 5);
+            const endTime = session.endTime.substring(0, 5);
+            
+            console.log(`Processed session: day=${dayOfWeek}, start=${startTime}, end=${endTime}`);
+            
+            return {
+              dayOfWeek,
+              startTime,
+              endTime
+            };
+          });
+          
+          console.log("Final schedules for fixed camp:", formattedData.schedules);
         } else {
+          console.log("Availability-based camp - sending empty schedules array");
           formattedData.schedules = [];
         }
 
-        console.log("Calling mutation with formatted data:", formattedData);
+        // Log final data before sending
+        console.log("Calling mutation with formatted data:", JSON.stringify(formattedData, null, 2));
+        
+        // Force the schedulingType to be explicitly set to ensure it's not overridden
+        formattedData.schedulingType = selectedSchedulingType;
+        
+        // Call the mutation
         await createCampMutation.mutateAsync(formattedData);
       } catch (error) {
         console.error("Error calling mutation:", error);
