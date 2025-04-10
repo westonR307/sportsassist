@@ -634,6 +634,7 @@ export function AddCampDialog({
         endDate: formattedEndDate
       });
       
+      // Prepare base formatted data
       const formattedData = {
         ...dataWithoutDefaults,
         registrationStartDate: formattedRegistrationStartDate,
@@ -642,15 +643,33 @@ export function AddCampDialog({
         endDate: formattedEndDate,
         isVirtual: data.isVirtual || false,
         virtualMeetingUrl: data.isVirtual ? data.virtualMeetingUrl : undefined,
-        // Create at least one schedule entry based on hardcoded default times
-        schedules: [
-          {
-            dayOfWeek: 0, // Sunday as default
-            startTime: "09:00", // Using hardcoded default time
-            endTime: "17:00" // Using hardcoded default time
-          }
-        ]
+        // Maintain the scheduling type selected by the user
+        schedulingType: selectedSchedulingType
       };
+      
+      // Let the server handle schedule generation for availability-based camps
+      if (selectedSchedulingType === "fixed") {
+        // For fixed scheduling type, include the schedules 
+        formattedData.schedules = plannedSessions.length > 0 ? 
+          // If we have planned sessions, convert them to schedules
+          plannedSessions.map(session => ({
+            dayOfWeek: new Date(session.sessionDate).getDay(),
+            startTime: session.startTime,
+            endTime: session.endTime
+          })) :
+          // Otherwise use a default schedule
+          [
+            {
+              dayOfWeek: 0, // Sunday as default
+              startTime: "09:00", // Using hardcoded default time
+              endTime: "17:00" // Using hardcoded default time
+            }
+          ];
+      } else {
+        // For availability-based camps, send an empty array
+        // The server will add a dummy schedule as needed
+        formattedData.schedules = [];
+      }
       
       console.log("Final formattedData being sent to the server:", formattedData);
       

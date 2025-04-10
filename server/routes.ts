@@ -1105,6 +1105,8 @@ export async function registerRoutes(app: Express) {
     try {
       console.log("========= Camp Creation Debug Start =========");
       console.log("Raw request body:", JSON.stringify(req.body, null, 2));
+      console.log("Request schedules:", JSON.stringify(req.body.schedules, null, 2));
+      console.log("Request schedulingType:", req.body.schedulingType);
 
       // Check authentication
       if (!req.user) {
