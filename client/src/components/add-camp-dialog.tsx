@@ -396,34 +396,33 @@ export function AddCampDialog({
           // Parse the JSON response
           const responseData = await response.json();
           console.log("Camp created successfully:", responseData);
+          
+          // Now create all the planned sessions for this camp
+          if (plannedSessions.length > 0 && responseData.id) {
+            console.log(`Creating ${plannedSessions.length} sessions for camp ${responseData.id}`);
+
+            // Create a batch of promises to create all sessions
+            const sessionPromises = plannedSessions.map(session => {
+              // Prepare session data for API call, removing temporary ID
+              const { id, campId, ...sessionData } = session;
+              return apiRequest("POST", `/api/camps/${responseData.id}/sessions`, {
+                ...sessionData,
+                campId: responseData.id,
+                // Format date properly for PostgreSQL
+                date: sessionData.date instanceof Date ? formatDateForPostgres(sessionData.date) : sessionData.date
+              });
+            });
+
+            // Wait for all sessions to be created
+            await Promise.all(sessionPromises);
+            console.log("All sessions created successfully!");
+          }
+
           return responseData;
         } catch (error) {
           console.error("API request failed:", error);
           throw error;
         }
-
-        // Now create all the planned sessions for this camp
-        if (plannedSessions.length > 0 && responseData.id) {
-          console.log(`Creating ${plannedSessions.length} sessions for camp ${responseData.id}`);
-
-          // Create a batch of promises to create all sessions
-          const sessionPromises = plannedSessions.map(session => {
-            // Prepare session data for API call, removing temporary ID
-            const { id, campId, ...sessionData } = session;
-            return apiRequest("POST", `/api/camps/${responseData.id}/sessions`, {
-              ...sessionData,
-              campId: responseData.id,
-              // Format date properly for PostgreSQL
-              date: sessionData.date instanceof Date ? formatDateForPostgres(sessionData.date) : sessionData.date
-            });
-          });
-
-          // Wait for all sessions to be created
-          await Promise.all(sessionPromises);
-          console.log("All sessions created successfully!");
-        }
-
-        return responseData;
       } catch (error: any) {
         console.error("Camp creation error:", error);
         throw error;
@@ -608,6 +607,7 @@ export function AddCampDialog({
   // When a user submits the form
   const onSubmit = async (data: ExtendedCampSchema) => {
     console.log("Form submitted with data:", data);
+    console.log("Is submitting:", submitting); // Debug if submitting state is working
 
     if (!selectedSport) {
       toast({
@@ -704,7 +704,13 @@ export function AddCampDialog({
             />
           ) : (
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form onSubmit={(event) => {
+                console.log("Form submit event triggered");
+                form.handleSubmit((data) => {
+                  console.log("Form submit handler called with data:", data);
+                  onSubmit(data);
+                })(event);
+              }} className="space-y-6">
                 {/* Back button to return to selection screen */}
                 <div className="mb-4">
                   <Button 

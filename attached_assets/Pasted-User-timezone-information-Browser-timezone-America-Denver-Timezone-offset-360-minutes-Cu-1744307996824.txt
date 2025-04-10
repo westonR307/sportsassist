@@ -1,0 +1,74 @@
+User timezone information:
+- Browser timezone: America/Denver
+- Timezone offset: 360 minutes
+- Current date/time: Thu Apr 10 2025 11:59:02 GMT-0600 (Mountain Daylight Time)
+- UTC date/time: Thu, 10 Apr 2025 17:59:02 GMT
+- ISO date/time: 2025-04-10T17:59:02.868Z
+[AddSession] Creating session with normalized date: 2025-05-14
+[AddSession] Original selected date: Wed May 14 2025 00:00:00 GMT-0600 (Mountain Daylight Time)
+[AddSession] Selected date timezone info: 
+Object {year: 2025, month: 5, day: 14, hours: 0, minutes: 0, …}
+Using custom handler to add session
+Adding planned session: 
+Object {campId: -1, sessionDate: "2025-05-14", startTime: "09:00", endTime: "10:00", status: "active", …}
+Save triggered from calendar
+Full route params: 
+Object {id: undefined}
+Protected route params: 
+Object {id: undefined}
+Full route params: 
+Object {id: undefined}
+Protected route params: 
+Object {id: undefined}
+Cell date 2025-04-01 has a session
+Cell date 2025-04-03 has a session
+Cell date 2025-04-06 has a session
+Cell date 2025-04-09 has a session
+Cell date 2025-04-10 has a session
+Cell date 2025-04-11 has a session
+Cell date 2025-04-14 has a session
+Cell date 2025-04-15 has a session
+Cell date 2025-04-16 has a session
+Cell date 2025-04-17 has a session
+Cell date 2025-04-18 has a session
+Cell date 2025-04-21 has a session
+Cell date 2025-04-22 has a session
+Cell date 2025-04-23 has a session
+Cell date 2025-04-24 has a session
+Cell date 2025-04-25 has a session
+Cell date 2025-04-27 has a session
+Cell date 2025-04-28 has a session
+Cell date 2025-04-29 has a session
+Cell date 2025-04-30 has a session
+Cell date 2025-05-01 has a session
+Cell date 2025-05-03 has a session
+Full route params: 
+Object {id: undefined}
+Protected route params: 
+Object {id: undefined}
+Full route params: 
+Object {id: undefined}
+Protected route params: 
+Object {id: undefined}
+Cell date 2025-04-01 has a session
+Cell date 2025-04-03 has a session
+Cell date 2025-04-06 has a session
+Cell date 2025-04-09 has a session
+Cell date 2025-04-10 has a session
+Cell date 2025-04-11 has a session
+Cell date 2025-04-14 has a session
+Cell date 2025-04-15 has a session
+Cell date 2025-04-16 has a session
+Cell date 2025-04-17 has a session
+Cell date 2025-04-18 has a session
+Cell date 2025-04-21 has a session
+Cell date 2025-04-22 has a session
+Cell date 2025-04-23 has a session
+Cell date 2025-04-24 has a session
+Cell date 2025-04-25 has a session
+Cell date 2025-04-27 has a session
+Cell date 2025-04-28 has a session
+Cell date 2025-04-29 has a session
+Cell date 2025-04-30 has a session
+Cell date 2025-05-01 has a session
+Cell date 2025-05-03 has a session
