@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { AvailabilitySlotManager } from "@/components/availability-slots/availability-slot-manager";
 import {
   Form,
   FormControl,
@@ -137,6 +138,7 @@ export function AddCampDialog({
   const [customFieldDetails, setCustomFieldDetails] = useState<{ [id: number]: {label: string, isInternal: boolean} }>({});
   const [duplicateData, setDuplicateData] = useState<any>(null);
   const [selectedStaff, setSelectedStaff] = useState<{userId: number, role: string}[]>([]); // Store selected staff members
+  const [availabilitySlots, setAvailabilitySlots] = useState<{date: Date, startTime: string, endTime: string, capacity: number}[]>([]); // Store availability slots
   const metaFieldsRef = useRef<BasicInfoMetaFieldsRef>(null);
   const campStaffRef = useRef<React.ElementRef<typeof CampStaffSelector>>(null); // Ref for CampStaffSelector component
 
