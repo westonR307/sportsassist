@@ -24,10 +24,12 @@ interface AuthenticatedRequest extends Request {
 export default function registerAvailabilityRoutes(app: Express) {
   // Create availability slot
   app.post("/api/camps/:id/availability-slots", async (req: AuthenticatedRequest, res: Response) => {
+    // Store id in local variable for error handler
+    const campId = req.params.id;
+    
     try {
-      const { id } = req.params;
       console.log("==========================================");
-      console.log("Received availability slot creation request for camp", id);
+      console.log("Received availability slot creation request for camp", campId);
       console.log("Request body:", JSON.stringify(req.body));
       console.log("Authenticated user:", req.user ? `ID: ${req.user.id}, Role: ${req.user.role}` : "No authenticated user");
       console.log("==========================================");
@@ -42,7 +44,7 @@ export default function registerAvailabilityRoutes(app: Express) {
       
       // Ensure the user has permission to add a slot
       const camp = await db.query.camps.findFirst({
-        where: eq(camps.id, parseInt(id, 10))
+        where: eq(camps.id, parseInt(campId, 10))
       });
       
       if (!camp) {
@@ -71,7 +73,7 @@ export default function registerAvailabilityRoutes(app: Express) {
       
       // Create the availability slot
       const slot = await db.insert(availabilitySlots).values({
-        campId: parseInt(id, 10),
+        campId: parseInt(campId, 10),
         creatorId: creatorId || req.user.id, // Use provided creatorId if available, otherwise use authenticated user
         slotDate: new Date(slotDate),
         startTime,
@@ -92,7 +94,7 @@ export default function registerAvailabilityRoutes(app: Express) {
     } catch (error) {
       console.error("==========================================");
       console.error("Error creating availability slot:", error);
-      console.error("Camp ID from params:", req.params.id);
+      console.error("Camp ID from params:", campId);
       console.error("Request user:", req.user);
       console.error("Request body:", req.body);
       console.error("==========================================");
