@@ -24,6 +24,7 @@ interface CampSession {
     id: number;
     name: string;
     type: string;
+    slug: string;
   };
 }
 
