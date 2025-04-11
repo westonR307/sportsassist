@@ -273,6 +273,7 @@ function CampViewPage(props: { id?: string }) {
   });
 
   const [selectedChildId, setSelectedChildId] = useState<number | null>(null);
+  const [selectedSlotId, setSelectedSlotId] = useState<number | null>(null);
   const [showChildSelectionDialog, setShowChildSelectionDialog] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [exportFormat, setExportFormat] = useState<"pdf" | "csv">("pdf");
@@ -384,12 +385,18 @@ function CampViewPage(props: { id?: string }) {
           </Button>
           <Button
             onClick={() => {
-              if (selectedChildId) {
+              // For availability-based camps, require a slot selection
+              const requiresSlotSelection = camp?.schedulingType === 'availability' && !isWaitlist;
+              if (selectedChildId && (!requiresSlotSelection || selectedSlotId)) {
                 registerMutation.mutate();
                 setShowChildSelectionDialog(false);
               }
             }}
-            disabled={!selectedChildId || registerMutation.isPending}
+            disabled={
+              !selectedChildId || 
+              registerMutation.isPending || 
+              (camp?.schedulingType === 'availability' && !isWaitlist && !selectedSlotId)
+            }
             variant={isWaitlist ? "secondary" : "default"}
           >
             {registerMutation.isPending ? (
@@ -417,10 +424,18 @@ function CampViewPage(props: { id?: string }) {
         }
 
         console.log("Registering for camp with ID:", campId);
-        const response = await apiRequest('POST', `/api/camps/${campId}/register`, {
+        
+        const requestBody: any = {
           campId: campId,
           childId: selectedChildId,
-        });
+        };
+        
+        // If this is an availability-based camp and a slot was selected, include it
+        if (camp.schedulingType === 'availability' && selectedSlotId) {
+          requestBody.slotId = selectedSlotId;
+        }
+        
+        const response = await apiRequest('POST', `/api/camps/${campId}/register`, requestBody);
 
         return await response.json();
       } finally {

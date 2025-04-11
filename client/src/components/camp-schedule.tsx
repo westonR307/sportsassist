@@ -222,7 +222,7 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
   console.log("Schedule Errors:", schedulesError);
   console.log("Exception Errors:", exceptionsError);
 
-  const isLoading = schedulesLoading || exceptionsLoading || patternsLoading || sessionsLoading;
+  const isLoading = schedulesLoading || exceptionsLoading || patternsLoading || sessionsLoading || isLoadingCamp || isLoadingSlots;
   const error = schedulesError || exceptionsError || patternsError || sessionsError;
   
   // Fixed data extraction with strict type checks
@@ -231,6 +231,9 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
   const exceptions = exceptionsData && Array.isArray(exceptionsData.exceptions) ? exceptionsData.exceptions : [];
   const patterns = patternsData && Array.isArray(patternsData.patterns) ? patternsData.patterns : [];
   const sessions = sessionsData && Array.isArray(sessionsData.sessions) ? sessionsData.sessions : [];
+  
+  // Check if the camp is availability-based
+  const isAvailabilityBased = campData?.schedulingType === 'availability';
 
   if (isLoading) {
     return (
@@ -305,6 +308,12 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
             <Calendar className="h-4 w-4 mr-1" />
             Calendar Schedule
           </TabsTrigger>
+          {isAvailabilityBased && (
+            <TabsTrigger value="availability">
+              <Users className="h-4 w-4 mr-1" />
+              Availability Slots
+            </TabsTrigger>
+          )}
           <TabsTrigger value="exceptions" className="relative">
             Session Changes
             {hasUpcomingExceptions && (
@@ -313,7 +322,6 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
           </TabsTrigger>
         </TabsList>
         
-
         
         <TabsContent value="enhanced" className="m-0">
           <CardContent>
@@ -439,6 +447,58 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
             )}
           </CardContent>
         </TabsContent>
+
+        {isAvailabilityBased && (
+          <TabsContent value="availability" className="m-0">
+            <CardContent>
+              {availabilitySlots.length === 0 ? (
+                <div className="text-center text-muted-foreground py-4">
+                  No availability slots found for this camp.
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <h3 className="text-lg font-medium mb-3">Available Time Slots</h3>
+                  <div className="space-y-4">
+                    {availabilitySlots.map((slot: any) => {
+                      const startTime = formatTime(slot.startTime);
+                      const endTime = formatTime(slot.endTime);
+                      const date = parseDate(slot.date);
+                      const isPast = date < today;
+                      const isBooked = slot.booked || slot.currentBookings >= slot.capacity;
+                      
+                      return (
+                        <div 
+                          key={slot.id} 
+                          className={`border rounded-md p-3 ${isPast ? 'opacity-60' : ''}`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-medium">{formatDate(slot.date)}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                {startTime} - {endTime}
+                              </p>
+                            </div>
+                            <div>
+                              <Badge 
+                                variant={isBooked ? "secondary" : "outline"}
+                                className={isBooked ? "bg-muted" : ""}
+                              >
+                                {isBooked ? "Fully Booked" : `${slot.currentBookings || 0}/${slot.capacity} Booked`}
+                              </Badge>
+                            </div>
+                          </div>
+                          {slot.description && (
+                            <p className="text-sm text-muted-foreground mt-2">{slot.description}</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </TabsContent>
+        )}
         
         <TabsContent value="exceptions" className="m-0">
           <CardContent>
