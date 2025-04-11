@@ -200,6 +200,7 @@ function CampViewPage(props: { id?: string }) {
   const [cancelReason, setCancelReason] = useState("");
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
+  const [manageAvailabilityOpen, setManageAvailabilityOpen] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -279,6 +280,7 @@ function CampViewPage(props: { id?: string }) {
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [exportFormat, setExportFormat] = useState<"pdf" | "csv">("pdf");
   const [showFormFieldsDialog, setShowFormFieldsDialog] = useState(false);
+  const [showAllAvailabilitySlots, setShowAllAvailabilitySlots] = useState(false);
 
   // Query to fetch availability slots for the camp if it's availability-based
   const { data: availabilitySlots = [], isLoading: isLoadingSlots } = useQuery({
@@ -963,7 +965,7 @@ function CampViewPage(props: { id?: string }) {
                                 console.log("Slot:", slot);
                                 return !slot.booked && slot.currentBookings < (slot.capacity || slot.maxBookings);
                               })
-                              .slice(0, 5) // Show only first 5 slots to keep it compact
+                              .slice(0, showAllAvailabilitySlots ? undefined : 5) // Show all or just 5 slots
                               .map((slot: any) => {
                                 console.log("Processing slot:", slot); // Debug log
                                 // Fix date formatting - slot might have slotDate or date property
@@ -1017,23 +1019,34 @@ function CampViewPage(props: { id?: string }) {
                               <div className="text-center py-4">
                                 <p className="text-muted-foreground">No available time slots found.</p>
                               </div>
-                            ) : availabilitySlots.filter((slot: any) => !slot.booked && slot.currentBookings < (slot.capacity || slot.maxBookings)).length > 5 && (
+                            ) : (
                               <div className="mt-2 text-center">
-                                <Button 
-                                  variant="link" 
-                                  onClick={() => {
-                                    // Since we removed the availability tab, show management UI directly
-                                    if (hasPermission) {
-                                      setManageAvailabilityOpen(true);
-                                    } else {
-                                      // For non-admin users, just expand to show all slots
-                                      // We'll implement this by setting a state to show all slots
-                                      setShowAllAvailabilitySlots(true);
-                                    }
-                                  }}
-                                >
-                                  {hasPermission ? "Manage availability" : "View all available slots"}
-                                </Button>
+                                {/* Show different button based on state and permissions */}
+                                {showAllAvailabilitySlots && !hasPermission ? (
+                                  <Button 
+                                    variant="link" 
+                                    onClick={() => setShowAllAvailabilitySlots(false)}
+                                  >
+                                    Show fewer slots
+                                  </Button>
+                                ) : (
+                                  availabilitySlots.filter((slot: any) => !slot.booked && slot.currentBookings < (slot.capacity || slot.maxBookings)).length > 5 && (
+                                    <Button 
+                                      variant="link" 
+                                      onClick={() => {
+                                        // Since we removed the availability tab, show management UI directly
+                                        if (hasPermission) {
+                                          setManageAvailabilityOpen(true);
+                                        } else {
+                                          // For non-admin users, just expand to show all slots
+                                          setShowAllAvailabilitySlots(true);
+                                        }
+                                      }}
+                                    >
+                                      {hasPermission ? "Manage availability" : "View all available slots"}
+                                    </Button>
+                                  )
+                                )}
                               </div>
                             )}
                           </div>
