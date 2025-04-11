@@ -282,7 +282,10 @@ function CampViewPage(props: { id?: string }) {
   });
 
   const [selectedChildId, setSelectedChildId] = useState<number | null>(null);
+  // For single slot selection
   const [selectedSlotId, setSelectedSlotId] = useState<number | null>(null);
+  // For multiple slot selection
+  const [selectedSlotIds, setSelectedSlotIds] = useState<number[]>([]);
   const [showChildSelectionDialog, setShowChildSelectionDialog] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [exportFormat, setExportFormat] = useState<"pdf" | "csv">("pdf");
@@ -405,7 +408,8 @@ function CampViewPage(props: { id?: string }) {
         {/* Slot selection for availability-based camps */}
         {isAvailabilityBased && !isWaitlist && selectedChildId && availabilitySlots.length > 0 && (
           <div className="mt-6 border rounded-md p-4">
-            <h3 className="font-medium mb-3">Select a Time Slot</h3>
+            <h3 className="font-medium mb-3">Select Time Slots</h3>
+            <p className="text-sm text-muted-foreground mb-3">You can select multiple time slots for your athlete.</p>
             <div className="space-y-3">
               {availabilitySlots
                 .filter((slot: any) => {
@@ -425,15 +429,24 @@ function CampViewPage(props: { id?: string }) {
                   const formattedStartTime = startTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
                   const formattedEndTime = endTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
                   
+                  const isSelected = selectedSlotIds.includes(slot.id);
+                  
                   return (
                     <div 
                       key={slot.id}
                       className={`border rounded-md p-3 cursor-pointer transition-colors ${
-                        selectedSlotId === slot.id 
+                        isSelected 
                           ? 'border-primary bg-primary/5' 
                           : 'hover:border-primary/50'
                       }`}
-                      onClick={() => setSelectedSlotId(slot.id)}
+                      onClick={() => {
+                        // Toggle slot selection
+                        if (isSelected) {
+                          setSelectedSlotIds(selectedSlotIds.filter(id => id !== slot.id));
+                        } else {
+                          setSelectedSlotIds([...selectedSlotIds, slot.id]);
+                        }
+                      }}
                     >
                       <div className="flex justify-between items-center">
                         <div>
@@ -443,7 +456,7 @@ function CampViewPage(props: { id?: string }) {
                           </p>
                         </div>
                         <div className="flex items-center">
-                          {selectedSlotId === slot.id ? (
+                          {isSelected ? (
                             <CheckCircle className="h-5 w-5 text-primary" />
                           ) : (
                             <Button 
@@ -451,7 +464,7 @@ function CampViewPage(props: { id?: string }) {
                               variant="outline"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setSelectedSlotId(slot.id);
+                                setSelectedSlotIds([...selectedSlotIds, slot.id]);
                               }}
                             >
                               Select
@@ -486,7 +499,7 @@ function CampViewPage(props: { id?: string }) {
             onClick={() => {
               // For availability-based camps, require a slot selection
               const requiresSlotSelection = camp?.schedulingType === 'availability' && !isWaitlist;
-              if (selectedChildId && (!requiresSlotSelection || selectedSlotId)) {
+              if (selectedChildId && (!requiresSlotSelection || (selectedSlotIds.length > 0 || selectedSlotId))) {
                 registerMutation.mutate();
                 setShowChildSelectionDialog(false);
               }
@@ -494,7 +507,7 @@ function CampViewPage(props: { id?: string }) {
             disabled={
               !selectedChildId || 
               registerMutation.isPending || 
-              (camp?.schedulingType === 'availability' && !isWaitlist && !selectedSlotId)
+              (camp?.schedulingType === 'availability' && !isWaitlist && selectedSlotIds.length === 0 && !selectedSlotId)
             }
             variant={isWaitlist ? "secondary" : "default"}
           >
@@ -524,25 +537,74 @@ function CampViewPage(props: { id?: string }) {
 
         console.log("Registering for camp with ID:", campId);
         
-        const requestBody: any = {
-          campId: campId,
-          childId: selectedChildId,
-        };
-        
-        // If this is an availability-based camp and a slot was selected, include it
-        if (camp.schedulingType === 'availability' && selectedSlotId) {
-          requestBody.slotId = selectedSlotId;
+        // Handle multiple slot selections for availability-based camps
+        if (camp.schedulingType === 'availability' && selectedSlotIds.length > 0) {
+          console.log("Registering for multiple slots:", selectedSlotIds);
+          
+          // Process each slot registration sequentially
+          const results = [];
+          for (const slotId of selectedSlotIds) {
+            const requestBody: any = {
+              campId: campId,
+              childId: selectedChildId,
+              slotId: slotId
+            };
+            
+            const response = await apiRequest('POST', `/api/camps/${campId}/register`, requestBody);
+            const result = await response.json();
+            results.push(result);
+            
+            // Add a small delay between requests to prevent race conditions
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+          
+          return { multipleRegistrations: true, results };
+        } else {
+          // Regular single registration
+          const requestBody: any = {
+            campId: campId,
+            childId: selectedChildId,
+          };
+          
+          // If this is an availability-based camp and a slot was selected, include it
+          if (camp.schedulingType === 'availability' && selectedSlotId) {
+            requestBody.slotId = selectedSlotId;
+          }
+          
+          const response = await apiRequest('POST', `/api/camps/${campId}/register`, requestBody);
+          return await response.json();
         }
-        
-        const response = await apiRequest('POST', `/api/camps/${campId}/register`, requestBody);
-
-        return await response.json();
       } finally {
         setRegistering(false);
+        // Reset selections
+        setSelectedSlotIds([]);
+        setSelectedSlotId(null);
       }
     },
     onSuccess: (data) => {
-      if (data.isWaitlisted) {
+      // Handle multi-slot registrations 
+      if (data.multipleRegistrations && data.results) {
+        const successfulCount = data.results.filter((r: any) => !r.error).length;
+        const totalCount = data.results.length;
+        
+        if (successfulCount === totalCount) {
+          toast({
+            title: "Multiple registrations successful",
+            description: `Successfully registered for ${successfulCount} time slots.`,
+          });
+        } else if (successfulCount === 0) {
+          toast({
+            title: "Registration failed",
+            description: "Failed to register for any of the selected time slots.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Partial registration successful",
+            description: `Successfully registered for ${successfulCount} out of ${totalCount} selected time slots.`,
+          });
+        }
+      } else if (data.isWaitlisted) {
         toast({
           title: "Added to waitlist",
           description: "You have been added to the waitlist for this camp. We'll notify you if a spot becomes available.",
