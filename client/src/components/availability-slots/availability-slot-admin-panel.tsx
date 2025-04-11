@@ -104,7 +104,8 @@ export function AvailabilitySlotAdminPanel({ campId, startDate, endDate }: Avail
   // Create a new slot
   const createSlotMutation = useMutation({
     mutationFn: (newSlot: SlotCreateParams) => {
-      return apiRequest(`/api/camps/${campId}/availability-slots`, 'POST', newSlot);
+      console.log("Creating slot with data:", newSlot);
+      return apiRequest('POST', `/api/camps/${campId}/availability-slots`, newSlot);
     },
     onSuccess: () => {
       toast({
@@ -115,6 +116,7 @@ export function AvailabilitySlotAdminPanel({ campId, startDate, endDate }: Avail
       setIsAddDialogOpen(false);
     },
     onError: (error: any) => {
+      console.error("Error creating slot:", error);
       toast({
         title: "Error creating slot",
         description: error.message || "An error occurred while creating the availability slot.",
@@ -126,7 +128,8 @@ export function AvailabilitySlotAdminPanel({ campId, startDate, endDate }: Avail
   // Update an existing slot
   const updateSlotMutation = useMutation({
     mutationFn: (updatedSlot: Partial<AvailabilitySlot> & { id: number }) => {
-      return apiRequest(`/api/camps/${campId}/availability-slots/${updatedSlot.id}`, 'PATCH', updatedSlot);
+      console.log("Updating slot with data:", updatedSlot);
+      return apiRequest('PATCH', `/api/camps/${campId}/availability-slots/${updatedSlot.id}`, updatedSlot);
     },
     onSuccess: () => {
       toast({
@@ -138,6 +141,7 @@ export function AvailabilitySlotAdminPanel({ campId, startDate, endDate }: Avail
       setSelectedSlot(null);
     },
     onError: (error: any) => {
+      console.error("Error updating slot:", error);
       toast({
         title: "Error updating slot",
         description: error.message || "An error occurred while updating the availability slot.",
@@ -149,7 +153,8 @@ export function AvailabilitySlotAdminPanel({ campId, startDate, endDate }: Avail
   // Delete a slot
   const deleteSlotMutation = useMutation({
     mutationFn: (slotId: number) => {
-      return apiRequest(`/api/camps/${campId}/availability-slots/${slotId}`, 'DELETE');
+      console.log("Deleting slot with ID:", slotId);
+      return apiRequest('DELETE', `/api/camps/${campId}/availability-slots/${slotId}`);
     },
     onSuccess: () => {
       toast({
@@ -159,6 +164,7 @@ export function AvailabilitySlotAdminPanel({ campId, startDate, endDate }: Avail
       queryClient.invalidateQueries({ queryKey: ['/api/camps', campId, 'availability-slots'] });
     },
     onError: (error: any) => {
+      console.error("Error deleting slot:", error);
       toast({
         title: "Error deleting slot",
         description: error.message || "An error occurred while deleting the availability slot.",
