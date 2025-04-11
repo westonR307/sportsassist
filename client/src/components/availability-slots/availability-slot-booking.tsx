@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { CalendarIcon, Clock, Users } from "lucide-react";
+import { CalendarIcon, Clock, Users, User, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
@@ -59,9 +58,9 @@ export function AvailabilitySlotBooking({ campId, isParent = false, children = [
   // Book a slot mutation
   const bookSlotMutation = useMutation({
     mutationFn: async ({ slotId, childId, notes }: { slotId: number, childId: number, notes: string }) => {
-      return apiRequest(`/api/camps/${campId}/availability-slots/${slotId}/book`, {
-        method: 'POST',
-        body: JSON.stringify({ childId, notes }),
+      return apiRequest('POST', `/api/camps/${campId}/availability-slots/${slotId}/book`, { 
+        childId, 
+        notes 
       });
     },
     onSuccess: () => {
@@ -206,27 +205,36 @@ export function AvailabilitySlotBooking({ campId, isParent = false, children = [
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label htmlFor="child" className="text-sm font-medium">Child</label>
-              <Select
-                onValueChange={(value) => setSelectedChildId(Number(value))}
-                value={selectedChildId?.toString() || ""}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select child" />
-                </SelectTrigger>
-                <SelectContent>
-                  {children.map((child) => (
-                    <SelectItem key={child.id} value={child.id.toString()}>
-                      {child.firstName} {child.lastName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <label htmlFor="child" className="text-sm font-medium">Select an athlete</label>
               
-              {children.length === 0 && (
+              {children.length === 0 ? (
                 <p className="text-sm text-muted-foreground mt-2">
                   You need to add children to your profile before booking.
                 </p>
+              ) : (
+                <div className="grid gap-3 mt-2">
+                  {children.map((child) => (
+                    <Card
+                      key={child.id}
+                      className={`cursor-pointer transition-colors ${selectedChildId === child.id ? 'border-primary' : 'hover:border-primary/50'}`}
+                      onClick={() => setSelectedChildId(child.id)}
+                    >
+                      <CardContent className="p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-muted rounded-full h-10 w-10 flex items-center justify-center">
+                            <Users className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{child.firstName} {child.lastName}</p>
+                          </div>
+                        </div>
+                        {selectedChildId === child.id && (
+                          <CheckCircle className="h-5 w-5 text-primary" />
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               )}
             </div>
             
