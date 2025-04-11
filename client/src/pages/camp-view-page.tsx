@@ -279,10 +279,18 @@ function CampViewPage(props: { id?: string }) {
   const [exportFormat, setExportFormat] = useState<"pdf" | "csv">("pdf");
   const [showFormFieldsDialog, setShowFormFieldsDialog] = useState(false);
 
+  // Query to fetch availability slots for the camp if it's availability-based
+  const { data: availabilitySlots = [], isLoading: isLoadingSlots } = useQuery({
+    queryKey: [`/api/camps/${id}/availability-slots`],
+    enabled: !!id && camp?.schedulingType === 'availability',
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
   const ChildSelectionDialog = () => {
     const isWaitlist = registrationStatus === 'waitlist';
-
-    if (isLoadingChildren) {
+    const isAvailabilityBased = camp?.schedulingType === 'availability';
+    
+    if (isLoadingChildren || (isAvailabilityBased && isLoadingSlots)) {
       return (
         <div className="flex justify-center py-4">
           <Loader2 className="h-6 w-6 animate-spin" />
@@ -376,6 +384,64 @@ function CampViewPage(props: { id?: string }) {
             </AlertDescription>
           </Alert>
         )}
+        
+        {/* Slot selection for availability-based camps */}
+        {isAvailabilityBased && !isWaitlist && selectedChildId && availabilitySlots.length > 0 && (
+          <div className="mt-6 border rounded-md p-4">
+            <h3 className="font-medium mb-3">Select a Time Slot</h3>
+            <div className="space-y-3">
+              {availabilitySlots
+                .filter((slot: any) => !slot.booked && slot.currentBookings < slot.capacity)
+                .map((slot: any) => {
+                  const date = new Date(slot.date);
+                  const startTime = new Date(`${slot.date}T${slot.startTime}`);
+                  const endTime = new Date(`${slot.date}T${slot.endTime}`);
+                  const formattedDate = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+                  const formattedStartTime = startTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+                  const formattedEndTime = endTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+                  
+                  return (
+                    <div 
+                      key={slot.id}
+                      className={`border rounded-md p-3 cursor-pointer transition-colors ${
+                        selectedSlotId === slot.id 
+                          ? 'border-primary bg-primary/5' 
+                          : 'hover:border-primary/50'
+                      }`}
+                      onClick={() => setSelectedSlotId(slot.id)}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-medium">{formattedDate}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {formattedStartTime} - {formattedEndTime}
+                          </p>
+                        </div>
+                        <div className="flex items-center">
+                          <Badge variant="outline" className="mr-2">
+                            {slot.currentBookings || 0}/{slot.capacity} Spots
+                          </Badge>
+                          {selectedSlotId === slot.id && (
+                            <CheckCircle className="h-5 w-5 text-primary" />
+                          )}
+                        </div>
+                      </div>
+                      {slot.description && (
+                        <p className="text-sm text-muted-foreground mt-2 border-t pt-2">{slot.description}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              
+              {availabilitySlots.filter((slot: any) => !slot.booked && slot.currentBookings < slot.capacity).length === 0 && (
+                <div className="text-center py-4">
+                  <p className="text-muted-foreground">No available time slots found.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        
         <div className="flex justify-end gap-2 mt-4">
           <Button
             variant="outline"
