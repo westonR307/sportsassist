@@ -199,6 +199,7 @@ function CampViewPage(props: { id?: string }) {
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState("details");
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -812,7 +813,7 @@ function CampViewPage(props: { id?: string }) {
           </div>
         </div>
 
-        <Tabs defaultValue="details" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6" id="camp-tabs">
           <TabsList className="mb-4 w-full grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-row gap-1 p-1">
             <TabsTrigger value="details" className="text-xs sm:text-sm whitespace-nowrap">Details</TabsTrigger>
             <TabsTrigger value="registrations" className="text-xs sm:text-sm whitespace-nowrap">Registrations</TabsTrigger>
