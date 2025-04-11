@@ -10,12 +10,18 @@ import {
 } from "@shared/tables";
 import { Role, AvailabilityStatus, BookingStatus } from "@shared/types";
 
+// Define a more precise user type for authenticated requests
+type AuthUser = {
+  id: number;
+  role: Role;
+  organizationId?: number;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+};
+
 interface AuthenticatedRequest extends Request {
-  user?: {
-    id: number;
-    role: Role;
-    organizationId?: number;
-  }
+  user?: AuthUser;
 }
 
 /**

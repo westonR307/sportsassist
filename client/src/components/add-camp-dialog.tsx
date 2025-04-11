@@ -519,8 +519,8 @@ export function AddCampDialog({
                 console.log("Sending enhanced availability slot with data:", enhancedSlotData);
                 
                 // Use apiRequest helper instead of raw fetch for more consistent error handling
-                const slotPromise = apiRequest('POST', `/api/camps/${data.id}/availability-slots`, enhancedSlotData)
-                  .then((jsonResponse) => {
+                const slotPromise = apiRequest<any>('POST', `/api/camps/${data.id}/availability-slots`, enhancedSlotData)
+                  .then((jsonResponse: any) => {
                     console.log("Slot creation successful response:", jsonResponse);
                     return jsonResponse;
                   })
