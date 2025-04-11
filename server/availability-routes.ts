@@ -1,7 +1,6 @@
 import { Request, Response, Router, Express, NextFunction } from "express";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "./db";
-import * as schema from "@shared/schema";
 import {
   camps,
   availabilitySlots,
@@ -10,7 +9,6 @@ import {
   children
 } from "@shared/tables";
 import { Role, AvailabilityStatus, BookingStatus } from "@shared/types";
-import { User } from "@shared/schema";
 
 interface AuthenticatedRequest extends Request {
   user?: {

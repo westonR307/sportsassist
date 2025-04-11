@@ -518,26 +518,20 @@ export function AddCampDialog({
                 
                 console.log("Sending enhanced availability slot with data:", enhancedSlotData);
                 
-                const slotPromise = fetch(`/api/camps/${data.id}/availability-slots`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify(enhancedSlotData),
-                  credentials: 'include'
-                })
-                  .then(async (response) => {
-                    if (!response.ok) {
-                      const errorText = await response.text();
-                      console.error(`Server error (${response.status}): ${errorText}`);
-                      throw new Error(`Server returned ${response.status}: ${errorText}`);
-                    }
-                    const jsonResponse = await response.json();
-                    console.log("Slot creation response:", jsonResponse);
+                // Use apiRequest helper instead of raw fetch for more consistent error handling
+                const slotPromise = apiRequest('POST', `/api/camps/${data.id}/availability-slots`, enhancedSlotData)
+                  .then((jsonResponse) => {
+                    console.log("Slot creation successful response:", jsonResponse);
                     return jsonResponse;
                   })
                   .catch((slotError: any) => {
                     console.error(`Error creating slot with date ${formattedDate}:`, slotError);
+                    // Add more diagnostic information
+                    console.error("Request data was:", JSON.stringify(enhancedSlotData));
+                    if (slotError.response) {
+                      console.error("Response status:", slotError.response.status);
+                      console.error("Response data:", slotError.response.data);
+                    }
                     throw slotError; // Re-throw to mark this promise as rejected
                   });
                 
