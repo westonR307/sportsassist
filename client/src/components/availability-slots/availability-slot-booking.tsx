@@ -25,8 +25,7 @@ type AvailabilitySlot = {
 
 type Child = {
   id: number;
-  firstName: string;
-  lastName: string;
+  fullName: string;
 };
 
 interface AvailabilitySlotBookingProps {
@@ -225,7 +224,7 @@ export function AvailabilitySlotBooking({ campId, isParent = false, children = [
                             <Users className="h-5 w-5 text-muted-foreground" />
                           </div>
                           <div>
-                            <p className="font-medium">{child.firstName} {child.lastName}</p>
+                            <p className="font-medium">{child.fullName}</p>
                           </div>
                         </div>
                         {selectedChildId === child.id && (
