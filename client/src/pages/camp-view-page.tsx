@@ -948,10 +948,24 @@ function CampViewPage(props: { id?: string }) {
                     {/* Display availability slots directly on the details page if this is an availability-based camp */}
                     {camp.schedulingType === 'availability' && (
                       <div className="mt-6 pt-6 border-t">
-                        <h3 className="font-medium mb-3 flex items-center">
-                          <Calendar className="h-4 w-4 mr-2" />
-                          Available Time Slots
-                        </h3>
+                        <div className="flex justify-between items-center mb-3">
+                          <h3 className="font-medium flex items-center">
+                            <Calendar className="h-4 w-4 mr-2" />
+                            Available Time Slots
+                          </h3>
+                          
+                          {/* Add a prominent "Manage Availability" button for camp creators */}
+                          {hasPermission && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => setManageAvailabilityOpen(true)}
+                              className="flex items-center"
+                            >
+                              <Settings className="h-4 w-4 mr-1" /> Manage Availability
+                            </Button>
+                          )}
+                        </div>
                         
                         {isLoadingSlots ? (
                           <div className="flex justify-center py-4">
