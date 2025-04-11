@@ -399,7 +399,10 @@ function CampViewPage(props: { id?: string }) {
             <h3 className="font-medium mb-3">Select a Time Slot</h3>
             <div className="space-y-3">
               {availabilitySlots
-                .filter((slot: any) => !slot.booked && slot.currentBookings < slot.capacity)
+                .filter((slot: any) => {
+                  console.log("Checking slot for slot selection:", slot);
+                  return !slot.booked && slot.currentBookings < (slot.capacity || slot.maxBookings);
+                })
                 .map((slot: any) => {
                   const date = new Date(slot.date);
                   const startTime = new Date(`${slot.date}T${slot.startTime}`);
@@ -449,7 +452,7 @@ function CampViewPage(props: { id?: string }) {
                   );
                 })}
               
-              {availabilitySlots.filter((slot: any) => !slot.booked && slot.currentBookings < slot.capacity).length === 0 && (
+              {availabilitySlots.filter((slot: any) => !slot.booked && slot.currentBookings < (slot.capacity || slot.maxBookings)).length === 0 && (
                 <div className="text-center py-4">
                   <p className="text-muted-foreground">No available time slots found.</p>
                 </div>
@@ -1004,11 +1007,11 @@ function CampViewPage(props: { id?: string }) {
                                 );
                               })}
                             
-                            {availabilitySlots.filter((slot: any) => !slot.booked && slot.currentBookings < slot.capacity).length === 0 ? (
+                            {availabilitySlots.filter((slot: any) => !slot.booked && slot.currentBookings < (slot.capacity || slot.maxBookings)).length === 0 ? (
                               <div className="text-center py-4">
                                 <p className="text-muted-foreground">No available time slots found.</p>
                               </div>
-                            ) : availabilitySlots.filter((slot: any) => !slot.booked && slot.currentBookings < slot.capacity).length > 5 && (
+                            ) : availabilitySlots.filter((slot: any) => !slot.booked && slot.currentBookings < (slot.capacity || slot.maxBookings)).length > 5 && (
                               <div className="mt-2 text-center">
                                 <Button 
                                   variant="link" 
