@@ -404,9 +404,14 @@ function CampViewPage(props: { id?: string }) {
                   return !slot.booked && slot.currentBookings < (slot.capacity || slot.maxBookings);
                 })
                 .map((slot: any) => {
-                  const date = new Date(slot.date);
-                  const startTime = new Date(`${slot.date}T${slot.startTime}`);
-                  const endTime = new Date(`${slot.date}T${slot.endTime}`);
+                  console.log("Slot raw data:", slot); // Debug log to see the raw slot data
+                  // Fix date formatting - slot might have slotDate or date property
+                  const slotDateStr = slot.slotDate || slot.date;
+                  const date = new Date(slotDateStr);
+                  // Make sure the date is valid before trying to format the time
+                  const dateISOString = !isNaN(date.getTime()) ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+                  const startTime = new Date(`${dateISOString}T${slot.startTime}`);
+                  const endTime = new Date(`${dateISOString}T${slot.endTime}`);
                   const formattedDate = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
                   const formattedStartTime = startTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
                   const formattedEndTime = endTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
@@ -964,9 +969,13 @@ function CampViewPage(props: { id?: string }) {
                               .slice(0, 5) // Show only first 5 slots to keep it compact
                               .map((slot: any) => {
                                 console.log("Processing slot:", slot); // Debug log
-                                const date = new Date(slot.slotDate);
-                                const startTime = new Date(`${date.toISOString().split('T')[0]}T${slot.startTime}`);
-                                const endTime = new Date(`${date.toISOString().split('T')[0]}T${slot.endTime}`);
+                                // Fix date formatting - slot might have slotDate or date property
+                                const slotDateStr = slot.slotDate || slot.date;
+                                const date = new Date(slotDateStr);
+                                // Make sure the date is valid before trying to format the time
+                                const dateISOString = !isNaN(date.getTime()) ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+                                const startTime = new Date(`${dateISOString}T${slot.startTime}`);
+                                const endTime = new Date(`${dateISOString}T${slot.endTime}`);
                                 const formattedDate = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
                                 const formattedStartTime = startTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
                                 const formattedEndTime = endTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
