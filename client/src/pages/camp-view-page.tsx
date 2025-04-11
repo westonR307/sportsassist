@@ -959,7 +959,7 @@ function CampViewPage(props: { id?: string }) {
                             {availabilitySlots
                               .filter((slot: any) => {
                                 console.log("Slot:", slot);
-                                return !slot.booked && slot.currentBookings < slot.capacity;
+                                return !slot.booked && slot.currentBookings < (slot.capacity || slot.maxBookings);
                               })
                               .slice(0, 5) // Show only first 5 slots to keep it compact
                               .map((slot: any) => {
