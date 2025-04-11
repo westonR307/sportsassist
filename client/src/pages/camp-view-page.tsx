@@ -1378,12 +1378,16 @@ function CampViewPage(props: { id?: string }) {
           )}
 
           {showMessagesTab && (
-            <TabsContent value="messages" className="space-y-4">
-              {isParent ? (
-                <ParentCampMessagesTab campId={camp.id} />
-              ) : (
-                <CampMessagesTab campId={camp.id} campName={camp.name} hasPermission={hasPermission} />
-              )}
+            <TabsContent value="messages">
+              <Card>
+                <CardContent className="pt-6">
+                  {isParent ? (
+                    <ParentCampMessagesTab campId={camp.id} />
+                  ) : (
+                    <CampMessagesTab campId={camp.id} campName={camp.name} hasPermission={hasPermission} />
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
           )}
           
