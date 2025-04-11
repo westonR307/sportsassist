@@ -348,6 +348,22 @@ export default function registerAvailabilityRoutes(app: Express) {
         return res.status(400).json({ message: "Slot is already fully booked" });
       }
       
+      // Check if child is already registered for this specific slot
+      const existingBooking = await db.query.slotBookings.findFirst({
+        where: and(
+          eq(slotBookings.slotId, parseInt(slotId, 10)),
+          eq(slotBookings.childId, parseInt(childId, 10)),
+          eq(slotBookings.status, "confirmed")
+        )
+      });
+      
+      if (existingBooking) {
+        return res.status(400).json({ 
+          message: "Child is already registered for this time slot",
+          existingBooking
+        });
+      }
+      
       // Create booking
       const booking = await db.insert(slotBookings).values({
         slotId: parseInt(slotId, 10),
