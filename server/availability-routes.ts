@@ -462,8 +462,7 @@ export default function registerAvailabilityRoutes(app: Express) {
           child: {
             columns: {
               id: true,
-              firstName: true,
-              lastName: true
+              fullName: true
             }
           }
         },
@@ -509,8 +508,7 @@ export default function registerAvailabilityRoutes(app: Express) {
               child: {
                 columns: {
                   id: true,
-                  firstName: true,
-                  lastName: true
+                  fullName: true
                 }
               },
               parent: {

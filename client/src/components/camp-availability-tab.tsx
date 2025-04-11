@@ -125,7 +125,7 @@ export function CampAvailabilityTab({ campId, startDate, endDate }: CampAvailabi
                   <div className="flex justify-between">
                     <div>
                       <p className="font-medium">
-                        {booking.child?.firstName} {booking.child?.lastName}
+                        {booking.child?.fullName}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {new Date(booking.slot.slotDate).toLocaleDateString()} • 
