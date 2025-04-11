@@ -953,7 +953,7 @@ function CampViewPage(props: { id?: string }) {
                         ) : availabilitySlots && availabilitySlots.length > 0 ? (
                           <div className="space-y-3">
                             {availabilitySlots
-                              .filter((slot: any) => slot.status === 'available')
+                              .filter((slot: any) => !slot.booked && slot.currentBookings < slot.capacity)
                               .slice(0, 5) // Show only first 5 slots to keep it compact
                               .map((slot: any) => {
                                 console.log("Processing slot:", slot); // Debug log
@@ -1000,11 +1000,11 @@ function CampViewPage(props: { id?: string }) {
                                 );
                               })}
                             
-                            {availabilitySlots.filter((slot: any) => slot.status === 'available').length === 0 ? (
+                            {availabilitySlots.filter((slot: any) => !slot.booked && slot.currentBookings < slot.capacity).length === 0 ? (
                               <div className="text-center py-4">
                                 <p className="text-muted-foreground">No available time slots found.</p>
                               </div>
-                            ) : availabilitySlots.filter((slot: any) => slot.status === 'available').length > 5 && (
+                            ) : availabilitySlots.filter((slot: any) => !slot.booked && slot.currentBookings < slot.capacity).length > 5 && (
                               <div className="mt-2 text-center">
                                 <Button 
                                   variant="link" 
