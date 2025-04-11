@@ -833,9 +833,6 @@ function CampViewPage(props: { id?: string }) {
           <TabsList className="mb-4 w-full grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-row gap-1 p-1">
             <TabsTrigger value="details" className="text-xs sm:text-sm whitespace-nowrap">Details</TabsTrigger>
             <TabsTrigger value="registrations" className="text-xs sm:text-sm whitespace-nowrap">Registrations</TabsTrigger>
-            {camp?.schedulingType === "availability" && (
-              <TabsTrigger value="availability" className="text-xs sm:text-sm whitespace-nowrap">Availability</TabsTrigger>
-            )}
             {hasPermission && (
               <TabsTrigger value="attendance" className="text-xs sm:text-sm whitespace-nowrap">Attendance</TabsTrigger>
             )}
@@ -1024,9 +1021,18 @@ function CampViewPage(props: { id?: string }) {
                               <div className="mt-2 text-center">
                                 <Button 
                                   variant="link" 
-                                  onClick={() => document.querySelector('[value="availability"]')?.dispatchEvent(new Event('click'))}
+                                  onClick={() => {
+                                    // Since we removed the availability tab, show management UI directly
+                                    if (hasPermission) {
+                                      setManageAvailabilityOpen(true);
+                                    } else {
+                                      // For non-admin users, just expand to show all slots
+                                      // We'll implement this by setting a state to show all slots
+                                      setShowAllAvailabilitySlots(true);
+                                    }
+                                  }}
                                 >
-                                  View all available slots
+                                  {hasPermission ? "Manage availability" : "View all available slots"}
                                 </Button>
                               </div>
                             )}
