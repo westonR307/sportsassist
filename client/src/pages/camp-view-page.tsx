@@ -1402,7 +1402,17 @@ function CampViewPage(props: { id?: string }) {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => navigate(`/manage/camps/${camp.id}/availability`)}
+                      onClick={() => {
+                        // Set the active tab to "Availability"
+                        setActiveTab("availability");
+                        // Scroll to the availability section
+                        setTimeout(() => {
+                          const tabsElement = document.getElementById("camp-tabs");
+                          if (tabsElement) {
+                            tabsElement.scrollIntoView({ behavior: "smooth" });
+                          }
+                        }, 100);
+                      }}
                       className="h-8"
                     >
                       <CalendarDays className="h-4 w-4 mr-2" />
