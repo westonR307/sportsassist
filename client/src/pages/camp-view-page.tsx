@@ -1009,25 +1009,27 @@ function CampViewPage(props: { id?: string }) {
                   className="mb-6"
                 />
 
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Camp Schedule</CardTitle>
-                    {hasPermission && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setScheduleEditorOpen(true)}
-                        className="h-8"
-                      >
-                        <Calendar className="h-4 w-4 mr-2" />
-                        Edit Schedule
-                      </Button>
-                    )}
-                  </CardHeader>
-                  <CardContent>
-                    <CampScheduleDisplay campId={camp.id} />
-                  </CardContent>
-                </Card>
+{camp.schedulingType !== 'availability' && (
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                      <CardTitle>Camp Schedule</CardTitle>
+                      {hasPermission && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setScheduleEditorOpen(true)}
+                          className="h-8"
+                        >
+                          <Calendar className="h-4 w-4 mr-2" />
+                          Edit Schedule
+                        </Button>
+                      )}
+                    </CardHeader>
+                    <CardContent>
+                      <CampScheduleDisplay campId={camp.id} />
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             </div>
           </TabsContent>
