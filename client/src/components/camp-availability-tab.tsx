@@ -1,15 +1,37 @@
 import { useQuery } from "@tanstack/react-query";
 import { AvailabilitySlotBooking } from "./availability-slots/availability-slot-booking";
+import { AvailabilitySlotAdminPanel } from "./availability-slots/availability-slot-admin-panel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@/hooks/use-user";
 
 interface CampAvailabilityTabProps {
   campId: number;
+  startDate?: Date;
+  endDate?: Date;
 }
 
-export function CampAvailabilityTab({ campId }: CampAvailabilityTabProps) {
+export function CampAvailabilityTab({ campId, startDate, endDate }: CampAvailabilityTabProps) {
   const { user, isLoading: isUserLoading } = useUser();
+  
+  // Fetch camp details to get dates if not provided
+  const { data: camp, isLoading: isCampLoading } = useQuery({
+    queryKey: [`/api/camps/${campId}`],
+    queryFn: async () => {
+      if (startDate && endDate) return null; // Skip if dates are provided
+      
+      const response = await fetch(`/api/camps/${campId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch camp details");
+      }
+      return response.json();
+    },
+    enabled: !startDate || !endDate
+  });
+  
+  // Use provided dates or fallback to fetched camp dates
+  const effectiveStartDate = startDate || (camp ? new Date(camp.startDate) : new Date());
+  const effectiveEndDate = endDate || (camp ? new Date(camp.endDate) : new Date());
   
   // Fetch children for parents
   const { data: children = [], isLoading: isChildrenLoading } = useQuery({
@@ -46,7 +68,7 @@ export function CampAvailabilityTab({ campId }: CampAvailabilityTabProps) {
     booking.slot && booking.slot.campId === campId
   );
   
-  if (isUserLoading) {
+  if (isUserLoading || (isCampLoading && (!startDate || !endDate))) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-8 w-full max-w-[300px]" />
@@ -60,13 +82,25 @@ export function CampAvailabilityTab({ campId }: CampAvailabilityTabProps) {
   }
   
   const isParent = user?.role === 'parent';
+  const isAdmin = user?.role === 'admin' || user?.role === 'camp_creator';
   
   return (
-    <Tabs defaultValue="available">
+    <Tabs defaultValue={isAdmin ? "manage" : "available"}>
       <TabsList className="mb-4">
+        {isAdmin && <TabsTrigger value="manage">Manage Slots</TabsTrigger>}
         <TabsTrigger value="available">Available Slots</TabsTrigger>
         {isParent && <TabsTrigger value="booked">My Bookings ({campBookings.length})</TabsTrigger>}
       </TabsList>
+      
+      {isAdmin && (
+        <TabsContent value="manage">
+          <AvailabilitySlotAdminPanel 
+            campId={campId} 
+            startDate={effectiveStartDate}
+            endDate={effectiveEndDate}
+          />
+        </TabsContent>
+      )}
       
       <TabsContent value="available">
         <AvailabilitySlotBooking 
