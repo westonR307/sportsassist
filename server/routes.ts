@@ -3777,8 +3777,9 @@ export async function registerRoutes(app: Express) {
       // If not provided, we'll need to show a child selection UI on the frontend
       const childId = req.body.childId;
 
-      // Check if the child is already registered for this camp
-      if (childId) {
+      // For fixed scheduling camps, check if the child is already registered
+      // For availability-based camps, we allow multiple registrations (for different time slots)
+      if (childId && camp.schedulingType !== "availability") {
         const existingRegistration = registrations.find(reg => reg.childId === childId);
         if (existingRegistration) {
           return res.status(400).json({ 
