@@ -977,9 +977,23 @@ function CampViewPage(props: { id?: string }) {
                                         </p>
                                       </div>
                                       <div>
-                                        <Badge variant="outline">
-                                          {slot.currentBookings || 0}/{slot.maxBookings} Spots
-                                        </Badge>
+                                        <Button 
+                                          size="sm" 
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            if (user?.role === 'parent') {
+                                              setShowChildSelectionDialog(true);
+                                            } else {
+                                              toast({
+                                                title: "Login required",
+                                                description: "Please login as a parent to register for this camp."
+                                              });
+                                            }
+                                          }}
+                                          variant="outline"
+                                        >
+                                          Register
+                                        </Button>
                                       </div>
                                     </div>
                                   </div>
