@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { CampSchedule, ScheduleException, CampSession, RecurrencePattern } from '@shared/schema';
-import { Loader2, Clock, CalendarPlus, AlertTriangle, Pencil, Calendar } from 'lucide-react';
+import { Loader2, Clock, CalendarPlus, AlertTriangle, Pencil, Calendar, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -109,6 +109,23 @@ export function CampScheduleDisplay({ campId }: CampScheduleProps) {
   const [selectedException, setSelectedException] = useState<ScheduleException | undefined>(undefined);
   const [showAllSessions, setShowAllSessions] = useState(false);
   const [, navigate] = useLocation();
+
+  // Query camp data to determine if it's an availability-based camp
+  const { data: campData, isLoading: isLoadingCamp } = useQuery({
+    queryKey: ['/api/camps', campId],
+    enabled: !!campId,
+    staleTime: 5000,
+  });
+  
+  // For availability-based camps, fetch availability slots
+  const { 
+    data: availabilitySlots = [], 
+    isLoading: isLoadingSlots 
+  } = useQuery({
+    queryKey: ['/api/camps', campId, 'availability-slots'],
+    enabled: !!campId && campData?.schedulingType === 'availability',
+    staleTime: 5000,
+  });
 
   // Query regular schedules with explicit fetcher
   const { 
