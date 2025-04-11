@@ -426,11 +426,19 @@ function CampViewPage(props: { id?: string }) {
                           </p>
                         </div>
                         <div className="flex items-center">
-                          <Badge variant="outline" className="mr-2">
-                            {slot.currentBookings || 0}/{slot.capacity} Spots
-                          </Badge>
-                          {selectedSlotId === slot.id && (
+                          {selectedSlotId === slot.id ? (
                             <CheckCircle className="h-5 w-5 text-primary" />
+                          ) : (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedSlotId(slot.id);
+                              }}
+                            >
+                              Select
+                            </Button>
                           )}
                         </div>
                       </div>

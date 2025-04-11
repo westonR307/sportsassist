@@ -160,7 +160,7 @@ export function AvailabilitySlotBooking({ campId, isParent = false, children = [
                       </CardTitle>
                       <CardDescription className="flex items-center mt-1">
                         <Users className="h-3 w-3 mr-1" />
-                        {slot.currentBookings} / {slot.maxBookings} booked
+                        {slot.status === "available" ? "Spots available" : slot.status === "booked" ? "Fully booked" : "Unavailable"}
                       </CardDescription>
                     </div>
                     <Badge variant={slot.status === "available" ? "default" : "outline"}>
