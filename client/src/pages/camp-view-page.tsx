@@ -255,6 +255,13 @@ function CampViewPage(props: { id?: string }) {
 
   // Check if a specific child is already registered for this camp
   const isChildRegistered = (childId: number) => {
+    // If it's an availability-based camp, we want to allow registering the same child for multiple slots,
+    // so we don't prevent them from selecting the same child again
+    if (camp?.schedulingType === 'availability' && selectedSlotId) {
+      return false;
+    }
+    
+    // For normal fixed-schedule camps, prevent registering the same child multiple times
     if (!registrations) return false;
     return registrations.some((reg: any) => reg.childId === childId);
   };
