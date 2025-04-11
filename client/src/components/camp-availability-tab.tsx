@@ -86,10 +86,10 @@ export function CampAvailabilityTab({ campId, startDate, endDate }: CampAvailabi
   
   return (
     <Tabs defaultValue={isAdmin ? "manage" : "available"}>
-      <TabsList className="mb-4">
-        {isAdmin && <TabsTrigger value="manage">Manage Slots</TabsTrigger>}
-        <TabsTrigger value="available">Available Slots</TabsTrigger>
-        {isParent && <TabsTrigger value="booked">My Bookings ({campBookings.length})</TabsTrigger>}
+      <TabsList className="mb-4 flex flex-wrap gap-2">
+        {isAdmin && <TabsTrigger value="manage" className="flex-1">Manage Slots</TabsTrigger>}
+        <TabsTrigger value="available" className="flex-1">Available Slots</TabsTrigger>
+        {isParent && <TabsTrigger value="booked" className="flex-1">My Bookings ({campBookings.length})</TabsTrigger>}
       </TabsList>
       
       {isAdmin && (

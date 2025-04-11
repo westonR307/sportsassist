@@ -388,10 +388,10 @@ export function AvailabilitySlotAdminPanel({ campId, startDate, endDate }: Avail
       </div>
       
       <Tabs defaultValue="all">
-        <TabsList>
-          <TabsTrigger value="all">All ({slots.length})</TabsTrigger>
-          <TabsTrigger value="available">Available ({availableSlots.length})</TabsTrigger>
-          <TabsTrigger value="booked">Booked ({bookedSlots.length})</TabsTrigger>
+        <TabsList className="flex flex-wrap gap-2">
+          <TabsTrigger value="all" className="flex-1">All ({slots.length})</TabsTrigger>
+          <TabsTrigger value="available" className="flex-1">Available ({availableSlots.length})</TabsTrigger>
+          <TabsTrigger value="booked" className="flex-1">Booked ({bookedSlots.length})</TabsTrigger>
         </TabsList>
         
         <TabsContent value="all" className="space-y-4">
