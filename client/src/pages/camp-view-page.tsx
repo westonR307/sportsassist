@@ -1474,7 +1474,12 @@ function CampViewPage(props: { id?: string }) {
                 </DialogHeader>
                 
                 <div className="py-4">
-                  <CampAvailabilityTab campId={camp.id} onClose={() => setManageAvailabilityOpen(false)} />
+                  <CampAvailabilityTab 
+                    campId={camp.id} 
+                    startDate={new Date(camp.startDate)} 
+                    endDate={new Date(camp.endDate)}
+                    onClose={() => setManageAvailabilityOpen(false)} 
+                  />
                 </div>
               </DialogContent>
             </Dialog>
