@@ -813,16 +813,16 @@ function CampViewPage(props: { id?: string }) {
         </div>
 
         <Tabs defaultValue="details" className="space-y-6">
-          <TabsList className={`grid w-full max-w-md ${hasPermission ? 'grid-cols-5' : 'grid-cols-3'}`}>
-            <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="registrations">Registrations</TabsTrigger>
+          <TabsList className="mb-4 w-full grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-row gap-1 p-1">
+            <TabsTrigger value="details" className="text-xs sm:text-sm whitespace-nowrap">Details</TabsTrigger>
+            <TabsTrigger value="registrations" className="text-xs sm:text-sm whitespace-nowrap">Registrations</TabsTrigger>
             {camp?.schedulingType === "availability" && (
-              <TabsTrigger value="availability">Availability</TabsTrigger>
+              <TabsTrigger value="availability" className="text-xs sm:text-sm whitespace-nowrap">Availability</TabsTrigger>
             )}
             {hasPermission && (
-              <TabsTrigger value="attendance">Attendance</TabsTrigger>
+              <TabsTrigger value="attendance" className="text-xs sm:text-sm whitespace-nowrap">Attendance</TabsTrigger>
             )}
-            {showMessagesTab && <TabsTrigger value="messages">Messages</TabsTrigger>}
+            {showMessagesTab && <TabsTrigger value="messages" className="text-xs sm:text-sm whitespace-nowrap">Messages</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="details" className="space-y-6">
