@@ -103,11 +103,8 @@ export function AvailabilitySlotAdminPanel({ campId, startDate, endDate }: Avail
 
   // Create a new slot
   const createSlotMutation = useMutation({
-    mutationFn: (newSlot: Omit<AvailabilitySlot, "id" | "campId" | "currentBookings" | "status">) => {
-      return apiRequest(`/api/camps/${campId}/availability-slots`, {
-        method: 'POST',
-        body: JSON.stringify(newSlot),
-      });
+    mutationFn: (newSlot: SlotCreateParams) => {
+      return apiRequest(`/api/camps/${campId}/availability-slots`, 'POST', newSlot);
     },
     onSuccess: () => {
       toast({
@@ -129,10 +126,7 @@ export function AvailabilitySlotAdminPanel({ campId, startDate, endDate }: Avail
   // Update an existing slot
   const updateSlotMutation = useMutation({
     mutationFn: (updatedSlot: Partial<AvailabilitySlot> & { id: number }) => {
-      return apiRequest(`/api/camps/${campId}/availability-slots/${updatedSlot.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(updatedSlot),
-      });
+      return apiRequest(`/api/camps/${campId}/availability-slots/${updatedSlot.id}`, 'PATCH', updatedSlot);
     },
     onSuccess: () => {
       toast({
@@ -155,9 +149,7 @@ export function AvailabilitySlotAdminPanel({ campId, startDate, endDate }: Avail
   // Delete a slot
   const deleteSlotMutation = useMutation({
     mutationFn: (slotId: number) => {
-      return apiRequest(`/api/camps/${campId}/availability-slots/${slotId}`, {
-        method: 'DELETE',
-      });
+      return apiRequest(`/api/camps/${campId}/availability-slots/${slotId}`, 'DELETE');
     },
     onSuccess: () => {
       toast({
@@ -206,8 +198,14 @@ export function AvailabilitySlotAdminPanel({ campId, startDate, endDate }: Avail
     return minutesA - minutesB;
   });
 
+  // Add bufferBefore and bufferAfter properties to the AvailabilitySlot type
+  type SlotCreateParams = Omit<AvailabilitySlot, "id" | "campId" | "currentBookings" | "status"> & {
+    bufferBefore?: number;
+    bufferAfter?: number;
+  };
+
   const handleCreateSlot = (slot: any) => {
-    createSlotMutation.mutate({
+    const newSlot: SlotCreateParams = {
       slotDate: format(slot.date, "yyyy-MM-dd"),
       startTime: slot.startTime,
       endTime: slot.endTime,
@@ -215,7 +213,9 @@ export function AvailabilitySlotAdminPanel({ campId, startDate, endDate }: Avail
       notes: "",
       bufferBefore: 0,
       bufferAfter: 0
-    });
+    };
+    
+    createSlotMutation.mutate(newSlot);
   };
 
   // Render the list of slots for a specific status
