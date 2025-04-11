@@ -83,7 +83,20 @@ export function CampAvailabilityTab({ campId, startDate, endDate, onClose }: Cam
   }
   
   const isParent = user?.role === 'parent';
-  const isAdmin = user?.role === 'admin' || user?.role === 'camp_creator';
+  const isAdmin = user?.role === 'admin' || user?.role === 'camp_creator' || user?.role === 'platform_admin';
+  
+  // Handle dialog mode for admin (with onClose prop) 
+  // In dialog mode, we should always show the admin panel for camp creators
+  if (onClose && isAdmin) {
+    return (
+      <AvailabilitySlotAdminPanel 
+        campId={campId} 
+        startDate={effectiveStartDate}
+        endDate={effectiveEndDate}
+        onClose={onClose}
+      />
+    );
+  }
   
   return (
     <Tabs defaultValue={isAdmin ? "manage" : "available"}>
@@ -99,7 +112,6 @@ export function CampAvailabilityTab({ campId, startDate, endDate, onClose }: Cam
             campId={campId} 
             startDate={effectiveStartDate}
             endDate={effectiveEndDate}
-            onClose={onClose}
           />
         </TabsContent>
       )}
