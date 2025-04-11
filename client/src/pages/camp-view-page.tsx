@@ -921,6 +921,76 @@ function CampViewPage(props: { id?: string }) {
                         <p className="text-muted-foreground capitalize">{camp.type}</p>
                       </div>
                     </div>
+                    
+                    {/* Display availability slots directly on the details page if this is an availability-based camp */}
+                    {camp.schedulingType === 'availability' && (
+                      <div className="mt-6 pt-6 border-t">
+                        <h3 className="font-medium mb-3 flex items-center">
+                          <Calendar className="h-4 w-4 mr-2" />
+                          Available Time Slots
+                        </h3>
+                        
+                        {isLoadingSlots ? (
+                          <div className="flex justify-center py-4">
+                            <Loader2 className="h-6 w-6 animate-spin" />
+                          </div>
+                        ) : availabilitySlots.length > 0 ? (
+                          <div className="space-y-3">
+                            {availabilitySlots
+                              .filter((slot: any) => !slot.booked && slot.currentBookings < slot.capacity)
+                              .slice(0, 5) // Show only first 5 slots to keep it compact
+                              .map((slot: any) => {
+                                const date = new Date(slot.date);
+                                const startTime = new Date(`${slot.date}T${slot.startTime}`);
+                                const endTime = new Date(`${slot.date}T${slot.endTime}`);
+                                const formattedDate = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+                                const formattedStartTime = startTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+                                const formattedEndTime = endTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+                                
+                                return (
+                                  <div 
+                                    key={slot.id}
+                                    className="border rounded-md p-3"
+                                  >
+                                    <div className="flex justify-between items-center">
+                                      <div>
+                                        <p className="font-medium">{formattedDate}</p>
+                                        <p className="text-sm text-muted-foreground">
+                                          {formattedStartTime} - {formattedEndTime}
+                                        </p>
+                                      </div>
+                                      <div>
+                                        <Badge variant="outline">
+                                          {slot.currentBookings || 0}/{slot.capacity} Spots
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            
+                            {availabilitySlots.filter((slot: any) => !slot.booked && slot.currentBookings < slot.capacity).length === 0 ? (
+                              <div className="text-center py-4">
+                                <p className="text-muted-foreground">No available time slots found.</p>
+                              </div>
+                            ) : availabilitySlots.filter((slot: any) => !slot.booked && slot.currentBookings < slot.capacity).length > 5 && (
+                              <div className="mt-2 text-center">
+                                <Button 
+                                  variant="link" 
+                                  onClick={() => document.querySelector('[value="availability"]')?.dispatchEvent(new Event('click'))}
+                                >
+                                  View all available slots
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-center py-4">
+                            <p className="text-muted-foreground">No availability slots have been added yet.</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
