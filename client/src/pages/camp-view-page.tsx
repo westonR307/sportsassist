@@ -284,6 +284,13 @@ function CampViewPage(props: { id?: string }) {
     queryKey: [`/api/camps/${camp?.id}/availability-slots`],
     enabled: !!camp?.id && camp?.schedulingType === 'availability',
     staleTime: 1000 * 60 * 5, // 5 minutes
+    // Add some debug logging
+    onSuccess: (data) => {
+      console.log("Availability slots fetch success:", data);
+    },
+    onError: (error) => {
+      console.error("Availability slots fetch error:", error);
+    }
   });
 
   const ChildSelectionDialog = () => {
@@ -937,12 +944,13 @@ function CampViewPage(props: { id?: string }) {
                         ) : availabilitySlots && availabilitySlots.length > 0 ? (
                           <div className="space-y-3">
                             {availabilitySlots
-                              .filter((slot: any) => !slot.booked && slot.currentBookings < slot.capacity)
+                              .filter((slot: any) => slot.status === 'available')
                               .slice(0, 5) // Show only first 5 slots to keep it compact
                               .map((slot: any) => {
-                                const date = new Date(slot.date);
-                                const startTime = new Date(`${slot.date}T${slot.startTime}`);
-                                const endTime = new Date(`${slot.date}T${slot.endTime}`);
+                                console.log("Processing slot:", slot); // Debug log
+                                const date = new Date(slot.slotDate);
+                                const startTime = new Date(`${date.toISOString().split('T')[0]}T${slot.startTime}`);
+                                const endTime = new Date(`${date.toISOString().split('T')[0]}T${slot.endTime}`);
                                 const formattedDate = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
                                 const formattedStartTime = startTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
                                 const formattedEndTime = endTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
@@ -961,7 +969,7 @@ function CampViewPage(props: { id?: string }) {
                                       </div>
                                       <div>
                                         <Badge variant="outline">
-                                          {slot.currentBookings || 0}/{slot.capacity} Spots
+                                          {slot.currentBookings || 0}/{slot.maxBookings} Spots
                                         </Badge>
                                       </div>
                                     </div>
@@ -969,11 +977,11 @@ function CampViewPage(props: { id?: string }) {
                                 );
                               })}
                             
-                            {availabilitySlots.filter((slot: any) => !slot.booked && slot.currentBookings < slot.capacity).length === 0 ? (
+                            {availabilitySlots.filter((slot: any) => slot.status === 'available').length === 0 ? (
                               <div className="text-center py-4">
                                 <p className="text-muted-foreground">No available time slots found.</p>
                               </div>
-                            ) : availabilitySlots.filter((slot: any) => !slot.booked && slot.currentBookings < slot.capacity).length > 5 && (
+                            ) : availabilitySlots.filter((slot: any) => slot.status === 'available').length > 5 && (
                               <div className="mt-2 text-center">
                                 <Button 
                                   variant="link" 
