@@ -219,7 +219,14 @@ function CampViewPage(props: { id?: string }) {
     enabled: !!camp?.id, // Only enable when we have the numeric camp ID from the camp data
   });
 
+  // Fetch slot bookings for availability-based camps
+  const { data: slotBookingsData, isLoading: isLoadingSlotBookings } = useQuery({
+    queryKey: [`/api/camps/${camp?.id}/bookings`],
+    enabled: !!camp?.id && !!camp?.schedulingType && camp.schedulingType === 'availability' && hasPermission,
+  });
+
   const registrations = registrationsData?.registrations || [];
+  const slotBookings = slotBookingsData || [];
   const hasPermission = camp?.permissions?.canManage || false;
   const showMessagesTab = hasPermission || isParent;
 
@@ -1264,46 +1271,91 @@ function CampViewPage(props: { id?: string }) {
                     )}
 
                     <div className="space-y-2">
-                      {registrations.map((registration: any) => (
-                        <div
-                          key={registration.id}
-                          className="p-3 border rounded-md flex justify-between items-center"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <Avatar>
-                              <AvatarFallback>
-                                {registration.child?.fullName ? registration.child.fullName.charAt(0) : '?'}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="font-medium">
-                                {registration.child?.fullName || `Athlete ID: ${registration.childId}`}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                Registered: {new Date(registration.registeredAt).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center">
-                            <div className="flex items-center gap-2">
-                              {registration.status === 'waitlisted' && (
-                                <span className="px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
-                                  Waitlist
-                                </span>
-                              )}
-                              <span className={`px-2 py-1 rounded-full text-xs ${registration.paid ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
-                                {registration.paid ? 'Paid' : 'Unpaid'}
-                              </span>
-                            </div>
+                      {registrations.map((registration: any) => {
+                        // For availability-based camps, find slot bookings for this registration
+                        let bookedSlots: any[] = [];
+                        
+                        if (camp?.schedulingType === 'availability' && slotBookings?.length > 0) {
+                          // Find slots this participant is registered for
+                          bookedSlots = slotBookings.filter((slot: any) => 
+                            slot.bookings && slot.bookings.some((booking: any) => 
+                              booking.child?.id === registration.childId
+                            )
+                          );
+                        }
+                        
+                        return (
+                          <div
+                            key={registration.id}
+                            className="p-3 border rounded-md flex flex-col"
+                          >
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center space-x-3">
+                                <Avatar>
+                                  <AvatarFallback>
+                                    {registration.child?.fullName ? registration.child.fullName.charAt(0) : '?'}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="font-medium">
+                                    {registration.child?.fullName || `Athlete ID: ${registration.childId}`}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    Registered: {new Date(registration.registeredAt).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center">
+                                <div className="flex items-center gap-2">
+                                  {registration.status === 'waitlisted' && (
+                                    <span className="px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
+                                      Waitlist
+                                    </span>
+                                  )}
+                                  <span className={`px-2 py-1 rounded-full text-xs ${registration.paid ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+                                    {registration.paid ? 'Paid' : 'Unpaid'}
+                                  </span>
+                                </div>
 
-                            {hasPermission && (
-                              <Button variant="ghost" size="sm">
-                                <Edit className="h-3 w-3" />
-                              </Button>
+                                {hasPermission && (
+                                  <Button variant="ghost" size="sm">
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Display booked slots for availability-based camps */}
+                            {camp?.schedulingType === 'availability' && hasPermission && bookedSlots.length > 0 && (
+                              <div className="mt-2 pt-2 border-t">
+                                <p className="text-xs font-medium mb-1">Registered Time Slots:</p>
+                                <div className="flex flex-wrap gap-1">
+                                  {bookedSlots.map((slot: any) => {
+                                    const slotDate = new Date(slot.slotDate);
+                                    const formattedDate = slotDate.toLocaleDateString(undefined, {
+                                      weekday: 'short', 
+                                      month: 'short', 
+                                      day: 'numeric'
+                                    });
+                                    
+                                    const startTime = new Date(`${slotDate.toISOString().split('T')[0]}T${slot.startTime}`);
+                                    const endTime = new Date(`${slotDate.toISOString().split('T')[0]}T${slot.endTime}`);
+                                    
+                                    const formattedTime = `${startTime.toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'})} - 
+                                      ${endTime.toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'})}`;
+                                    
+                                    return (
+                                      <span key={slot.id} className="px-2 py-1 rounded-md text-xs bg-blue-50 text-blue-700 border border-blue-100">
+                                        {formattedDate} • {formattedTime}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              </div>
                             )}
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
