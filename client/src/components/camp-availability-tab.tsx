@@ -9,9 +9,10 @@ interface CampAvailabilityTabProps {
   campId: number;
   startDate?: Date;
   endDate?: Date;
+  onClose?: () => void;
 }
 
-export function CampAvailabilityTab({ campId, startDate, endDate }: CampAvailabilityTabProps) {
+export function CampAvailabilityTab({ campId, startDate, endDate, onClose }: CampAvailabilityTabProps) {
   const { user, isLoading: isUserLoading } = useUser();
   
   // Fetch camp details to get dates if not provided
@@ -98,6 +99,7 @@ export function CampAvailabilityTab({ campId, startDate, endDate }: CampAvailabi
             campId={campId} 
             startDate={effectiveStartDate}
             endDate={effectiveEndDate}
+            onClose={onClose}
           />
         </TabsContent>
       )}

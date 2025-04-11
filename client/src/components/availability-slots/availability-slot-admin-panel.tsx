@@ -33,9 +33,10 @@ interface AvailabilitySlotAdminPanelProps {
   campId: number;
   startDate: Date;
   endDate: Date;
+  onClose?: () => void;
 }
 
-export function AvailabilitySlotAdminPanel({ campId, startDate, endDate }: AvailabilitySlotAdminPanelProps) {
+export function AvailabilitySlotAdminPanel({ campId, startDate, endDate, onClose }: AvailabilitySlotAdminPanelProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
