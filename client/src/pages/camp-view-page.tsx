@@ -281,8 +281,8 @@ function CampViewPage(props: { id?: string }) {
 
   // Query to fetch availability slots for the camp if it's availability-based
   const { data: availabilitySlots = [], isLoading: isLoadingSlots } = useQuery({
-    queryKey: [`/api/camps/${id}/availability-slots`],
-    enabled: !!id && camp?.schedulingType === 'availability',
+    queryKey: [`/api/camps/${camp?.id}/availability-slots`],
+    enabled: !!camp?.id && camp?.schedulingType === 'availability',
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
