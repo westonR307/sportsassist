@@ -952,8 +952,12 @@ function CampViewPage(props: { id?: string }) {
                           </div>
                         ) : availabilitySlots && availabilitySlots.length > 0 ? (
                           <div className="space-y-3">
+                            {console.log("Details Tab Slots:", availabilitySlots)}
                             {availabilitySlots
-                              .filter((slot: any) => !slot.booked && slot.currentBookings < slot.capacity)
+                              .filter((slot: any) => {
+                                console.log("Slot:", slot);
+                                return !slot.booked && slot.currentBookings < slot.capacity;
+                              })
                               .slice(0, 5) // Show only first 5 slots to keep it compact
                               .map((slot: any) => {
                                 console.log("Processing slot:", slot); // Debug log
