@@ -1450,39 +1450,20 @@ function CampViewPage(props: { id?: string }) {
           )}
           
           {camp?.schedulingType === "availability" && (
-            <TabsContent value="availability" className="space-y-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>
-                    Availability Schedule
-                  </CardTitle>
-                  {hasPermission && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        // Set the active tab to "Availability"
-                        setActiveTab("availability");
-                        // Scroll to the availability section
-                        setTimeout(() => {
-                          const tabsElement = document.getElementById("camp-tabs");
-                          if (tabsElement) {
-                            tabsElement.scrollIntoView({ behavior: "smooth" });
-                          }
-                        }, 100);
-                      }}
-                      className="h-8"
-                    >
-                      <CalendarDays className="h-4 w-4 mr-2" />
-                      Manage Availability
-                    </Button>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  <CampAvailabilityTab campId={camp.id} />
-                </CardContent>
-              </Card>
-            </TabsContent>
+            <Dialog open={manageAvailabilityOpen} onOpenChange={setManageAvailabilityOpen}>
+              <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Manage Availability Slots</DialogTitle>
+                  <DialogDescription>
+                    Add, edit, or remove availability slots for this camp.
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="py-4">
+                  <CampAvailabilityTab campId={camp.id} onClose={() => setManageAvailabilityOpen(false)} />
+                </div>
+              </DialogContent>
+            </Dialog>
           )}
         </Tabs>
 
