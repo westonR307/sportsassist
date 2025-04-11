@@ -934,7 +934,7 @@ function CampViewPage(props: { id?: string }) {
                           <div className="flex justify-center py-4">
                             <Loader2 className="h-6 w-6 animate-spin" />
                           </div>
-                        ) : availabilitySlots.length > 0 ? (
+                        ) : availabilitySlots && availabilitySlots.length > 0 ? (
                           <div className="space-y-3">
                             {availabilitySlots
                               .filter((slot: any) => !slot.booked && slot.currentBookings < slot.capacity)
