@@ -175,46 +175,32 @@ export function SlotRegistrationVisualization({ slots, isLoading = false }: Slot
                               </div>
                             </div>
                             
-                            {slot.bookings && slot.bookings.length > 0 ? (
-                              <div>
-                                <p className="text-sm font-medium mb-1">Registered Athletes</p>
-                                <div className="space-y-2 mt-2">
-                                  {slot.bookings.map((booking: any) => (
-                                    <div 
-                                      key={booking.id} 
-                                      className="flex items-center justify-between p-2 bg-muted rounded-md"
-                                    >
-                                      <div className="flex items-center space-x-2">
-                                        <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center">
-                                          <Users className="h-3 w-3 text-primary" />
-                                        </div>
-                                        <span className="text-sm font-medium">
-                                          {booking.child?.fullName || `Athlete #${booking.childId}`}
-                                        </span>
+                            <div>
+                              <p className="text-sm font-medium mb-1">Booking Status</p>
+                              <div className="p-2 bg-muted rounded-md">
+                                {slot.bookings && slot.bookings.length > 0 ? (
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-2">
+                                      <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center">
+                                        <Users className="h-3 w-3 text-primary" />
                                       </div>
-                                      <div>
-                                        <TooltipProvider>
-                                          <Tooltip>
-                                            <TooltipTrigger asChild>
-                                              <Badge variant="outline" className="text-xs">
-                                                {new Date(booking.bookedAt || booking.createdAt).toLocaleDateString()}
-                                              </Badge>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                              <p>Registration date</p>
-                                            </TooltipContent>
-                                          </Tooltip>
-                                        </TooltipProvider>
-                                      </div>
+                                      <span className="text-sm font-medium">
+                                        {slot.currentBookings} bookings
+                                      </span>
                                     </div>
-                                  ))}
-                                </div>
+                                    <div>
+                                      <Badge variant={slot.currentBookings >= slot.maxBookings ? "destructive" : "outline"}>
+                                        {Math.round((slot.currentBookings / slot.maxBookings) * 100)}% Full
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="text-sm text-muted-foreground py-1">
+                                    No bookings for this time slot yet.
+                                  </div>
+                                )}
                               </div>
-                            ) : (
-                              <div className="text-sm text-muted-foreground py-2">
-                                No athletes registered for this time slot yet.
-                              </div>
-                            )}
+                            </div>
                           </div>
                         </AccordionContent>
                       </AccordionItem>
