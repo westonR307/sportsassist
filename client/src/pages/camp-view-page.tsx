@@ -219,6 +219,9 @@ function CampViewPage(props: { id?: string }) {
     enabled: !!camp?.id, // Only enable when we have the numeric camp ID from the camp data
   });
 
+  // Define hasPermission before using it
+  const hasPermission = camp?.permissions?.canManage || false;
+  
   // Fetch slot bookings for availability-based camps
   const { data: slotBookingsData, isLoading: isLoadingSlotBookings } = useQuery({
     queryKey: [`/api/camps/${camp?.id}/bookings`],
@@ -227,7 +230,6 @@ function CampViewPage(props: { id?: string }) {
 
   const registrations = registrationsData?.registrations || [];
   const slotBookings = slotBookingsData || [];
-  const hasPermission = camp?.permissions?.canManage || false;
   const showMessagesTab = hasPermission || isParent;
 
   const getRegistrationStatus = () => {
