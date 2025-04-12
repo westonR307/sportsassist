@@ -355,8 +355,6 @@ export function AvailabilitySlotAdminPanel({ campId, startDate, endDate, onClose
     });
   };
 
-  // Use the SlotRegistrationVisualization component
-  
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">

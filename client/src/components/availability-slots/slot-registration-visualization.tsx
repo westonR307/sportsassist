@@ -297,7 +297,7 @@ export function SlotRegistrationVisualization({ slots, isLoading = false }: Slot
                 <div className="text-2xl font-bold">
                   {statistics.fullyBookedSlots}
                   <span className="text-sm text-muted-foreground ml-2">
-                    ({Math.round((statistics.fullyBookedSlots / statistics.totalSlots) * 100)}%)
+                    ({statistics.totalSlots > 0 ? Math.round((statistics.fullyBookedSlots / statistics.totalSlots) * 100) : 0}%)
                   </span>
                 </div>
                 <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
@@ -316,7 +316,7 @@ export function SlotRegistrationVisualization({ slots, isLoading = false }: Slot
                 <div className="text-2xl font-bold">
                   {statistics.partiallyBookedSlots}
                   <span className="text-sm text-muted-foreground ml-2">
-                    ({Math.round((statistics.partiallyBookedSlots / statistics.totalSlots) * 100)}%)
+                    ({statistics.totalSlots > 0 ? Math.round((statistics.partiallyBookedSlots / statistics.totalSlots) * 100) : 0}%)
                   </span>
                 </div>
                 <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center">
@@ -335,7 +335,7 @@ export function SlotRegistrationVisualization({ slots, isLoading = false }: Slot
                 <div className="text-2xl font-bold">
                   {statistics.emptySlots}
                   <span className="text-sm text-muted-foreground ml-2">
-                    ({Math.round((statistics.emptySlots / statistics.totalSlots) * 100)}%)
+                    ({statistics.totalSlots > 0 ? Math.round((statistics.emptySlots / statistics.totalSlots) * 100) : 0}%)
                   </span>
                 </div>
                 <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
