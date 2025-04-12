@@ -329,7 +329,7 @@ export function AvailabilitySlotAdminPanel({ campId, startDate, endDate, onClose
                       {/* Display registrations for booked slots */}
                       {slot.status === 'booked' && slot.currentBookings > 0 && (
                         <div className="mt-2 border-t pt-2">
-                          <p className="text-xs font-semibold">Registered Athletes:</p>
+                          <p className="text-xs font-semibold">Bookings for this slot:</p>
                           <div className="slot-bookings-list">
                             {/* Render bookings for this specific slot */}
                             {renderSlotBookings(slot.id)}
