@@ -1,6 +1,7 @@
 import { Request, Response, Router, Express, NextFunction } from "express";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "./db";
+import fetch from "node-fetch";
 import {
   camps,
   availabilitySlots,
