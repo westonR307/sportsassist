@@ -225,6 +225,17 @@ function CampViewPage(props: { id?: string }) {
   // Fetch slot bookings for availability-based camps
   const { data: slotBookingsData, isLoading: isLoadingSlotBookings } = useQuery({
     queryKey: [`/api/camps/${camp?.id}/bookings`],
+    queryFn: async () => {
+      console.log(`Fetching slot bookings for camp ID ${camp?.id}`);
+      const response = await fetch(`/api/camps/${camp?.id}/bookings`);
+      if (!response.ok) {
+        console.error(`Error fetching slot bookings: ${response.status}`);
+        return [];
+      }
+      const data = await response.json();
+      console.log(`Retrieved ${data.length} slot bookings:`, data);
+      return data;
+    },
     enabled: !!camp?.id && !!camp?.schedulingType && camp.schedulingType === 'availability' && hasPermission,
   });
 
