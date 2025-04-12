@@ -331,8 +331,8 @@ export function AvailabilitySlotAdminPanel({ campId, startDate, endDate, onClose
                         <div className="mt-2 border-t pt-2">
                           <p className="text-xs font-semibold">Registered Athletes:</p>
                           <div className="slot-bookings-list">
-                            {/* Fetch and display booking info from database */}
-                            {fetchSlotBookings(slot.id, campId)}
+                            {/* Render bookings for this specific slot */}
+                            {renderSlotBookings(slot.id)}
                           </div>
                         </div>
                       )}
