@@ -253,7 +253,22 @@ function CampViewPage(props: { id?: string }) {
     enabled: !!camp?.id && !!camp?.schedulingType && camp.schedulingType === 'availability' && hasPermission,
   });
 
-  const registrations = registrationsData?.registrations || [];
+  // Get all registrations from the API response
+  const allRegistrations = registrationsData?.registrations || [];
+  
+  // Deduplicate registrations based on childId to prevent duplicate displays
+  // This ensures we only show one entry per child, even if multiple registrations exist
+  const uniqueChildIds = new Set();
+  const registrations = allRegistrations.filter((registration: any) => {
+    // If we haven't seen this childId before, keep this registration
+    if (!uniqueChildIds.has(registration.childId)) {
+      uniqueChildIds.add(registration.childId);
+      return true;
+    }
+    // Skip duplicate registrations for the same child
+    return false;
+  });
+  
   const slotBookings = slotBookingsData || [];
   const showMessagesTab = hasPermission || isParent;
 
