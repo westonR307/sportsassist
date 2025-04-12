@@ -520,6 +520,31 @@ export default function registerAvailabilityRoutes(app: Express) {
           .where(eq(availabilitySlots.id, booking.slotId));
         
         res.json(updatedBooking[0]);
+
+        // Send slot cancellation notification asynchronously
+        try {
+          // Make an internal API request to send the notification
+          fetch(`http://localhost:${process.env.PORT || 5000}/api/notifications/send-slot-cancellation`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Cookie': req.headers.cookie || '' // Pass session cookies for authentication
+            },
+            body: JSON.stringify({
+              bookingId: parseInt(bookingId, 10),
+              slotId: booking.slotId,
+              campId: booking.slot.campId,
+              childId: booking.childId,
+              cancelReason: cancelReason || 'No reason provided'
+            })
+          }).catch(err => {
+            console.error('Failed to send slot cancellation notification:', err);
+            // We don't rethrow the error since this is just a notification
+          });
+        } catch (error) {
+          console.error('Error preparing slot cancellation notification:', error);
+          // We don't rethrow the error since this is just a notification
+        }
       } else {
         throw new Error("Failed to cancel booking");
       }

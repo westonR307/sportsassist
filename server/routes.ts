@@ -2,8 +2,9 @@ import { publicRoles } from "@shared/schema";
 import express, { Request, Response, NextFunction } from "express";
 import type { Express } from "express";
 import { createServer } from "http";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { eq, inArray, gt, and, gte, lte, isNull, or, sql, desc } from "drizzle-orm";
+import fetch from "node-fetch";
 import { campStaff } from "@shared/tables";
 import { PLATFORM_FEE_PERCENTAGE } from "./constants";
 
