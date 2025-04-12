@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { apiRequest } from "@/lib/queryClient";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AvailabilitySlotManager } from "./availability-slot-manager";
+import { SlotRegistrationVisualization } from "./slot-registration-visualization";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 type AvailabilitySlot = {
@@ -354,6 +355,8 @@ export function AvailabilitySlotAdminPanel({ campId, startDate, endDate, onClose
     });
   };
 
+  // Use the SlotRegistrationVisualization component
+  
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -395,10 +398,11 @@ export function AvailabilitySlotAdminPanel({ campId, startDate, endDate, onClose
       </div>
       
       <Tabs defaultValue="all">
-        <TabsList className="mb-4 w-full grid grid-cols-3 md:flex md:flex-row gap-1 p-1">
+        <TabsList className="mb-4 w-full grid grid-cols-4 md:flex md:flex-row gap-1 p-1">
           <TabsTrigger value="all" className="text-xs sm:text-sm whitespace-nowrap">All ({slots.length})</TabsTrigger>
           <TabsTrigger value="available" className="text-xs sm:text-sm whitespace-nowrap">Available ({availableSlots.length})</TabsTrigger>
           <TabsTrigger value="booked" className="text-xs sm:text-sm whitespace-nowrap">Booked ({bookedSlots.length})</TabsTrigger>
+          <TabsTrigger value="visualization" className="text-xs sm:text-sm whitespace-nowrap">Analytics</TabsTrigger>
         </TabsList>
         
         <TabsContent value="all" className="space-y-4">
@@ -416,6 +420,10 @@ export function AvailabilitySlotAdminPanel({ campId, startDate, endDate, onClose
         <TabsContent value="available" className="space-y-4">
           {isLoading ? (
             <div className="text-center py-4">Loading slots...</div>
+          ) : availableSlots.length === 0 ? (
+            <div className="text-center py-4 text-muted-foreground">
+              No available slots found.
+            </div>
           ) : (
             renderSlotsList(availableSlots)
           )}
@@ -424,9 +432,17 @@ export function AvailabilitySlotAdminPanel({ campId, startDate, endDate, onClose
         <TabsContent value="booked" className="space-y-4">
           {isLoading ? (
             <div className="text-center py-4">Loading slots...</div>
+          ) : bookedSlots.length === 0 ? (
+            <div className="text-center py-4 text-muted-foreground">
+              No fully booked slots found.
+            </div>
           ) : (
             renderSlotsList(bookedSlots)
           )}
+        </TabsContent>
+        
+        <TabsContent value="visualization" className="space-y-4">
+          <SlotRegistrationVisualization slots={slots} isLoading={isLoading} />
         </TabsContent>
       </Tabs>
       
