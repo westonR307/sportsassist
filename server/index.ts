@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { registerDebugRoutes } from "./debug-routes";
 import registerAvailabilityRoutes from "./availability-routes";
+import registerNotificationRoutes from "./notification-routes";
 import cors from "cors";
 
 const app = express();
@@ -55,6 +56,10 @@ app.use((req, res, next) => {
     // Register availability slot routes
     registerAvailabilityRoutes(app);
     log("Availability routes registered");
+    
+    // Register notification routes
+    registerNotificationRoutes(app);
+    log("Notification routes registered");
 
     // Set up error handling after routes
     app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
