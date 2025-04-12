@@ -566,6 +566,8 @@ export default function registerAvailabilityRoutes(app: Express) {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
+      console.log(`Fetching booking data for camp ID ${id}`);
+      
       // Get all slots for this camp
       const slots = await db.query.availabilitySlots.findMany({
         where: eq(availabilitySlots.campId, parseInt(id, 10)),
@@ -575,35 +577,51 @@ export default function registerAvailabilityRoutes(app: Express) {
         ]
       });
       
+      console.log(`Found ${slots.length} slots for camp ID ${id}`);
+      
       // For each slot, get the bookings separately
       const slotsWithBookings = await Promise.all(slots.map(async (slot) => {
-        // Get the bookings for this slot
-        const bookings = await db.query.slotBookings.findMany({
-          where: eq(slotBookings.slotId, slot.id),
-          with: {
-            child: {
-              columns: {
-                id: true,
-                fullName: true
-              }
-            },
-            parent: {
-              columns: {
-                id: true,
-                first_name: true,
-                last_name: true,
-                email: true
+        try {
+          // Get the bookings for this slot
+          const bookings = await db.query.slotBookings.findMany({
+            where: eq(slotBookings.slotId, slot.id),
+            with: {
+              child: {
+                columns: {
+                  id: true,
+                  fullName: true
+                }
+              },
+              parent: {
+                columns: {
+                  id: true,
+                  first_name: true,
+                  last_name: true,
+                  email: true
+                }
               }
             }
-          }
-        });
-        
-        // Return the slot with its bookings
-        return {
-          ...slot,
-          bookings
-        };
+          });
+          
+          console.log(`Slot ID ${slot.id} has ${bookings.length} bookings`);
+          
+          // Return the slot with its bookings
+          return {
+            ...slot,
+            bookings
+          };
+        } catch (error) {
+          console.error(`Error fetching bookings for slot ${slot.id}:`, error);
+          // Return the slot with empty bookings array if something went wrong
+          return {
+            ...slot,
+            bookings: []
+          };
+        }
       }));
+      
+      // Log the result for debugging
+      console.log(`Returning ${slotsWithBookings.length} slots with booking data`);
       
       res.json(slotsWithBookings);
     } catch (error) {

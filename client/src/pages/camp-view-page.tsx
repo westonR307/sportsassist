@@ -227,14 +227,28 @@ function CampViewPage(props: { id?: string }) {
     queryKey: [`/api/camps/${camp?.id}/bookings`],
     queryFn: async () => {
       console.log(`Fetching slot bookings for camp ID ${camp?.id}`);
-      const response = await fetch(`/api/camps/${camp?.id}/bookings`);
-      if (!response.ok) {
-        console.error(`Error fetching slot bookings: ${response.status}`);
+      try {
+        const response = await fetch(`/api/camps/${camp?.id}/bookings`);
+        if (!response.ok) {
+          console.error(`Error fetching slot bookings: ${response.status}`);
+          return [];
+        }
+        const data = await response.json();
+        console.log(`Retrieved ${data.length} slot bookings:`, data);
+        // Log the first slot with its bookings for debugging
+        if (data.length > 0) {
+          console.log("First slot details:", {
+            id: data[0].id,
+            date: data[0].slotDate,
+            times: `${data[0].startTime} - ${data[0].endTime}`,
+            bookings: data[0].bookings || []
+          });
+        }
+        return data;
+      } catch (error) {
+        console.error("Error in slot bookings query:", error);
         return [];
       }
-      const data = await response.json();
-      console.log(`Retrieved ${data.length} slot bookings:`, data);
-      return data;
     },
     enabled: !!camp?.id && !!camp?.schedulingType && camp.schedulingType === 'availability' && hasPermission,
   });
@@ -1290,11 +1304,18 @@ function CampViewPage(props: { id?: string }) {
                         
                         if (camp?.schedulingType === 'availability' && slotBookings?.length > 0) {
                           // Find slots this participant is registered for
-                          bookedSlots = slotBookings.filter((slot: any) => 
-                            slot.bookings && slot.bookings.some((booking: any) => 
-                              booking.child?.id === registration.childId
-                            )
-                          );
+                          bookedSlots = slotBookings.filter((slot: any) => {
+                            console.log(`Checking slot ID ${slot.id} for childId ${registration.childId}`, slot);
+                            return Array.isArray(slot.bookings) && slot.bookings.some((booking: any) => {
+                              const match = booking.child?.id === registration.childId;
+                              if (match) {
+                                console.log(`Found match for child ${registration.childId} in slot ${slot.id}`);
+                              }
+                              return match;
+                            });
+                          });
+                          
+                          console.log(`Found ${bookedSlots.length} booked slots for registration ${registration.id} (childId: ${registration.childId})`);
                         }
                         
                         return (
