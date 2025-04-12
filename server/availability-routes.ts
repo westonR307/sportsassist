@@ -156,17 +156,49 @@ export default function registerAvailabilityRoutes(app: Express) {
         });
       }
       
-      // Get availability slots for the camp
+      // Get availability slots for the camp with their bookings
       const slots = await db.query.availabilitySlots.findMany({
         where: eq(availabilitySlots.campId, parseInt(campId, 10)),
+        with: {
+          bookings: {
+            where: eq(slotBookings.status, "confirmed"),
+          }
+        },
         orderBy: [
           asc(availabilitySlots.slotDate),
           asc(availabilitySlots.startTime)
         ]
       });
       
-      console.log(`Found ${slots.length} availability slots for camp ${campId}`);
-      res.json(slots);
+      // Update the slots to ensure status fields match the actual booking count
+      const updatedSlots = slots.map(slot => {
+        const confirmedBookingsCount = slot.bookings.length;
+        // Update status based on actual booking count
+        const status = confirmedBookingsCount >= slot.maxBookings ? "booked" : "available";
+        
+        // Only include the slot status in the response if it's different from what's in the database
+        // This avoids unnecessary updates but ensures we send correct data
+        if (status !== slot.status) {
+          // Update the slot in the database if the status is inconsistent
+          db.update(availabilitySlots)
+            .set({ 
+              status: status as AvailabilityStatus,
+              currentBookings: confirmedBookingsCount 
+            })
+            .where(eq(availabilitySlots.id, slot.id))
+            .execute()
+            .catch(err => console.error(`Error updating slot status for slot ${slot.id}:`, err));
+        }
+        
+        return {
+          ...slot,
+          status,
+          currentBookings: confirmedBookingsCount
+        };
+      });
+      
+      console.log(`Found ${updatedSlots.length} availability slots for camp ${campId}`);
+      res.json(updatedSlots);
     } catch (error) {
       console.error(`Error fetching availability slots for camp ${campId}:`, error);
       res.status(500).json({ 
@@ -436,11 +468,22 @@ export default function registerAvailabilityRoutes(app: Express) {
         .returning();
       
       if (updatedBooking && updatedBooking.length > 0) {
-        // Update slot booking count and status
+        // Get the new count of confirmed bookings for this slot
+        const confirmedBookings = await db.query.slotBookings.findMany({
+          where: and(
+            eq(slotBookings.slotId, booking.slotId),
+            eq(slotBookings.status, "confirmed")
+          )
+        });
+        
+        const newBookingCount = confirmedBookings.length;
+        
+        // Update slot booking count and status based on actual booking count
         await db.update(availabilitySlots)
           .set({
-            currentBookings: booking.slot.currentBookings - 1,
-            status: "available" as AvailabilityStatus
+            currentBookings: newBookingCount,
+            // Only mark as available if there's space available
+            status: newBookingCount < booking.slot.maxBookings ? "available" : "booked" as AvailabilityStatus
           })
           .where(eq(availabilitySlots.id, booking.slotId));
         
