@@ -424,6 +424,30 @@ export default function registerAvailabilityRoutes(app: Express) {
           .where(eq(availabilitySlots.id, parseInt(slotId, 10)));
         
         res.status(201).json(booking[0]);
+        
+        // Send booking confirmation email asynchronously
+        try {
+          // Make an internal API request to send the notification
+          fetch(`http://localhost:${process.env.PORT || 5000}/api/notifications/send-slot-booking-confirmation`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Cookie': req.headers.cookie || '' // Pass session cookies for authentication
+            },
+            body: JSON.stringify({
+              bookingId: booking[0].id,
+              slotId: parseInt(slotId, 10),
+              campId: parseInt(id, 10),
+              childId: parseInt(childId, 10)
+            })
+          }).catch(err => {
+            console.error('Failed to send slot booking confirmation notification:', err);
+            // We don't rethrow the error since this is just a notification
+          });
+        } catch (error) {
+          console.error('Error preparing slot booking notification:', error);
+          // We don't rethrow the error since this is just a notification
+        }
       } else {
         throw new Error("Failed to create booking");
       }

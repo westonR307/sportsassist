@@ -3814,6 +3814,53 @@ export async function registerRoutes(app: Express) {
           endDate: camp.endDate
         }
       });
+      
+      // Send registration confirmation or waitlist notification email asynchronously
+      // We don't await this to avoid delaying the response to the user
+      try {
+        // Get parent and child details for the email
+        const [parentResult, childResult] = await Promise.all([
+          pool.query('SELECT first_name, last_name, email FROM users WHERE id = $1', [req.user.id]),
+          childId ? pool.query('SELECT full_name FROM children WHERE id = $1', [childId]) : Promise.resolve({ rows: [{ full_name: 'your child' }] })
+        ]);
+        
+        if (parentResult.rows.length > 0 && parentResult.rows[0].email) {
+          const parent = parentResult.rows[0];
+          const childName = childResult.rows.length > 0 ? childResult.rows[0].full_name : 'your child';
+          const parentName = `${parent.first_name || ''} ${parent.last_name || ''}`.trim() || 'Parent';
+          
+          // Create location string
+          let location = camp.isVirtual ? 'Virtual Camp' : '';
+          if (!camp.isVirtual && camp.streetAddress) {
+            location = `${camp.streetAddress}, ${camp.city}, ${camp.state}`;
+          } else if (!camp.isVirtual) {
+            location = `${camp.city}, ${camp.state}`;
+          }
+          
+          const apiEndpoint = isWaitlist 
+            ? '/api/notifications/send-waitlist-notification'
+            : '/api/notifications/send-registration-confirmation';
+          
+          // Make internal API request to send notification
+          fetch(`http://localhost:${process.env.PORT || 5000}${apiEndpoint}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Cookie': req.headers.cookie || '' // Pass session cookies for authentication
+            },
+            body: JSON.stringify({
+              registrationId: registration.id,
+              status: isWaitlist ? 'added' : undefined
+            })
+          }).catch(err => {
+            console.error('Failed to send registration notification:', err);
+            // We don't rethrow the error since this is just a notification
+          });
+        }
+      } catch (error) {
+        console.error('Error preparing registration notification:', error);
+        // We don't rethrow the error since this is just a notification
+      }
     } catch (error) {
       console.error("Error registering for camp:", error);
       res.status(500).json({ message: "Failed to register for camp" });
