@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AvailabilitySlotManager } from "./availability-slot-manager";
 import { SlotRegistrationVisualization } from "./slot-registration-visualization";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 type AvailabilitySlot = {
   id: number;
@@ -28,6 +29,24 @@ type AvailabilitySlot = {
   currentBookings: number;
   status: "available" | "booked" | "unavailable";
   notes?: string;
+  bookings?: SlotBooking[];
+};
+
+type SlotBooking = {
+  id: number;
+  slotId: number;
+  childId: number;
+  parentId: number;
+  status: string;
+  child?: {
+    id: number;
+    fullName: string;
+  };
+  parent?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+  };
 };
 
 interface AvailabilitySlotAdminPanelProps {
@@ -43,6 +62,50 @@ export function AvailabilitySlotAdminPanel({ campId, startDate, endDate, onClose
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(null);
+  
+  // Fetch all bookings for the camp and display them per slot
+  const { data: allCampBookings = [], isLoading: bookingsLoading } = useQuery({
+    queryKey: ['/api/camps', campId, 'bookings'],
+    queryFn: async () => {
+      const response = await fetch(`/api/camps/${campId}/bookings`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch slot bookings");
+      }
+      return response.json();
+    }
+  });
+  
+  // Function to render bookings for a specific slot
+  const renderSlotBookings = (slotId: number) => {
+    if (bookingsLoading) {
+      return <div className="text-xs mt-1">Loading bookings...</div>;
+    }
+    
+    // Filter bookings for this specific slot
+    const slotBookings = allCampBookings.filter((booking: any) => booking.slotId === slotId);
+    
+    if (slotBookings.length === 0) {
+      return <div className="text-xs mt-1 text-muted-foreground">No bookings found for this slot.</div>;
+    }
+    
+    return (
+      <div className="space-y-1 mt-1">
+        {slotBookings.map((booking: any) => (
+          <div key={booking.id} className="flex items-center space-x-2 text-xs">
+            <Avatar className="h-5 w-5">
+              <AvatarFallback className="text-[10px]">
+                {booking.child?.fullName?.charAt(0) || booking.childId}
+              </AvatarFallback>
+            </Avatar>
+            <span className="font-medium">{booking.child?.fullName || `Child #${booking.childId}`}</span>
+            <span className="text-muted-foreground">
+              ({booking.parent?.first_name} {booking.parent?.last_name})
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  };
   
   // Format date for display
   const formatDate = (dateString: string) => {
@@ -261,6 +324,17 @@ export function AvailabilitySlotAdminPanel({ campId, startDate, endDate, onClose
                       </div>
                       {slot.notes && (
                         <p className="text-sm mt-1 text-muted-foreground">{slot.notes}</p>
+                      )}
+                      
+                      {/* Display registrations for booked slots */}
+                      {slot.status === 'booked' && slot.currentBookings > 0 && (
+                        <div className="mt-2 border-t pt-2">
+                          <p className="text-xs font-semibold">Registered Athletes:</p>
+                          <div className="slot-bookings-list">
+                            {/* Fetch and display booking info from database */}
+                            {fetchSlotBookings(slot.id, campId)}
+                          </div>
+                        </div>
                       )}
                     </div>
                     <div>
