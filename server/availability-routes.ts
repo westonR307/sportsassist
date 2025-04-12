@@ -569,33 +569,43 @@ export default function registerAvailabilityRoutes(app: Express) {
       // Get all slots for this camp
       const slots = await db.query.availabilitySlots.findMany({
         where: eq(availabilitySlots.campId, parseInt(id, 10)),
-        with: {
-          bookings: {
-            with: {
-              child: {
-                columns: {
-                  id: true,
-                  fullName: true
-                }
-              },
-              parent: {
-                columns: {
-                  id: true,
-                  first_name: true,
-                  last_name: true,
-                  email: true
-                }
-              }
-            }
-          }
-        },
         orderBy: [
           asc(availabilitySlots.slotDate),
           asc(availabilitySlots.startTime)
         ]
       });
       
-      res.json(slots);
+      // For each slot, get the bookings separately
+      const slotsWithBookings = await Promise.all(slots.map(async (slot) => {
+        // Get the bookings for this slot
+        const bookings = await db.query.slotBookings.findMany({
+          where: eq(slotBookings.slotId, slot.id),
+          with: {
+            child: {
+              columns: {
+                id: true,
+                fullName: true
+              }
+            },
+            parent: {
+              columns: {
+                id: true,
+                first_name: true,
+                last_name: true,
+                email: true
+              }
+            }
+          }
+        });
+        
+        // Return the slot with its bookings
+        return {
+          ...slot,
+          bookings
+        };
+      }));
+      
+      res.json(slotsWithBookings);
     } catch (error) {
       console.error("Error fetching camp bookings:", error);
       res.status(500).json({ message: "Failed to fetch bookings" });
