@@ -1305,9 +1305,18 @@ function CampViewPage(props: { id?: string }) {
                         if (camp?.schedulingType === 'availability' && slotBookings?.length > 0) {
                           // Find slots this participant is registered for
                           bookedSlots = slotBookings.filter((slot: any) => {
-                            console.log(`Checking slot ID ${slot.id} for childId ${registration.childId}`, slot);
+                            console.log(`Checking slot ID ${slot.id} for childId ${registration.childId}`, 
+                              `Bookings:`, JSON.stringify(slot.bookings, null, 2));
+                            
+                            // Check if slot has bookings array and if any booking matches this child
                             return Array.isArray(slot.bookings) && slot.bookings.some((booking: any) => {
-                              const match = booking.child?.id === registration.childId;
+                              // Try different property names that might contain child ID
+                              const bookingChildId = booking.childId || booking.child_id;
+                              // If booking has a nested child object, check its ID
+                              const childObjectId = booking.child?.id;
+                              // Compare with registration's childId
+                              const match = bookingChildId === registration.childId || childObjectId === registration.childId;
+                              
                               if (match) {
                                 console.log(`Found match for child ${registration.childId} in slot ${slot.id}`);
                               }

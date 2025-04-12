@@ -568,6 +568,25 @@ export default function registerAvailabilityRoutes(app: Express) {
       
       console.log(`Fetching booking data for camp ID ${id}`);
       
+      // Get all bookings for this camp first
+      const allBookingsResult = await db.execute(sql`
+        SELECT sb.*, 
+               c.id as child_id, c.full_name as child_name,
+               u.id as parent_id, u.first_name as parent_first_name, u.last_name as parent_last_name
+        FROM slot_bookings sb
+        LEFT JOIN availability_slots a ON sb.slot_id = a.id
+        LEFT JOIN children c ON sb.child_id = c.id
+        LEFT JOIN users u ON sb.parent_id = u.id
+        WHERE a.camp_id = ${parseInt(id, 10)}
+      `);
+      
+      // Convert result to array for easier processing
+      const allBookings = Array.isArray(allBookingsResult) 
+        ? allBookingsResult 
+        : (allBookingsResult.rows || []);
+      
+      console.log(`Found ${allBookings.length} bookings for camp ID ${id}`);
+      
       // Get all slots for this camp
       const slots = await db.query.availabilitySlots.findMany({
         where: eq(availabilitySlots.campId, parseInt(id, 10)),
@@ -579,46 +598,50 @@ export default function registerAvailabilityRoutes(app: Express) {
       
       console.log(`Found ${slots.length} slots for camp ID ${id}`);
       
-      // For each slot, get the bookings separately
-      const slotsWithBookings = await Promise.all(slots.map(async (slot) => {
-        try {
-          // Get the bookings for this slot
-          const bookings = await db.query.slotBookings.findMany({
-            where: eq(slotBookings.slotId, slot.id),
-            with: {
-              child: {
-                columns: {
-                  id: true,
-                  fullName: true
-                }
-              },
-              parent: {
-                columns: {
-                  id: true,
-                  first_name: true,
-                  last_name: true,
-                  email: true
-                }
-              }
-            }
-          });
-          
-          console.log(`Slot ID ${slot.id} has ${bookings.length} bookings`);
-          
-          // Return the slot with its bookings
-          return {
-            ...slot,
-            bookings
-          };
-        } catch (error) {
-          console.error(`Error fetching bookings for slot ${slot.id}:`, error);
-          // Return the slot with empty bookings array if something went wrong
-          return {
-            ...slot,
-            bookings: []
-          };
+      // Format the bookings data for easier mapping
+      const bookingsBySlotId: Record<number, any[]> = {};
+      
+      // Initialize all slots with empty booking arrays
+      slots.forEach(slot => {
+        bookingsBySlotId[slot.id] = [];
+      });
+      
+      // Add bookings to their respective slots
+      allBookings.forEach((booking: any) => {
+        const slotId = booking.slot_id;
+        if (!bookingsBySlotId[slotId]) {
+          bookingsBySlotId[slotId] = [];
         }
-      }));
+        
+        bookingsBySlotId[slotId].push({
+          id: booking.id,
+          slotId: booking.slot_id,
+          childId: booking.child_id,
+          parentId: booking.parent_id,
+          status: booking.status,
+          registeredAt: booking.registered_at,
+          child: {
+            id: booking.child_id,
+            fullName: booking.child_name
+          },
+          parent: {
+            id: booking.parent_id,
+            first_name: booking.parent_first_name,
+            last_name: booking.parent_last_name
+          }
+        });
+      });
+      
+      // For each slot, attach its bookings
+      const slotsWithBookings = slots.map(slot => {
+        const slotBookings = bookingsBySlotId[slot.id] || [];
+        console.log(`Slot ID ${slot.id} has ${slotBookings.length} bookings`);
+        
+        return {
+          ...slot,
+          bookings: slotBookings
+        };
+      });
       
       // Log the result for debugging
       console.log(`Returning ${slotsWithBookings.length} slots with booking data`);
