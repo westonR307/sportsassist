@@ -17,7 +17,7 @@ import {
   skillLevels,
   skillLevelNames 
 } from "@shared/sports-utils";
-import { DashboardCalendar } from "@/components/dashboard-calendar";
+import DashboardCalendar from "@/components/dashboard-calendar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { ViewAthleteDialog } from "@/components/view-athlete-dialog";
