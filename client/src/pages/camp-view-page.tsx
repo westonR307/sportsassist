@@ -1844,15 +1844,22 @@ function CampViewPage(props: { id?: string }) {
     );
   };
 
-  // For consistency, we'll use the parent dashboard layout for parent users
-  // which already includes the proper parent sidebar
-  if (isParent) {
+  // Check if we're already inside an AppLayout or ParentDashboardLayout
+  // This will be the case if the route is processed through the Router in App.tsx
+  const inAppLayout = location.includes('/camp/') || location.includes('/register/camp/');
+
+  if (isParent && inAppLayout) {
+    // We're already inside a layout, just render the content directly
+    return renderContent();
+  } else if (isParent) {
+    // Parent view but not via a wrapped layout
     return (
-      <main className="w-full mx-auto p-4 md:p-6">
+      <div className="p-4 md:p-6">
         {renderContent()}
-      </main>
+      </div>
     );
   } else {
+    // Non-parent users get the regular dashboard layout
     return <DashboardLayout>{renderContent()}</DashboardLayout>;
   }
 }
