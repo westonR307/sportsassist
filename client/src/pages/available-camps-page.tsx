@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { ParentSidebar } from "@/components/parent-sidebar";
+import { ParentLayout } from "@/components/parent-layout";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -173,9 +173,8 @@ export default function AvailableCampsPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <ParentSidebar />
-      <main className="flex-1 p-6 md:p-8">
+    <ParentLayout>
+      <div className="flex flex-col space-y-6">
         <div className="flex flex-col space-y-6">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Available Camps</h1>
@@ -412,8 +411,8 @@ export default function AvailableCampsPage() {
             </div>
           )}
         </div>
-      </main>
-    </div>
+      </div>
+    </ParentLayout>
   );
 }
 
