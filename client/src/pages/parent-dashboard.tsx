@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Loader2, Plus, User, CalendarDays, ListChecks, Medal, Award, Info, LogOut, Trash, Upload } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
-import { ParentHeaderNav } from "@/components/parent-header-nav";
+import { ParentLayout } from "@/components/parent-layout";
 import { Child } from "@shared/schema";
 import { ExtendedChild } from "@shared/child-types";
 import { 
@@ -78,20 +78,7 @@ interface ParentDashboardLayoutProps {
 
 import { NotificationBell } from "@/components/notification-bell";
 
-function ParentDashboardLayout({ children }: ParentDashboardLayoutProps) {
-  // New layout with header-based navigation instead of sidebar
-  return (
-    <div className="flex flex-col min-h-screen">
-      {/* Header navigation */}
-      <ParentHeaderNav />
-      
-      {/* Main content */}
-      <main className="flex-1 p-6 md:p-8 overflow-auto">
-        {children}
-      </main>
-    </div>
-  );
-}
+// Using the shared ParentLayout instead of a local layout component
 
 export default function ParentDashboard() {
   const { user, logoutMutation } = useAuth();
@@ -115,12 +102,11 @@ export default function ParentDashboard() {
   };
 
   return (
-    <ParentDashboardLayout>
+    <ParentLayout title="My Athletes">
       <div className="space-y-6">
         <div className="bg-gradient-to-r from-primary-900/10 via-primary-800/5 to-background rounded-xl p-6 mb-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold mb-1">My Athletes</h1>
               <p className="text-muted-foreground">
                 Manage your athletes' profiles and registrations in one place
               </p>
@@ -321,7 +307,7 @@ export default function ParentDashboard() {
           onOpenChange={setEditDialogOpen}
         />
       )}
-    </ParentDashboardLayout>
+    </ParentLayout>
   );
 }
 
