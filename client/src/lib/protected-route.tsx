@@ -69,17 +69,23 @@ export function ProtectedRoute({
         // Pass route params to the component
         console.log("Protected route params:", routeParams);
         
-        // If navigation should be shown, wrap the component with AppLayout
-        if (showNavigation) {
-          return (
-            <AppLayout showBackButton={showBackButton}>
-              <Component id={routeParams.id} {...routeParams} />
-            </AppLayout>
-          );
+        // Special handling for parent users
+        if (user.role === 'parent') {
+          // For parent users, we never wrap with AppLayout to avoid duplicate sidebars
+          // The parent components will handle their own layouts
+          return <Component id={routeParams.id} {...routeParams} />;
+        } else {
+          // For non-parent users (camp_creator, platform_admin, etc.)
+          if (showNavigation) {
+            return (
+              <AppLayout showBackButton={showBackButton}>
+                <Component id={routeParams.id} {...routeParams} />
+              </AppLayout>
+            );
+          } else {
+            return <Component id={routeParams.id} {...routeParams} />;
+          }
         }
-        
-        // Otherwise, render the component directly
-        return <Component id={routeParams.id} {...routeParams} />;
       }}
     </Route>
   );
