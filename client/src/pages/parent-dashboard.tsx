@@ -86,12 +86,12 @@ function ParentDashboardLayout({ children }: ParentDashboardLayoutProps) {
   return (
     <div className="flex min-h-screen">
       <ParentSidebar />
-      {/* Add left padding to accommodate the sidebar in both expanded and collapsed states */}
-      <div className="flex-1 flex flex-col pl-0 lg:pl-16">
+      {/* Add significant left padding to accommodate the sidebar in both expanded and collapsed states */}
+      <div className="flex-1 flex flex-col pl-16 md:pl-20 lg:pl-24">
         <header className="border-b sticky top-0 z-30 bg-background">
           <div className="flex h-16 items-center px-6 justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-10 lg:hidden"></div> {/* Space for sidebar toggle button on mobile only */}
+              {/* Removed the spacer div as we're using padding instead */}
               <h1 className="text-xl font-semibold">Parent Dashboard</h1>
             </div>
             <div className="flex items-center gap-4">
