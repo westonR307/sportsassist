@@ -22,7 +22,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { ViewAthleteDialog } from "@/components/view-athlete-dialog";
 import { SimpleEditAthleteDialog } from "@/components/simple-edit-athlete-dialog";
-import { AddAthleteForm } from "@/components/add-athlete-dialog";
+import { AddAthleteDialog } from "@/components/add-athlete-dialog";
 
 export default function ParentDashboard() {
   const { user } = useAuth();
@@ -228,17 +228,10 @@ export default function ParentDashboard() {
       )}
 
       {/* Add Athlete Dialog */}
-      <Dialog open={addChildDialogOpen} onOpenChange={setAddChildDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Add an Athlete</DialogTitle>
-            <DialogDescription>
-              Create a profile for your athlete to register for camps
-            </DialogDescription>
-          </DialogHeader>
-          <AddAthleteForm onOpenChange={setAddChildDialogOpen} />
-        </DialogContent>
-      </Dialog>
+      <AddAthleteDialog 
+        open={addChildDialogOpen}
+        onOpenChange={setAddChildDialogOpen}
+      />
     </ParentLayout>
   );
 }
