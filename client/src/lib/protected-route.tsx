@@ -71,27 +71,18 @@ export function ProtectedRoute({
         
         // Parent routes
         if (user.role === 'parent') {
-          // For parent routes, check if this is a specific route that should use app layout
-          const isParentPrivateRoute = path.includes('/dashboard/settings') || 
-                                       path.includes('/dashboard/notifications');
-          
           // For parent dashboard & similar routes, never use AppLayout (they have their own sidebar)
           const isParentDashboardRoute = path === '/parent-dashboard' || 
                                         path === '/dashboard/my-athletes' || 
                                         path === '/dashboard/registrations' ||
                                         path === '/parent/messages' ||
-                                        path === '/dashboard/available-camps';
+                                        path === '/dashboard/available-camps' ||
+                                        (path === '/dashboard/settings' && user?.role === 'parent') ||
+                                        (path === '/dashboard/notifications' && user?.role === 'parent');
           
           if (isParentDashboardRoute) {
             // Never wrap parent dashboard with AppLayout - it has its own layout
             return <Component id={routeParams.id} {...routeParams} />;
-          } else if (isParentPrivateRoute && showNavigation) {
-            // Use AppLayout for settings pages
-            return (
-              <AppLayout showBackButton={showBackButton}>
-                <Component id={routeParams.id} {...routeParams} />
-              </AppLayout>
-            );
           } else {
             // Camp view and other pages - render directly with no layout
             return <Component id={routeParams.id} {...routeParams} />;
