@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ParentSidebar } from "@/components/parent-sidebar";
+import { ParentLayout } from "@/components/parent-layout";
 
 // Reuse the same schema from parent onboarding form
 const profileSchema = z.object({
@@ -153,15 +153,9 @@ function ParentSettingsPage() {
   };
 
   return (
-    <div className="flex min-h-screen">
-      <ParentSidebar />
-      <div className="flex-1 p-6 md:p-8">
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold">Profile Settings</h1>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 max-w-3xl">
+    <ParentLayout title="Profile Settings">
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 gap-6 max-w-3xl">
             <Card>
               <CardHeader>
                 <CardTitle>Profile Photo</CardTitle>
@@ -417,8 +411,7 @@ function ParentSettingsPage() {
             </Card>
           </div>
         </div>
-      </div>
-    </div>
+      </ParentLayout>
   );
 }
 
