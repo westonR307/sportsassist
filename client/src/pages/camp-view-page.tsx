@@ -1844,14 +1844,13 @@ function CampViewPage(props: { id?: string }) {
     );
   };
 
+  // For consistency, we'll use the parent dashboard layout for parent users
+  // which already includes the proper parent sidebar
   if (isParent) {
     return (
-      <div className="flex min-h-screen bg-background">
-        <ParentSidebar />
-        <main className="flex-1 p-6 md:p-8">
-          {renderContent()}
-        </main>
-      </div>
+      <main className="w-full mx-auto p-4 md:p-6">
+        {renderContent()}
+      </main>
     );
   } else {
     return <DashboardLayout>{renderContent()}</DashboardLayout>;
