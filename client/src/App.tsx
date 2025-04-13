@@ -119,6 +119,11 @@ function Router() {
         component={RegistrationsPage}
       />
       <ProtectedRoute 
+        path="/dashboard/available-camps" 
+        component={AvailableCampsPage}
+        requiredRoles={["parent" as const]} 
+      />
+      <ProtectedRoute 
         path="/dashboard/camps" 
         component={CampsPage}
         requiredRoles={["camp_creator" as const, "platform_admin" as const]} 
@@ -212,11 +217,6 @@ function Router() {
       <ProtectedRoute 
         path="/parent/messages" 
         component={ParentMessagesPage}
-        requiredRoles={["parent" as const]} 
-      />
-      <ProtectedRoute 
-        path="/parent/settings" 
-        component={ParentSettingsPage}
         requiredRoles={["parent" as const]} 
       />
       {/* Document-related routes */}

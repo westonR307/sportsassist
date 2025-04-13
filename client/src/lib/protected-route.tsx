@@ -79,7 +79,8 @@ export function ProtectedRoute({
           const isParentDashboardRoute = path === '/parent-dashboard' || 
                                         path === '/dashboard/my-athletes' || 
                                         path === '/dashboard/registrations' ||
-                                        path === '/parent/messages';
+                                        path === '/parent/messages' ||
+                                        path === '/dashboard/available-camps';
           
           if (isParentDashboardRoute) {
             // Never wrap parent dashboard with AppLayout - it has its own layout
