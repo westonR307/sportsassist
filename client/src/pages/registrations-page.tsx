@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ParentSidebar } from "@/components/parent-sidebar";
+import { ParentLayout } from "@/components/parent-layout";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -66,122 +66,119 @@ export default function RegistrationsPage() {
   );
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <ParentSidebar />
-      <main className="flex-1 p-6 md:p-8">
-        <div className="flex flex-col space-y-6">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Registrations</h1>
-            <p className="text-muted-foreground mt-1">
-              View and manage your camp registrations
-            </p>
-          </div>
-
-          <Separator />
-
-          <Tabs defaultValue="upcoming" onValueChange={setActiveTab} value={activeTab}>
-            <TabsList className="grid w-full grid-cols-3 max-w-md">
-              <TabsTrigger value="upcoming" className="flex gap-2 items-center">
-                <Calendar className="h-4 w-4" />
-                <span>Upcoming</span>
-                {upcomingRegistrations.length > 0 && (
-                  <Badge variant="secondary" className="ml-1">
-                    {upcomingRegistrations.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="active" className="flex gap-2 items-center">
-                <CalendarClock className="h-4 w-4" />
-                <span>Active</span>
-                {activeRegistrations.length > 0 && (
-                  <Badge variant="secondary" className="ml-1">
-                    {activeRegistrations.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="past" className="flex gap-2 items-center">
-                <Clock className="h-4 w-4" />
-                <span>Past</span>
-              </TabsTrigger>
-            </TabsList>
-
-            {isLoading ? (
-              <div className="flex items-center justify-center min-h-[200px]">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-                  <p className="text-sm text-muted-foreground">Loading registrations...</p>
-                </div>
-              </div>
-            ) : (
-              <>
-                <TabsContent value="upcoming">
-                  {upcomingRegistrations.length > 0 ? (
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                      {upcomingRegistrations.map((registration) => (
-                        <RegistrationCard 
-                          key={registration.id} 
-                          registration={registration} 
-                          status="upcoming" 
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <EmptyState 
-                      title="No upcoming registrations"
-                      description="You don't have any upcoming camp registrations. Browse available camps to register."
-                      actionText="Browse Camps"
-                      actionLink="/find-camps"
-                    />
-                  )}
-                </TabsContent>
-
-                <TabsContent value="active">
-                  {activeRegistrations.length > 0 ? (
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                      {activeRegistrations.map((registration) => (
-                        <RegistrationCard 
-                          key={registration.id} 
-                          registration={registration} 
-                          status="active" 
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <EmptyState 
-                      title="No active registrations"
-                      description="You don't have any active camp registrations right now."
-                      actionText="Browse Camps"
-                      actionLink="/find-camps"
-                    />
-                  )}
-                </TabsContent>
-
-                <TabsContent value="past">
-                  {pastRegistrations.length > 0 ? (
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                      {pastRegistrations.map((registration) => (
-                        <RegistrationCard 
-                          key={registration.id} 
-                          registration={registration} 
-                          status="past" 
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <EmptyState 
-                      title="No past registrations"
-                      description="You don't have any past camp registrations."
-                      actionText="Browse Camps"
-                      actionLink="/find-camps"
-                    />
-                  )}
-                </TabsContent>
-              </>
-            )}
-          </Tabs>
+    <ParentLayout>
+      <div className="flex flex-col space-y-6">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Registrations</h1>
+          <p className="text-muted-foreground mt-1">
+            View and manage your camp registrations
+          </p>
         </div>
-      </main>
-    </div>
+
+        <Separator />
+
+        <Tabs defaultValue="upcoming" onValueChange={setActiveTab} value={activeTab}>
+          <TabsList className="grid w-full grid-cols-3 max-w-md">
+            <TabsTrigger value="upcoming" className="flex gap-2 items-center">
+              <Calendar className="h-4 w-4" />
+              <span>Upcoming</span>
+              {upcomingRegistrations.length > 0 && (
+                <Badge variant="secondary" className="ml-1">
+                  {upcomingRegistrations.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="active" className="flex gap-2 items-center">
+              <CalendarClock className="h-4 w-4" />
+              <span>Active</span>
+              {activeRegistrations.length > 0 && (
+                <Badge variant="secondary" className="ml-1">
+                  {activeRegistrations.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="past" className="flex gap-2 items-center">
+              <Clock className="h-4 w-4" />
+              <span>Past</span>
+            </TabsTrigger>
+          </TabsList>
+
+          {isLoading ? (
+            <div className="flex items-center justify-center min-h-[200px]">
+              <div className="flex flex-col items-center gap-2">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                <p className="text-sm text-muted-foreground">Loading registrations...</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <TabsContent value="upcoming">
+                {upcomingRegistrations.length > 0 ? (
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {upcomingRegistrations.map((registration) => (
+                      <RegistrationCard 
+                        key={registration.id} 
+                        registration={registration} 
+                        status="upcoming" 
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState 
+                    title="No upcoming registrations"
+                    description="You don't have any upcoming camp registrations. Browse available camps to register."
+                    actionText="Browse Camps"
+                    actionLink="/find-camps"
+                  />
+                )}
+              </TabsContent>
+
+              <TabsContent value="active">
+                {activeRegistrations.length > 0 ? (
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {activeRegistrations.map((registration) => (
+                      <RegistrationCard 
+                        key={registration.id} 
+                        registration={registration} 
+                        status="active" 
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState 
+                    title="No active registrations"
+                    description="You don't have any active camp registrations right now."
+                    actionText="Browse Camps"
+                    actionLink="/find-camps"
+                  />
+                )}
+              </TabsContent>
+
+              <TabsContent value="past">
+                {pastRegistrations.length > 0 ? (
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {pastRegistrations.map((registration) => (
+                      <RegistrationCard 
+                        key={registration.id} 
+                        registration={registration} 
+                        status="past" 
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState 
+                    title="No past registrations"
+                    description="You don't have any past camp registrations."
+                    actionText="Browse Camps"
+                    actionLink="/find-camps"
+                  />
+                )}
+              </TabsContent>
+            </>
+          )}
+        </Tabs>
+      </div>
+    </ParentLayout>
   );
 }
 

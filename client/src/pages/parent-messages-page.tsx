@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ParentSidebar } from "@/components/parent-sidebar";
+import { ParentLayout } from "@/components/parent-layout";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Mail, Circle, MapPin } from "lucide-react";
@@ -96,10 +96,9 @@ export function ParentMessagesPage() {
   }, {});
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <ParentSidebar />
-      <main className="flex-1 p-6">
-        <h1 className="text-2xl font-bold mb-6">Messages</h1>
+    <ParentLayout>
+      <div className="flex flex-col space-y-6">
+        <h1 className="text-2xl font-bold">Messages</h1>
         <ScrollArea className="h-[calc(100vh-200px)]">
           {isLoading ? (
             <div className="flex justify-center items-center h-full">
@@ -161,8 +160,8 @@ export function ParentMessagesPage() {
             </div>
           )}
         </ScrollArea>
-      </main>
-    </div>
+      </div>
+    </ParentLayout>
   );
 }
 

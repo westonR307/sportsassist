@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { ParentLayout } from "@/components/parent-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -156,8 +157,8 @@ function ParentOnboardingPage() {
   }, [user, setLocation]);
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <div className="flex flex-col items-center justify-center flex-1 p-4 sm:p-8">
+    <ParentLayout>
+      <div className="flex flex-col items-center justify-center p-4 sm:p-8">
         <div className="w-full max-w-2xl mx-auto">
           <Card className="w-full">
             <CardHeader>
@@ -353,7 +354,7 @@ function ParentOnboardingPage() {
           </Card>
         </div>
       </div>
-    </div>
+    </ParentLayout>
   );
 }
 
