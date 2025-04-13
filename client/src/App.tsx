@@ -92,11 +92,7 @@ function Router() {
       
       <Route path="/auth" component={AuthPage} />
       <Route path="/login" component={() => <Redirect to="/auth" />} />
-      <Route path="/find-camps" component={() => (
-        <AppLayout showBackButton={true} showNavigation={false}>
-          <FindCampsPage />
-        </AppLayout>
-      )} />
+      <Route path="/find-camps" component={FindCampsPage} />
       <Route path="/organization/:slugOrName" component={(params) => (
         <AppLayout showBackButton={true} showNavigation={false}>
           <OrganizationViewPage {...params} />
