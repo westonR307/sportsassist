@@ -69,13 +69,35 @@ export function ProtectedRoute({
         // Pass route params to the component
         console.log("Protected route params:", routeParams);
         
-        // Special handling for parent users
+        // Parent routes
         if (user.role === 'parent') {
-          // For parent users, we never wrap with AppLayout to avoid duplicate sidebars
-          // The parent components will handle their own layouts
-          return <Component id={routeParams.id} {...routeParams} />;
-        } else {
-          // For non-parent users (camp_creator, platform_admin, etc.)
+          // For parent routes, check if this is a specific route that should use app layout
+          const isParentPrivateRoute = path.includes('/dashboard/settings') || 
+                                       path.includes('/dashboard/notifications');
+          
+          // For parent dashboard & similar routes, never use AppLayout (they have their own sidebar)
+          const isParentDashboardRoute = path === '/parent-dashboard' || 
+                                        path === '/dashboard/my-athletes' || 
+                                        path === '/dashboard/registrations' ||
+                                        path === '/parent/messages';
+          
+          if (isParentDashboardRoute) {
+            // Never wrap parent dashboard with AppLayout - it has its own layout
+            return <Component id={routeParams.id} {...routeParams} />;
+          } else if (isParentPrivateRoute && showNavigation) {
+            // Use AppLayout for settings pages
+            return (
+              <AppLayout showBackButton={showBackButton}>
+                <Component id={routeParams.id} {...routeParams} />
+              </AppLayout>
+            );
+          } else {
+            // Camp view and other pages - render directly with no layout
+            return <Component id={routeParams.id} {...routeParams} />;
+          }
+        } 
+        // Non-parent routes (camp_creator, platform_admin, etc.)
+        else {
           if (showNavigation) {
             return (
               <AppLayout showBackButton={showBackButton}>
