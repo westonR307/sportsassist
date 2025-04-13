@@ -1,7 +1,6 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient"; 
 import { 
   CalendarDays, 
   Calendar, 
@@ -10,15 +9,14 @@ import {
   Loader2
 } from "lucide-react";
 import { Link } from "wouter";
-import { format, isSameDay } from "date-fns";
+import { format } from "date-fns";
 
-// Types for the data
 interface CampSession {
   id: number;
   campId: number;
   startTime: string;
   endTime: string;
-  sessionDate: Date;
+  sessionDate: string;
   status: string;
   camp: {
     id: number;
@@ -28,118 +26,31 @@ interface CampSession {
   };
 }
 
-interface CampStats {
-  status: string;
-  count: number;
-}
-
 function DashboardSummaryCards() {
   // Fetch today's sessions
-  const { data: todaySessions, isLoading: todayLoading } = useQuery<CampSession[]>({
+  const { data: todaySessions, isLoading: todayLoading } = useQuery({
     queryKey: ["/api/dashboard/today-sessions"],
-    staleTime: 30000, // 30 seconds
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
     refetchInterval: 60000, // Refetch every minute
   });
-  
-  // Fetch camp statistics
-  const { data: campStats, isLoading: statsLoading } = useQuery<CampStats[]>({
-    queryKey: ["/api/dashboard/camp-stats"],
-    staleTime: 30000, // 30 seconds
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    refetchInterval: 60000, // Refetch every minute
+
+  // Fetch active camps count
+  const { data: activeCamps, isLoading: activeCampsLoading } = useQuery({
+    queryKey: ["/api/dashboard/active-camps"],
+    refetchInterval: 300000, // Refetch every 5 minutes
   });
-  
-  // Fetch total registrations count
-  const { data: registrationsData, isLoading: registrationsLoading } = useQuery<{ count: number }>({
-    queryKey: ["/api/dashboard/registrations-count"],
-    staleTime: 30000, // 30 seconds
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    refetchInterval: 60000, // Refetch every minute
+
+  // Fetch upcoming sessions count
+  const { data: upcomingSessions, isLoading: upcomingLoading } = useQuery({
+    queryKey: ["/api/dashboard/upcoming-sessions"],
+    refetchInterval: 300000,
   });
-  
-  // Fetch recent registrations (last 48 hours)
-  const { data: recentRegistrations, isLoading: recentLoading } = useQuery<any[]>({
-    queryKey: ["/api/dashboard/recent-registrations"],
-    staleTime: 30000, // 30 seconds
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    refetchInterval: 60000, // Refetch every minute
+
+  // Fetch registrations data
+  const { data: registrationsData, isLoading: registrationsLoading } = useQuery({
+    queryKey: ["/api/dashboard/registrations"],
+    refetchInterval: 300000,
   });
-  
-  // Log received data for debugging
-  React.useEffect(() => {
-    console.log('Dashboard cards - Today Sessions:', todaySessions);
-    console.log('Dashboard cards - Camp Stats:', campStats);
-    console.log('Dashboard cards - Registrations Data:', registrationsData);
-    console.log('Dashboard cards - Recent Registrations:', recentRegistrations);
-    console.log('Dashboard cards - Loading states:', {
-      todayLoading, statsLoading, registrationsLoading, recentLoading
-    });
-    
-    // Only retry if we got null (not an empty array) and are not already loading
-    const needsRetry = (
-      (!todayLoading && todaySessions === null) ||
-      (!statsLoading && campStats === null) ||
-      (!registrationsLoading && registrationsData === null) ||
-      (!recentLoading && recentRegistrations === null)
-    );
-    
-    if (needsRetry) {
-      const retry = async () => {
-        try {
-          const promises = [];
-          
-          if (todaySessions === null) {
-            promises.push(queryClient.refetchQueries({ queryKey: ["/api/dashboard/today-sessions"] }));
-          }
-          
-          if (campStats === null) {
-            promises.push(queryClient.refetchQueries({ queryKey: ["/api/dashboard/camp-stats"] }));
-          }
-          
-          if (registrationsData === null) {
-            promises.push(queryClient.refetchQueries({ queryKey: ["/api/dashboard/registrations-count"] }));
-          }
-          
-          if (recentRegistrations === null) {
-            promises.push(queryClient.refetchQueries({ queryKey: ["/api/dashboard/recent-registrations"] }));
-          }
-          
-          await Promise.all(promises);
-          console.log("Forced dashboard data refetch");
-        } catch (error) {
-          console.error("Error refetching dashboard data:", error);
-        }
-      };
-      
-      // Only retry once
-      const timer = setTimeout(retry, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [
-    todaySessions, campStats, registrationsData, recentRegistrations,
-    todayLoading, statsLoading, registrationsLoading, recentLoading
-  ]);
-  
-  // Get active camps count
-  const activeCampsCount = React.useMemo(() => {
-    if (!campStats) return 0;
-    const active = campStats.find(stat => stat.status === 'active');
-    return active ? active.count : 0;
-  }, [campStats]);
-  
-  // Get registration open camps count
-  const openRegistrationCount = React.useMemo(() => {
-    if (!campStats) return 0;
-    const open = campStats.find(stat => stat.status === 'registrationOpen');
-    return open ? open.count : 0;
-  }, [campStats]);
-  
-  // Format the time in 12-hour format
+
   const formatTime = (time: string): string => {
     const [hours, minutes] = time.split(':');
     const hour = parseInt(hours, 10);
@@ -147,7 +58,7 @@ function DashboardSummaryCards() {
     const formattedHour = hour % 12 === 0 ? '12' : String(hour % 12);
     return `${formattedHour}:${minutes} ${period}`;
   };
-  
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       {/* Today's Sessions Card */}
@@ -169,12 +80,10 @@ function DashboardSummaryCards() {
             <div className="space-y-2">
               <p className="text-2xl font-bold">{todaySessions.length}</p>
               <div className="max-h-[100px] overflow-y-auto space-y-1">
-                {todaySessions.map((session) => (
+                {todaySessions.map((session: CampSession) => (
                   <Link 
                     key={session.id} 
-                    href={session.camp.slug 
-                      ? `/dashboard/camps/slug/${session.camp.slug}` 
-                      : `/dashboard/camps/${session.campId}`}
+                    href={`/dashboard/camps/${session.camp.slug}`}
                     className="block text-xs hover:underline text-primary truncate"
                   >
                     {formatTime(session.startTime)} - {session.camp.name}
@@ -185,7 +94,7 @@ function DashboardSummaryCards() {
           )}
         </CardContent>
       </Card>
-      
+
       {/* Active Camps Card */}
       <Card>
         <CardHeader className="pb-2">
@@ -195,45 +104,45 @@ function DashboardSummaryCards() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {statsLoading ? (
+          {activeCampsLoading ? (
             <div className="flex justify-center py-4">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (
             <>
-              <p className="text-2xl font-bold">{activeCampsCount}</p>
+              <p className="text-2xl font-bold">{activeCamps?.count || 0}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                {openRegistrationCount} camps with open registration
+                Currently running camps
               </p>
             </>
           )}
         </CardContent>
       </Card>
-      
-      {/* Participant Count Card */}
+
+      {/* Upcoming Sessions Card */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium flex items-center">
             <Users className="h-4 w-4 mr-2 text-primary" />
-            Total Participants
+            Upcoming Sessions
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {registrationsLoading ? (
+          {upcomingLoading ? (
             <div className="flex justify-center py-4">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (
             <>
-              <p className="text-2xl font-bold">{registrationsData?.count || 0}</p>
+              <p className="text-2xl font-bold">{upcomingSessions?.count || 0}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Across all camps
+                Next 7 days
               </p>
             </>
           )}
         </CardContent>
       </Card>
-      
+
       {/* Recent Registrations Card */}
       <Card>
         <CardHeader className="pb-2">
@@ -243,17 +152,15 @@ function DashboardSummaryCards() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {recentLoading ? (
+          {registrationsLoading ? (
             <div className="flex justify-center py-4">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
-          ) : !recentRegistrations || recentRegistrations.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No recent registrations in the last 48 hours.</p>
           ) : (
             <>
-              <p className="text-2xl font-bold">{recentRegistrations.length}</p>
+              <p className="text-2xl font-bold">{registrationsData?.recent || 0}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                New registrations in the last 48 hours
+                Last 48 hours
               </p>
             </>
           )}
