@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Child } from "@shared/schema";
 import { ExtendedChild } from "@shared/child-types";
 import { useAuth } from "@/hooks/use-auth";
-import { ParentSidebar } from "@/components/parent-sidebar";
+import { ParentLayout } from "@/components/parent-layout";
 import { Button } from "@/components/ui/button";
 import { 
   PlusCircle, 
@@ -355,60 +355,54 @@ export default function MyAthletesPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <ParentSidebar />
-      <main className="flex-1 p-6 md:p-8">
-        <div className="flex flex-col space-y-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">My Athletes</h1>
-              <p className="text-muted-foreground mt-1">
-                Manage your athletes and their profiles
-              </p>
+    <ParentLayout title="My Athletes">
+      <div className="flex flex-col space-y-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <p className="text-muted-foreground mt-1">
+            Manage your athletes and their profiles
+          </p>
+          <Button
+            onClick={() => setIsAddDialogOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <PlusCircle size={18} />
+            <span>Add Athlete</span>
+          </Button>
+        </div>
+
+        <Separator />
+
+        {isLoading ? (
+          <div className="flex items-center justify-center min-h-[200px]">
+            <div className="flex flex-col items-center gap-2">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+              <p className="text-sm text-muted-foreground">Loading athletes...</p>
             </div>
+          </div>
+        ) : children.length > 0 ? (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {children.map((child) => (
+              <AthleteCard key={child.id} child={child} />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center min-h-[300px] border rounded-lg p-8">
+            <UserPlus size={48} className="text-muted-foreground mb-4" />
+            <h3 className="text-xl font-semibold mb-2">No athletes yet</h3>
+            <p className="text-muted-foreground text-center max-w-md mb-6">
+              You haven't added any athletes yet. Create an athlete profile to register for sports camps.
+            </p>
             <Button
               onClick={() => setIsAddDialogOpen(true)}
+              size="lg"
               className="flex items-center gap-2"
             >
               <PlusCircle size={18} />
-              <span>Add Athlete</span>
+              <span>Add Your First Athlete</span>
             </Button>
           </div>
-
-          <Separator />
-
-          {isLoading ? (
-            <div className="flex items-center justify-center min-h-[200px]">
-              <div className="flex flex-col items-center gap-2">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-                <p className="text-sm text-muted-foreground">Loading athletes...</p>
-              </div>
-            </div>
-          ) : children.length > 0 ? (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {children.map((child) => (
-                <AthleteCard key={child.id} child={child} />
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center min-h-[300px] border rounded-lg p-8">
-              <UserPlus size={48} className="text-muted-foreground mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No athletes yet</h3>
-              <p className="text-muted-foreground text-center max-w-md mb-6">
-                You haven't added any athletes yet. Create an athlete profile to register for sports camps.
-              </p>
-              <Button
-                onClick={() => setIsAddDialogOpen(true)}
-                size="lg"
-                className="flex items-center gap-2"
-              >
-                <PlusCircle size={18} />
-                <span>Add Your First Athlete</span>
-              </Button>
-            </div>
-          )}
-        </div>
-      </main>
+        )}
+      </div>
 
       {/* Edit Athlete Dialog */}
       {selectedChild && (
@@ -437,6 +431,6 @@ export default function MyAthletesPage() {
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
       />
-    </div>
+    </ParentLayout>
   );
 }
