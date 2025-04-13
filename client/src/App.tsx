@@ -218,6 +218,11 @@ function Router() {
         component={ParentMessagesPage}
         requiredRoles={["parent" as const]} 
       />
+      <ProtectedRoute 
+        path="/parent/settings" 
+        component={ParentSettingsPage}
+        requiredRoles={["parent" as const]} 
+      />
       {/* Document-related routes */}
       <ProtectedRoute path="/documents" component={DocumentsPage} />
       <ProtectedRoute path="/documents/view/:id" component={DocumentViewPage} />

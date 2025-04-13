@@ -156,262 +156,262 @@ function ParentSettingsPage() {
     <ParentLayout title="Profile Settings">
       <div className="space-y-6">
         <div className="grid grid-cols-1 gap-6 max-w-3xl">
-            <Card>
-              <CardHeader>
-                <CardTitle>Profile Photo</CardTitle>
-                <CardDescription>
-                  Update your profile picture
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col items-center sm:flex-row sm:items-start gap-4">
-                  <div className="relative w-32 h-32 overflow-hidden rounded-full bg-muted flex-shrink-0">
-                    {profilePhotoUrl ? (
-                      <img
-                        src={profilePhotoUrl}
-                        alt="Profile"
-                        className="object-cover w-full h-full"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center w-full h-full text-4xl font-bold text-muted-foreground">
-                        {user?.first_name?.[0] || user?.username?.[0] || "?"}
-                      </div>
-                    )}
-                  </div>
-                  <div className="space-y-4">
-                    <div>
-                      <label htmlFor="profile-photo" className="block mb-2 text-sm font-medium">
-                        Upload a new photo
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <Button 
-                          variant="outline" 
-                          onClick={() => document.getElementById('profile-photo')?.click()}
-                          disabled={uploading}
-                          className="relative"
-                        >
-                          {uploading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <>
-                              <Upload className="h-4 w-4 mr-2" />
-                              Choose File
-                            </>
-                          )}
-                        </Button>
-                        <span className="text-sm text-muted-foreground">
-                          {uploading ? 'Uploading...' : 'JPG, PNG or GIF (max 5MB)'}
-                        </span>
-                      </div>
-                      <input
-                        id="profile-photo"
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                      />
+          <Card>
+            <CardHeader>
+              <CardTitle>Profile Photo</CardTitle>
+              <CardDescription>
+                Update your profile picture
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col items-center sm:flex-row sm:items-start gap-4">
+                <div className="relative w-32 h-32 overflow-hidden rounded-full bg-muted flex-shrink-0">
+                  {profilePhotoUrl ? (
+                    <img
+                      src={profilePhotoUrl}
+                      alt="Profile"
+                      className="object-cover w-full h-full"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center w-full h-full text-4xl font-bold text-muted-foreground">
+                      {user?.first_name?.[0] || user?.username?.[0] || "?"}
                     </div>
+                  )}
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="profile-photo" className="block mb-2 text-sm font-medium">
+                      Upload a new photo
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => document.getElementById('profile-photo')?.click()}
+                        disabled={uploading}
+                        className="relative"
+                      >
+                        {uploading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4 mr-2" />
+                            Choose File
+                          </>
+                        )}
+                      </Button>
+                      <span className="text-sm text-muted-foreground">
+                        {uploading ? 'Uploading...' : 'JPG, PNG or GIF (max 5MB)'}
+                      </span>
+                    </div>
+                    <input
+                      id="profile-photo"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Personal Information</CardTitle>
-                <CardDescription>
-                  Update your personal information
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Personal Information</CardTitle>
+              <CardDescription>
+                Update your personal information
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="first_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>First Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Enter your first name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="last_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Last Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Enter your last name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="phone_number"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone Number</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Enter your phone number" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="preferred_contact"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Preferred Contact Method</FormLabel>
+                          <Select 
+                            onValueChange={field.onChange} 
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select contact method" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="email">Email</SelectItem>
+                              <SelectItem value="sms">SMS/Text</SelectItem>
+                              <SelectItem value="app">In App</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div>
+                    <h3 className="text-md font-semibold mb-2">Address Information</h3>
+                    <div className="grid grid-cols-1 gap-4">
                       <FormField
                         control={form.control}
-                        name="first_name"
+                        name="address"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>First Name</FormLabel>
+                            <FormLabel>Street Address</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="Enter your first name" />
+                              <Input {...field} placeholder="Enter your street address" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
 
-                      <FormField
-                        control={form.control}
-                        name="last_name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Last Name</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="Enter your last name" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="phone_number"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Phone Number</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="Enter your phone number" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="preferred_contact"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Preferred Contact Method</FormLabel>
-                            <Select 
-                              onValueChange={field.onChange} 
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select contact method" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="email">Email</SelectItem>
-                                <SelectItem value="sms">SMS/Text</SelectItem>
-                                <SelectItem value="app">In App</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div>
-                      <h3 className="text-md font-semibold mb-2">Address Information</h3>
-                      <div className="grid grid-cols-1 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <FormField
                           control={form.control}
-                          name="address"
+                          name="city"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Street Address</FormLabel>
+                              <FormLabel>City</FormLabel>
                               <FormControl>
-                                <Input {...field} placeholder="Enter your street address" />
+                                <Input {...field} placeholder="Enter your city" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                          <FormField
-                            control={form.control}
-                            name="city"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>City</FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="Enter your city" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                        <FormField
+                          control={form.control}
+                          name="state"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>State</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="Enter your state" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
-                          <FormField
-                            control={form.control}
-                            name="state"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>State</FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="Enter your state" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="zip_code"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>ZIP Code</FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="Enter your ZIP code" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
+                        <FormField
+                          control={form.control}
+                          name="zip_code"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>ZIP Code</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="Enter your ZIP code" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                       </div>
                     </div>
+                  </div>
 
-                    <Button
-                      type="submit"
-                      disabled={profileMutation.isPending}
-                      className="w-full sm:w-auto"
-                    >
-                      {profileMutation.isPending ? (
-                        <span className="flex items-center">
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...
-                        </span>
-                      ) : (
-                        "Save Changes"
-                      )}
-                    </Button>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
+                  <Button
+                    type="submit"
+                    disabled={profileMutation.isPending}
+                    className="w-full sm:w-auto"
+                  >
+                    {profileMutation.isPending ? (
+                      <span className="flex items-center">
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...
+                      </span>
+                    ) : (
+                      "Save Changes"
+                    )}
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Account Information</CardTitle>
-                <CardDescription>
-                  View your account details
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <div className="text-sm font-medium mb-1">Username</div>
-                    <div className="p-2 bg-muted rounded-md">{user?.username}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium mb-1">Email</div>
-                    <div className="p-2 bg-muted rounded-md">{user?.email}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium mb-1">Account Type</div>
-                    <div className="p-2 bg-muted rounded-md capitalize">
-                      {user?.role.replace('_', ' ')}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium mb-1">Account Created</div>
-                    <div className="p-2 bg-muted rounded-md">
-                      {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
-                    </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Account Information</CardTitle>
+              <CardDescription>
+                View your account details
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm font-medium mb-1">Username</div>
+                  <div className="p-2 bg-muted rounded-md">{user?.username}</div>
+                </div>
+                <div>
+                  <div className="text-sm font-medium mb-1">Email</div>
+                  <div className="p-2 bg-muted rounded-md">{user?.email}</div>
+                </div>
+                <div>
+                  <div className="text-sm font-medium mb-1">Account Type</div>
+                  <div className="p-2 bg-muted rounded-md capitalize">
+                    {user?.role.replace('_', ' ')}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+                <div>
+                  <div className="text-sm font-medium mb-1">Account Created</div>
+                  <div className="p-2 bg-muted rounded-md">
+                    {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </ParentLayout>
+      </div>
+    </ParentLayout>
   );
 }
 
