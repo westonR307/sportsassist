@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Loader2, Plus, User, CalendarDays, ListChecks, Medal, Award, Info, LogOut, Trash, Upload } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
-import { ParentSidebar } from "@/components/parent-sidebar";
+import { ParentHeaderNav } from "@/components/parent-header-nav";
 import { Child } from "@shared/schema";
 import { ExtendedChild } from "@shared/child-types";
 import { 
@@ -79,36 +79,16 @@ interface ParentDashboardLayoutProps {
 import { NotificationBell } from "@/components/notification-bell";
 
 function ParentDashboardLayout({ children }: ParentDashboardLayoutProps) {
-  const { user } = useAuth();
-  const [location] = useLocation();
-  
-  // Always render a single consistent layout for all parent pages
+  // New layout with header-based navigation instead of sidebar
   return (
-    <div className="flex min-h-screen">
-      <ParentSidebar />
-      {/* Add significant left padding to accommodate the sidebar in both expanded and collapsed states */}
-      <div className="flex-1 flex flex-col pl-16 md:pl-20 lg:pl-24">
-        <header className="border-b sticky top-0 z-30 bg-background">
-          <div className="flex h-16 items-center px-6 justify-between">
-            <div className="flex items-center gap-4">
-              {/* Removed the spacer div as we're using padding instead */}
-              <h1 className="text-xl font-semibold">Parent Dashboard</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <NotificationBell />
-              <div className="flex items-center gap-2">
-                <div className="text-sm text-right hidden md:block">
-                  <p className="font-medium">{user?.first_name} {user?.last_name}</p>
-                  <p className="text-xs text-muted-foreground">Parent</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
-        <main className="flex-1 p-6 md:p-8 overflow-auto">
-          {children}
-        </main>
-      </div>
+    <div className="flex flex-col min-h-screen">
+      {/* Header navigation */}
+      <ParentHeaderNav />
+      
+      {/* Main content */}
+      <main className="flex-1 p-6 md:p-8 overflow-auto">
+        {children}
+      </main>
     </div>
   );
 }
