@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Loader2, Plus, User, CalendarDays, ListChecks, Medal, Award, Info, LogOut, Trash, Upload } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { ParentSidebar } from "@/components/parent-sidebar";
 import { Child } from "@shared/schema";
 import { ExtendedChild } from "@shared/child-types";
@@ -80,7 +80,39 @@ import { NotificationBell } from "@/components/notification-bell";
 
 function ParentDashboardLayout({ children }: ParentDashboardLayoutProps) {
   const { user } = useAuth();
+  const [location] = useLocation();
   
+  // Check if we're inside AppLayout already
+  const inAppLayout = location.startsWith('/dashboard/') || location.startsWith('/camp/') || location.startsWith('/register/camp/');
+  
+  // If we're already inside AppLayout (which renders its own navigation), just render content
+  if (inAppLayout) {
+    return (
+      <div className="flex-1">
+        <header className="border-b sticky top-0 z-30 bg-background">
+          <div className="flex h-16 items-center px-6 justify-between">
+            <div className="flex items-center gap-4">
+              <h1 className="text-xl font-semibold">Parent Dashboard</h1>
+            </div>
+            <div className="flex items-center gap-4">
+              <NotificationBell />
+              <div className="flex items-center gap-2">
+                <div className="text-sm text-right hidden md:block">
+                  <p className="font-medium">{user?.first_name} {user?.last_name}</p>
+                  <p className="text-xs text-muted-foreground">Parent</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+        <main className="flex-1 p-6 md:p-8 overflow-auto">
+          {children}
+        </main>
+      </div>
+    );
+  }
+  
+  // Otherwise, render our own layout with ParentSidebar
   return (
     <div className="flex min-h-screen">
       <ParentSidebar />

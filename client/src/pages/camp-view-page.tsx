@@ -1844,22 +1844,28 @@ function CampViewPage(props: { id?: string }) {
     );
   };
 
-  // Check if we're already inside an AppLayout or ParentDashboardLayout
-  // This will be the case if the route is processed through the Router in App.tsx
-  const inAppLayout = location.includes('/camp/') || location.includes('/register/camp/');
-
-  if (isParent && inAppLayout) {
-    // We're already inside a layout, just render the content directly
-    return renderContent();
-  } else if (isParent) {
-    // Parent view but not via a wrapped layout
-    return (
-      <div className="p-4 md:p-6">
-        {renderContent()}
-      </div>
-    );
+  // Determine the appropriate rendering approach based on user role and route
+  // Most routes should be coming through Router in App.tsx with the appropriate layout
+  
+  if (isParent) {
+    // For parent users, determine if we should use the parent dashboard layout
+    if (location.includes('/dashboard/camp/') || location.includes('/dashboard/register/camp/')) {
+      // If it's a dashboard route, use plain content as parent dashboard layout is already applied
+      return renderContent();
+    } else if (location.includes('/camp/') || location.includes('/register/camp/')) {
+      // If coming through /camp/ routes, content is already wrapped in AppLayout
+      // Just render content without additional wrapper
+      return renderContent();
+    } else {
+      // Fallback for direct access - just simple padding, no parent dashboard or regular layout
+      return (
+        <div className="p-4 md:p-6">
+          {renderContent()}
+        </div>
+      );
+    }
   } else {
-    // Non-parent users get the regular dashboard layout
+    // For camp creators and admins, we always use the dashboard layout
     return <DashboardLayout>{renderContent()}</DashboardLayout>;
   }
 }
