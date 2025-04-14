@@ -15,7 +15,7 @@ interface CampSession {
   campId: number;
   startTime: string;
   endTime: string;
-  sessionDate: Date;
+  sessionDate: string | Date; // Allow either string or Date type for flexibility
   status: string;
   notes: string | null;
   camp: {
@@ -72,22 +72,49 @@ function DashboardCalendar() {
   
   // Function to convert any date to a consistent string representation based on user's local timezone
   const normalizeDate = (date: Date | string): string => {
-    let d: Date;
-    
-    if (typeof date === 'string') {
-      d = new Date(date);
-    } else {
-      d = date;
+    if (!date) {
+      console.warn("Received empty date in normalizeDate");
+      return "";
     }
     
-    // Convert to user's local timezone by using their local date methods
-    // This ensures dates are displayed correctly regardless of user location (Europe, America, etc.)
-    const localYear = d.getFullYear();
-    const localMonth = d.getMonth() + 1; // getMonth() is 0-indexed
-    const localDay = d.getDate();
+    let d: Date;
     
-    // Format the date as YYYY-MM-DD in the user's local timezone
-    return `${localYear}-${String(localMonth).padStart(2, '0')}-${String(localDay).padStart(2, '0')}`;
+    try {
+      if (typeof date === 'string') {
+        // Handle PostgreSQL timestamp format (e.g., "2025-04-15T14:30:00.000Z")
+        // Or simple date format (e.g., "2025-04-15")
+        d = new Date(date);
+        
+        // Check if valid date was created
+        if (isNaN(d.getTime())) {
+          console.warn(`Invalid date string received: "${date}"`);
+          return "";
+        }
+      } else if (date instanceof Date) {
+        d = date;
+        
+        // Check if valid date was provided
+        if (isNaN(d.getTime())) {
+          console.warn("Invalid Date object received");
+          return "";
+        }
+      } else {
+        console.warn(`Unexpected date type: ${typeof date}`);
+        return "";
+      }
+      
+      // Convert to user's local timezone by using their local date methods
+      // This ensures dates are displayed correctly regardless of user location
+      const localYear = d.getFullYear();
+      const localMonth = d.getMonth() + 1; // getMonth() is 0-indexed
+      const localDay = d.getDate();
+      
+      // Format the date as YYYY-MM-DD in the user's local timezone
+      return `${localYear}-${String(localMonth).padStart(2, '0')}-${String(localDay).padStart(2, '0')}`;
+    } catch (error) {
+      console.error("Error in normalizeDate:", error);
+      return "";
+    }
   };
   
   // Calculate dates that have sessions
