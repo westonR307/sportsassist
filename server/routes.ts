@@ -2605,8 +2605,20 @@ export async function registerRoutes(app: Express) {
         if (isOrgStaff) {
           // Organization staff can see all registrations with complete athlete info
           const registrations = await storage.getRegistrationsWithChildInfo(campId);
+          
+          // Fetch and attach custom field responses for each registration
+          const registrationsWithCustomFields = await Promise.all(
+            registrations.map(async (registration) => {
+              const customFieldResponses = await storage.getCustomFieldResponses(registration.id);
+              return {
+                ...registration,
+                customFieldResponses: customFieldResponses
+              };
+            })
+          );
+          
           return res.json({
-            registrations,
+            registrations: registrationsWithCustomFields,
             permissions: { canManage: true }
           });
         } else if (req.user.role === 'parent') {
@@ -2620,8 +2632,19 @@ export async function registerRoutes(app: Express) {
             childIds.includes(reg.childId)
           );
           
+          // Attach custom field responses for parent's children registrations
+          const registrationsWithCustomFields = await Promise.all(
+            filteredRegistrations.map(async (registration) => {
+              const customFieldResponses = await storage.getCustomFieldResponses(registration.id);
+              return {
+                ...registration,
+                customFieldResponses: customFieldResponses
+              };
+            })
+          );
+          
           return res.json({
-            registrations: filteredRegistrations,
+            registrations: registrationsWithCustomFields,
             permissions: { canManage: false }
           });
         }

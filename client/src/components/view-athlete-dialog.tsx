@@ -14,7 +14,8 @@ import {
   Weight, 
   HeartPulse, 
   HelpCircle, 
-  Edit 
+  Edit, 
+  ClipboardList 
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { 
@@ -24,19 +25,47 @@ import {
   genderNames,
   getSportName 
 } from "@shared/sports-utils";
+import { RegistrationCustomFieldsViewer } from "./registration-custom-fields-viewer";
+
+interface CustomFieldResponse {
+  id: number;
+  registrationId: number;
+  customFieldId: number;
+  response: string | null;
+  responseArray: string[] | null;
+  slotBookingId?: number | null;
+  campId?: number | null;
+  createdAt: Date;
+  updatedAt: Date;
+  field: {
+    id: number;
+    name: string;
+    description: string | null;
+    label: string;
+    fieldType: string;
+    required: boolean;
+    validationType: string;
+    options: string[] | null;
+  }
+}
 
 interface ViewAthleteDialogProps {
   athlete: ExtendedChild | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onEdit: () => void;
+  registrationData?: {
+    id: number;
+    customFieldResponses?: CustomFieldResponse[];
+  };
 }
 
 export function ViewAthleteDialog({ 
   athlete,
   open, 
   onOpenChange, 
-  onEdit 
+  onEdit,
+  registrationData
 }: ViewAthleteDialogProps) {
   
   if (!athlete) return null;
@@ -214,6 +243,17 @@ export function ViewAthleteDialog({
               )}
             </div>
           </div>
+
+          {/* Custom Field Information (if available) */}
+          {registrationData?.customFieldResponses && registrationData.customFieldResponses.length > 0 && (
+            <>
+              <Separator />
+              <div>
+                <h4 className="font-semibold text-sm mb-2">Registration Information</h4>
+                <RegistrationCustomFieldsViewer customFieldResponses={registrationData.customFieldResponses} />
+              </div>
+            </>
+          )}
 
           <div className="flex justify-end pt-2">
             <Button
