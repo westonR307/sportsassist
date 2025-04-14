@@ -109,6 +109,8 @@ import {
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ParentCampMessagesTab } from "@/components/parent-camp-messages-tab"; // Import the new component
+import { ViewAthleteDialog } from "@/components/view-athlete-dialog";
+import { ExtendedChild } from "@shared/child-types";
 
 
 // Extended camp type to include permissions from the server
