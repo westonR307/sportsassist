@@ -3,6 +3,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "wouter";
 // import { insertCampSchema } from "@shared/schema";
 import { sportsMap, sportsList } from "@shared/sports-utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -1687,6 +1688,13 @@ export function AddCampDialog({
                               <p className="text-sm text-muted-foreground">
                                 If checked, parents will be asked to complete additional custom fields during registration
                               </p>
+                              {field.value && (
+                                <p className="text-xs mt-2 text-blue-500">
+                                  <Link to="/custom-fields" className="hover:underline">
+                                    ➤ Go to Custom Fields page to create and manage your custom fields
+                                  </Link>
+                                </p>
+                              )}
                             </div>
                           </FormItem>
                         )}
