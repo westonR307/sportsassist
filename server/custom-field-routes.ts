@@ -348,6 +348,11 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
     console.log('User:', req.user);
     
     try {
+      if (!req.isAuthenticated || !req.isAuthenticated()) {
+        console.log('Authentication check failed - user not authenticated');
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
       const fieldId = parseInt(req.params.id);
       console.log('Field ID to delete:', fieldId);
 
