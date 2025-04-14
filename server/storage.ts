@@ -1873,10 +1873,64 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCustomField(id: number): Promise<void> {
     try {
-      await db.delete(customFields)
-        .where(eq(customFields.id, id));
+      console.log("Storage: Deleting custom field with ID:", id);
+      
+      // First, check if this field is associated with any camps
+      const campFieldAssociations = await db.select()
+        .from(campCustomFields)
+        .where(eq(campCustomFields.customFieldId, id));
+      
+      console.log(`Storage: Found ${campFieldAssociations.length} camp associations for field ID ${id}`);
+      
+      // If there are associations, delete them first
+      if (campFieldAssociations.length > 0) {
+        console.log("Storage: Deleting camp field associations first");
+        
+        // Delete all camp associations for this field
+        const deletedAssociations = await db.delete(campCustomFields)
+          .where(eq(campCustomFields.customFieldId, id))
+          .returning();
+        
+        console.log(`Storage: Deleted ${deletedAssociations.length} camp associations`);
+      }
+      
+      // Check if there are any responses for this field
+      if (customFieldResponses) {
+        try {
+          console.log("Storage: Checking for custom field responses");
+          const fieldResponses = await db.select()
+            .from(customFieldResponses)
+            .where(eq(customFieldResponses.customFieldId, id));
+          
+          console.log(`Storage: Found ${fieldResponses.length} responses for field ID ${id}`);
+          
+          // Delete any responses if they exist
+          if (fieldResponses.length > 0) {
+            const deletedResponses = await db.delete(customFieldResponses)
+              .where(eq(customFieldResponses.customFieldId, id))
+              .returning();
+            
+            console.log(`Storage: Deleted ${deletedResponses.length} field responses`);
+          }
+        } catch (responseError) {
+          console.error("Storage: Error checking/deleting field responses:", responseError);
+          // Continue with deletion even if there's an error with responses
+        }
+      }
+      
+      // Now delete the field itself
+      console.log("Storage: Deleting the custom field");
+      const deletedFields = await db.delete(customFields)
+        .where(eq(customFields.id, id))
+        .returning();
+      
+      console.log(`Storage: Deleted ${deletedFields.length} fields with ID ${id}`);
+      
+      if (deletedFields.length === 0) {
+        console.log("Storage: No fields were deleted, may not exist");
+      }
     } catch (error) {
-      console.error("Error deleting custom field:", error);
+      console.error("Storage: Error deleting custom field:", error);
       throw error;
     }
   }

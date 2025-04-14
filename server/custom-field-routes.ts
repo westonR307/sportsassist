@@ -69,24 +69,89 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
   // Direct DELETE route without authentication for debugging
   app.delete("/debug/custom-fields/:id", async (req: Request, res: Response) => {
     try {
-      console.log("DEBUG DELETE endpoint hit!");
-      const fieldId = parseInt(req.params.id);
-      console.log("Attempting to delete field with ID:", fieldId);
+      console.log("-------- DEBUG DELETE endpoint hit! --------");
+      console.log("Request headers:", req.headers);
+      console.log("Request parameters:", req.params);
       
-      // Get the field
-      const existingField = await storage.getCustomField(fieldId);
-      if (!existingField) {
-        console.log("Field not found with ID:", fieldId);
-        return res.status(404).json({ error: "Custom field not found" });
+      const fieldId = parseInt(req.params.id);
+      console.log("Parsed fieldId:", fieldId);
+      
+      if (isNaN(fieldId)) {
+        console.log("Invalid fieldId - not a number");
+        return res.status(400).json({ error: "Invalid field ID" });
       }
       
-      console.log("Field found:", existingField);
+      // Use direct SQL queries with transactions to ensure deletion happens
+      try {
+        console.log("Starting direct SQL deletion for field ID:", fieldId);
+        
+        // Get the existing field first to verify it exists
+        const field = await db.execute(
+          sql`SELECT * FROM custom_fields WHERE id = ${fieldId}`
+        );
+        
+        if (field.rows.length === 0) {
+          console.log("Field not found with ID:", fieldId);
+          return res.status(404).json({ error: "Custom field not found" });
+        }
+        
+        console.log("Field found, proceeding with deletion");
+        
+        // Start a transaction
+        await db.execute(sql`BEGIN`);
+        
+        try {
+          // 1. Delete any camp custom fields associations
+          const campFieldsDeleted = await db.execute(
+            sql`DELETE FROM camp_custom_fields WHERE custom_field_id = ${fieldId} RETURNING id`
+          );
+          console.log(`Deleted ${campFieldsDeleted.rowCount} camp field associations`);
+          
+          // 2. Delete any custom field responses
+          const responsesDeleted = await db.execute(
+            sql`DELETE FROM custom_field_responses WHERE custom_field_id = ${fieldId} RETURNING id`
+          );
+          console.log(`Deleted ${responsesDeleted.rowCount} field responses`);
+          
+          // 3. Delete any camp meta values
+          const metaFieldsDeleted = await db.execute(
+            sql`DELETE FROM camp_meta_fields WHERE custom_field_id = ${fieldId} RETURNING id`
+          );
+          console.log(`Deleted ${metaFieldsDeleted.rowCount} camp meta fields`);
+          
+          // 4. Finally delete the custom field itself
+          const fieldDeleted = await db.execute(
+            sql`DELETE FROM custom_fields WHERE id = ${fieldId} RETURNING id`
+          );
+          console.log(`Deleted ${fieldDeleted.rowCount} custom fields`);
+          
+          if (fieldDeleted.rowCount === 0) {
+            throw new Error("Field was not deleted, may have foreign key constraints");
+          }
+          
+          // Commit the transaction
+          await db.execute(sql`COMMIT`);
+          console.log("Transaction committed successfully");
+          
+        } catch (txError) {
+          // If any error happens, roll back the transaction
+          await db.execute(sql`ROLLBACK`);
+          console.error("Transaction error, rolled back:", txError);
+          throw txError;
+        }
+        
+        console.log("Field successfully deleted via direct SQL");
+      } catch (sqlErr) {
+        console.error("SQL execution error:", sqlErr);
+        return res.status(500).json({ 
+          error: "Error deleting field with SQL", 
+          details: String(sqlErr) 
+        });
+      }
       
-      // Delete the field without any auth checks
-      await storage.deleteCustomField(fieldId);
-      console.log("Field deleted successfully via debug endpoint");
-      
+      console.log("Sending 204 success response");
       res.status(204).send();
+      console.log("-------- DEBUG DELETE completed --------");
     } catch (error) {
       console.error("Error in debug delete endpoint:", error);
       res.status(500).json({ error: "Internal server error in debug endpoint" });
