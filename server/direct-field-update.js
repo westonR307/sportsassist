@@ -20,6 +20,8 @@ async function updateField(fieldId, updateData) {
     console.log("Direct update script running for field ID:", fieldId);
     console.log("Update data:", updateData);
 
+    await client.query('BEGIN');
+
     // First check if the field exists
     const checkResult = await client.query(
       'SELECT * FROM custom_fields WHERE id = $1',
@@ -27,7 +29,7 @@ async function updateField(fieldId, updateData) {
     );
 
     if (checkResult.rows.length === 0) {
-      console.error("Field not found with ID:", fieldId);
+      await client.query('ROLLBACK');
       throw new Error("Custom field not found");
     }
 
@@ -38,6 +40,7 @@ async function updateField(fieldId, updateData) {
     delete filteredData.id;
     delete filteredData.organizationId;
     delete filteredData.createdAt;
+    delete filteredData.source; // Ignore source field updates
 
     // Build query parts
     const setClause = [];
@@ -45,11 +48,18 @@ async function updateField(fieldId, updateData) {
     let paramCounter = 1;
 
     for (const [key, value] of Object.entries(filteredData)) {
-      // Convert camelCase to snake_case for column names
-      const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-      setClause.push(`${snakeKey} = $${paramCounter}`);
-      values.push(value);
-      paramCounter++;
+      if (value !== undefined) {  // Only update defined values
+        // Convert camelCase to snake_case for column names
+        const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+        setClause.push(`${snakeKey} = $${paramCounter}`);
+        values.push(value);
+        paramCounter++;
+      }
+    }
+
+    if (setClause.length === 0) {
+      await client.query('ROLLBACK');
+      return checkResult.rows[0]; // Return unchanged field if no updates
     }
 
     // Add updated_at
@@ -69,11 +79,13 @@ async function updateField(fieldId, updateData) {
 
     // Execute the update
     const result = await client.query(updateQuery, values);
-
+    
     if (result.rows.length === 0) {
+      await client.query('ROLLBACK');
       throw new Error("Update failed");
     }
 
+    await client.query('COMMIT');
     console.log("Update successful");
     return result.rows[0];
   } finally {
