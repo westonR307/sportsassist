@@ -335,6 +335,8 @@ function CampViewPage(props: { id?: string }) {
   const [selectedSlotId, setSelectedSlotId] = useState<number | null>(null);
   // For multiple slot selection
   const [selectedSlotIds, setSelectedSlotIds] = useState<number[]>([]);
+  // Custom field responses for registration
+  const [customFieldResponses, setCustomFieldResponses] = useState<Record<string, any>>({});
   const [showChildSelectionDialog, setShowChildSelectionDialog] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [exportFormat, setExportFormat] = useState<"pdf" | "csv">("pdf");
@@ -596,9 +598,11 @@ function CampViewPage(props: { id?: string }) {
             const requestBody: any = {
               campId: campId,
               childId: selectedChildId,
-              slotId: slotId
+              slotId: slotId,
+              customFieldResponses: Object.keys(customFieldResponses).length > 0 ? customFieldResponses : undefined,
             };
             
+            console.log("Registration request with custom fields and slot:", requestBody);
             const response = await apiRequest('POST', `/api/camps/${campId}/register`, requestBody);
             const result = await response.json();
             results.push(result);
@@ -613,6 +617,7 @@ function CampViewPage(props: { id?: string }) {
           const requestBody: any = {
             campId: campId,
             childId: selectedChildId,
+            customFieldResponses: Object.keys(customFieldResponses).length > 0 ? customFieldResponses : undefined,
           };
           
           // If this is an availability-based camp and a slot was selected, include it
@@ -620,6 +625,7 @@ function CampViewPage(props: { id?: string }) {
             requestBody.slotId = selectedSlotId;
           }
           
+          console.log("Registration request with custom fields:", requestBody);
           const response = await apiRequest('POST', `/api/camps/${campId}/register`, requestBody);
           return await response.json();
         }
