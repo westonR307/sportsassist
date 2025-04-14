@@ -161,7 +161,7 @@ async function deleteField(fieldId) {
   }
 }
 
-module.exports = {
+export {
   updateField,
   deleteField
 };
