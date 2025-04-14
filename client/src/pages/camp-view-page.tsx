@@ -326,6 +326,38 @@ function CampViewPage(props: { id?: string }) {
       reg.status === "waitlisted"
     );
   };
+  
+  // Function to handle viewing an athlete
+  const handleViewAthlete = (registration: any) => {
+    // Get the custom field responses for this registration
+    const registrationData = {
+      id: registration.id,
+      customFieldResponses: registration.customFieldResponses || []
+    };
+    
+    // Get the athlete data
+    const athleteData = {
+      id: registration.childId,
+      fullName: registration.child?.fullName || 'Unknown',
+      dateOfBirth: registration.child?.dateOfBirth || new Date(),
+      gender: registration.child?.gender || 'other',
+      profilePhoto: registration.child?.profilePhoto || null,
+      parentId: registration.parentId,
+      emergencyContact: registration.child?.emergencyContact || '',
+      emergencyPhone: registration.child?.emergencyPhone || '',
+      medicalInformation: registration.child?.medicalInformation || '',
+      specialNeeds: registration.child?.specialNeeds || '',
+      sportsHistory: registration.child?.sportsHistory || '',
+      sportsInterests: registration.child?.sportsInterests || [],
+      height: registration.child?.height || '',
+      weight: registration.child?.weight || '',
+      jerseySize: registration.child?.jerseySize || ''
+    };
+    
+    setSelectedAthlete(athleteData);
+    setSelectedRegistration(registrationData);
+    setViewAthleteDialogOpen(true);
+  };
 
   const { data: children = [], isLoading: isLoadingChildren } = useQuery<Child[]>({
     queryKey: ['/api/parent/children'],
@@ -344,6 +376,11 @@ function CampViewPage(props: { id?: string }) {
   const [exportFormat, setExportFormat] = useState<"pdf" | "csv">("pdf");
   const [showFormFieldsDialog, setShowFormFieldsDialog] = useState(false);
   const [showAllAvailabilitySlots, setShowAllAvailabilitySlots] = useState(false);
+  
+  // State variables for the ViewAthleteDialog
+  const [selectedAthlete, setSelectedAthlete] = useState<ExtendedChild | null>(null);
+  const [viewAthleteDialogOpen, setViewAthleteDialogOpen] = useState(false);
+  const [selectedRegistration, setSelectedRegistration] = useState<any>(null);
 
   // Query to fetch availability slots for the camp if it's availability-based
   const { data: availabilitySlots = [], isLoading: isLoadingSlots } = useQuery({
@@ -1553,6 +1590,24 @@ function CampViewPage(props: { id?: string }) {
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex justify-end gap-2">
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => handleViewAthlete(registration)}
+                                          >
+                                            <Search className="h-4 w-4" />
+                                            <span className="sr-only">View</span>
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>View Athlete Details</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                    
                                     <TooltipProvider>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
