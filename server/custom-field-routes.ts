@@ -177,7 +177,7 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
   app.patch("/api/custom-fields/:id", async (req: AuthenticatedRequest, res: Response) => {
     try {
       // Check if user is authenticated
-      if (!req.isAuthenticated()) {
+      if (!req.user) {
         return res.status(401).json({ message: "Authentication required" });
       }
 
