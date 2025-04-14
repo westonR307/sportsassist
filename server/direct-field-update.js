@@ -104,8 +104,8 @@ async function deleteField(fieldId) {
       );
 
       if (checkResult.rows.length === 0) {
-        await client.query('ROLLBACK');
-        return false;
+        console.error("Field not found with ID:", fieldId);
+        throw new Error("Custom field not found");
       }
 
       console.log("Field found, proceeding with deletion");
