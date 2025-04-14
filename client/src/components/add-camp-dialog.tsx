@@ -164,6 +164,7 @@ export function AddCampDialog({
     type: "one_on_one" | "group" | "team" | "virtual";
     visibility: "public" | "private";
     waitlistEnabled: boolean;
+    customRegistrationEnabled: boolean; // Added custom registration flag
     minAge: number;
     maxAge: number;
     repeatType: "none" | "weekly" | "monthly";
@@ -200,6 +201,7 @@ export function AddCampDialog({
       type: z.enum(["one_on_one", "group", "team", "virtual"]),
       visibility: z.enum(["public", "private"]).default("public"),
       waitlistEnabled: z.boolean().default(true),
+      customRegistrationEnabled: z.boolean().default(false), // Added field for custom registration
       minAge: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
       maxAge: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
       repeatType: z.enum(["none", "weekly", "monthly"]).default("none"),
@@ -231,6 +233,7 @@ export function AddCampDialog({
       type: "group",
       visibility: "public",
       waitlistEnabled: true,
+      customRegistrationEnabled: false, // Added default for custom registration
       minAge: 5,
       maxAge: 18,
       repeatType: "none",
@@ -297,6 +300,7 @@ export function AddCampDialog({
               type: campData.type,
               visibility: campData.visibility,
               waitlistEnabled: campData.waitlistEnabled,
+              customRegistrationEnabled: campData.customRegistrationEnabled || false, // Preserve custom registration settings
               minAge: campData.minAge,
               maxAge: campData.maxAge,
               repeatType: campData.repeatType,
@@ -380,6 +384,7 @@ export function AddCampDialog({
           isVirtual: data.isVirtual || false,
           virtualMeetingUrl: data.isVirtual ? data.virtualMeetingUrl : undefined,
           schedulingType: selectedSchedulingType, // Explicitly set the scheduling type
+          customRegistrationEnabled: data.customRegistrationEnabled || false, // Include custom registration flag
         };
 
         // Handle different scheduling types
