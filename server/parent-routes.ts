@@ -307,6 +307,263 @@ export function registerParentRoutes(app: Express) {
     }
   });
 
+  // Get UPCOMING registrations for the parent's children (camps that haven't ended yet)
+  router.get("/registrations/upcoming", async (req: Request, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      console.log(`Getting upcoming registrations for parent ID: ${req.user.id}`);
+      
+      // First get all of this parent's children
+      const children = await storage.getChildrenByParent(req.user.id);
+      
+      console.log(`Found ${children.length} children for parent ID: ${req.user.id}`);
+      
+      if (children.length === 0) {
+        // If there are no children, return an empty list
+        return res.json([]);
+      }
+      
+      // Create an array to hold all of our results
+      const result = [];
+      
+      // Get the IDs of this parent's children to use in the database query
+      const childIds = children.map(child => child.id);
+      console.log(`Child IDs for parent ${req.user.id}: ${childIds.join(', ')}`);
+      
+      // Get all registrations for all of this parent's children
+      const allRegistrations = await db
+        .select()
+        .from(registrations);
+        
+      // Filter registrations to only include those for this parent's children
+      const childRegistrations = allRegistrations.filter(reg => 
+        childIds.includes(reg.childId)
+      );
+      
+      console.log(`Found ${childRegistrations.length} registrations for children of parent ${req.user.id}`);
+      
+      // Current date to filter upcoming camps (only include camps that haven't ended)
+      const today = new Date();
+      
+      // For each registration, get the camp and filter for upcoming only
+      for (const registration of childRegistrations) {
+        // Find the child this registration belongs to
+        const child = children.find(c => c.id === registration.childId);
+        
+        if (!child) {
+          console.warn(`Could not find child with ID ${registration.childId} for registration ${registration.id}`);
+          continue;
+        }
+        
+        // Get the camp details
+        const camp = await storage.getCamp(registration.campId);
+        
+        if (camp) {
+          // Check if the camp is upcoming (end date is in the future)
+          const endDate = new Date(camp.endDate);
+          if (endDate >= today) {
+            // Add this registration with camp and child details to the results
+            result.push({
+              ...registration,
+              camp,
+              child: {
+                id: child.id,
+                fullName: child.fullName,
+                profilePhoto: child.profilePhoto
+              }
+            });
+          }
+        }
+      }
+      
+      console.log(`Found ${result.length} upcoming registrations for parent's children`);
+      return res.json(result);
+    } catch (error: any) {
+      console.error("Error fetching upcoming registrations:", error);
+      res.status(500).json({ message: "Failed to fetch upcoming registrations" });
+    }
+  });
+
+  // Parent-specific sessions endpoint for dashboard calendar
+  router.get("/sessions", async (req: Request, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      console.log(`Getting sessions for parent ID: ${req.user.id}`);
+      
+      // First get all of this parent's children
+      const children = await storage.getChildrenByParent(req.user.id);
+      
+      console.log(`Found ${children.length} children for parent ID: ${req.user.id}`);
+      
+      if (children.length === 0) {
+        // If there are no children, return an empty list
+        return res.json([]);
+      }
+      
+      // Get the IDs of this parent's children
+      const childIds = children.map(child => child.id);
+      
+      // Get all registrations for all of this parent's children
+      const allRegistrations = await db
+        .select()
+        .from(registrations);
+        
+      // Filter registrations to only include those for this parent's children
+      const childRegistrations = allRegistrations.filter(reg => 
+        childIds.includes(reg.childId)
+      );
+      
+      // Get all the camp IDs from these registrations
+      const campIdsSet = new Set(childRegistrations.map(reg => reg.campId));
+      const campIds = Array.from(campIdsSet);
+      
+      console.log(`Child is registered for ${campIds.length} camps`);
+      
+      // If no camp IDs, return empty array
+      if (campIds.length === 0) {
+        return res.json([]);
+      }
+      
+      // Prepare a result array for the sessions
+      const result = [];
+      
+      // Get all sessions for these camps
+      for (const campId of campIds) {
+        const camp = await storage.getCamp(campId);
+        
+        if (!camp) {
+          console.warn(`Could not find camp with ID ${campId}`);
+          continue;
+        }
+        
+        // Fetch all sessions for this camp from the database
+        // This would be refactored to use a more efficient query if available
+        // For now, we'll simulate this by using the camp dates directly
+        
+        // For fixed schedule camps, use the camp schedule
+        const sessions = await storage.getCampSessions(campId);
+        
+        // Process each session
+        for (const session of sessions) {
+          result.push({
+            id: session.id,
+            campId: session.campId,
+            sessionDate: session.sessionDate,
+            startTime: session.startTime,
+            endTime: session.endTime,
+            status: session.status || "active",
+            notes: session.notes,
+            camp: {
+              id: camp.id,
+              name: camp.name,
+              type: camp.type,
+              slug: camp.slug
+            }
+          });
+        }
+      }
+      
+      console.log(`Found ${result.length} total sessions for parent's children's camps`);
+      return res.json(result);
+    } catch (error: any) {
+      console.error("Error fetching parent sessions:", error);
+      res.status(500).json({ message: "Failed to fetch sessions" });
+    }
+  });
+
   // Mount the parent routes with the /api/parent prefix
   app.use('/api/parent', router);
+  
+  // Add an additional route to redirect /api/dashboard/sessions to /api/parent/sessions for parent users
+  app.get('/api/dashboard/sessions', async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    // If user is a parent, redirect to parent sessions route
+    if (req.user?.role === "parent") {
+      console.log("Parent user accessing dashboard sessions - redirecting to parent/sessions endpoint");
+      
+      try {
+        // Simply forward the request to the parent sessions handler
+        const children = await storage.getChildrenByParent(req.user.id);
+        
+        if (children.length === 0) {
+          return res.json([]);
+        }
+        
+        // Get the IDs of this parent's children
+        const childIds = children.map(child => child.id);
+        
+        // Get all registrations for all of this parent's children
+        const allRegistrations = await db
+          .select()
+          .from(registrations);
+          
+        // Filter registrations to only include those for this parent's children
+        const childRegistrations = allRegistrations.filter(reg => 
+          childIds.includes(reg.childId)
+        );
+        
+        // Get all the camp IDs from these registrations
+        const campIdsSet = new Set(childRegistrations.map(reg => reg.campId));
+        const campIds = Array.from(campIdsSet);
+        
+        // If no camp IDs, return empty array
+        if (campIds.length === 0) {
+          return res.json([]);
+        }
+        
+        // Prepare a result array for the sessions
+        const result = [];
+        
+        // Get all sessions for these camps
+        for (const campId of campIds) {
+          const camp = await storage.getCamp(campId);
+          
+          if (!camp) {
+            continue;
+          }
+          
+          // Fetch all sessions for this camp
+          const sessions = await storage.getCampSessions(campId);
+          
+          // Process each session
+          for (const session of sessions) {
+            result.push({
+              id: session.id,
+              campId: session.campId,
+              sessionDate: session.sessionDate,
+              startTime: session.startTime,
+              endTime: session.endTime,
+              status: session.status || "active",
+              notes: session.notes,
+              camp: {
+                id: camp.id,
+                name: camp.name,
+                type: camp.type,
+                slug: camp.slug
+              }
+            });
+          }
+        }
+        
+        return res.json(result);
+      } catch (error) {
+        console.error("Error forwarding parent user to sessions endpoint:", error);
+        return res.status(500).json({ message: "Failed to fetch sessions" });
+      }
+    }
+    
+    // Non-parent users use the normal dashboard sessions endpoint
+    // which should be handled elsewhere in the code
+    // so just pass through to the next handler
+    return next();
+  });
 }

@@ -51,12 +51,21 @@ export default function ParentDashboard() {
     enabled: !!user && user.role === "parent",
   });
 
+  // Query to fetch upcoming sessions
+  const {
+    data: upcomingSessions,
+    isLoading: sessionsLoading
+  } = useQuery({
+    queryKey: ["/api/parent/sessions"],
+    enabled: !!user && user.role === "parent",
+  });
+
   // Quick stats
   const stats = {
-    totalAthletes: children?.length || 0,
-    activeRegistrations: upcomingRegistrations?.length || 0,
-    upcomingSessions: 0, // You can implement this based on your data structure
-    completedCamps: 0 // You can implement this based on your data structure
+    totalAthletes: Array.isArray(children) ? children.length : 0,
+    activeRegistrations: Array.isArray(upcomingRegistrations) ? upcomingRegistrations.length : 0,
+    upcomingSessions: Array.isArray(upcomingSessions) ? upcomingSessions.length : 0,
+    completedCamps: 0 // Can be implemented later as needed
   };
 
   return (
