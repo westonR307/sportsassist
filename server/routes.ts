@@ -3781,6 +3781,15 @@ export async function registerRoutes(app: Express) {
       // Registration requires childId, but we'll make it optional in the API
       // If not provided, we'll need to show a child selection UI on the frontend
       const childId = req.body.childId;
+      const customFieldResponses = req.body.customFieldResponses || {};
+      const slotId = req.body.slotId || null;
+
+      console.log("Registration request with custom fields:", {
+        campId,
+        childId,
+        slotId,
+        customFieldResponsesCount: Object.keys(customFieldResponses).length
+      });
 
       // For fixed scheduling camps, check if the child is already registered
       // For availability-based camps, we allow multiple registrations (for different time slots)
@@ -3807,6 +3816,35 @@ export async function registerRoutes(app: Express) {
         emergencyContact: req.body.emergencyContact || "",
         emergencyPhone: req.body.emergencyPhone || ""
       });
+      
+      // Process custom field responses if they exist
+      if (customFieldResponses && Object.keys(customFieldResponses).length > 0) {
+        console.log(`Saving ${Object.keys(customFieldResponses).length} custom field responses for registration ${registration.id}`);
+        
+        try {
+          // Process each custom field response
+          for (const fieldId in customFieldResponses) {
+            const response = customFieldResponses[fieldId];
+            
+            // Skip empty responses
+            if (response === undefined || response === null || response === '') continue;
+            
+            // Convert to array for multi-select fields if needed
+            const responseValue = Array.isArray(response) ? response : String(response);
+            
+            await storage.createCustomFieldResponse({
+              registrationId: registration.id,
+              customFieldId: parseInt(fieldId),
+              response: typeof responseValue === 'string' ? responseValue : null,
+              responseArray: Array.isArray(responseValue) ? responseValue : null,
+            });
+          }
+          console.log(`Successfully saved custom field responses for registration ${registration.id}`);
+        } catch (error) {
+          console.error("Error saving custom field responses:", error);
+          // Don't fail the registration if custom fields can't be saved
+        }
+      }
       
       // Success response
       res.status(201).json({

@@ -357,7 +357,7 @@ export default function registerAvailabilityRoutes(app: Express) {
   app.post("/api/camps/:id/availability-slots/:slotId/book", async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id, slotId } = req.params;
-      const { childId, notes } = req.body;
+      const { childId, notes, customFieldResponses } = req.body;
       
       if (!req.user) {
         return res.status(401).json({ message: "Authentication required" });
@@ -366,6 +366,13 @@ export default function registerAvailabilityRoutes(app: Express) {
       if (!childId) {
         return res.status(400).json({ message: "Child ID is required" });
       }
+      
+      console.log("Slot booking request with custom fields:", {
+        campId: id,
+        slotId,
+        childId,
+        customFieldResponsesCount: customFieldResponses ? Object.keys(customFieldResponses).length : 0
+      });
       
       // Get the slot
       const slot = await db.query.availabilitySlots.findFirst({
@@ -423,6 +430,47 @@ export default function registerAvailabilityRoutes(app: Express) {
             status: slot.currentBookings + 1 >= slot.maxBookings ? "booked" as AvailabilityStatus : "available" as AvailabilityStatus
           })
           .where(eq(availabilitySlots.id, parseInt(slotId, 10)));
+        
+        // Process custom field responses if they exist
+        if (customFieldResponses && Object.keys(customFieldResponses).length > 0) {
+          console.log(`Processing ${Object.keys(customFieldResponses).length} custom field responses for slot booking ${booking[0].id}`);
+          
+          try {
+            // Get the camp to associate with the custom field responses
+            const campWithSlot = await db.query.camps.findFirst({
+              where: eq(camps.id, parseInt(id, 10))
+            });
+            
+            if (!campWithSlot) {
+              console.error(`Could not find camp with ID ${id} for custom field responses`);
+            } else {
+              // Process each custom field response
+              for (const fieldId in customFieldResponses) {
+                const response = customFieldResponses[fieldId];
+                
+                // Skip empty responses
+                if (response === undefined || response === null || response === '') continue;
+                
+                // Convert to array for multi-select fields if needed
+                const responseValue = Array.isArray(response) ? response : String(response);
+                
+                await db.insert(customFieldResponses_).values({
+                  customFieldId: parseInt(fieldId),
+                  response: typeof responseValue === 'string' ? responseValue : null,
+                  responseArray: Array.isArray(responseValue) ? responseValue : null,
+                  // Use slot booking ID as reference
+                  slotBookingId: booking[0].id,
+                  // Set campId for context
+                  campId: campWithSlot.id
+                });
+              }
+              console.log(`Successfully saved custom field responses for slot booking ${booking[0].id}`);
+            }
+          } catch (error) {
+            console.error("Error saving custom field responses for slot booking:", error);
+            // Don't fail the booking if custom fields can't be saved
+          }
+        }
         
         res.status(201).json(booking[0]);
         
