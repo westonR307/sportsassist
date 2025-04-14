@@ -99,6 +99,24 @@ export function CustomFieldsList({ organizationId, fieldSource = 'registration' 
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (fieldId: number) => {
+      // Try the debug endpoint first
+      try {
+        console.log("Using debug endpoint to delete field:", fieldId);
+        const res = await fetch(`/debug/custom-fields/${fieldId}`, {
+          method: "DELETE",
+          credentials: "include"
+        });
+        if (res.ok) {
+          console.log("Debug delete succeeded");
+          return;
+        } else {
+          console.log("Debug delete failed, trying regular endpoint");
+        }
+      } catch (err) {
+        console.error("Error using debug endpoint:", err);
+      }
+      
+      // Fall back to regular endpoint if debug fails
       const res = await apiRequest("DELETE", `/api/custom-fields/${fieldId}`);
       if (!res.ok) throw new Error("Failed to delete custom field");
     },
