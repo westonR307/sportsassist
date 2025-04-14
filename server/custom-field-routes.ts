@@ -44,13 +44,13 @@ const reorderFieldsSchema = z.object({
 function canManageOrganization(req: AuthenticatedRequest, organizationId: number | undefined): boolean {
   const user = req.user;
   if (!user) return false;
-  
+
   // Admin can manage any organization
   if (user.role === "admin") return true;
-  
+
   // Camp creator can only manage their own organization
   if (user.role === "camp_creator" && user.organizationId === organizationId) return true;
-  
+
   return false;
 }
 
@@ -59,7 +59,7 @@ async function canManageCamp(storage: IStorage, userId: number, campId: number):
   // Get the camp
   const camp = await storage.getCampById(campId);
   if (!camp) return false;
-  
+
   // Check if user is the creator or a member of the organization
   return await storage.isUserAuthorizedForCamp(userId, campId);
 }
@@ -72,41 +72,41 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
       if (!req.user) {
         return res.status(401).json({ error: "Not authenticated" });
       }
-      
+
       // Get query parameters
       const fieldSource = req.query.source as "registration" | "camp" | undefined;
       const showInternalFields = req.query.internal === "true";
-      
+
       // Determine organization ID
       let organizationId = req.query.organizationId 
         ? parseInt(req.query.organizationId as string) 
         : req.user.organizationId;
-      
+
       if (!organizationId) {
         return res.status(400).json({ error: "Organization ID is required" });
       }
-      
+
       // Check permissions
       const canView = canManageOrganization(req, organizationId) || req.user.role === "parent";
       if (!canView) {
         return res.status(403).json({ error: "Not authorized to view custom fields for this organization" });
       }
-      
+
       // Get the custom fields filtered by source if provided
       let customFields = await storage.listCustomFields(organizationId, fieldSource);
-      
+
       // Filter out internal fields for non-organization users
       if (!showInternalFields && req.user.role === "parent") {
         customFields = customFields.filter(field => !field.isInternal);
       }
-      
+
       res.json(customFields);
     } catch (error) {
       console.error("Error getting custom fields:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
-  
+
   // 2. Get custom field by ID
   app.get("/api/custom-fields/:id", async (req: AuthenticatedRequest, res: Response) => {
     try {
@@ -114,29 +114,29 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
       if (!req.user) {
         return res.status(401).json({ error: "Not authenticated" });
       }
-      
+
       const fieldId = parseInt(req.params.id);
       const field = await storage.getCustomField(fieldId);
-      
+
       if (!field) {
         return res.status(404).json({ error: "Custom field not found" });
       }
-      
+
       // Check permissions
       const canView = canManageOrganization(req, field.organizationId) || 
         (req.user.role === "parent" && !field.isInternal);
-      
+
       if (!canView) {
         return res.status(403).json({ error: "Not authorized to view this custom field" });
       }
-      
+
       res.json(field);
     } catch (error) {
       console.error("Error getting custom field:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
-  
+
   // 3. Create a new custom field
   app.post("/api/custom-fields", async (req: AuthenticatedRequest, res: Response) => {
     try {
@@ -144,7 +144,7 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
       if (!req.user) {
         return res.status(401).json({ error: "Not authenticated" });
       }
-      
+
       // Validate the request body
       const validation = createCustomFieldSchema.safeParse(req.body);
       if (!validation.success) {
@@ -153,36 +153,36 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
           details: validation.error.format() 
         });
       }
-      
+
       const fieldData = validation.data;
-      
+
       // Check permissions
       if (!canManageOrganization(req, fieldData.organizationId)) {
         return res.status(403).json({ 
           error: "Not authorized to create custom fields for this organization" 
         });
       }
-      
+
       // Create the custom field
       const newField = await storage.createCustomField(fieldData);
-      
+
       res.status(201).json(newField);
     } catch (error) {
       console.error("Error creating custom field:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
-  
+
   // 4. Update an existing custom field
   app.patch("/api/custom-fields/:id", async (req: AuthenticatedRequest, res: Response) => {
     try {
       // Check if user is authenticated
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ message: "Authentication required" });
       }
-      
+
       const fieldId = parseInt(req.params.id);
-      
+
       // Validate the request body
       const validation = updateCustomFieldSchema.safeParse(req.body);
       if (!validation.success) {
@@ -191,30 +191,30 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
           details: validation.error.format() 
         });
       }
-      
+
       // Get the existing field to check permissions
       const existingField = await storage.getCustomField(fieldId);
       if (!existingField) {
         return res.status(404).json({ error: "Custom field not found" });
       }
-      
+
       // Check permissions
       if (!canManageOrganization(req, existingField.organizationId)) {
         return res.status(403).json({ 
           error: "Not authorized to update custom fields for this organization" 
         });
       }
-      
+
       // Update the custom field
       const updatedField = await storage.updateCustomField(fieldId, validation.data);
-      
+
       res.json(updatedField);
     } catch (error) {
       console.error("Error updating custom field:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
-  
+
   // 5. Delete a custom field
   app.delete("/api/custom-fields/:id", async (req: AuthenticatedRequest, res: Response) => {
     try {
@@ -222,32 +222,32 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
       if (!req.user) {
         return res.status(401).json({ error: "Not authenticated" });
       }
-      
+
       const fieldId = parseInt(req.params.id);
-      
+
       // Get the existing field to check permissions
       const existingField = await storage.getCustomField(fieldId);
       if (!existingField) {
         return res.status(404).json({ error: "Custom field not found" });
       }
-      
+
       // Check permissions
       if (!canManageOrganization(req, existingField.organizationId)) {
         return res.status(403).json({ 
           error: "Not authorized to delete custom fields for this organization" 
         });
       }
-      
+
       // Delete the custom field
       await storage.deleteCustomField(fieldId);
-      
+
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting custom field:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
-  
+
   // 6. Get custom fields for a specific camp
   app.get("/api/camps/:id/custom-fields", async (req: AuthenticatedRequest, res: Response) => {
     try {
@@ -255,42 +255,42 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
       if (!req.user) {
         return res.status(401).json({ error: "Not authenticated" });
       }
-      
+
       const campId = parseInt(req.params.id);
-      
+
       // Get the camp to verify it exists
       const camp = await storage.getCampById(campId);
       if (!camp) {
         return res.status(404).json({ error: "Camp not found" });
       }
-      
+
       // Check if user is authorized to view this camp's custom fields
       const canView = req.user.role === "admin" || 
                      req.user.role === "parent" ||
                      await canManageCamp(storage, req.user.id, campId);
-      
+
       if (!canView) {
         return res.status(403).json({ 
           error: "Not authorized to view custom fields for this camp" 
         });
       }
-      
+
       // Get the custom fields for this camp
       const campFields = await storage.getCampCustomFields(campId);
-      
+
       // If user is a parent, filter out internal fields
       if (req.user.role === "parent") {
         const filteredFields = campFields.filter(field => !field.field.isInternal);
         return res.json(filteredFields);
       }
-      
+
       res.json(campFields);
     } catch (error) {
       console.error("Error getting camp custom fields:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
-  
+
   // 7. Add a custom field to a camp
   app.post("/api/camps/:id/custom-fields", async (req: AuthenticatedRequest, res: Response) => {
     try {
@@ -298,9 +298,9 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
       if (!req.user) {
         return res.status(401).json({ error: "Not authenticated" });
       }
-      
+
       const campId = parseInt(req.params.id);
-      
+
       // Validate the request body
       const validation = createCampCustomFieldSchema.safeParse(req.body);
       if (!validation.success) {
@@ -309,29 +309,29 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
           details: validation.error.format() 
         });
       }
-      
+
       // Check if user can manage this camp
       if (!(await canManageCamp(storage, req.user.id, campId))) {
         return res.status(403).json({ 
           error: "Not authorized to add custom fields to this camp" 
         });
       }
-      
+
       // Add the custom field to the camp
       const fieldData = {
         ...validation.data,
         campId,
       };
-      
+
       const newCampField = await storage.addCustomFieldToCamp(fieldData);
-      
+
       res.status(201).json(newCampField);
     } catch (error) {
       console.error("Error adding custom field to camp:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
-  
+
   // 8. Update a camp custom field
   app.patch("/api/camps/:campId/custom-fields/:fieldId", async (req: AuthenticatedRequest, res: Response) => {
     try {
@@ -339,40 +339,40 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
       if (!req.user) {
         return res.status(401).json({ error: "Not authenticated" });
       }
-      
+
       const campId = parseInt(req.params.campId);
       const campFieldId = parseInt(req.params.fieldId);
-      
+
       // Validate request body (partial schema)
       const validation = z.object({
         required: z.boolean().optional(),
         order: z.number().optional()
       }).safeParse(req.body);
-      
+
       if (!validation.success) {
         return res.status(400).json({ 
           error: "Invalid request data", 
           details: validation.error.format() 
         });
       }
-      
+
       // Check if user can manage this camp
       if (!(await canManageCamp(storage, req.user.id, campId))) {
         return res.status(403).json({ 
           error: "Not authorized to update custom fields for this camp" 
         });
       }
-      
+
       // Update the camp custom field
       const updatedCampField = await storage.updateCampCustomField(campFieldId, validation.data);
-      
+
       res.json(updatedCampField);
     } catch (error) {
       console.error("Error updating camp custom field:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
-  
+
   // 9. Delete a custom field from a camp
   app.delete("/api/camps/:campId/custom-fields/:fieldId", async (req: AuthenticatedRequest, res: Response) => {
     try {
@@ -380,27 +380,27 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
       if (!req.user) {
         return res.status(401).json({ error: "Not authenticated" });
       }
-      
+
       const campId = parseInt(req.params.campId);
       const campFieldId = parseInt(req.params.fieldId);
-      
+
       // Check if user can manage this camp
       if (!(await canManageCamp(storage, req.user.id, campId))) {
         return res.status(403).json({ 
           error: "Not authorized to remove custom fields from this camp" 
         });
       }
-      
+
       // Remove the custom field from the camp
       await storage.removeCampCustomField(campFieldId);
-      
+
       res.status(204).send();
     } catch (error) {
       console.error("Error removing custom field from camp:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
-  
+
   // 10. Reorder camp custom fields
   app.patch("/api/camps/:id/custom-fields/reorder", async (req: AuthenticatedRequest, res: Response) => {
     try {
@@ -408,9 +408,9 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
       if (!req.user) {
         return res.status(401).json({ error: "Not authenticated" });
       }
-      
+
       const campId = parseInt(req.params.id);
-      
+
       // Validate request body
       const validation = reorderFieldsSchema.safeParse(req.body);
       if (!validation.success) {
@@ -419,32 +419,32 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
           details: validation.error.format() 
         });
       }
-      
+
       // Check if user can manage this camp
       if (!(await canManageCamp(storage, req.user.id, campId))) {
         return res.status(403).json({ 
           error: "Not authorized to reorder custom fields for this camp" 
         });
       }
-      
+
       // Reorder the fields one by one
       const { fields } = validation.data;
-      
+
       // Update each field with its new order
       for (const field of fields) {
         await storage.updateCampCustomField(field.id, { order: field.order });
       }
-      
+
       // Return the updated list
       const updatedFields = await storage.getCampCustomFields(campId);
-      
+
       res.json(updatedFields);
     } catch (error) {
       console.error("Error reordering camp custom fields:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
-  
+
   // 11. Get custom field responses for a registration
   app.get("/api/registrations/:id/custom-field-responses", async (req: AuthenticatedRequest, res: Response) => {
     try {
@@ -452,36 +452,36 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
       if (!req.user) {
         return res.status(401).json({ error: "Not authenticated" });
       }
-      
+
       const registrationId = parseInt(req.params.id);
-      
+
       // Get the registration to verify it exists and check permissions
       const registration = await storage.getRegistrationById(registrationId);
       if (!registration) {
         return res.status(404).json({ error: "Registration not found" });
       }
-      
+
       // Check if user is authorized to view this registration's responses
       const isAuthorized = req.user.role === "admin" || 
                          (req.user.role === "parent" && registration.parentId === req.user.id) ||
                          (req.user.role === "camp_creator" && 
                           await canManageCamp(storage, req.user.id, registration.campId));
-      
+
       if (!isAuthorized) {
         return res.status(403).json({ 
           error: "Not authorized to view custom field responses for this registration" 
         });
       }
-      
+
       // Get the custom field responses
       const responses = await storage.getCustomFieldResponses(registrationId);
-      
+
       // Filter out internal fields for parents
       if (req.user.role === "parent") {
         const filteredResponses = responses.filter(response => !response.field.isInternal);
         return res.json(filteredResponses);
       }
-      
+
       res.json(responses);
     } catch (error) {
       console.error("Error getting custom field responses:", error);
