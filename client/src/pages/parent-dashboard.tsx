@@ -59,13 +59,22 @@ export default function ParentDashboard() {
     queryKey: ["/api/parent/sessions"],
     enabled: !!user && user.role === "parent",
   });
+  
+  // Query to fetch completed camps count
+  const {
+    data: completedCampsData,
+    isLoading: completedCampsLoading
+  } = useQuery({
+    queryKey: ["/api/parent/completed-camps"],
+    enabled: !!user && user.role === "parent",
+  });
 
   // Quick stats
   const stats = {
     totalAthletes: Array.isArray(children) ? children.length : 0,
     activeRegistrations: Array.isArray(upcomingRegistrations) ? upcomingRegistrations.length : 0,
     upcomingSessions: Array.isArray(upcomingSessions) ? upcomingSessions.length : 0,
-    completedCamps: 0 // Can be implemented later as needed
+    completedCamps: completedCampsData?.count || 0
   };
 
   return (

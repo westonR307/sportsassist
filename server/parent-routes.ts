@@ -3,7 +3,7 @@ import { insertChildSchema } from "@shared/schema";
 import { storage } from "./storage";
 import { Gender, ContactMethod } from "@shared/types";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { children, registrations, camps } from "@shared/tables";
 
 // Helper function to check if user is authenticated and is a parent
@@ -474,6 +474,68 @@ export function registerParentRoutes(app: Express) {
     } catch (error: any) {
       console.error("Error fetching parent sessions:", error);
       res.status(500).json({ message: "Failed to fetch sessions" });
+    }
+  });
+
+  // Add route to get completed camps count (camps where end date is in the past)
+  router.get("/completed-camps", async (req: Request, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      console.log(`Getting completed camps for parent ID: ${req.user.id}`);
+      
+      // First get all of this parent's children
+      const children = await storage.getChildrenByParent(req.user.id);
+      
+      if (children.length === 0) {
+        // If there are no children, return zero
+        return res.json({ count: 0 });
+      }
+      
+      // Get the IDs of this parent's children
+      const childIds = children.map(child => child.id);
+      
+      // Get all registrations for all of this parent's children
+      const allRegistrations = await db
+        .select()
+        .from(registrations);
+        
+      // Filter registrations to only include those for this parent's children
+      const childRegistrations = allRegistrations.filter(reg => 
+        childIds.includes(reg.childId)
+      );
+      
+      if (childRegistrations.length === 0) {
+        return res.json({ count: 0 });
+      }
+      
+      // Get all the camp IDs from these registrations
+      const campIdsSet = new Set(childRegistrations.map(reg => reg.campId));
+      const campIds = Array.from(campIdsSet);
+      
+      // Get current date for comparison
+      const currentDate = new Date();
+      
+      // Fetch all the camps
+      const campsList = await db
+        .select()
+        .from(camps)
+        .where(inArray(camps.id, campIds));
+        
+      // Count camps where the end date is in the past
+      const completedCampsCount = campsList.filter(camp => {
+        // Parse the end date from the camp
+        const endDate = new Date(camp.endDate);
+        // Check if the end date is in the past
+        return endDate < currentDate;
+      }).length;
+      
+      return res.json({ count: completedCampsCount });
+    } catch (error: any) {
+      console.error("Error fetching completed camps:", error);
+      res.status(500).json({ message: "Failed to fetch completed camps" });
     }
   });
 
