@@ -41,6 +41,7 @@ import { AddCampCustomFieldButtonDialog } from "@/components/custom-fields/add-c
 import { BasicInfoMetaFields, BasicInfoMetaFieldsRef } from "@/components/custom-fields/basic-info-meta-fields";
 import CampStaffSelector from "@/components/camp-staff-selector";
 import { CampTypeSelection } from "@/components/camp-type-selection";
+import { CustomFieldSelector } from "@/components/custom-fields/custom-field-selector";
 
 
 // Map UI skill levels to schema skill levels
@@ -446,6 +447,33 @@ export function AddCampDialog({
             // Wait for all sessions to be created
             await Promise.all(sessionPromises);
             console.log("All sessions created successfully!");
+          }
+          
+          // Associate selected custom fields with the camp if custom registration is enabled
+          if (data.customRegistrationEnabled && selectedCustomFields.length > 0 && responseData.id) {
+            console.log(`Associating ${selectedCustomFields.length} custom fields with camp ${responseData.id}`);
+            
+            // Create a batch of promises to associate custom fields
+            const customFieldPromises = selectedCustomFields.map((fieldId, index) => {
+              return apiRequest("POST", `/api/camps/${responseData.id}/custom-fields`, {
+                customFieldId: fieldId,
+                required: true, // Default to required for now
+                order: index // Use the array index as the display order
+              });
+            });
+            
+            try {
+              await Promise.all(customFieldPromises);
+              console.log("All custom fields associated successfully!");
+            } catch (error) {
+              console.error("Error associating custom fields:", error);
+              // Continue with camp creation even if custom field association fails
+              toast({
+                title: "Custom Fields Warning",
+                description: "Camp was created but there was an issue associating custom fields.",
+                variant: "warning",
+              });
+            }
           }
 
           return responseData;
@@ -1689,11 +1717,25 @@ export function AddCampDialog({
                                 If checked, parents will be asked to complete additional custom fields during registration
                               </p>
                               {field.value && (
-                                <p className="text-xs mt-2 text-blue-500">
-                                  <Link to="/custom-fields" className="hover:underline">
-                                    ➤ Go to Custom Fields page to create and manage your custom fields
-                                  </Link>
-                                </p>
+                                <>
+                                  <p className="text-xs mt-2 text-blue-500">
+                                    <Link to="/custom-fields" className="hover:underline">
+                                      ➤ Go to Custom Fields page to create and manage your custom fields
+                                    </Link>
+                                  </p>
+                                  <div className="mt-4">
+                                    <h4 className="text-sm font-medium mb-2">Select custom fields for this camp:</h4>
+                                    {/* Import the CustomFieldSelector component */}
+                                    <div className="pl-4">
+                                      <CustomFieldSelector
+                                        organizationId={user?.organizationId}
+                                        selectedFields={selectedCustomFields}
+                                        onFieldsChange={(fields) => setSelectedCustomFields(fields)}
+                                        maxHeight="250px"
+                                      />
+                                    </div>
+                                  </div>
+                                </>
                               )}
                             </div>
                           </FormItem>
