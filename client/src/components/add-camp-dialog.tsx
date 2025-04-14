@@ -1667,6 +1667,29 @@ export function AddCampDialog({
                           )}
                         />
                       )}
+                      
+                      <FormField
+                        control={form.control}
+                        name="customRegistrationEnabled"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 mt-6">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>
+                                Enable custom registration fields
+                              </FormLabel>
+                              <p className="text-sm text-muted-foreground">
+                                If checked, parents will be asked to complete additional custom fields during registration
+                              </p>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
 
                       <FormField
                         control={form.control}
