@@ -703,6 +703,11 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  async getCampById(id: number): Promise<Camp | undefined> {
+    // Since we already have a getCamp method, we can just use it directly
+    return this.getCamp(id);
+  }
   
   async getCampBySlug(slug: string): Promise<Camp | undefined> {
     try {
@@ -819,6 +824,50 @@ export class DatabaseStorage implements IStorage {
   async getRegistration(id: number): Promise<Registration | undefined> {
     const [registration] = await db.select().from(registrations).where(eq(registrations.id, id));
     return registration;
+  }
+  
+  async getRegistrationById(id: number): Promise<Registration | undefined> {
+    // Since we already have a getRegistration method, we can just use it directly
+    return this.getRegistration(id);
+  }
+  
+  async isUserAuthorizedForCamp(userId: number, campId: number): Promise<boolean> {
+    try {
+      // Get user info first to determine their role
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      
+      if (!user) {
+        console.log(`User ${userId} not found when checking authorization for camp ${campId}`);
+        return false;
+      }
+      
+      // If user is a platform admin, they have access to everything
+      if (user.role === 'platform_admin') {
+        return true;
+      }
+      
+      // If user is a camp creator, check if they belong to the organization that owns the camp
+      if (user.role === 'camp_creator') {
+        const [camp] = await db.select().from(camps).where(eq(camps.id, campId));
+        if (!camp) {
+          console.log(`Camp ${campId} not found when checking authorization`);
+          return false;
+        }
+        
+        return camp.organizationId === user.organizationId;
+      }
+      
+      // If user is a parent, check if they have children registered for this camp
+      if (user.role === 'parent') {
+        return this.checkParentHasAccessToCamp(userId, campId);
+      }
+      
+      // For any other role, deny access by default
+      return false;
+    } catch (error) {
+      console.error(`Error checking user authorization for camp:`, error);
+      return false;
+    }
   }
   
   async deleteRegistration(id: number): Promise<boolean> {
