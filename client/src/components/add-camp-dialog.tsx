@@ -1668,6 +1668,7 @@ export function AddCampDialog({
                         />
                       )}
                       
+                      {/* Custom Registration Form Option */}
                       <FormField
                         control={form.control}
                         name="customRegistrationEnabled"
