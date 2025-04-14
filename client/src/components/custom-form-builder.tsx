@@ -192,21 +192,23 @@ export default function CustomFormBuilder({
   });
 
   // Fetch custom fields assigned to this camp
-  const { data: campFields, isLoading: campFieldsLoading } = useQuery<CampCustomFieldResponse[]>({
+  const { data: campFields, isLoading: campFieldsLoading } = useQuery({
     queryKey: ["/api/camps", campId, "custom-fields"],
     enabled: !!campId,
-    onSuccess: (data) => {
-      if (data) {
-        setFields(data);
-        if (onUpdate) onUpdate(data);
-      }
-    }
   });
+
+  // Handle the effect of campFields changing
+  useEffect(() => {
+    if (campFields) {
+      setFields(campFields);
+      if (onUpdate) onUpdate(campFields);
+    }
+  }, [campFields, onUpdate]);
 
   // Mutation to create a new custom field
   const createFieldMutation = useMutation({
     mutationFn: async (field: CustomFieldFormData) => {
-      return apiRequest<CustomFieldResponse>({
+      return apiRequest({
         method: "POST",
         url: "/api/custom-fields",
         data: {
@@ -236,7 +238,7 @@ export default function CustomFormBuilder({
   // Mutation to update a custom field
   const updateFieldMutation = useMutation({
     mutationFn: async ({ id, field }: { id: number, field: Partial<CustomFieldFormData> }) => {
-      return apiRequest<CustomFieldResponse>({
+      return apiRequest({
         method: "PATCH",
         url: `/api/custom-fields/${id}`,
         data: field
@@ -263,7 +265,7 @@ export default function CustomFormBuilder({
   // Mutation to add a field to the camp
   const addFieldToCampMutation = useMutation({
     mutationFn: async (data: { customFieldId: number, required: boolean }) => {
-      return apiRequest<CampCustomFieldResponse>({
+      return apiRequest({
         method: "POST",
         url: `/api/camps/${campId}/custom-fields`,
         data: {

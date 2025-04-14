@@ -1,7 +1,7 @@
 import { Express, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { IStorage } from "./storage";
-import { CustomField } from "../shared/types";
+import { Role } from "@shared/types";
 
 interface AuthenticatedRequest extends Request {
   user?: {

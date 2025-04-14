@@ -7,6 +7,7 @@ import { eq, inArray, gt, and, gte, lte, isNull, or, sql, desc } from "drizzle-o
 import fetch from "node-fetch";
 import { campStaff } from "@shared/tables";
 import { PLATFORM_FEE_PERCENTAGE } from "./constants";
+import registerCustomFieldRoutes from "./custom-field-routes";
 
 // Function to calculate subscription revenue from actual data
 async function calculateSubscriptionRevenue() {
@@ -284,6 +285,9 @@ export async function registerRoutes(app: Express) {
     res.setHeader('Surrogate-Control', 'no-store');
     next();
   });
+  
+  // Register custom field routes
+  registerCustomFieldRoutes(app, storage);
 
   // Serve uploaded files from the uploads directory
   app.use('/uploads', (req, res, next) => {
