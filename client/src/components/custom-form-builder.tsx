@@ -199,16 +199,20 @@ export default function CustomFormBuilder({
 
   // Handle the effect of campFields changing
   useEffect(() => {
-    if (campFields && campFields.length > 0) {
+    if (campFields && Array.isArray(campFields) && campFields.length > 0) {
       setFields(campFields);
       if (onUpdate) onUpdate(campFields);
+    } else if (campFields && Array.isArray(campFields)) {
+      // Empty array case
+      setFields([]);
+      if (onUpdate) onUpdate([]);
     }
   }, [campFields, onUpdate]);
 
   // Mutation to create a new custom field
   const createFieldMutation = useMutation({
     mutationFn: async (field: CustomFieldFormData) => {
-      return apiRequest({
+      return apiRequest<any, any>({
         method: "POST",
         url: "/api/custom-fields",
         data: {
@@ -238,7 +242,7 @@ export default function CustomFormBuilder({
   // Mutation to update a custom field
   const updateFieldMutation = useMutation({
     mutationFn: async ({ id, field }: { id: number, field: Partial<CustomFieldFormData> }) => {
-      return apiRequest({
+      return apiRequest<any, any>({
         method: "PATCH",
         url: `/api/custom-fields/${id}`,
         data: field
@@ -265,7 +269,7 @@ export default function CustomFormBuilder({
   // Mutation to add a field to the camp
   const addFieldToCampMutation = useMutation({
     mutationFn: async (data: { customFieldId: number, required: boolean }) => {
-      return apiRequest({
+      return apiRequest<any, any>({
         method: "POST",
         url: `/api/camps/${campId}/custom-fields`,
         data: {
@@ -295,7 +299,7 @@ export default function CustomFormBuilder({
   // Mutation to remove a field from the camp
   const removeFieldFromCampMutation = useMutation({
     mutationFn: async (campFieldId: number) => {
-      return apiRequest({
+      return apiRequest<any, any>({
         method: "DELETE",
         url: `/api/camps/${campId}/custom-fields/${campFieldId}`,
       });
@@ -320,7 +324,7 @@ export default function CustomFormBuilder({
   // Mutation to update field order
   const updateFieldOrderMutation = useMutation({
     mutationFn: async (orderedFields: { id: number, order: number }[]) => {
-      return apiRequest({
+      return apiRequest<any, any>({
         method: "PATCH",
         url: `/api/camps/${campId}/custom-fields/reorder`,
         data: { fields: orderedFields }
