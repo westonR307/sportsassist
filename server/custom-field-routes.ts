@@ -2,6 +2,8 @@ import { Express, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { IStorage } from "./storage";
 import { Role } from "@shared/types";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -66,7 +68,88 @@ async function canManageCamp(storage: IStorage, userId: number, campId: number):
 }
 
 export default function registerCustomFieldRoutes(app: Express, storage: IStorage) {
-  // Direct DELETE route without authentication for debugging
+  // Direct DEBUG routes without authentication for troubleshooting
+  // DEBUG UPDATE endpoint
+  app.patch("/debug/custom-fields/:id", async (req: Request, res: Response) => {
+    try {
+      console.log("-------- DEBUG UPDATE endpoint hit! --------");
+      console.log("Request headers:", req.headers);
+      console.log("Request parameters:", req.params);
+      console.log("Request body:", req.body);
+      
+      const fieldId = parseInt(req.params.id);
+      console.log("Parsed fieldId:", fieldId);
+      
+      if (isNaN(fieldId)) {
+        console.log("Invalid fieldId - not a number");
+        return res.status(400).json({ error: "Invalid field ID" });
+      }
+      
+      // Get the existing field first to verify it exists
+      try {
+        const field = await db.execute(
+          sql`SELECT * FROM custom_fields WHERE id = ${fieldId}`
+        );
+        
+        if (field.rows.length === 0) {
+          console.log("Field not found with ID:", fieldId);
+          return res.status(404).json({ error: "Custom field not found" });
+        }
+        
+        console.log("Field found, proceeding with update");
+        
+        // Update the field with the request body data
+        const updateData = { ...req.body };
+        
+        // Build the SET clause dynamically
+        let updates = Object.entries(updateData)
+          .filter(([key]) => {
+            // Filter out any fields that shouldn't be updated
+            return !['id', 'organizationId', 'createdAt'].includes(key);
+          })
+          .map(([key, value]) => {
+            // Convert camelCase to snake_case for SQL
+            const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+            return `${snakeKey} = ${JSON.stringify(value)}`;
+          })
+          .join(', ');
+        
+        // Add updated_at timestamp
+        updates += `, updated_at = NOW()`;
+        
+        // Execute the update
+        const updateQuery = `
+          UPDATE custom_fields 
+          SET ${updates}
+          WHERE id = ${fieldId}
+          RETURNING *
+        `;
+        
+        console.log("Update SQL:", updateQuery);
+        
+        const result = await db.execute(sql`${sql.raw(updateQuery)}`);
+        console.log("Update result:", result.rows[0]);
+        
+        if (result.rows.length === 0) {
+          return res.status(500).json({ error: "Update failed" });
+        }
+        
+        res.json(result.rows[0]);
+        console.log("-------- DEBUG UPDATE completed --------");
+      } catch (sqlErr) {
+        console.error("SQL execution error:", sqlErr);
+        return res.status(500).json({ 
+          error: "Error updating field with SQL", 
+          details: String(sqlErr) 
+        });
+      }
+    } catch (error) {
+      console.error("Error in debug update endpoint:", error);
+      res.status(500).json({ error: "Internal server error in debug endpoint" });
+    }
+  });
+
+  // DEBUG DELETE endpoint  
   app.delete("/debug/custom-fields/:id", async (req: Request, res: Response) => {
     try {
       console.log("-------- DEBUG DELETE endpoint hit! --------");

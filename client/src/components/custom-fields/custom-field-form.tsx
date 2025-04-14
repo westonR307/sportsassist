@@ -117,6 +117,29 @@ export function CustomFieldForm({
     mutationFn: async (values: CustomFieldFormValues) => {
       if (customField?.id) {
         // Update existing field
+        // First try the debug endpoint
+        try {
+          console.log("Using debug endpoint to update field:", customField.id);
+          const res = await fetch(`/debug/custom-fields/${customField.id}`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify(values)
+          });
+          
+          if (res.ok) {
+            console.log("Debug update succeeded");
+            return await res.json();
+          } else {
+            console.log("Debug update failed, trying regular endpoint");
+          }
+        } catch (err) {
+          console.error("Error using debug endpoint:", err);
+        }
+        
+        // Fall back to regular endpoint if debug fails
         const res = await apiRequest(
           "PATCH",
           `/api/custom-fields/${customField.id}`,
