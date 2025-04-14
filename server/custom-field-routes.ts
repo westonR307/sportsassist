@@ -67,6 +67,9 @@ async function canManageCamp(storage: IStorage, userId: number, campId: number):
   return await storage.isUserAuthorizedForCamp(userId, campId);
 }
 
+// Import the direct field update module
+import { updateField, deleteField } from './direct-field-update';
+
 export default function registerCustomFieldRoutes(app: Express, storage: IStorage) {
   // Direct DEBUG routes without authentication for troubleshooting
   // DEBUG UPDATE endpoint
@@ -85,56 +88,13 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
         return res.status(400).json({ error: "Invalid field ID" });
       }
       
-      // Get the existing field first to verify it exists
       try {
-        const field = await db.execute(
-          sql`SELECT * FROM custom_fields WHERE id = ${fieldId}`
-        );
+        // Use the direct update function
+        const updatedField = await updateField(fieldId, req.body);
+        console.log("Update successful, result:", updatedField);
         
-        if (field.rows.length === 0) {
-          console.log("Field not found with ID:", fieldId);
-          return res.status(404).json({ error: "Custom field not found" });
-        }
-        
-        console.log("Field found, proceeding with update");
-        
-        // Update the field with the request body data
-        const updateData = { ...req.body };
-        
-        // Build the SET clause dynamically
-        let updates = Object.entries(updateData)
-          .filter(([key]) => {
-            // Filter out any fields that shouldn't be updated
-            return !['id', 'organizationId', 'createdAt'].includes(key);
-          })
-          .map(([key, value]) => {
-            // Convert camelCase to snake_case for SQL
-            const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-            return `${snakeKey} = ${JSON.stringify(value)}`;
-          })
-          .join(', ');
-        
-        // Add updated_at timestamp
-        updates += `, updated_at = NOW()`;
-        
-        // Execute the update
-        const updateQuery = `
-          UPDATE custom_fields 
-          SET ${updates}
-          WHERE id = ${fieldId}
-          RETURNING *
-        `;
-        
-        console.log("Update SQL:", updateQuery);
-        
-        const result = await db.execute(sql`${sql.raw(updateQuery)}`);
-        console.log("Update result:", result.rows[0]);
-        
-        if (result.rows.length === 0) {
-          return res.status(500).json({ error: "Update failed" });
-        }
-        
-        res.json(result.rows[0]);
+        // Return the updated field
+        res.json(updatedField);
         console.log("-------- DEBUG UPDATE completed --------");
       } catch (sqlErr) {
         console.error("SQL execution error:", sqlErr);
@@ -164,66 +124,20 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
         return res.status(400).json({ error: "Invalid field ID" });
       }
       
-      // Use direct SQL queries with transactions to ensure deletion happens
       try {
-        console.log("Starting direct SQL deletion for field ID:", fieldId);
+        // Use the direct delete function
+        const success = await deleteField(fieldId);
         
-        // Get the existing field first to verify it exists
-        const field = await db.execute(
-          sql`SELECT * FROM custom_fields WHERE id = ${fieldId}`
-        );
-        
-        if (field.rows.length === 0) {
-          console.log("Field not found with ID:", fieldId);
-          return res.status(404).json({ error: "Custom field not found" });
+        if (success) {
+          console.log("Field successfully deleted via direct function");
+          console.log("Sending 204 success response");
+          res.status(204).send();
+        } else {
+          console.error("Field deletion failed");
+          return res.status(500).json({ error: "Failed to delete field" });
         }
         
-        console.log("Field found, proceeding with deletion");
-        
-        // Start a transaction
-        await db.execute(sql`BEGIN`);
-        
-        try {
-          // 1. Delete any camp custom fields associations
-          const campFieldsDeleted = await db.execute(
-            sql`DELETE FROM camp_custom_fields WHERE custom_field_id = ${fieldId} RETURNING id`
-          );
-          console.log(`Deleted ${campFieldsDeleted.rowCount} camp field associations`);
-          
-          // 2. Delete any custom field responses
-          const responsesDeleted = await db.execute(
-            sql`DELETE FROM custom_field_responses WHERE custom_field_id = ${fieldId} RETURNING id`
-          );
-          console.log(`Deleted ${responsesDeleted.rowCount} field responses`);
-          
-          // 3. Delete any camp meta values
-          const metaFieldsDeleted = await db.execute(
-            sql`DELETE FROM camp_meta_fields WHERE custom_field_id = ${fieldId} RETURNING id`
-          );
-          console.log(`Deleted ${metaFieldsDeleted.rowCount} camp meta fields`);
-          
-          // 4. Finally delete the custom field itself
-          const fieldDeleted = await db.execute(
-            sql`DELETE FROM custom_fields WHERE id = ${fieldId} RETURNING id`
-          );
-          console.log(`Deleted ${fieldDeleted.rowCount} custom fields`);
-          
-          if (fieldDeleted.rowCount === 0) {
-            throw new Error("Field was not deleted, may have foreign key constraints");
-          }
-          
-          // Commit the transaction
-          await db.execute(sql`COMMIT`);
-          console.log("Transaction committed successfully");
-          
-        } catch (txError) {
-          // If any error happens, roll back the transaction
-          await db.execute(sql`ROLLBACK`);
-          console.error("Transaction error, rolled back:", txError);
-          throw txError;
-        }
-        
-        console.log("Field successfully deleted via direct SQL");
+        console.log("-------- DEBUG DELETE completed --------");
       } catch (sqlErr) {
         console.error("SQL execution error:", sqlErr);
         return res.status(500).json({ 
@@ -231,10 +145,6 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
           details: String(sqlErr) 
         });
       }
-      
-      console.log("Sending 204 success response");
-      res.status(204).send();
-      console.log("-------- DEBUG DELETE completed --------");
     } catch (error) {
       console.error("Error in debug delete endpoint:", error);
       res.status(500).json({ error: "Internal server error in debug endpoint" });
@@ -401,9 +311,25 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
         return res.status(403).json({ message: "You don't have permission to modify this custom field" });
       }
 
-      // Update the custom field
+      try {
+        // First try to update using the direct approach
+        console.log('Attempting to update field using direct approach');
+        const directUpdatedField = await updateField(fieldId, validation.data);
+        
+        if (directUpdatedField) {
+          console.log('Field updated successfully using direct approach');
+          return res.json(directUpdatedField);
+        } else {
+          console.log('Direct update approach returned no data, falling back to storage');
+        }
+      } catch (directError) {
+        console.error('Error using direct update approach:', directError);
+        console.log('Falling back to storage method');
+      }
+
+      // Fallback: Update the custom field using storage
       const updatedField = await storage.updateCustomField(fieldId, validation.data);
-      console.log('Field updated successfully');
+      console.log('Field updated successfully using storage approach');
       res.json(updatedField);
     } catch (error) {
       console.error("Error updating custom field:", error);
@@ -433,11 +359,26 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
       }
 
       console.log('Custom field found:', existingField);
+      
+      try {
+        // First try using the direct deletion method
+        console.log('Attempting to delete field using direct method');
+        const success = await deleteField(fieldId);
+        
+        if (success) {
+          console.log('Field deleted successfully using direct method');
+          return res.status(204).send();
+        } else {
+          console.log('Direct delete approach failed, falling back to storage');
+        }
+      } catch (directError) {
+        console.error('Error using direct delete approach:', directError);
+        console.log('Falling back to storage method');
+      }
 
-      // Skip auth check temporarily to debug
-      // Delete the custom field
+      // Fallback: Delete using storage method
       await storage.deleteCustomField(fieldId);
-      console.log('Field deleted successfully');
+      console.log('Field deleted successfully using storage approach');
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting custom field:", error);
