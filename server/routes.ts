@@ -3504,7 +3504,14 @@ export async function registerRoutes(app: Express) {
 
   // Delete a custom field
   app.delete("/api/custom-fields/:id", async (req, res) => {
-    if (!req.user) {
+    // Debug authentication issue
+    console.log('Delete custom field endpoint triggered');
+    console.log('Auth status:', req.isAuthenticated());
+    console.log('Session ID:', req.sessionID);
+    console.log('User:', req.user);
+    
+    if (!req.isAuthenticated() || !req.user) {
+      console.log('Authentication check failed, user is not authenticated');
       return res.status(401).json({ message: "Authentication required" });
     }
 
@@ -3517,12 +3524,21 @@ export async function registerRoutes(app: Express) {
         return res.status(404).json({ message: "Custom field not found" });
       }
 
+      console.log('Custom field found:', customField);
+      console.log('User organization:', req.user.organizationId);
+      console.log('Field organization:', customField.organizationId);
+
       // Check if user has access to this organization's custom fields
-      if (req.user.organizationId !== customField.organizationId) {
+      // Allow camp creators to delete custom fields from their organization
+      const userCanEditField = req.user.role === 'admin' || 
+                              (req.user.role === 'camp_creator' && req.user.organizationId === customField.organizationId);
+      
+      if (!userCanEditField) {
         return res.status(403).json({ message: "You don't have permission to delete this custom field" });
       }
 
       await storage.deleteCustomField(fieldId);
+      console.log('Field deleted successfully');
       res.status(204).send();
     } catch (error) {
       logError("Delete custom field", error);
