@@ -68,7 +68,7 @@ async function canManageCamp(storage: IStorage, userId: number, campId: number):
 }
 
 // Import the direct field update module
-import { updateField, deleteField } from './direct-field-update';
+const { updateField, deleteField } = require('./direct-field-update');
 
 export default function registerCustomFieldRoutes(app: Express, storage: IStorage) {
   // Direct DEBUG routes without authentication for troubleshooting
