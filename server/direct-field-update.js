@@ -35,12 +35,12 @@ async function updateField(fieldId, updateData) {
 
     console.log("Field found, proceeding with update");
 
-    // Filter fields that shouldn't be updated
+    // Filter and validate fields
     const filteredData = { ...updateData };
     delete filteredData.id;
     delete filteredData.organizationId;
     delete filteredData.createdAt;
-    delete filteredData.source; // Ignore source field updates
+    delete filteredData.source;
 
     // Build query parts
     const setClause = [];
@@ -48,11 +48,16 @@ async function updateField(fieldId, updateData) {
     let paramCounter = 1;
 
     for (const [key, value] of Object.entries(filteredData)) {
-      if (value !== undefined) {  // Only update defined values
-        // Convert camelCase to snake_case for column names
+      if (value !== undefined && value !== null) {
+        // Convert camelCase to snake_case and handle arrays properly
         const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-        setClause.push(`${snakeKey} = $${paramCounter}`);
-        values.push(value);
+        if (Array.isArray(value)) {
+          setClause.push(`${snakeKey} = $${paramCounter}`);
+          values.push(JSON.stringify(value));
+        } else {
+          setClause.push(`${snakeKey} = $${paramCounter}`);
+          values.push(value);
+        }
         paramCounter++;
       }
     }
