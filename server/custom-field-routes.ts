@@ -157,7 +157,16 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
       const fieldData = validation.data;
 
       // Check permissions
-      if (!canManageOrganization(req, fieldData.organizationId)) {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      // Allow camp creators to create custom fields for their organization  
+      const isOrgMember = user.organizationId === fieldData.organizationId;
+      const canManage = isOrgMember && (user.role === "camp_creator" || user.role === "admin");
+
+      if (!canManage) {
         return res.status(403).json({ 
           error: "Not authorized to create custom fields for this organization" 
         });
@@ -203,7 +212,16 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
 
 
       // Check permissions
-      if (!canManageOrganization(req, existingField.organizationId)) {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      // Allow camp creators to manage custom fields for their organization
+      const isOrgMember = user.organizationId === existingField.organizationId;
+      const canManage = isOrgMember && (user.role === "camp_creator" || user.role === "admin");
+      
+      if (!canManage) {
         return res.status(403).json({ 
           error: "Not authorized to update custom fields for this organization" 
         });
