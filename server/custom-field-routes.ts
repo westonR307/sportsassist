@@ -177,8 +177,12 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
   app.patch("/api/custom-fields/:id", async (req: AuthenticatedRequest, res: Response) => {
     try {
       // Check if user is authenticated
-      if (!req.user) {
+      if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Authentication required" });
+      }
+
+      if (!req.user) {
+        return res.status(401).json({ message: "User not found" });
       }
 
       const fieldId = parseInt(req.params.id);
