@@ -123,10 +123,13 @@ export interface IStorage {
   updateCamp(id: number, campData: Partial<Omit<Camp, "id" | "organizationId">>): Promise<Camp>;
   listCamps(organizationId?: number): Promise<(Camp & { campSports?: any[], defaultStartTime?: string | null, defaultEndTime?: string | null })[]>;
   getCamp(id: number): Promise<Camp | undefined>;
+  getCampById(id: number): Promise<Camp | undefined>;
   getCampBySlug(slug: string): Promise<Camp | undefined>;
   getRegistrationsByCamp(campId: number): Promise<Registration[]>;
   createRegistration(registration: Omit<Registration, "id">): Promise<Registration>;
   getRegistration(id: number): Promise<Registration | undefined>;
+  getRegistrationById(id: number): Promise<Registration | undefined>;
+  isUserAuthorizedForCamp(userId: number, campId: number): Promise<boolean>;
   deleteRegistration(id: number): Promise<boolean>;
   createOrganization(org: InsertOrganization): Promise<Organization>;
   getOrganization(id: number): Promise<Organization | undefined>;
