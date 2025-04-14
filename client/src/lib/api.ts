@@ -12,9 +12,11 @@ export const apiRequest = async (
       method,
       headers: {
         "Content-Type": "application/json",
+        "Accept": "application/json",
       },
       body: body ? JSON.stringify(body) : undefined,
       credentials: "include", // Always include credentials
+      cache: "no-cache" // Prevent caching of authenticated requests
     });
 
     // Log response details for debugging
