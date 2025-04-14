@@ -252,15 +252,21 @@ export const insertCampSchema = z.object({
     path: ["isVirtual"] // This will make the error show up on the isVirtual field
   })
   .refine((data) => {
-    // If it's a fixed scheduling type camp, at least one schedule is required
-    if (data.schedulingType === "fixed" && (!data.schedules || data.schedules.length === 0)) {
-      return false;
+    // Only validate schedules for fixed scheduling type
+    if (data.schedulingType === "fixed") {
+      return Array.isArray(data.schedules) && data.schedules.length > 0;
     }
+    // For availability-based scheduling, no schedules are required
     return true;
   }, {
     message: "For fixed scheduling camps, at least one schedule is required.",
-    path: ["schedules"] // This will make the error show up on the schedules field
-  });
+    path: ["schedules"]
+  })
+  .transform(data => ({
+    ...data,
+    // Ensure schedules is always an array
+    schedules: data.schedulingType === "availability" ? [] : data.schedules
+  }));
 
 export const insertRegistrationSchema = createInsertSchema(registrations);
 export const insertOrganizationSchema = createInsertSchema(organizations).omit({
