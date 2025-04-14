@@ -199,7 +199,7 @@ export default function CustomFormBuilder({
 
   // Handle the effect of campFields changing
   useEffect(() => {
-    if (campFields) {
+    if (campFields && campFields.length > 0) {
       setFields(campFields);
       if (onUpdate) onUpdate(campFields);
     }
