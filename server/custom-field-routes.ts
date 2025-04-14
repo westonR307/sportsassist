@@ -182,22 +182,32 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
 
   // 4. Update an existing custom field
   app.patch("/api/custom-fields/:id", async (req: AuthenticatedRequest, res: Response) => {
+    // Debug authentication issue
+    console.log('Update custom field endpoint triggered in custom-field-routes.ts');
+    console.log('Auth status:', req.isAuthenticated ? req.isAuthenticated() : 'No isAuthenticated method');
+    console.log('Session ID:', req.sessionID);
+    console.log('User:', req.user);
+    
+    if (!req.user) {
+      console.log('Authentication check failed, user is not authenticated');
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const fieldId = parseInt(req.params.id);
+    if (isNaN(fieldId)) {
+      return res.status(400).json({ message: "Invalid field ID" });
+    }
+    
     try {
-      // Check if user is authenticated
-      if (!req.user) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
-      const fieldId = parseInt(req.params.id);
-      if (isNaN(fieldId)) {
-        return res.status(400).json({ message: "Invalid field ID" });
-      }
-
       // Get the existing field to check permissions
       const existingField = await storage.getCustomField(fieldId);
       if (!existingField) {
         return res.status(404).json({ message: "Custom field not found" });
       }
+
+      console.log('Custom field found:', existingField);
+      console.log('User organization:', req.user.organizationId);
+      console.log('Field organization:', existingField.organizationId);
 
       // Validate the request body
       const validation = updateCustomFieldSchema.safeParse(req.body);
@@ -208,26 +218,18 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
         });
       }
 
-
-      // Check permissions
-      const user = req.user;
-      if (!user) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
-      // Allow camp creators to manage custom fields for their organization
-      const isOrgMember = user.organizationId === existingField.organizationId;
-      const canManage = isOrgMember && (user.role === "camp_creator" || user.role === "admin");
-
-      if (!canManage) {
-        return res.status(403).json({ 
-          error: "Not authorized to update custom fields for this organization" 
-        });
+      // Check if user has access to this organization's custom fields
+      // Allow camp creators to edit custom fields from their organization
+      const userCanEditField = req.user.role === 'admin' || 
+                              (req.user.role === 'camp_creator' && req.user.organizationId === existingField.organizationId);
+      
+      if (!userCanEditField) {
+        return res.status(403).json({ message: "You don't have permission to modify this custom field" });
       }
 
       // Update the custom field
       const updatedField = await storage.updateCustomField(fieldId, validation.data);
-
+      console.log('Field updated successfully');
       res.json(updatedField);
     } catch (error) {
       console.error("Error updating custom field:", error);
@@ -237,30 +239,42 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
 
   // 5. Delete a custom field
   app.delete("/api/custom-fields/:id", async (req: AuthenticatedRequest, res: Response) => {
+    // Debug authentication issue
+    console.log('Delete custom field endpoint triggered in custom-field-routes.ts');
+    console.log('Auth status:', req.isAuthenticated ? req.isAuthenticated() : 'No isAuthenticated method');
+    console.log('Session ID:', req.sessionID);
+    console.log('User:', req.user);
+    
+    if (!req.user) {
+      console.log('Authentication check failed, user is not authenticated');
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    const fieldId = parseInt(req.params.id);
+    
     try {
-      // Check if user is authenticated
-      if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
-      const fieldId = parseInt(req.params.id);
-
       // Get the existing field to check permissions
       const existingField = await storage.getCustomField(fieldId);
       if (!existingField) {
         return res.status(404).json({ error: "Custom field not found" });
       }
 
-      // Check permissions
-      if (!canManageOrganization(req, existingField.organizationId)) {
-        return res.status(403).json({ 
-          error: "Not authorized to delete custom fields for this organization" 
-        });
+      console.log('Custom field found:', existingField);
+      console.log('User organization:', req.user.organizationId);
+      console.log('Field organization:', existingField.organizationId);
+
+      // Check if user has access to this organization's custom fields
+      // Allow camp creators to delete custom fields from their organization
+      const userCanDeleteField = req.user.role === 'admin' || 
+                               (req.user.role === 'camp_creator' && req.user.organizationId === existingField.organizationId);
+      
+      if (!userCanDeleteField) {
+        return res.status(403).json({ message: "You don't have permission to delete this custom field" });
       }
 
       // Delete the custom field
       await storage.deleteCustomField(fieldId);
-
+      console.log('Field deleted successfully');
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting custom field:", error);
