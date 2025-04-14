@@ -201,11 +201,6 @@ export default function registerCustomFieldRoutes(app: Express, storage: IStorag
         });
       }
 
-      // Get the existing field to check permissions
-      const existingField = await storage.getCustomField(fieldId);
-      if (!existingField) {
-        return res.status(404).json({ error: "Custom field not found" });
-      }
 
       // Check permissions
       if (!canManageOrganization(req, existingField.organizationId)) {
