@@ -73,32 +73,15 @@ export const createStripeConnectedAccount = async (email: string) => {
   try {
     console.log(`Creating Stripe Connect account for email: ${email}`);
     
-    // Proceed with account creation - the platform account is responsible for setting up
-    // the responsibilities of managing losses in the Stripe Dashboard
-    console.log('Proceeding with account creation - responsibility settings should be configured in Stripe Dashboard');
-    
-    // Create the Connect account
+    // Create the Connect account with simplified parameters as recommended
     const account = await stripe.accounts.create({
       type: 'express',
-      email,
       capabilities: {
-        card_payments: { requested: true },
         transfers: { requested: true },
       },
-      settings: {
-        payouts: {
-          schedule: {
-            interval: 'daily',
-          },
-        },
-      },
-      business_profile: {
-        mcc: '8299', // Educational Services for sports camps
-        url: 'https://sportsassist.io',
-        product_description: 'Sports camp registration and management platform',
-      }
-      // For US platforms creating US accounts, do not include service_agreement parameter
-      // This follows Stripe's requirements: https://stripe.com/docs/connect/cross-border-payouts
+      country: 'US',
+      business_type: 'individual', // or 'company' if applicable
+      email: email,
     });
     
     console.log(`Successfully created Stripe account with ID: ${account.id}`);
