@@ -271,7 +271,10 @@ const StripeConnectManagement = () => {
     
     try {
       setProcessing(true);
-      const response = await fetch(`/api/organizations/${orgId}/stripe/create-account-link`, {
+      console.log(`Creating account link for organization ${orgId}`);
+      
+      // Also fix the URL path here to match the server routes
+      const response = await fetch(`/api/stripe/organizations/${orgId}/create-account-link`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -282,11 +285,13 @@ const StripeConnectManagement = () => {
       });
       
       if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || response.statusText);
+        const errorText = await response.text();
+        console.error(`Account link error response: ${errorText}`);
+        throw new Error(errorText || response.statusText);
       }
       
       const data = await response.json();
+      console.log("Account link created successfully");
       
       // Redirect to Stripe's onboarding
       window.location.href = data.url;
@@ -307,18 +312,23 @@ const StripeConnectManagement = () => {
     
     try {
       setProcessing(true);
-      const response = await fetch(`/api/organizations/${orgId}/stripe/dashboard-link`, {
+      console.log(`Creating dashboard link for organization ${orgId}`);
+      
+      // The URL path was incorrect - should be /api/stripe/organizations
+      const response = await fetch(`/api/stripe/organizations/${orgId}/dashboard-link`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include'
       });
       
       if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || response.statusText);
+        const errorText = await response.text();
+        console.error(`Dashboard link error response: ${errorText}`);
+        throw new Error(errorText || response.statusText);
       }
       
       const data = await response.json();
+      console.log("Dashboard link created successfully");
       
       // Open Stripe dashboard in a new tab
       window.open(data.url, '_blank');
@@ -339,7 +349,10 @@ const StripeConnectManagement = () => {
     
     try {
       setProcessing(true);
-      const response = await fetch(`/api/organizations/${orgId}/stripe/settings`, {
+      console.log(`Updating stripe settings for organization ${orgId}`);
+      
+      // Fix the URL path to match the server routes
+      const response = await fetch(`/api/stripe/organizations/${orgId}/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -350,10 +363,12 @@ const StripeConnectManagement = () => {
       });
       
       if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || response.statusText);
+        const errorText = await response.text();
+        console.error(`Settings update error response: ${errorText}`);
+        throw new Error(errorText || response.statusText);
       }
       
+      console.log("Stripe settings updated successfully");
       toast({
         title: "Settings updated",
         description: "Your Stripe settings have been updated successfully.",
