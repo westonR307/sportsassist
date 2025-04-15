@@ -3,11 +3,12 @@ import Stripe from 'stripe';
 import { db } from './db';
 import { eq } from 'drizzle-orm';
 import { registrations, organizations } from '../shared/tables';
+import { STRIPE_CONNECT } from './constants';
 
 // Initialize Stripe with your secret key
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY || '';
 const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: '2022-11-15', // Match the version used in stripe.ts
+  apiVersion: STRIPE_CONNECT.API_VERSION, // Use API version from constants
 });
 
 // Your webhook secret from the Stripe dashboard
@@ -109,7 +110,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
 // Handle account.updated event
 async function handleAccountUpdated(account: Stripe.Account) {
-  console.log(`Account updated: ${account.id}`);
+  console.log(`Account updated: ${account.id}, details_submitted: ${!!account.details_submitted}, charges_enabled: ${!!account.charges_enabled}`);
   
   try {
     // Find the organization with this Stripe account ID
@@ -119,12 +120,26 @@ async function handleAccountUpdated(account: Stripe.Account) {
       .then(results => results[0]);
     
     if (organization) {
-      // Import the updateOrganizationStripeStatus function
-      const { updateOrganizationStripeStatus } = await import('./utils/stripe');
+      // Directly update the organization with the account status
+      await db.update(organizations)
+        .set({
+          stripeAccountStatus: account.details_submitted ? 'active' : 'pending',
+          stripeAccountDetailsSubmitted: !!account.details_submitted,
+          stripeAccountChargesEnabled: !!account.charges_enabled,
+          stripeAccountPayoutsEnabled: !!account.payouts_enabled
+          // Note: updatedAt is auto-updated by the database trigger
+        })
+        .where(eq(organizations.id, organization.id));
       
-      // Update the status using the existing function
-      await updateOrganizationStripeStatus(organization.id, account.id);
-      console.log(`Updated organization ${organization.id} Stripe status via webhook`);
+      console.log(`Updated organization ${organization.id} Stripe account status directly via webhook`);
+      
+      // Log detailed account status for debugging
+      console.log(`Account status details:
+        - Details submitted: ${!!account.details_submitted}
+        - Charges enabled: ${!!account.charges_enabled}
+        - Payouts enabled: ${!!account.payouts_enabled}
+        - Requirements: ${JSON.stringify(account.requirements || {})}
+      `);
     } else {
       console.warn(`No organization found with Stripe account ID: ${account.id}`);
     }

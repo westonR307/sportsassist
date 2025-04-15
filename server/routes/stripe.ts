@@ -115,6 +115,106 @@ router.get('/account-status/:orgId', async (req: Request, res: Response) => {
   }
 });
 
+// Add a route to force refresh account status
+router.post('/account-status/:orgId/refresh', async (req: Request, res: Response) => {
+  if (!req.isAuthenticated || !req.isAuthenticated()) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  
+  const orgId = parseInt(req.params.orgId);
+  
+  if (isNaN(orgId)) {
+    return res.status(400).json({ message: "Invalid organization ID" });
+  }
+  
+  // Ensure the user belongs to this organization or is an admin
+  if (req.user.organizationId !== orgId && req.user.role !== "platform_admin") {
+    return res.status(403).json({ message: "Not authorized for this organization" });
+  }
+  
+  try {
+    // Get the organization record
+    const org = await db.query.organizations.findFirst({
+      where: eq(organizations.id, orgId)
+    });
+    
+    if (!org) {
+      return res.status(404).json({ message: "Organization not found" });
+    }
+    
+    // If the organization doesn't have a Stripe account ID, return early
+    if (!org.stripeAccountId) {
+      return res.json({
+        hasStripeAccount: false,
+        message: "No Stripe account associated with this organization"
+      });
+    }
+    
+    console.log(`Force refreshing Stripe account status for org ${orgId}, account ${org.stripeAccountId}`);
+    
+    // Get the latest account details from Stripe
+    const account = await stripe.accounts.retrieve(org.stripeAccountId);
+    
+    // Update the organization with the latest account status
+    await db.update(organizations)
+      .set({
+        stripeAccountStatus: account.details_submitted ? 'active' : 'pending',
+        stripeAccountDetailsSubmitted: !!account.details_submitted,
+        stripeAccountChargesEnabled: !!account.charges_enabled,
+        stripeAccountPayoutsEnabled: !!account.payouts_enabled,
+      })
+      .where(eq(organizations.id, orgId));
+    
+    // Return success along with the latest status
+    return res.json({
+      success: true,
+      hasStripeAccount: true,
+      accountId: org.stripeAccountId,
+      status: account.details_submitted ? 'completed' : 'pending',
+      detailsSubmitted: !!account.details_submitted,
+      chargesEnabled: !!account.charges_enabled,
+      payoutsEnabled: !!account.payouts_enabled,
+      requirements: account.requirements || {},
+      message: "Account status refreshed successfully"
+    });
+  } catch (error: any) {
+    console.error(`Error refreshing Stripe account status for org ${orgId}:`, error);
+    
+    if (error.type === 'StripeError' && error.statusCode === 404) {
+      // Account no longer exists at Stripe, clear the account ID
+      try {
+        await db.update(organizations)
+          .set({
+            stripeAccountId: null,
+            stripeAccountStatus: null,
+            stripeAccountDetailsSubmitted: false,
+            stripeAccountChargesEnabled: false,
+            stripeAccountPayoutsEnabled: false,
+          })
+          .where(eq(organizations.id, orgId));
+          
+        return res.json({
+          success: false,
+          hasStripeAccount: false,
+          message: "Stripe account was removed or is invalid. Organization record updated."
+        });
+      } catch (dbError) {
+        console.error('Error clearing invalid Stripe account reference:', dbError);
+        return res.status(500).json({
+          success: false,
+          error: "Database error while updating organization record"
+        });
+      }
+    }
+    
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to refresh account status',
+      message: error.message
+    });
+  }
+});
+
 // Add a route to handle account status callback
 router.get('/account-status-callback', async (req: Request, res: Response) => {
   // This is a simple callback endpoint that just confirms the return from Stripe

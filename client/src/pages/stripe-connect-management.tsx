@@ -102,20 +102,57 @@ const StripeConnectManagement = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const callback = urlParams.get('callback');
     const success = urlParams.get('success');
+    const refresh = urlParams.get('refresh');
     
-    if (callback === 'true' || success === 'true') {
+    if (callback === 'true' || success === 'true' || refresh === 'true') {
       console.log('Detected return from Stripe, refreshing status data');
+      
+      // Show a toast to indicate the account status is being refreshed
+      toast({
+        title: "Refreshing account status",
+        description: "Retrieving the latest information from Stripe...",
+      });
+      
       // We just got back from Stripe, refresh data
       if (orgId) {
-        refetchStripeStatus();
-        refetchOrg();
+        // Force a direct server-to-server update of the account status
+        const updateStatus = async () => {
+          try {
+            // First try to get the latest status directly from the server
+            await fetch(`/api/stripe/account-status/${orgId}/refresh`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include'
+            });
+            
+            // Then refetch the data 
+            await Promise.all([
+              refetchStripeStatus(),
+              refetchOrg()
+            ]);
+            
+            toast({
+              title: "Account status updated",
+              description: "Your Stripe account information has been updated.",
+            });
+          } catch (error) {
+            console.error("Error refreshing account status:", error);
+            // Still try to refetch data even if direct update fails
+            await Promise.all([
+              refetchStripeStatus(),
+              refetchOrg()
+            ]);
+          }
+        };
+        
+        updateStatus();
         
         // Clean up URL params
         const newUrl = window.location.pathname;
         window.history.replaceState({}, document.title, newUrl);
       }
     }
-  }, [orgId, refetchStripeStatus, refetchOrg]);
+  }, [orgId, refetchStripeStatus, refetchOrg, toast]);
 
   const createStripeAccount = async () => {
     if (!orgId) return;
@@ -131,12 +168,18 @@ const StripeConnectManagement = () => {
     try {
       setProcessing(true);
 
+      // Create absolute URLs for callback
+      const baseUrl = window.location.origin;
+      // Use more specific return URLs to ensure proper routing
+      const refreshUrl = `${baseUrl}/dashboard/stripe-connect?refresh=true`;
+      const returnUrl = `${baseUrl}/dashboard/stripe-connect?success=true&callback=true`;
+
       // Use the new Stripe Connect endpoint
       console.log("Creating Stripe account with parameters:", {
         email: user.email,
         orgId: orgId,
-        refreshUrl: window.location.href, 
-        returnUrl: window.location.href
+        refreshUrl,
+        returnUrl
       });
       
       const response = await fetch(`/api/stripe/create-stripe-account`, {
@@ -145,8 +188,8 @@ const StripeConnectManagement = () => {
         credentials: 'include',
         body: JSON.stringify({
           email: user.email,
-          refreshUrl: window.location.href,
-          returnUrl: window.location.href,
+          refreshUrl,
+          returnUrl,
           orgId: orgId
         })
       });
@@ -161,7 +204,17 @@ const StripeConnectManagement = () => {
       
       // If we have a URL, that means we need to redirect to Stripe
       if (data.url) {
-        window.location.href = data.url;
+        // Instead of immediate redirect, show a toast and use a slight delay
+        // This helps prevent the double-click issue and gives the user feedback
+        toast({
+          title: "Redirecting to Stripe",
+          description: "You'll be redirected to Stripe to set up your account momentarily...",
+        });
+        
+        // A slight delay to ensure the UI updates and toast is shown
+        setTimeout(() => {
+          window.location.href = data.url;
+        }, 1000);
         return;
       }
       
