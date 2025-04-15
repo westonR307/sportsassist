@@ -97,18 +97,42 @@ const StripeConnectManagement = () => {
 
   const createStripeAccount = async () => {
     if (!orgId) return;
+    if (!user?.email) {
+      toast({
+        title: "Missing email address",
+        description: "Your user account doesn't have an email address. Please update your profile first.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
       setProcessing(true);
-      const response = await fetch(`/api/organizations/${orgId}/stripe/create-account`, {
+
+      // Use the new Stripe Connect endpoint
+      const response = await fetch(`/api/stripe/create-stripe-account`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
+        credentials: 'include',
+        body: JSON.stringify({
+          email: user.email,
+          refreshUrl: window.location.href,
+          returnUrl: window.location.href,
+          orgId: orgId
+        })
       });
       
       if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || response.statusText);
+        const errorData = await response.json().catch(() => ({ message: response.statusText }));
+        throw new Error(errorData.message || errorData.error || response.statusText);
+      }
+      
+      const data = await response.json();
+      
+      // If we have a URL, that means we need to redirect to Stripe
+      if (data.url) {
+        window.location.href = data.url;
+        return;
       }
       
       toast({
@@ -127,26 +151,17 @@ const StripeConnectManagement = () => {
       // Extract the error message from the response if available
       let errorMessage = "An error occurred while creating your Stripe account.";
       
-      if (error.response) {
-        try {
-          const errorData = error.response;
-          if (errorData.message) {
-            errorMessage = errorData.message;
-          } else if (errorData.error?.message) {
-            errorMessage = errorData.error.message;
-          }
-          
-          // Special handling for known Stripe errors
-          if (errorMessage.includes("settings[controller]")) {
-            errorMessage = "Invalid Stripe account configuration. The system has been updated. Please try again.";
-          } else if (errorMessage.includes("Please review the responsibilities of managing losses")) {
-            errorMessage = "Stripe Connect platform setup incomplete. Please contact the SportsAssist administrator to complete the Stripe Connect platform profile setup.";
-          }
-        } catch (parseError) {
-          console.error("Error parsing error response:", parseError);
-        }
-      } else if (error.message) {
+      if (error.message) {
         errorMessage = error.message;
+        
+        // Special handling for known Stripe errors
+        if (errorMessage.includes("recipient ToS agreement is not supported")) {
+          errorMessage = "We've updated our Stripe integration. Please try again.";
+        } else if (errorMessage.includes("settings[controller]")) {
+          errorMessage = "Invalid Stripe account configuration. The system has been updated. Please try again.";
+        } else if (errorMessage.includes("Please review the responsibilities of managing losses")) {
+          errorMessage = "Stripe Connect platform setup incomplete. Please contact the SportsAssist administrator to complete the Stripe Connect platform profile setup.";
+        }
       }
       
       toast({

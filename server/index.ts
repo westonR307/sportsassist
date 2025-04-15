@@ -61,6 +61,10 @@ app.use((req, res, next) => {
     // Register notification routes
     registerNotificationRoutes(app);
     log("Notification routes registered");
+    
+    // Register Stripe Connect routes
+    app.use('/api/stripe', stripeRoutes);
+    log("Stripe Connect routes registered");
 
     // Set up error handling after routes
     app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
