@@ -4,6 +4,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { registerDebugRoutes } from "./debug-routes";
 import registerAvailabilityRoutes from "./availability-routes";
 import registerNotificationRoutes from "./notification-routes";
+import stripeRoutes from "./routes/stripe";
 import cors from "cors";
 
 const app = express();
