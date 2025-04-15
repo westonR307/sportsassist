@@ -15,7 +15,7 @@ if (!stripeSecretKey) {
 }
 
 const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: '2022-11-15', // Use a valid API version
+  apiVersion: '2025-02-24.acacia', // Updated to latest API version
 });
 
 router.post('/create-stripe-account', async (req: Request, res: Response) => {

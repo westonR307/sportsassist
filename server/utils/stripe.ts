@@ -14,7 +14,7 @@ if (!stripeSecretKey) {
 
 // Initialize Stripe with your secret key
 export const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: '2022-11-15', // Use a valid API version
+  apiVersion: '2025-02-24.acacia', // Updated to latest API version
 });
 
 // Calculate application fee amount based on base price
