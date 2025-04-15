@@ -758,8 +758,8 @@ function Dashboard() {
   }
 
   // All user types can see the dashboard, with appropriate permissions
-  return (
-    <DashboardLayout>
+  const dashboardContent = (
+    <>
       {/* Display the DashboardSummaryCards and DashboardCalendar only for users with organizationId */}
       {user.organizationId ? (
         <>
@@ -821,6 +821,22 @@ function Dashboard() {
       ) : null}
       
       <CampsDashboard />
+    </>
+  );
+
+  // For camp creators and managers, use the new CreatorLayout
+  if (user.role === 'camp_creator' || user.role === 'manager') {
+    return (
+      <DashboardLayout>
+        {dashboardContent}
+      </DashboardLayout>
+    );
+  }
+
+  // For all other roles, use the existing DashboardLayout
+  return (
+    <DashboardLayout>
+      {dashboardContent}
     </DashboardLayout>
   );
 }
