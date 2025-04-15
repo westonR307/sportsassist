@@ -74,16 +74,10 @@ export function normalizeDate(dateValue: Date | string | null | undefined): stri
     // If it's a Date object, use it directly
     if (dateValue instanceof Date) {
       console.log(`[NormalizeDate] Using Date object directly: ${dateValue}`);
-      // Use UTC methods to avoid timezone issues
-      const utcDate = new Date(Date.UTC(
-        dateValue.getFullYear(),
-        dateValue.getMonth(),
-        dateValue.getDate()
-      ));
-      
-      const year = utcDate.getUTCFullYear();
-      const month = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
-      const day = String(utcDate.getUTCDate()).padStart(2, '0');
+      // Preserve local date without timezone conversion
+      const year = dateValue.getFullYear();
+      const month = String(dateValue.getMonth() + 1).padStart(2, '0');
+      const day = String(dateValue.getDate()).padStart(2, '0');
       
       const normalized = `${year}-${month}-${day}`;
       console.log(`[NormalizeDate] Final result: ${dateValue} → UTC date: ${utcDate.toISOString()} → Normalized: ${normalized}`);

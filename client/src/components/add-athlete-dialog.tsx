@@ -64,7 +64,7 @@ export function AddAthleteDialog({
   onOpenChange 
 }: AddAthleteDialogProps) {
   console.log("AddAthleteDialog rendering with open =", open);
-  
+
   const { toast } = useToast();
 
   const form = useForm<AddChildFormValues>({
@@ -85,7 +85,7 @@ export function AddAthleteDialog({
       sportsInterests: [], // Initialize empty sports interests array
     },
   });
-  
+
   // Add useFieldArray for managing dynamic sports entries
   const { fields, append, remove } = useFieldArray({
     name: "sportsInterests",
@@ -128,7 +128,7 @@ export function AddAthleteDialog({
             Create a profile for your athlete to register for camps.
           </DialogDescription>
         </DialogHeader>
-        
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
 
@@ -153,7 +153,14 @@ export function AddAthleteDialog({
                   <FormItem>
                     <FormLabel>Date of Birth</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input 
+                        type="date" 
+                        {...field} 
+                        onChange={(e) => {
+                          const date = new Date(e.target.value);
+                          field.onChange(date.toISOString().split('T')[0]);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -263,7 +270,7 @@ export function AddAthleteDialog({
                   Add Sport
                 </Button>
               </div>
-              
+
               <FormField
                 control={form.control}
                 name="sportsHistory"
@@ -346,7 +353,7 @@ export function AddAthleteDialog({
                   ))}
                 </div>
               )}
-              
+
               {fields.length === 0 && (
                 <div className="flex flex-col items-center justify-center p-4 rounded-md border border-dashed">
                   <p className="text-sm text-muted-foreground mb-2">No sports added yet</p>
