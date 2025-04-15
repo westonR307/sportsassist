@@ -179,8 +179,7 @@ export function ParentHeaderNav() {
                 <ChevronDown className="h-4 w-4 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="max-h-[80vh]">
-  <ScrollArea className="h-full">
+            <DropdownMenuContent align="end" className="max-h-[50vh] overflow-auto">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate("/dashboard/settings")}>
@@ -192,8 +191,7 @@ export function ParentHeaderNav() {
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Logout</span>
               </DropdownMenuItem>
-            </ScrollArea>
-</DropdownMenuContent>
+            </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
