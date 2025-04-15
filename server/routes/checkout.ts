@@ -164,25 +164,74 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req: R
         
         // Update registration status in the database
         try {
-          // This is a simplified example. In a real application, you would:
-          // 1. Find the registration using campId and childId
-          // 2. Update the paid status
-          // 3. Store the Stripe payment ID
-          // 4. Send confirmation email
+          // Process the payment and update registration status
           console.log(`Processing payment for camp ${campId} and child ${childId}`);
           
-          // Here you should update your database to mark the registration as paid
-          // await db.update(registrations)
-          //   .set({ 
-          //     paid: true,
-          //     stripePaymentId: session.payment_intent as string
-          //   })
-          //   .where(
-          //     and(
-          //       eq(registrations.campId, campId),
-          //       eq(registrations.childId, childId)
-          //     )
-          //   );
+          try {
+            // Import the required modules
+            const { registrations } = require('../../shared/tables');
+            const { and, eq } = require('drizzle-orm');
+            
+            // 1. Find the registration using campId and childId
+            const existingRegistration = await db.query.registrations.findFirst({
+              where: and(
+                eq(registrations.campId, campId),
+                eq(registrations.childId, childId)
+              ),
+            });
+            
+            if (!existingRegistration) {
+              console.error(`Registration not found for camp ${campId} and child ${childId}`);
+              return;
+            }
+            
+            // 2. Update the paid status and store the Stripe payment ID
+            await db.update(registrations)
+              .set({ 
+                paid: true,
+                stripePaymentId: session.payment_intent as string
+              })
+              .where(
+                and(
+                  eq(registrations.campId, campId),
+                  eq(registrations.childId, childId)
+                )
+              );
+              
+            console.log(`Successfully updated payment status for registration (camp: ${campId}, child: ${childId})`);
+            
+            // 3. Send email confirmation (implement this using your email service)
+            // You could use your existing email service here
+            try {
+              // Import the email service module if it exists
+              const { sendRegistrationConfirmationEmail } = require('../email-service');
+              
+              // Fetch necessary data for the email
+              const camp = await db.query.camps.findFirst({
+                where: eq(camps.id, campId),
+              });
+              
+              const child = await db.query.children.findFirst({
+                where: eq(children.id, childId),
+              });
+              
+              if (camp && child) {
+                // Use your existing email service to send confirmation
+                await sendRegistrationConfirmationEmail(
+                  child.parentId,
+                  childId,
+                  campId
+                );
+                console.log(`Sent payment confirmation email for registration (camp: ${campId}, child: ${childId})`);
+              }
+            } catch (emailError) {
+              // Don't fail the entire process if email sending fails
+              console.error('Error sending confirmation email:', emailError);
+            }
+            
+          } catch (error) {
+            console.error('Error updating registration payment status:', error);
+          }
         } catch (error) {
           console.error('Error processing payment:', error);
         }
