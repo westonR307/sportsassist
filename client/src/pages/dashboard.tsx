@@ -742,10 +742,14 @@ function CampsDashboard() {
   );
 }
 
+/**
+ * Main Dashboard component for all user types
+ */
 function Dashboard() {
   const { user } = useAuth();
   const [showCalendar, setShowCalendar] = React.useState(true);
 
+  // Loading state while user info is being fetched
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -758,86 +762,92 @@ function Dashboard() {
     );
   }
 
-  // All user types can see the dashboard, with appropriate permissions
-  const dashboardContent = (
-    <>
-      {/* Display the DashboardSummaryCards and DashboardCalendar only for users with organizationId */}
-      {user.organizationId ? (
-        <>
-          {/* Import directly from the components */}
-          <React.Suspense fallback={<div className="p-4 text-center">Loading summary cards...</div>}>
-            <DashboardSummaryCards />
-          </React.Suspense>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <div className="lg:col-span-2">
-              <React.Suspense fallback={<div className="p-4 text-center">Loading calendar...</div>}>
-                <DashboardCalendar />
-              </React.Suspense>
+  /**
+   * Dashboard content shared across layouts
+   */
+  const DashboardContent = () => {
+    return (
+      <>
+        {/* Display the DashboardSummaryCards and DashboardCalendar only for users with organizationId */}
+        {user.organizationId ? (
+          <>
+            {/* Import directly from the components */}
+            <React.Suspense fallback={<div className="p-4 text-center">Loading summary cards...</div>}>
+              <DashboardSummaryCards />
+            </React.Suspense>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+              <div className="lg:col-span-2">
+                <React.Suspense fallback={<div className="p-4 text-center">Loading calendar...</div>}>
+                  <DashboardCalendar />
+                </React.Suspense>
+              </div>
+              <div>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Quick Links</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                      onClick={() => {
+                        // Navigate to the camps page and trigger create camp dialog
+                        const setShowAddCampDialogFn = (window as any).setShowAddCampDialog;
+                        if (typeof setShowAddCampDialogFn === 'function') {
+                          setShowAddCampDialogFn(true);
+                        } else {
+                          // Fallback: Navigate to camps page where they can click the Create Camp button
+                          window.location.href = '/dashboard/camps';
+                        }
+                      }}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create New Camp
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                      onClick={() => window.location.href = '/dashboard/reports'}
+                    >
+                      <BarChart3 className="mr-2 h-4 w-4" />
+                      View Reports
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                      onClick={() => window.location.href = '/dashboard/team'}
+                    >
+                      <Users className="mr-2 h-4 w-4" />
+                      Manage Team
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
-            <div>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Quick Links</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start"
-                    onClick={() => {
-                      // Navigate to the camps page and trigger create camp dialog
-                      const setShowAddCampDialogFn = (window as any).setShowAddCampDialog;
-                      if (typeof setShowAddCampDialogFn === 'function') {
-                        setShowAddCampDialogFn(true);
-                      } else {
-                        // Fallback: Navigate to camps page where they can click the Create Camp button
-                        window.location.href = '/dashboard/camps';
-                      }
-                    }}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create New Camp
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start"
-                    onClick={() => window.location.href = '/dashboard/reports'}
-                  >
-                    <BarChart3 className="mr-2 h-4 w-4" />
-                    View Reports
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start"
-                    onClick={() => window.location.href = '/dashboard/team'}
-                  >
-                    <Users className="mr-2 h-4 w-4" />
-                    Manage Team
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </>
-      ) : null}
-      
-      <CampsDashboard />
-    </>
-  );
+          </>
+        ) : null}
+        
+        <CampsDashboard />
+      </>
+    );
+  };
 
-  // For camp creators and managers, use the new CreatorLayout
+  // For camp creators and managers, we use the new header navigation layout
   if (user.role === 'camp_creator' || user.role === 'manager') {
     return (
-      <CreatorLayout title="Dashboard">
-        {dashboardContent}
-      </CreatorLayout>
+      <div className="min-h-screen bg-gray-50">
+        <CreatorLayout title="Dashboard">
+          <DashboardContent />
+        </CreatorLayout>
+      </div>
     );
   }
 
-  // For all other roles, use the existing DashboardLayout
+  // For other roles, use the existing sidebar layout
   return (
     <DashboardLayout>
-      {dashboardContent}
+      <DashboardContent />
     </DashboardLayout>
   );
 }
