@@ -231,9 +231,9 @@ export default function OrganizationProfilePage() {
       console.log('Submitting organization profile data:', data);
       
       // Make a direct fetch call to avoid format issues with apiRequest
-      console.log(`Sending profile update to /api/organizations/${user.organizationId} with data:`, data);
+      console.log(`Sending profile update to /api/organizations/${user.organizationId}/profile with data:`, data);
       
-      const response = await fetch(`/api/organizations/${user.organizationId}`, {
+      const response = await fetch(`/api/organizations/${user.organizationId}/profile`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json'
