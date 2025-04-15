@@ -79,9 +79,24 @@ router.post('/create-stripe-account', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Stripe account creation failed:', error);
+    
+    // More detailed error logging for debugging
+    if (error.type === 'StripeError') {
+      console.error(`Stripe API Error Type: ${error.type}`);
+      console.error(`Stripe Error Code: ${error.code}`);
+      console.error(`Stripe Error Message: ${error.message}`);
+      console.error(`Stripe Error Raw: ${JSON.stringify(error.raw || {})}`);
+      
+      if (error.raw && error.raw.param) {
+        console.error(`Invalid parameter: ${error.raw.param}`);
+      }
+    }
+    
     return res.status(500).json({ 
       message: 'Failed to create Stripe account', 
-      error: error.message || 'Unknown error' 
+      error: error.message || 'Unknown error',
+      code: error.code || null,
+      param: error.raw?.param || null
     });
   }
 });

@@ -110,6 +110,13 @@ const StripeConnectManagement = () => {
       setProcessing(true);
 
       // Use the new Stripe Connect endpoint
+      console.log("Creating Stripe account with parameters:", {
+        email: user.email,
+        orgId: orgId,
+        refreshUrl: window.location.href, 
+        returnUrl: window.location.href
+      });
+      
       const response = await fetch(`/api/stripe/create-stripe-account`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -124,6 +131,7 @@ const StripeConnectManagement = () => {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: response.statusText }));
+        console.error("Error response from Stripe account creation:", errorData);
         throw new Error(errorData.message || errorData.error || response.statusText);
       }
       
