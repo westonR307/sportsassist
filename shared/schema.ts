@@ -213,6 +213,7 @@ export const insertCampSchema = z.object({
   type: z.enum(["one_on_one", "group", "team"]),
   visibility: z.enum(["public", "private"]).default("public"),
   waitlistEnabled: z.boolean().default(true),
+  customRegistrationEnabled: z.boolean().optional().default(false),
   minAge: z.number().or(z.string().transform(val => parseInt(String(val), 10))),
   isDeleted: z.boolean().optional().default(false),
   isCancelled: z.boolean().optional().default(false),
