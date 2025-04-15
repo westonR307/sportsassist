@@ -43,6 +43,7 @@ import { type Camp } from "@shared/schema";
 import { AddCampDialog } from "@/components/add-camp-dialog";
 import DashboardCalendar from "@/components/dashboard-calendar";
 import DashboardSummaryCards from "@/components/dashboard-summary-cards";
+import { CreatorLayout } from "@/components/creator-layout";
 
 
 // Organization interface
@@ -827,9 +828,9 @@ function Dashboard() {
   // For camp creators and managers, use the new CreatorLayout
   if (user.role === 'camp_creator' || user.role === 'manager') {
     return (
-      <DashboardLayout>
+      <CreatorLayout title="Dashboard">
         {dashboardContent}
-      </DashboardLayout>
+      </CreatorLayout>
     );
   }
 

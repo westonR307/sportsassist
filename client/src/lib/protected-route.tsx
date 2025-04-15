@@ -4,6 +4,38 @@ import { Redirect, Route } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Role } from "@shared/types";
 import { AppLayout } from "@/components/app-layout";
+import { CreatorLayout } from "@/components/creator-layout";
+
+// Helper function to determine page title based on route path
+function getPageTitleFromPath(path: string): string {
+  const pathToTitleMap: Record<string, string> = {
+    '/dashboard': 'Dashboard',
+    '/dashboard/camps': 'Camps',
+    '/dashboard/reports': 'Reports',
+    '/dashboard/team': 'Team Management',
+    '/dashboard/messages': 'Messages',
+    '/dashboard/settings': 'Account Settings',
+    '/dashboard/permissions': 'Permissions',
+    '/custom-fields': 'Custom Fields',
+    '/dashboard/organization-profile': 'Organization Profile',
+    '/dashboard/stripe-connect': 'Stripe Connect',
+    '/dashboard/subscription-plans': 'Subscription Plans',
+    '/documents': 'Document Templates',
+  };
+  
+  // Try direct lookup first
+  if (path in pathToTitleMap) {
+    return pathToTitleMap[path];
+  }
+  
+  // Check for paths with wildcards
+  if (path.startsWith('/documents/')) {
+    return 'Document Editor';
+  }
+  
+  // Default title if no match
+  return 'Dashboard';
+}
 
 interface ProtectedRouteProps {
   path: string;
@@ -88,7 +120,44 @@ export function ProtectedRoute({
             return <Component id={routeParams.id} {...routeParams} />;
           }
         } 
-        // Non-parent routes (camp_creator, platform_admin, etc.)
+        // Camp creator/manager routes
+        else if (user.role === 'camp_creator' || user.role === 'manager') {
+          // Check if this is a dashboard-type route to use CreatorLayout
+          const isCreatorDashboardRoute = path === '/dashboard' || 
+                                        path === '/dashboard/camps' || 
+                                        path === '/dashboard/reports' ||
+                                        path === '/dashboard/team' ||
+                                        path === '/dashboard/messages' ||
+                                        path === '/dashboard/settings' ||
+                                        path === '/dashboard/permissions' ||
+                                        path === '/custom-fields' ||
+                                        path === '/dashboard/organization-profile' ||
+                                        path === '/dashboard/stripe-connect' ||
+                                        path === '/dashboard/subscription-plans' ||
+                                        path === '/documents' ||
+                                        path === '/documents/*';
+          
+          if (showNavigation && isCreatorDashboardRoute) {
+            // Use the CreatorLayout for dashboard-type routes
+            const pageTitle = getPageTitleFromPath(path);
+            return (
+              <CreatorLayout title={pageTitle}>
+                <Component id={routeParams.id} {...routeParams} />
+              </CreatorLayout>
+            );
+          } else if (showNavigation) {
+            // Use AppLayout for non-dashboard routes
+            return (
+              <AppLayout showBackButton={showBackButton}>
+                <Component id={routeParams.id} {...routeParams} />
+              </AppLayout>
+            );
+          } else {
+            // No layout for routes that don't need navigation
+            return <Component id={routeParams.id} {...routeParams} />;
+          }
+        }
+        // Platform admin routes and others
         else {
           if (showNavigation) {
             return (
