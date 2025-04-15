@@ -20,6 +20,7 @@ interface User {
   username: string;
   first_name: string;
   last_name: string;
+  email: string;
 }
 
 interface Organization {
@@ -67,7 +68,7 @@ const StripeConnectManagement = () => {
 
   // Get Stripe account status
   const { data: stripeStatus, isLoading: stripeStatusLoading, refetch: refetchStripeStatus } = useQuery<StripeStatus>({
-    queryKey: ['/api/organizations', orgId, 'stripe/account-status'],
+    queryKey: ['/api/stripe/account-status', orgId],
     enabled: !!orgId,
     refetchOnWindowFocus: false,
   });
@@ -94,6 +95,27 @@ const StripeConnectManagement = () => {
       setStripeConfigError(false);
     }
   }, [stripeStatus]);
+  
+  // Check for callback from Stripe and refresh data
+  useEffect(() => {
+    // Check if we're returning from Stripe onboarding
+    const urlParams = new URLSearchParams(window.location.search);
+    const callback = urlParams.get('callback');
+    const success = urlParams.get('success');
+    
+    if (callback === 'true' || success === 'true') {
+      console.log('Detected return from Stripe, refreshing status data');
+      // We just got back from Stripe, refresh data
+      if (orgId) {
+        refetchStripeStatus();
+        refetchOrg();
+        
+        // Clean up URL params
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+      }
+    }
+  }, [orgId, refetchStripeStatus, refetchOrg]);
 
   const createStripeAccount = async () => {
     if (!orgId) return;

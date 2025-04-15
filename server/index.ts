@@ -65,6 +65,17 @@ app.use((req, res, next) => {
     
     // Register Stripe Connect routes
     app.use('/api/stripe', stripeRoutes);
+    
+    // Route specific organization endpoints for Stripe
+    app.use('/api/organizations/:orgId/stripe', (req, res, next) => {
+      const orgId = parseInt(req.params.orgId);
+      if (isNaN(orgId)) {
+        return res.status(400).json({ message: "Invalid organization ID" });
+      }
+      req.url = req.url.replace(`/organizations/${orgId}`, '');
+      stripeRoutes(req, res, next);
+    });
+    
     log("Stripe Connect routes registered");
     
     // Register Stripe Checkout routes

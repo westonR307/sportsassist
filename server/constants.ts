@@ -10,7 +10,7 @@ export const STRIPE_CONNECT = {
   RETURN_URL: '/settings/payment?success=true',
   SUCCESS_URL: '/payment/success?session_id={CHECKOUT_SESSION_ID}',
   CANCEL_URL: '/payment/cancel',
-  API_VERSION: '2025-02-24.acacia', // Make sure all Stripe implementations use the same version
+  API_VERSION: '2025-02-24.acacia' as const, // Make sure all Stripe implementations use the same version
 };
 
 // Authentication related constants
