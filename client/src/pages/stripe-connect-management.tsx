@@ -194,6 +194,38 @@ const StripeConnectManagement = () => {
       setProcessing(false);
     }
   };
+  
+  const openDashboard = async () => {
+    if (!orgId) return;
+    
+    try {
+      setProcessing(true);
+      const response = await fetch(`/api/organizations/${orgId}/stripe/dashboard-link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || response.statusText);
+      }
+      
+      const data = await response.json();
+      
+      // Open Stripe dashboard in a new tab
+      window.open(data.url, '_blank');
+    } catch (error: any) {
+      console.error("Error accessing Stripe dashboard:", error);
+      toast({
+        title: "Failed to access Stripe dashboard",
+        description: error.message || "An error occurred while creating the dashboard link.",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessing(false);
+    }
+  };
 
   const updateStripeSettings = async () => {
     if (!orgId) return;

@@ -5373,6 +5373,50 @@ export async function registerRoutes(app: Express) {
     }
   });
   
+  // Create a dashboard login link for Stripe Express
+  app.post("/api/organizations/:orgId/stripe/dashboard-link", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const orgId = parseInt(req.params.orgId);
+      
+      // Only organization owners can access Stripe dashboard
+      if (req.user.organizationId !== orgId || req.user.role !== "camp_creator") {
+        return res.status(403).json({ message: "Not authorized for this organization" });
+      }
+      
+      // Check if Stripe API key is configured
+      if (!process.env.STRIPE_SECRET_KEY) {
+        return res.status(500).json({ 
+          message: "Stripe is not properly configured. Please contact the platform administrator." 
+        });
+      }
+      
+      // Get the organization's Stripe account ID
+      const organization = await storage.getOrganization(orgId);
+      if (!organization) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+      
+      if (!organization.stripeAccountId) {
+        return res.status(400).json({ message: "Organization doesn't have a Stripe account yet" });
+      }
+      
+      // Create a login link for the Stripe Express dashboard
+      const loginLink = await createStripeDashboardLoginLink(organization.stripeAccountId);
+      
+      res.json({ url: loginLink.url });
+    } catch (error: any) {
+      console.error("Stripe dashboard link creation error:", error);
+      res.status(500).json({ 
+        message: error.message || "Failed to create dashboard link",
+        error: process.env.NODE_ENV === 'development' ? error : undefined  
+      });
+    }
+  });
+  
   // ======================
   // Subscription Plan Routes
   // ======================

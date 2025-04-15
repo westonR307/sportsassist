@@ -146,6 +146,17 @@ export const updateOrganizationStripeStatus = async (
   }
 };
 
+// Create a Stripe login link for Express dashboard
+export const createStripeDashboardLoginLink = async (accountId: string) => {
+  try {
+    const loginLink = await stripe.accounts.createLoginLink(accountId);
+    return loginLink;
+  } catch (error) {
+    console.error('Error creating Stripe dashboard login link:', error);
+    throw error;
+  }
+};
+
 // Create a checkout session for a camp registration
 export const createCheckoutSession = async (
   campId: number,
