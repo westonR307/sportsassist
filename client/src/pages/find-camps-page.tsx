@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/back-button";
 import { 
-  Search, 
+  Search,
   Filter, 
   Calendar, 
   MapPin, 
@@ -890,7 +890,7 @@ export default function FindCampsPage() {
                   <CampCard 
                     key={camp.id} 
                     camp={camp} 
-                    onRegisterClick={() => handleRegisterClick(camp.id, camp.slug)}
+                    onRegisterClick={() => handleRegisterClick(camp.id, camp`.slug)}
                     isAuthenticated={!!user}
                     onViewDetails={() => setSelectedCamp(camp)}
                   />
