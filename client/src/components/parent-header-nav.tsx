@@ -107,55 +107,59 @@ export function ParentHeaderNav() {
                 <span className="sr-only">Toggle menu</span>
               </Button>
             </DrawerTrigger>
-            <DrawerContent className="h-[80%]">
-              <div className="px-4 py-4">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="font-semibold text-lg">Sports Parent Portal</h2>
-                  <DrawerClose asChild>
-                    <Button variant="ghost" size="icon">
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </DrawerClose>
+            <DrawerContent className="h-[80%] max-h-screen">
+              <div className="flex h-full flex-col">
+                <div className="px-4 py-4 border-b">
+                  <div className="flex items-center justify-between">
+                    <h2 className="font-semibold text-lg">Sports Parent Portal</h2>
+                    <DrawerClose asChild>
+                      <Button variant="ghost" size="icon">
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </DrawerClose>
+                  </div>
                 </div>
-                <div className="space-y-3">
-                  {navItems.map((item) => (
+                <ScrollArea className="flex-1 overflow-y-auto">
+                  <div className="px-4 py-3 space-y-3">
+                    {navItems.map((item) => (
+                      <Button
+                        key={item.path}
+                        variant={location === item.path ? "default" : "ghost"}
+                        size="sm"
+                        className="flex w-full justify-start gap-2 py-6"
+                        onClick={() => {
+                          navigate(item.path);
+                          setMobileMenuOpen(false);
+                        }}
+                      >
+                        {item.icon}
+                        <span>{item.name}</span>
+                      </Button>
+                    ))}
                     <Button
-                      key={item.path}
-                      variant={location === item.path ? "default" : "ghost"}
+                      variant="ghost"
                       size="sm"
                       className="flex w-full justify-start gap-2 py-6"
                       onClick={() => {
-                        navigate(item.path);
+                        navigate("/dashboard/settings");
                         setMobileMenuOpen(false);
                       }}
                     >
-                      {item.icon}
-                      <span>{item.name}</span>
+                      <Settings className="h-4 w-4" />
+                      <span>Account Settings</span>
                     </Button>
-                  ))}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="flex w-full justify-start gap-2 py-6"
-                    onClick={() => {
-                      navigate("/dashboard/settings");
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    <Settings className="h-4 w-4" />
-                    <span>Account Settings</span>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="flex w-full justify-start gap-2 py-6"
-                    onClick={handleLogout}
-                    disabled={logoutMutation.isPending}
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>Logout</span>
-                  </Button>
-                </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex w-full justify-start gap-2 py-6"
+                      onClick={handleLogout}
+                      disabled={logoutMutation.isPending}
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span>Logout</span>
+                    </Button>
+                  </div>
+                </ScrollArea>
               </div>
             </DrawerContent>
           </Drawer>
