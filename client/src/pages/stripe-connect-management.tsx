@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, ExternalLink } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "../lib/apiRequest";
 
@@ -360,6 +360,25 @@ const StripeConnectManagement = () => {
                       <p>{stripeStatus.payoutsEnabled ? "Yes" : "No"}</p>
                     </div>
                   </div>
+                  
+                  {/* Add dashboard access button */}
+                  {stripeStatus.detailsSubmitted && (
+                    <div className="mt-6">
+                      <h3 className="text-lg font-medium mb-2">Stripe Dashboard Access</h3>
+                      <p className="text-gray-600 mb-4">
+                        Access your Stripe Express dashboard to manage payments, view balance, and update account information.
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        className="mt-2" 
+                        onClick={openDashboard}
+                        disabled={processing}
+                      >
+                        {processing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4 mr-2" />}
+                        Open Stripe Dashboard
+                      </Button>
+                    </div>
+                  )}
                   
                   {!stripeStatus.detailsSubmitted && (
                     <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">

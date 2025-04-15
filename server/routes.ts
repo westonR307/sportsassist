@@ -272,7 +272,8 @@ import {
   createStripeConnectedAccount,
   retrieveStripeAccount,
   updateOrganizationStripeStatus,
-  createCheckoutSession
+  createCheckoutSession,
+  createStripeDashboardLoginLink
 } from './utils/stripe';
 
 export async function registerRoutes(app: Express) {
