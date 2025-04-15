@@ -100,9 +100,9 @@ const MenubarContent = React.forwardRef<
         )}
         {...props}
       >
-        <ScrollArea className="h-full max-h-[80vh]">
-          <div className="p-1">{props.children}</div>
-        </ScrollArea>
+        <div className="max-h-[80vh] overflow-y-auto p-1">
+          {props.children}
+        </div>
       </MenubarPrimitive.Content>
     </MenubarPrimitive.Portal>
   )
