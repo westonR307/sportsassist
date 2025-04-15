@@ -100,7 +100,7 @@ const MenubarContent = React.forwardRef<
         )}
         {...props}
       >
-        <div className="max-h-[80vh] overflow-y-auto p-1">
+        <div className="max-h-[calc(100vh-4rem)] overflow-y-auto overscroll-contain py-1 px-1">
           {props.children}
         </div>
       </MenubarPrimitive.Content>
