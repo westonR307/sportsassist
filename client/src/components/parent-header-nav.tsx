@@ -24,6 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { NotificationBell } from "@/components/notification-bell";
 import {
   Drawer,
@@ -174,7 +175,8 @@ export function ParentHeaderNav() {
                 <ChevronDown className="h-4 w-4 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="max-h-[80vh]">
+  <ScrollArea className="h-full">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate("/dashboard/settings")}>
@@ -186,7 +188,8 @@ export function ParentHeaderNav() {
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Logout</span>
               </DropdownMenuItem>
-            </DropdownMenuContent>
+            </ScrollArea>
+</DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
