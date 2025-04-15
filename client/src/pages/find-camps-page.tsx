@@ -933,9 +933,9 @@ export default function FindCampsPage() {
                   <div className="flex items-center text-sm text-muted-foreground mt-1">
                     <span>Organized by: </span>
                     <Link 
-                      to={`/organization/${selectedCamp.organization.slug || selectedCamp.organization.name.toLowerCase().replace(/\s+/g, '-')}`}
+                      to={`/organization/${selectedCamp.organization?.slug || selectedCamp.organization?.name?.toLowerCase().replace(/\s+/g, '-')}`}
                       className="ml-1 font-medium text-primary hover:underline"
-                      aria-label={`View ${selectedCamp.organization.name}'s profile`}
+                      aria-label={`View ${selectedCamp.organization?.name}'s profile`}
                     >
                       {selectedCamp.organization.name}
                     </Link>
