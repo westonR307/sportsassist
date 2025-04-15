@@ -1,7 +1,7 @@
 // Constants used throughout the application
 
-// Default platform fee percentage (15%)
-export const PLATFORM_FEE_PERCENTAGE = 15;
+// Default platform fee percentage (10%)
+export const PLATFORM_FEE_PERCENTAGE = 10;
 
 // Stripe Connect configuration
 export const STRIPE_CONNECT = {

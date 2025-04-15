@@ -3,8 +3,8 @@ import { db } from '../db';
 import { organizations } from '../../shared/tables';
 import { eq } from 'drizzle-orm';
 
-// Default platform fee percentage (15%)
-const PLATFORM_FEE_PERCENTAGE = 15;
+// Default platform fee percentage (10%)
+const PLATFORM_FEE_PERCENTAGE = 10;
 
 // Check if Stripe API key is configured
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY || '';
