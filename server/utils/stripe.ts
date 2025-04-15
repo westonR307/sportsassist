@@ -96,11 +96,9 @@ export const createStripeConnectedAccount = async (email: string) => {
         mcc: '8299', // Educational Services for sports camps
         url: 'https://sportsassist.io',
         product_description: 'Sports camp registration and management platform',
-      },
-      // Set the responsibilities according to your business model
-      tos_acceptance: {
-        service_agreement: 'recipient', // The connected account is responsible for disputes
       }
+      // For US platforms creating US accounts, do not include service_agreement parameter
+      // This follows Stripe's requirements: https://stripe.com/docs/connect/cross-border-payouts
     });
     
     console.log(`Successfully created Stripe account with ID: ${account.id}`);
