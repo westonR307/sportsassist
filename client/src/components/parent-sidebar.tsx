@@ -85,10 +85,10 @@ export function ParentSidebar() {
           ${sidebarOpen ? "w-64" : "w-0 lg:w-16"} 
           lg:translate-x-0
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-          flex flex-col
+          overflow-hidden
         `}
       >
-        <div className="p-4 border-b whitespace-nowrap relative shrink-0">
+        <div className="p-4 border-b whitespace-nowrap relative">
           <div className="flex justify-between items-center">
             <h2 className={`font-semibold text-lg ${!sidebarOpen && "lg:opacity-0"}`}>
               Sports Parent Portal
@@ -110,7 +110,7 @@ export function ParentSidebar() {
           )}
         </div>
         
-        <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
+        <nav className="p-4 space-y-2">
           {/* Dashboard Link */}
           <button
             onClick={() => {
@@ -239,7 +239,7 @@ export function ParentSidebar() {
         </nav>
         
         {/* User info and logout at bottom */}
-        <div className="p-4 border-t shrink-0 mt-auto">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
           <div className="flex items-center justify-between">
             {sidebarOpen && (
               <div className="flex items-center gap-2">

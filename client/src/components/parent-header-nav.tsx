@@ -107,59 +107,55 @@ export function ParentHeaderNav() {
                 <span className="sr-only">Toggle menu</span>
               </Button>
             </DrawerTrigger>
-            <DrawerContent className="h-[80%] max-h-screen">
-              <div className="flex h-full flex-col">
-                <div className="px-4 py-4 border-b">
-                  <div className="flex items-center justify-between">
-                    <h2 className="font-semibold text-lg">Sports Parent Portal</h2>
-                    <DrawerClose asChild>
-                      <Button variant="ghost" size="icon">
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </DrawerClose>
-                  </div>
+            <DrawerContent className="h-[80%]">
+              <div className="px-4 py-4">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="font-semibold text-lg">Sports Parent Portal</h2>
+                  <DrawerClose asChild>
+                    <Button variant="ghost" size="icon">
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </DrawerClose>
                 </div>
-                <ScrollArea className="flex-1 overflow-y-auto">
-                  <div className="px-4 py-3 space-y-3">
-                    {navItems.map((item) => (
-                      <Button
-                        key={item.path}
-                        variant={location === item.path ? "default" : "ghost"}
-                        size="sm"
-                        className="flex w-full justify-start gap-2 py-6"
-                        onClick={() => {
-                          navigate(item.path);
-                          setMobileMenuOpen(false);
-                        }}
-                      >
-                        {item.icon}
-                        <span>{item.name}</span>
-                      </Button>
-                    ))}
+                <div className="space-y-3">
+                  {navItems.map((item) => (
                     <Button
-                      variant="ghost"
+                      key={item.path}
+                      variant={location === item.path ? "default" : "ghost"}
                       size="sm"
                       className="flex w-full justify-start gap-2 py-6"
                       onClick={() => {
-                        navigate("/dashboard/settings");
+                        navigate(item.path);
                         setMobileMenuOpen(false);
                       }}
                     >
-                      <Settings className="h-4 w-4" />
-                      <span>Account Settings</span>
+                      {item.icon}
+                      <span>{item.name}</span>
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="flex w-full justify-start gap-2 py-6"
-                      onClick={handleLogout}
-                      disabled={logoutMutation.isPending}
-                    >
-                      <LogOut className="h-4 w-4" />
-                      <span>Logout</span>
-                    </Button>
-                  </div>
-                </ScrollArea>
+                  ))}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex w-full justify-start gap-2 py-6"
+                    onClick={() => {
+                      navigate("/dashboard/settings");
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span>Account Settings</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex w-full justify-start gap-2 py-6"
+                    onClick={handleLogout}
+                    disabled={logoutMutation.isPending}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Logout</span>
+                  </Button>
+                </div>
               </div>
             </DrawerContent>
           </Drawer>
@@ -179,7 +175,8 @@ export function ParentHeaderNav() {
                 <ChevronDown className="h-4 w-4 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="max-h-[50vh] overflow-auto">
+            <DropdownMenuContent align="end" className="max-h-[80vh]">
+  <ScrollArea className="h-full">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate("/dashboard/settings")}>
@@ -191,7 +188,8 @@ export function ParentHeaderNav() {
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Logout</span>
               </DropdownMenuItem>
-            </DropdownMenuContent>
+            </ScrollArea>
+</DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
