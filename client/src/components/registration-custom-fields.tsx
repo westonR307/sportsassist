@@ -69,27 +69,28 @@ export function RegistrationCustomFields({ campId, onFieldsChange }: Registratio
                 {field.required && <span className="text-red-500">*</span>}
               </Label>
               
-              {field.type === 'text' && (
+              {field.fieldType === 'short_text' && (
                 <Input
                   id={`field-${field.id}`}
-                  placeholder={field.placeholder || ''}
+                  placeholder={field.name || field.label}
                   value={(responses[field.id] as string) || ''}
                   onChange={(e) => handleFieldChange(field.id, e.target.value)}
                   required={field.required}
                 />
               )}
               
-              {field.type === 'textarea' && (
+              {field.fieldType === 'long_text' && (
                 <Textarea
                   id={`field-${field.id}`}
-                  placeholder={field.placeholder || ''}
+                  placeholder={field.name || field.label}
                   value={(responses[field.id] as string) || ''}
                   onChange={(e) => handleFieldChange(field.id, e.target.value)}
                   required={field.required}
                 />
               )}
               
-              {field.type === 'checkbox' && (
+              {/* This isn't in the schema, but keeping for potential future use */}
+              {field.fieldType === 'checkbox' && (
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id={`field-${field.id}`}
@@ -101,27 +102,110 @@ export function RegistrationCustomFields({ campId, onFieldsChange }: Registratio
                     htmlFor={`field-${field.id}`}
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
-                    {field.placeholder || 'Yes'}
+                    {field.name || 'Yes'}
                   </label>
                 </div>
               )}
               
-              {field.type === 'select' && field.options && (
+              {(field.fieldType === 'dropdown' || field.fieldType === 'single_select') && field.options && (
                 <Select
                   value={(responses[field.id] as string) || ''}
                   onValueChange={(value) => handleFieldChange(field.id, value)}
                 >
                   <SelectTrigger id={`field-${field.id}`}>
-                    <SelectValue placeholder={field.placeholder || 'Select an option'} />
+                    <SelectValue placeholder={`Select ${field.label}`} />
                   </SelectTrigger>
                   <SelectContent>
-                    {field.options.split(',').map((option, index) => (
-                      <SelectItem key={index} value={option.trim()}>
-                        {option.trim()}
-                      </SelectItem>
-                    ))}
+                    {Array.isArray(field.options) ? 
+                      field.options.map((option, index) => (
+                        <SelectItem key={index} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))
+                      : 
+                      // Handle if options is stored as a string
+                      typeof field.options === 'string' ? 
+                        field.options.split(',').map((option, index) => (
+                          <SelectItem key={index} value={option.trim()}>
+                            {option.trim()}
+                          </SelectItem>
+                        ))
+                        : null
+                    }
                   </SelectContent>
                 </Select>
+              )}
+              
+              {field.fieldType === 'multi_select' && field.options && (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Select all that apply:</p>
+                  <div className="space-y-2">
+                    {Array.isArray(field.options) ? (
+                      field.options.map((option, index) => (
+                        <div key={index} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`field-${field.id}-option-${index}`}
+                            checked={Array.isArray(responses[field.id]) && (responses[field.id] as string[]).includes(option)}
+                            onCheckedChange={(checked) => {
+                              const currentValues = Array.isArray(responses[field.id]) 
+                                ? [...responses[field.id] as string[]] 
+                                : [];
+                              
+                              if (checked) {
+                                // Add the option if checked
+                                handleFieldChange(field.id, [...currentValues, option]);
+                              } else {
+                                // Remove the option if unchecked
+                                handleFieldChange(
+                                  field.id, 
+                                  currentValues.filter(val => val !== option)
+                                );
+                              }
+                            }}
+                          />
+                          <label
+                            htmlFor={`field-${field.id}-option-${index}`}
+                            className="text-sm font-medium leading-none"
+                          >
+                            {option}
+                          </label>
+                        </div>
+                      ))
+                    ) : typeof field.options === 'string' ? (
+                      field.options.split(',').map((option, index) => {
+                        const trimmedOption = option.trim();
+                        return (
+                          <div key={index} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`field-${field.id}-option-${index}`}
+                              checked={Array.isArray(responses[field.id]) && (responses[field.id] as string[]).includes(trimmedOption)}
+                              onCheckedChange={(checked) => {
+                                const currentValues = Array.isArray(responses[field.id]) 
+                                  ? [...responses[field.id] as string[]] 
+                                  : [];
+                                
+                                if (checked) {
+                                  handleFieldChange(field.id, [...currentValues, trimmedOption]);
+                                } else {
+                                  handleFieldChange(
+                                    field.id, 
+                                    currentValues.filter(val => val !== trimmedOption)
+                                  );
+                                }
+                              }}
+                            />
+                            <label
+                              htmlFor={`field-${field.id}-option-${index}`}
+                              className="text-sm font-medium leading-none"
+                            >
+                              {trimmedOption}
+                            </label>
+                          </div>
+                        );
+                      })
+                    ) : null}
+                  </div>
+                </div>
               )}
               
               {field.description && (
