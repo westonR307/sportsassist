@@ -110,6 +110,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ParentCampMessagesTab } from "@/components/parent-camp-messages-tab"; // Import the new component
 import { ViewAthleteDialog } from "@/components/view-athlete-dialog";
+import { RegistrationCustomFields } from "@/components/registration-custom-fields";
 import { ExtendedChild } from "@shared/child-types";
 
 
@@ -493,6 +494,16 @@ function CampViewPage(props: { id?: string }) {
               This camp is currently at capacity. By joining the waitlist, you'll be notified if a spot becomes available.
             </AlertDescription>
           </Alert>
+        )}
+        
+        {/* Custom registration fields if enabled for this camp */}
+        {camp?.customRegistrationEnabled && selectedChildId && !isWaitlist && (
+          <div className="mt-4">
+            <RegistrationCustomFields 
+              campId={camp.id} 
+              onFieldsChange={setCustomFieldResponses} 
+            />
+          </div>
         )}
         
         {/* Slot selection for availability-based camps */}
