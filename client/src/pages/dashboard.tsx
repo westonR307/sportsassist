@@ -833,15 +833,10 @@ function Dashboard() {
     );
   };
 
-  // For camp creators and managers, we use the new header navigation layout
+  // For camp creators and managers, just render the content without any layout
+  // The layout will be provided by the ProtectedRoute component
   if (user.role === 'camp_creator' || user.role === 'manager') {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <CreatorLayout title="Dashboard">
-          <DashboardContent />
-        </CreatorLayout>
-      </div>
-    );
+    return <DashboardContent />;
   }
 
   // For other roles, use the existing sidebar layout
