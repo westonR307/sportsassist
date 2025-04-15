@@ -69,6 +69,15 @@ const StripeConnectManagement = () => {
   // Get Stripe account status
   const { data: stripeStatus, isLoading: stripeStatusLoading, refetch: refetchStripeStatus } = useQuery<StripeStatus>({
     queryKey: ['/api/stripe/account-status', orgId],
+    queryFn: async () => {
+      if (!orgId) throw new Error('Organization ID is required');
+      const res = await fetch(`/api/stripe/account-status/${orgId}`);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'Failed to fetch Stripe account status');
+      }
+      return res.json();
+    },
     enabled: !!orgId,
     refetchOnWindowFocus: false,
   });
