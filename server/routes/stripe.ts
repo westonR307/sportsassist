@@ -5,6 +5,7 @@ import Stripe from 'stripe';
 import { db } from '../db';
 import { organizations } from '../../shared/tables';
 import { eq } from 'drizzle-orm';
+import { STRIPE_CONNECT } from '../constants';
 
 const router = express.Router();
 
@@ -15,7 +16,7 @@ if (!stripeSecretKey) {
 }
 
 const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: '2025-02-24.acacia', // Updated to latest API version
+  apiVersion: STRIPE_CONNECT.API_VERSION, // Use API version from constants file
 });
 
 router.post('/create-stripe-account', async (req: Request, res: Response) => {
@@ -50,6 +51,7 @@ router.post('/create-stripe-account', async (req: Request, res: Response) => {
       email,
       capabilities: {
         transfers: { requested: true },
+        card_payments: { requested: true },
       },
     });
 

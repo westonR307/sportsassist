@@ -2,9 +2,7 @@ import Stripe from 'stripe';
 import { db } from '../db';
 import { organizations } from '../../shared/tables';
 import { eq } from 'drizzle-orm';
-
-// Default platform fee percentage (10%)
-const PLATFORM_FEE_PERCENTAGE = 10;
+import { PLATFORM_FEE_PERCENTAGE, STRIPE_CONNECT } from '../constants';
 
 // Check if Stripe API key is configured
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY || '';
@@ -14,7 +12,7 @@ if (!stripeSecretKey) {
 
 // Initialize Stripe with your secret key
 export const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: '2025-02-24.acacia', // Updated to latest API version
+  apiVersion: STRIPE_CONNECT.API_VERSION, // Use API version from constants
 });
 
 // Calculate application fee amount based on base price
@@ -75,9 +73,10 @@ export const createStripeConnectedAccount = async (email: string) => {
     
     // Create the Connect account with simplified parameters as recommended
     const account = await stripe.accounts.create({
-      type: 'express',
+      type: STRIPE_CONNECT.ACCOUNT_TYPE,
       capabilities: {
         transfers: { requested: true },
+        card_payments: { requested: true }, // Add card_payments capability
       },
       country: 'US',
       business_type: 'individual', // or 'company' if applicable
