@@ -1,8 +1,8 @@
 // Stripe utility functions for client-side usage
 import { loadStripe } from '@stripe/stripe-js';
 
-// Define the Stripe public key
-const STRIPE_PUBLISHABLE_KEY = 'pk_live_51QxbiOG0DcxZfNIWBeeZYt5dN6M0oDLUqzyMtAK6Kfgg8AC66RhUYnQ09a9L8PYNbgAsmMJfxyVZkOOokfGu82ma00WC3bXm0O';
+// Define the Stripe public key - this should be your publishable key
+const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLIC_KEY || 'pk_live_51QxbiOG0DcxZfNIWBeeZYt5dN6M0oDLUqzyMtAK6Kfgg8AC66RhUYnQ09a9L8PYNbgAsmMJfxyVZkOOokfGu82ma00WC3bXm0O';
 
 // Initialize the Stripe promise
 export const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
