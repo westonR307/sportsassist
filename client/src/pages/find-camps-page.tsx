@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/back-button";
 import { 
-  Search,
+  Search, 
   Filter, 
   Calendar, 
   MapPin, 
@@ -890,7 +890,7 @@ export default function FindCampsPage() {
                   <CampCard 
                     key={camp.id} 
                     camp={camp} 
-                    onRegisterClick={() => handleRegisterClick(camp.id, camp`.slug)}
+                    onRegisterClick={() => handleRegisterClick(camp.id, camp.slug)}
                     isAuthenticated={!!user}
                     onViewDetails={() => setSelectedCamp(camp)}
                   />
@@ -933,9 +933,9 @@ export default function FindCampsPage() {
                   <div className="flex items-center text-sm text-muted-foreground mt-1">
                     <span>Organized by: </span>
                     <Link 
-                      to={`/organization/${selectedCamp.organization?.slug || selectedCamp.organization?.name?.toLowerCase().replace(/\s+/g, '-') || ''}`}
+                      to={`/organization/${selectedCamp.organization.slug || selectedCamp.organization.name.toLowerCase().replace(/\s+/g, '-')}`}
                       className="ml-1 font-medium text-primary hover:underline"
-                      aria-label={`View ${selectedCamp.organization?.name}'s profile`}
+                      aria-label={`View ${selectedCamp.organization.name}'s profile`}
                     >
                       {selectedCamp.organization.name}
                     </Link>
