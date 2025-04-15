@@ -273,8 +273,8 @@ const StripeConnectManagement = () => {
       setProcessing(true);
       console.log(`Creating account link for organization ${orgId}`);
       
-      // Also fix the URL path here to match the server routes
-      const response = await fetch(`/api/stripe/organizations/${orgId}/create-account-link`, {
+      // Using the correct URL format for organization-specific Stripe operations
+      const response = await fetch(`/api/organizations/${orgId}/stripe/create-account-link`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -314,8 +314,8 @@ const StripeConnectManagement = () => {
       setProcessing(true);
       console.log(`Creating dashboard link for organization ${orgId}`);
       
-      // The URL path was incorrect - should be /api/stripe/organizations
-      const response = await fetch(`/api/stripe/organizations/${orgId}/dashboard-link`, {
+      // Using the correct URL format for organization-specific Stripe operations
+      const response = await fetch(`/api/organizations/${orgId}/stripe/dashboard-link`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include'
@@ -351,8 +351,8 @@ const StripeConnectManagement = () => {
       setProcessing(true);
       console.log(`Updating stripe settings for organization ${orgId}`);
       
-      // Fix the URL path to match the server routes
-      const response = await fetch(`/api/stripe/organizations/${orgId}/settings`, {
+      // Using the correct URL format for organization-specific Stripe operations
+      const response = await fetch(`/api/organizations/${orgId}/stripe/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
