@@ -5,6 +5,7 @@ import { registerDebugRoutes } from "./debug-routes";
 import registerAvailabilityRoutes from "./availability-routes";
 import registerNotificationRoutes from "./notification-routes";
 import stripeRoutes from "./routes/stripe";
+import checkoutRoutes from "./routes/checkout";
 import cors from "cors";
 
 const app = express();
@@ -65,6 +66,10 @@ app.use((req, res, next) => {
     // Register Stripe Connect routes
     app.use('/api/stripe', stripeRoutes);
     log("Stripe Connect routes registered");
+    
+    // Register Stripe Checkout routes
+    app.use('/api/checkout', checkoutRoutes);
+    log("Stripe Checkout routes registered");
 
     // Set up error handling after routes
     app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {

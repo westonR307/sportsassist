@@ -9,14 +9,25 @@ import { STRIPE_CONNECT } from '../constants';
 
 const router = express.Router();
 
-// Get the Stripe secret key from environment variables
+// Get the Stripe keys from environment variables
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY || '';
+const stripePublicKey = process.env.STRIPE_PUBLIC_KEY || '';
+
 if (!stripeSecretKey) {
   console.error('STRIPE_SECRET_KEY is not set in the environment variables');
 }
 
+if (!stripePublicKey) {
+  console.error('STRIPE_PUBLIC_KEY is not set in the environment variables');
+}
+
 const stripe = new Stripe(stripeSecretKey, {
   apiVersion: STRIPE_CONNECT.API_VERSION, // Use API version from constants file
+});
+
+// Add a new endpoint to expose the public key to the client
+router.get('/public-key', (req: Request, res: Response) => {
+  res.json({ publicKey: stripePublicKey });
 });
 
 router.post('/create-stripe-account', async (req: Request, res: Response) => {
