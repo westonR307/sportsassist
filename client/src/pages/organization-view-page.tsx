@@ -228,61 +228,61 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
       </div>
 
       {/* Main content area */}
-      <div className="flex-1 bg-background py-8">
+      <div className="flex-1 py-8" style={{ background: heroBgStyle.background || (organization.bannerImageUrl ? 'rgba(0,0,0,0.9)' : 'var(--primary)') }}>
         <div className="container mx-auto px-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-            <TabsList className="grid w-full max-w-xl mx-auto grid-cols-4">
-              <TabsTrigger value="about" className="flex gap-2 items-center justify-center">
+            <TabsList className="grid w-full max-w-xl mx-auto grid-cols-4 bg-white/20 text-white">
+              <TabsTrigger value="about" className="flex gap-2 items-center justify-center data-[state=active]:bg-white/30 data-[state=active]:text-white">
                 <Info className="h-4 w-4" />
                 <span className="hidden sm:inline">About</span>
               </TabsTrigger>
-              <TabsTrigger value="camps" className="flex gap-2 items-center justify-center">
+              <TabsTrigger value="camps" className="flex gap-2 items-center justify-center data-[state=active]:bg-white/30 data-[state=active]:text-white">
                 <Calendar className="h-4 w-4" />
                 <span className="hidden sm:inline">Camps</span>
               </TabsTrigger>
-              <TabsTrigger value="features" className="flex gap-2 items-center justify-center">
+              <TabsTrigger value="features" className="flex gap-2 items-center justify-center data-[state=active]:bg-white/30 data-[state=active]:text-white">
                 <Star className="h-4 w-4" />
                 <span className="hidden sm:inline">Features</span>
               </TabsTrigger>
-              <TabsTrigger value="contact" className="flex gap-2 items-center justify-center">
+              <TabsTrigger value="contact" className="flex gap-2 items-center justify-center data-[state=active]:bg-white/30 data-[state=active]:text-white">
                 <MessageCircle className="h-4 w-4" />
                 <span className="hidden sm:inline">Contact</span>
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="about" className="mx-auto max-w-4xl">
-              <Card>
+              <Card className="bg-white/20 border-white/10 backdrop-blur-sm text-white">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Info className="h-5 w-5" />
                     About {organization.displayName || organization.name}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="prose prose-sm max-w-none">
+                <CardContent className="prose prose-sm max-w-none prose-invert">
                   {organization.missionStatement && (
-                    <div className="mb-6 p-4 bg-muted/50 rounded-lg border border-muted">
-                      <h3 className="text-xl font-bold mb-2" style={{ color: organization.primaryColor || undefined }}>
+                    <div className="mb-6 p-4 bg-white/10 rounded-lg border border-white/20">
+                      <h3 className="text-xl font-bold mb-2 text-white">
                         Our Mission
                       </h3>
-                      <p className="italic">{organization.missionStatement}</p>
+                      <p className="italic text-white/90">{organization.missionStatement}</p>
                     </div>
                   )}
 
                   {organization.aboutText ? (
                     <div>
                       {organization.aboutText.split('\n').map((paragraph, i) => (
-                        <p key={i}>{paragraph}</p>
+                        <p key={i} className="text-white/90">{paragraph}</p>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-muted-foreground">No detailed information has been provided by this organization.</p>
+                    <p className="text-white/70">No detailed information has been provided by this organization.</p>
                   )}
                 </CardContent>
               </Card>
             </TabsContent>
 
             <TabsContent value="camps" className="mx-auto max-w-6xl">
-              <Card>
+              <Card className="bg-white/20 border-white/10 backdrop-blur-sm text-white">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Calendar className="h-5 w-5" />
@@ -293,7 +293,7 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
                   {isCampsLoading && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {[1, 2, 3].map(i => (
-                        <Skeleton key={i} className="h-64 w-full" />
+                        <Skeleton key={i} className="h-64 w-full bg-white/10" />
                       ))}
                     </div>
                   )}
@@ -311,9 +311,9 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
                     </div>
                   ) : !isCampsLoading && (
                     <div className="text-center py-16">
-                      <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                      <h3 className="text-xl font-semibold mb-2">No Camps Available</h3>
-                      <p className="text-muted-foreground max-w-md mx-auto">
+                      <Calendar className="h-12 w-12 mx-auto text-white/60 mb-4" />
+                      <h3 className="text-xl font-semibold mb-2 text-white">No Camps Available</h3>
+                      <p className="text-white/70 max-w-md mx-auto">
                         This organization doesn't have any active camps at the moment.
                         Check back later or contact them directly for more information.
                       </p>
@@ -324,7 +324,7 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
             </TabsContent>
 
             <TabsContent value="features" className="mx-auto max-w-4xl">
-              <Card>
+              <Card className="bg-white/20 border-white/10 backdrop-blur-sm text-white">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Star className="h-5 w-5" />
@@ -336,13 +336,12 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
                     <div className="grid gap-8 md:grid-cols-3">
                       {/* Feature 1 */}
                       <div className="flex items-start">
-                        <div className="rounded-full p-2 mr-3" 
-                             style={{ background: `${organization.primaryColor}20` || 'var(--primary/20)' }}>
-                          <Trophy className="h-5 w-5" style={{ color: organization.primaryColor || undefined }} />
+                        <div className="rounded-full p-2 mr-3 bg-white/20"> 
+                          <Trophy className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <h3 className="font-semibold">{organization.feature1Title || "Expert Coaching"}</h3>
-                          <p className="text-sm text-muted-foreground">
+                          <h3 className="font-semibold text-white">{organization.feature1Title || "Expert Coaching"}</h3>
+                          <p className="text-sm text-white/80">
                             {organization.feature1Description || "Learn from the best in the field"}
                           </p>
                         </div>
@@ -350,13 +349,12 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
 
                       {/* Feature 2 */}
                       <div className="flex items-start">
-                        <div className="rounded-full p-2 mr-3" 
-                             style={{ background: `${organization.primaryColor}20` || 'var(--primary/20)' }}>
-                          <User className="h-5 w-5" style={{ color: organization.primaryColor || undefined }} />
+                        <div className="rounded-full p-2 mr-3 bg-white/20">
+                          <User className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <h3 className="font-semibold">{organization.feature2Title || "Personal Development"}</h3>
-                          <p className="text-sm text-muted-foreground">
+                          <h3 className="font-semibold text-white">{organization.feature2Title || "Personal Development"}</h3>
+                          <p className="text-sm text-white/80">
                             {organization.feature2Description || "Focus on character building and life skills"}
                           </p>
                         </div>
@@ -364,13 +362,12 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
 
                       {/* Feature 3 */}
                       <div className="flex items-start">
-                        <div className="rounded-full p-2 mr-3" 
-                             style={{ background: `${organization.primaryColor}20` || 'var(--primary/20)' }}>
-                          <Users className="h-5 w-5" style={{ color: organization.primaryColor || undefined }} />
+                        <div className="rounded-full p-2 mr-3 bg-white/20">
+                          <Users className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <h3 className="font-semibold">{organization.feature3Title || "Team Environment"}</h3>
-                          <p className="text-sm text-muted-foreground">
+                          <h3 className="font-semibold text-white">{organization.feature3Title || "Team Environment"}</h3>
+                          <p className="text-sm text-white/80">
                             {organization.feature3Description || "Build lasting friendships and connections"}
                           </p>
                         </div>
@@ -378,7 +375,7 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
                     </div>
                   ) : (
                     <div className="text-center py-8">
-                      <p className="text-muted-foreground">This organization hasn't provided any feature details yet.</p>
+                      <p className="text-white/70">This organization hasn't provided any feature details yet.</p>
                     </div>
                   )}
                 </CardContent>
@@ -386,7 +383,7 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
             </TabsContent>
 
             <TabsContent value="contact" className="mx-auto max-w-3xl">
-              <Card>
+              <Card className="bg-white/20 border-white/10 backdrop-blur-sm text-white">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <MessageCircle className="h-5 w-5" />
@@ -398,14 +395,14 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
                     <div className="space-y-4">
                       {organization.contactEmail && (
                         <div className="flex items-center gap-3">
-                          <div className="rounded-full p-2 bg-primary/10">
-                            <Mail className="h-5 w-5 text-primary" />
+                          <div className="rounded-full p-2 bg-white/20">
+                            <Mail className="h-5 w-5 text-white" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium">Email</p>
+                            <p className="text-sm font-medium text-white">Email</p>
                             <a 
                               href={`mailto:${organization.contactEmail}`} 
-                              className="text-sm text-primary hover:underline"
+                              className="text-sm text-white/90 hover:text-white hover:underline"
                             >
                               {organization.contactEmail}
                             </a>
@@ -415,16 +412,16 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
 
                       {organization.websiteUrl && (
                         <div className="flex items-center gap-3">
-                          <div className="rounded-full p-2 bg-primary/10">
-                            <Globe className="h-5 w-5 text-primary" />
+                          <div className="rounded-full p-2 bg-white/20">
+                            <Globe className="h-5 w-5 text-white" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium">Website</p>
+                            <p className="text-sm font-medium text-white">Website</p>
                             <a 
                               href={organization.websiteUrl} 
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-sm text-primary hover:underline"
+                              className="text-sm text-white/90 hover:text-white hover:underline"
                             >
                               {organization.websiteUrl.replace(/^https?:\/\/(www\.)?/, '')}
                             </a>
@@ -436,23 +433,23 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
                     <div className="space-y-4">
                       {organization.socialLinks && (
                         <div>
-                          <p className="text-sm font-medium">Share Profile</p>
+                          <p className="text-sm font-medium text-white">Share Profile</p>
                           <div className="flex gap-2 mt-2">
                             {organization.socialLinks?.facebook && (
                               <a href={organization.socialLinks.facebook} target="_blank" rel="noopener noreferrer"
-                                 className="text-facebook hover:text-facebook/80 transition-colors">
+                                 className="text-white hover:text-white/80 transition-colors">
                                 <Facebook className="h-4 w-4" />
                               </a>
                             )}
                             {organization.socialLinks?.twitter && (
                               <a href={organization.socialLinks.twitter} target="_blank" rel="noopener noreferrer"
-                                 className="text-twitter hover:text-twitter/80 transition-colors">
+                                 className="text-white hover:text-white/80 transition-colors">
                                 <Twitter className="h-4 w-4" />
                               </a>
                             )}
                             {organization.socialLinks?.linkedin && (
                               <a href={organization.socialLinks.linkedin} target="_blank" rel="noopener noreferrer"
-                                 className="text-linkedin hover:text-linkedin/80 transition-colors">
+                                 className="text-white hover:text-white/80 transition-colors">
                                 <Linkedin className="h-4 w-4" />
                               </a>
                             )}
