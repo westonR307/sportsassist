@@ -146,8 +146,18 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
       };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Removed back button since AppLayout already provides it */}
+    <div className="min-h-screen flex flex-col" style={orgStyles}>
+      {/* Back Button since we don't have a layout now */}
+      <div className="fixed top-0 left-0 m-4 z-50">
+        <Button
+          variant="outline"
+          className="flex items-center gap-2"
+          onClick={() => window.history.back()}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span className="hidden sm:inline">Back</span>
+        </Button>
+      </div>
 
       {/* Hero section with organization banner */}
       <div 

@@ -13,9 +13,10 @@ import {
   Facebook, 
   Twitter, 
   Linkedin, 
-  Instagram 
+  Instagram,
+  ArrowLeft as ArrowLeftIcon,
+  Loader2
 } from 'lucide-react';
-import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'wouter';
@@ -109,8 +110,26 @@ export default function OrganizationPublicProfile({ slug }: OrganizationPublicPa
   const primaryColor = organization.primaryColor || '#3730a3';
   const secondaryColor = organization.secondaryColor || '#1e3a8a';
   
+  // Define a style object with the theme colors
+  const orgStyles = {
+    '--org-primary': primaryColor,
+    '--org-secondary': secondaryColor,
+  } as React.CSSProperties;
+
   return (
-    <AppLayout>
+    <div className="min-h-screen flex flex-col" style={orgStyles}>
+      {/* Back Button for navigation */}
+      <div className="fixed top-0 left-0 m-4 z-50">
+        <Button
+          variant="outline"
+          className="flex items-center gap-2"
+          onClick={() => window.history.back()}
+        >
+          <ArrowLeftIcon className="h-4 w-4" />
+          <span className="hidden sm:inline">Back</span>
+        </Button>
+      </div>
+    
       <div className="container mx-auto p-4 md:p-6">
         {/* Banner and Logo Section */}
         <div 
@@ -350,6 +369,6 @@ export default function OrganizationPublicProfile({ slug }: OrganizationPublicPa
           </Tabs>
         </div>
       </div>
-    </AppLayout>
+    </div>
   );
 }
