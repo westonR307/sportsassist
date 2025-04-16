@@ -1,31 +1,36 @@
-import React from "react";
-import { useAuth } from "@/hooks/use-auth";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { FlipCard } from "@/components/ui/flip-card";
-import { CampScheduleSummary } from "@/components/camp-schedule";
-import {
-  Plus,
-  Loader2,
-  ShieldAlert,
-  MapPin,
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/use-auth';
+import { useRoute, useLocation as useWouterLocation } from 'wouter';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { 
+  Plus, 
+  Loader2, 
+  ShieldAlert, 
+  Calendar, 
+  Users, 
+  CalendarOff, 
+  ListChecks, 
+  RefreshCw, 
+  Trash2, 
+  Edit,
   Clock,
-  Users2,
-  CalendarRange,
-  Tag,
-  CalendarDays,
-  RefreshCw,
-} from "lucide-react";
-import { GiBaseballBat } from "react-icons/gi";
-import { useLocation as useWouterLocation, useRoute } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import { type Camp } from "@shared/schema";
-import { AddCampDialog } from "@/components/add-camp-dialog";
-import { DashboardLayout } from "@/pages/dashboard";
-import { CampsFilter, type CampFilterValues } from "@/components/camps-filter";
+  Map,
+  User,
+  ChevronDown
+} from 'lucide-react';
+import { GiBaseballBat } from 'react-icons/gi';
+import { Camp } from '@shared/schema';
+import { Badge } from '@/components/ui/badge';
+import { FlipCard } from '@/components/ui/flip-card';
+import { AddCampDialog } from '@/components/add-camp-dialog';
+import { CampsFilter, CampFilterValues } from '@/components/camps-filter';
+import { CampScheduleSummary } from '@/components/camp-schedule';
+import { formatCurrency } from '@/lib/utils';
+import { SkillLevelBadge } from '@/components/skill-level-badge';
+import { format } from 'date-fns';
 
-// Extended camp type to include permissions from the server
 interface CampWithPermissions extends Camp {
   permissions?: {
     canManage: boolean;
@@ -73,7 +78,7 @@ export default function CampsPage() {
   // Build the query URL with filter parameters
   const queryUrl = React.useMemo(() => {
     const url = new URL("/api/camps", window.location.origin);
-
+    
     if (filters.search) url.searchParams.append('search', filters.search);
     if (filters.status) url.searchParams.append('status', filters.status);
     if (filters.type) url.searchParams.append('type', filters.type);
@@ -92,7 +97,7 @@ export default function CampsPage() {
   // Check if user is a camp creator or manager who can create camps
   const canCreateCamps = user && ['camp_creator', 'manager'].includes(user.role);
 
-  const campsContent = (
+  return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
@@ -146,232 +151,141 @@ export default function CampsPage() {
           {camps.map((camp, index) => {
             // Check if user can manage this specific camp
             const canManageCamp = camp.permissions?.canManage || false;
-
+            
             // Calculate date ranges and format for better display
             const now = new Date();
             const startDate = new Date(camp.startDate);
             const endDate = new Date(camp.endDate);
             const regStartDate = new Date(camp.registrationStartDate);
             const regEndDate = new Date(camp.registrationEndDate);
-
-            // Calculate if registration is open, upcoming, or past
-            const regStatus = now < regStartDate 
-              ? "upcoming" 
-              : now > regEndDate 
-                ? "closed" 
-                : "open";
-
-            // Calculate if camp is active, upcoming, past, or cancelled
-            const campStatus = camp.isCancelled 
-              ? "cancelled"
-              : now < startDate 
-                ? "upcoming" 
-                : now > endDate 
-                  ? "completed" 
-                  : "active";
-
-            // Format duration in days
-            const campDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-
-            // Format a more user-friendly display of the camp type
-            const formatCampType = (type: string) => {
-              const types: Record<string, string> = {
-                'one_on_one': 'One-on-One',
-                'group': 'Group',
-                'team': 'Team'
-              };
-              return types[type] || type;
-            };
-
-            // We'll create two cards - one for the front and one for the back of the flip card
+            
+            // Check camp status
+            const isActive = startDate <= now && endDate >= now;
+            const isUpcoming = startDate > now;
+            const isPast = endDate < now;
+            const isRegOpen = regStartDate <= now && regEndDate >= now;
+            
+            // Determine the status badge text and color
+            let statusBadge;
+            if (camp.deleted) {
+              statusBadge = <Badge variant="destructive">Deleted</Badge>;
+            } else if (isActive) {
+              statusBadge = <Badge variant="default">Active</Badge>;
+            } else if (isUpcoming) {
+              statusBadge = <Badge variant="secondary">Upcoming</Badge>;
+            } else if (isPast) {
+              statusBadge = <Badge variant="outline">Past</Badge>;
+            }
+            
+            // Registration status badge
+            const registrationBadge = isRegOpen ? (
+              <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-200">
+                Registration Open
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-muted-foreground">
+                Registration {regStartDate > now ? 'Opens Soon' : 'Closed'}
+              </Badge>
+            );
+            
+            // Create the card front
             const frontCard = (
-              <Card className="h-full border-0 shadow-none">
-                <div className={`h-2 w-full ${
-                  campStatus === 'active' ? 'bg-green-500' : 
-                  campStatus === 'upcoming' ? 'bg-blue-500' : 
-                  campStatus === 'cancelled' ? 'bg-red-500' : 
-                  'bg-gray-400'
-                }`} />
-
-                <CardHeader className="p-3 pb-1">
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-base truncate">{camp.name}</CardTitle>
-                      <div className="flex gap-1">
-                        {camp.isCancelled && (
-                          <Badge className="h-5 text-xs bg-red-100 text-red-800 hover:bg-red-200">
-                            Cancelled
-                          </Badge>
-                        )}
-                        {canManageCamp ? (
-                          <Badge className="h-5 text-xs bg-green-100 text-green-800 hover:bg-green-200">
-                            Manager
-                          </Badge>
-                        ) : null}
-                      </div>
-                    </div>
-                    <CardDescription className="line-clamp-1 text-xs">
-                      {camp.description}
-                    </CardDescription>
+              <Card className="h-full" data-camp-id={camp.id}>
+                <CardContent className="p-3 h-full flex flex-col">
+                  <div className="mb-2 flex justify-between items-start">
+                    <h3 className="font-semibold line-clamp-2 flex-1">{camp.name}</h3>
+                    {statusBadge}
                   </div>
-                </CardHeader>
-
-                <CardContent className="p-3 pt-0 space-y-2 text-xs">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1">
-                      <CalendarRange className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span>{campDays} day{campDays !== 1 ? 's' : ''}</span>
+                  
+                  <div className="mt-1 space-y-1 text-sm flex-1">
+                    <div className="flex items-center text-muted-foreground">
+                      <Calendar className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />
+                      <span>
+                        {format(startDate, 'MMM d')} - {format(endDate, 'MMM d, yyyy')}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Users2 className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span>{camp.capacity}</span>
+                    
+                    <div className="flex items-center text-muted-foreground">
+                      <Map className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />
+                      <span className="truncate">{camp.location}</span>
+                    </div>
+                    
+                    <div className="flex items-center text-muted-foreground">
+                      <Users className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />
+                      <span>{camp.registeredCount || 0}/{camp.capacity}</span>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-1">
-                    <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <span className="truncate">{camp.city}, {camp.state}</span>
+                  
+                  <div className="mt-2 pt-2 border-t flex justify-between items-center">
+                    <SkillLevelBadge level={camp.skillLevel} />
+                    <span className="font-bold">{formatCurrency(camp.price)}</span>
                   </div>
-
-                  <div className="flex items-center gap-1">
-                    <CalendarDays className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <span className="truncate text-muted-foreground">Click to see schedule</span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <Badge 
-                      className={
-                        camp.isCancelled
-                          ? 'bg-red-100 text-red-800 hover:bg-red-200 h-5 text-xs'
-                          : regStatus === 'open'
-                            ? 'bg-green-100 text-green-800 hover:bg-green-200 h-5 text-xs'
-                            : regStatus === 'upcoming'
-                              ? 'bg-blue-100 text-blue-800 hover:bg-blue-200 h-5 text-xs'
-                              : 'bg-gray-100 text-gray-800 hover:bg-gray-200 h-5 text-xs'
-                      }
+                  
+                  <div className="mt-2">
+                    <Button 
+                      className="w-full text-xs h-8"
+                      onClick={() => navigate(camp.slug 
+                        ? `/dashboard/camps/slug/${camp.slug}` 
+                        : `/dashboard/camps/${camp.id}`)}
                     >
-                      {camp.isCancelled 
-                        ? 'Cancelled' 
-                        : regStatus === 'open' 
-                          ? 'Registration Open' 
-                          : regStatus === 'upcoming' 
-                            ? 'Opening Soon' 
-                            : 'Closed'
-                      }
-                    </Badge>
-                    <span className="text-xs">${camp.price}</span>
+                      View Details
+                    </Button>
                   </div>
                 </CardContent>
-
-                <div className="absolute bottom-2 right-2 text-muted-foreground text-xs">
-                  <RefreshCw className="h-3.5 w-3.5 animate-pulse" />
-                </div>
               </Card>
             );
-
+            
+            // Create the card back with more detailed information
             const backCard = (
-              <Card className="h-full border-0 shadow-none overflow-y-auto">
-                <div className={`h-2 w-full ${
-                  campStatus === 'active' ? 'bg-green-500' : 
-                  campStatus === 'upcoming' ? 'bg-blue-500' : 
-                  campStatus === 'cancelled' ? 'bg-red-500' : 
-                  'bg-gray-400'
-                }`} />
-
-                <CardHeader className="p-3 pb-1">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-base">{camp.name}</CardTitle>
-                    <div className="flex gap-1">
-                      {camp.isCancelled && (
-                        <Badge className="h-5 text-xs bg-red-100 text-red-800 hover:bg-red-200">
-                          Cancelled
-                        </Badge>
-                      )}
-                      <Badge 
-                        variant={camp.visibility === 'public' ? 'default' : 'outline'}
-                        className="capitalize h-5 text-xs"
-                      >
-                        {camp.visibility}
-                      </Badge>
+              <Card className="h-full" data-camp-id={camp.id}>
+                <CardContent className="p-3 flex flex-col h-full">
+                  <div className="mb-1">
+                    <h3 className="font-semibold mb-1">{camp.name}</h3>
+                    
+                    <div className="flex flex-wrap gap-1 mt-1 mb-2">
+                      {statusBadge}
+                      {registrationBadge}
                     </div>
                   </div>
-                </CardHeader>
-
-                <CardContent className="p-3 text-xs space-y-3">
-                  <p className="text-muted-foreground">{camp.description}</p>
-
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1.5 font-medium">
-                      <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span>Camp Period</span>
-                    </div>
-                    <div className="ml-4 flex justify-between">
-                      <span>{startDate.toLocaleDateString()}</span>
-                      <span>to</span>
-                      <span>{endDate.toLocaleDateString()}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1.5 font-medium">
-                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span>Registration</span>
-                    </div>
-                    <div className="ml-4 flex justify-between">
-                      <span>{regStartDate.toLocaleDateString()}</span>
-                      <span>to</span>
-                      <span>{regEndDate.toLocaleDateString()}</span>
-                    </div>
-                  </div>
-
-                  {/* Camp Schedule Summary */}
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1.5 font-medium">
-                      <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span>Schedule</span>
-                    </div>
-                    <div className="ml-4 text-xs">
-                      <div className="flex items-center gap-2">
+                  
+                  <div className="text-xs space-y-1 flex-1 overflow-hidden">
+                    {/* Show camp description if available */}
+                    {camp.description && (
+                      <p className="text-muted-foreground overflow-hidden line-clamp-2 mb-2">
+                        {camp.description}
+                      </p>
+                    )}
+                    
+                    {/* Show upcoming sessions if available */}
+                    {camp.schedules && camp.schedules.length > 0 && (
+                      <div className="mt-1">
+                        <p className="font-medium text-xs mb-0.5">Sessions:</p>
                         <CampScheduleSummary 
-                          schedules={camp.schedules || []} 
+                          camp={camp} 
+                          maxSessions={2} 
+                          className="text-muted-foreground" 
                         />
                       </div>
-                    </div>
+                    )}
                   </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1.5">
-                        <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="font-medium">Location</span>
-                      </div>
-                      <div className="ml-4 text-muted-foreground">
-                        <div className="truncate">{camp.streetAddress}</div>
-                        <div>{camp.city}, {camp.state}</div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1.5">
-                        <Tag className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="font-medium">Details</span>
-                      </div>
-                      <div className="ml-4 space-y-0.5 text-muted-foreground">
-                        <div className="flex justify-between">
-                          <span>Type:</span>
-                          <span>{formatCampType(camp.type)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Capacity:</span>
-                          <span>{camp.capacity}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Price:</span>
-                          <span>${camp.price}</span>
-                        </div>
-                      </div>
-                    </div>
-
+                  
+                  {/* Action buttons */}
+                  <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t">
+                    {/* Edit Camp Button (only for camps user can manage) */}
+                    {canManageCamp && (
+                      <Button 
+                        variant="outline" 
+                        className="text-xs h-7"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/dashboard/camps/${camp.id}/edit`);
+                        }}
+                      >
+                        <Edit className="h-3 w-3 mr-1" />
+                        Edit
+                      </Button>
+                    )}
+                    
                     {/* View Camp Button */}
                     <div className="col-span-2 mt-1">
                       <Button 
@@ -408,13 +322,5 @@ export default function CampsPage() {
         onOpenChange={setShowAddCampDialog}
       />
     </div>
-  );
-
-  return (
-    <DashboardLayout>
-      <main className="w-full">
-        {campsContent}
-      </main>
-    </DashboardLayout>
   );
 }

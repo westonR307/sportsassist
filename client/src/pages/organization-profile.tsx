@@ -591,7 +591,6 @@ export default function OrganizationProfilePage() {
   }
 
   return (
-    <CreatorLayout>
       <div className="container mx-auto p-6 max-w-5xl">
         <div className="flex justify-between items-start">
           <div>
@@ -1295,6 +1294,5 @@ export default function OrganizationProfilePage() {
           </div>
         </div>
       </div>
-    </CreatorLayout>
   );
 }
