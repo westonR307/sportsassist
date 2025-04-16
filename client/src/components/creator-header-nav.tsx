@@ -87,7 +87,10 @@ export function CreatorHeaderNav() {
       <div className="container flex h-16 items-center">
         {/* Logo/Brand */}
         <div className="mr-4 flex items-center">
-          <span className="text-lg font-bold">SportsAssist.io</span>
+          <Link to="/dashboard" className="flex items-center gap-2">
+            <GiBaseballBat className="h-6 w-6 text-primary" />
+            <span className="text-lg font-bold">SportsAssist.io</span>
+          </Link>
         </div>
 
         {/* Desktop Navigation */}
@@ -118,7 +121,10 @@ export function CreatorHeaderNav() {
             <DrawerContent className="h-[90%]">
               <div className="px-4 py-4">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="font-semibold text-lg">Camp Creator Portal</h2>
+                  <div className="flex items-center gap-2">
+                    <GiBaseballBat className="h-5 w-5 text-primary" />
+                    <h2 className="font-semibold text-lg">SportsAssist.io</h2>
+                  </div>
                   <DrawerClose asChild>
                     <Button variant="ghost" size="icon">
                       <X className="h-4 w-4" />
