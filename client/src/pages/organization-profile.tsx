@@ -92,6 +92,7 @@ interface Organization {
   logoUrl?: string | null;
   primaryColor?: string | null;
   secondaryColor?: string | null;
+  buttonColor?: string | null;
   aboutText?: string | null;
   contactEmail?: string | null;
   websiteUrl?: string | null;
@@ -377,6 +378,7 @@ export default function OrganizationProfilePage() {
     if (data.description !== original.description) changed.description = data.description;
     if (data.primaryColor !== original.primaryColor) changed.primaryColor = data.primaryColor;
     if (data.secondaryColor !== original.secondaryColor) changed.secondaryColor = data.secondaryColor;
+    if (data.buttonColor !== original.buttonColor) changed.buttonColor = data.buttonColor;
     if (data.aboutText !== original.aboutText) changed.aboutText = data.aboutText;
     if (data.contactEmail !== original.contactEmail) changed.contactEmail = data.contactEmail;
     if (data.websiteUrl !== original.websiteUrl) changed.websiteUrl = data.websiteUrl;
@@ -860,6 +862,30 @@ export default function OrganizationProfilePage() {
                           </div>
                           <p className="text-xs text-gray-500">
                             Accent color for your organization's branding (HEX format: #RRGGBB).
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="buttonColorInput">Button Color</Label>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="h-10 w-10 rounded border"
+                              style={{ backgroundColor: form.watch('buttonColor') || form.watch('primaryColor') || '#3730a3' }}
+                            ></div>
+                            <Input 
+                              id="buttonColorInput"
+                              type="text" 
+                              value={form.watch('buttonColor') || ''}
+                              onChange={(e) => form.setValue('buttonColor', e.target.value)}
+                              placeholder={form.watch('primaryColor') || '#3730a3'}
+                              maxLength={7}
+                              className="w-32"
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            Custom color for buttons (HEX format: #RRGGBB). Leave empty to use your primary color.
                           </p>
                         </div>
                       </div>
