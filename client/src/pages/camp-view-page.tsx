@@ -63,36 +63,58 @@ function CampViewPage(props: CampViewPageProps) {
     ? `/api/camps/slug/${paramValue}` 
     : `/api/camps/${paramValue}`;
 
-  // Fetch camp data
-  const { isLoading, isError, error } = useQuery({
+  // Fetch camp data - use TanStack Query v5 format with proper typing
+  const { 
+    isLoading,
+    isError, 
+    error,
+    data: campData
+  } = useQuery({
     queryKey: [apiEndpoint],
-    enabled: !!paramValue,
-    onSuccess: (data) => {
-      if (data) {
-        setCamp(data);
-        setHasPermission(data.permissions?.canManage || false);
-      }
-    },
-    onError: (err) => {
-      console.error("Error fetching camp data:", err);
-    }
+    enabled: !!paramValue
   });
 
-  // Fetch registrations
+  // Process camp data when it changes
   useEffect(() => {
-    if (paramValue) {
-      const registrationsEndpoint = isSlugRoute 
-        ? `/api/camps/slug/${paramValue}/registrations` 
-        : `/api/camps/${paramValue}/registrations`;
-
-      fetch(registrationsEndpoint)
-        .then(res => res.json())
-        .then(data => {
-          setRegistrations(data.registrations || []);
-        })
-        .catch(err => console.error("Failed to fetch registrations", err));
+    if (campData) {
+      console.log("Camp data received:", campData);
+      setCamp(campData);
+      
+      // Handle permissions safely
+      if (typeof campData === 'object' && campData !== null && 'permissions' in campData) {
+        const permissions = (campData as any).permissions;
+        setHasPermission(permissions?.canManage || false);
+      } else {
+        setHasPermission(false);
+      }
     }
-  }, [paramValue, isSlugRoute]);
+  }, [campData]);
+
+  // Construct registrations endpoint
+  const registrationsEndpoint = isSlugRoute 
+    ? `/api/camps/slug/${paramValue}/registrations` 
+    : `/api/camps/${paramValue}/registrations`;
+    
+  // Fetch registrations with useQuery
+  const { data: registrationsData } = useQuery({
+    queryKey: [registrationsEndpoint],
+    enabled: !!paramValue
+  });
+  
+  // Process registrations data when it changes
+  useEffect(() => {
+    if (registrationsData) {
+      console.log("Registrations data received:", registrationsData);
+      
+      // Handle the registrations safely
+      if (typeof registrationsData === 'object' && registrationsData !== null) {
+        const regs = (registrationsData as any).registrations;
+        setRegistrations(Array.isArray(regs) ? regs : []);
+      } else {
+        setRegistrations([]);
+      }
+    }
+  }, [registrationsData]);
 
   // Loading state
   if (isLoading) {
