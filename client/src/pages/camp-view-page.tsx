@@ -9,10 +9,17 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 
-function CampViewPage() {
+interface CampViewPageProps {
+  id?: string;
+  slug?: string;
+}
+
+function CampViewPage(props: CampViewPageProps) {
   const params = useParams();
   const [location] = useLocation();
   const { user } = useAuth();
+  
+  console.log("CampViewPage - Props:", props);
 
   const [isParent, setIsParent] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
@@ -27,9 +34,29 @@ function CampViewPage() {
     }
   }, [user]);
 
-  // Extract the correct parameter (id or slug) based on the URL pattern
-  const isSlugRoute = location.includes('/slug/');
-  const paramValue = isSlugRoute ? params.slug : params.id;
+  // Use props first if available, otherwise try to extract from URL path
+  // Check if props have the id or slug
+  let paramValue = props.id || props.slug;
+  const isSlugRoute = props.slug || location.includes('/slug/');
+  
+  // If we don't have props, try to extract from URL path as fallback
+  if (!paramValue) {
+    // Manual URL parsing as a fallback since useParams() appears to be empty
+    const urlParts = location.split('/');
+    const slugIndex = urlParts.indexOf('slug');
+    
+    if (slugIndex !== -1 && slugIndex + 1 < urlParts.length) {
+      // This is a slug route, get the slug
+      paramValue = urlParts[slugIndex + 1];
+      console.log("Extracted slug from URL:", paramValue);
+    } else {
+      // This is probably an ID route, get the last part of the URL
+      paramValue = urlParts[urlParts.length - 1];
+      console.log("Extracted ID from URL:", paramValue);
+    }
+  }
+  
+  console.log("Final param value:", paramValue);
 
   // Construct the proper API endpoint based on whether we're using a slug or ID
   const apiEndpoint = isSlugRoute 
