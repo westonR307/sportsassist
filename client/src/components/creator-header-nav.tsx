@@ -46,6 +46,29 @@ export function CreatorHeaderNav() {
   const { user, logoutMutation } = useAuth();
   const [location, navigate] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // Function to prevent default behavior for touch events to fix scrolling issues
+  const handleScroll = (e: React.TouchEvent | React.MouseEvent) => {
+    e.stopPropagation();
+    // Don't call preventDefault here as it would prevent scrolling
+  };
+  
+  // Effect to handle menu closing on touch outside
+  React.useEffect(() => {
+    // Only add handlers when either menu is open
+    const preventClosing = (e: TouchEvent) => {
+      // Prevent touch events from closing dropdown
+      e.stopPropagation();
+    };
+    
+    if (mobileMenuOpen) {
+      document.addEventListener('touchmove', preventClosing, { passive: false });
+      
+      return () => {
+        document.removeEventListener('touchmove', preventClosing);
+      };
+    }
+  }, [mobileMenuOpen]);
 
   const initials = user?.first_name && user?.last_name
     ? `${user.first_name[0]}${user.last_name[0]}`
@@ -157,7 +180,7 @@ export function CreatorHeaderNav() {
                 <span className="sr-only">Toggle menu</span>
               </Button>
             </DrawerTrigger>
-            <DrawerContent className="h-[90%]">
+            <DrawerContent className="h-[90%]" onTouchMove={(e) => e.stopPropagation()}>
               <div className="px-4 py-4">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-2">
@@ -180,7 +203,12 @@ export function CreatorHeaderNav() {
                     </Button>
                   </DrawerClose>
                 </div>
-                <ScrollArea className="h-[calc(100vh-90px)]">
+                <ScrollArea 
+                  className="h-[calc(100vh-90px)]" 
+                  onMouseDown={handleScroll} 
+                  onTouchStart={handleScroll}
+                  onTouchMove={(e) => e.stopPropagation()}
+                >
                   <div className="space-y-3 pr-4">
                     {navItems.map((item) => (
                       <Button
@@ -331,10 +359,21 @@ export function CreatorHeaderNav() {
                 <ChevronDown className="h-4 w-4 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56" sideOffset={5} collisionPadding={10}>
+            <DropdownMenuContent 
+              align="end" 
+              className="w-56" 
+              sideOffset={5} 
+              collisionPadding={10}
+              forceMount
+            >
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <ScrollArea className="max-h-[300px]">
+              <ScrollArea 
+                className="max-h-[300px]" 
+                onMouseDown={handleScroll} 
+                onTouchStart={handleScroll}
+                onTouchMove={(e) => e.stopPropagation()}
+              >
                 <DropdownMenuGroup>
                   <DropdownMenuItem onClick={() => navigate("/dashboard/settings")}>
                     <User className="mr-2 h-4 w-4" />
