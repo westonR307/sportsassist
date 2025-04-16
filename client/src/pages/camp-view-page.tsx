@@ -859,7 +859,7 @@ function CampViewPage(props: { id?: string }) {
                 {camp.isVirtual ? (
                   <>Virtual Camp</>
                 ) : (
-                  <>{camp.city}, {camp.state}</>
+                  <>{camp.city && camp.state ? `${camp.city}, ${camp.state}` : "Location not specified"}</>
                 )}
               </p>
             </div>
@@ -1083,16 +1083,21 @@ function CampViewPage(props: { id?: string }) {
                       <h3 className="font-medium">Location</h3>
                       <p className="text-muted-foreground">
                         {camp.isVirtual ? (
-                          <>
-                            Virtual Camp
+                          <div className="space-y-1">
+                            <span>Virtual Camp</span>
                             {camp.virtualMeetingUrl && (
-                              <span className="block text-sm text-blue-500 hover:text-blue-600">
-                                <a href={camp.virtualMeetingUrl} target="_blank" rel="noopener noreferrer">
-                                  Join Meeting
+                              <div className="text-sm">
+                                <a 
+                                  href={camp.virtualMeetingUrl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-blue-500 hover:text-blue-600 inline-flex items-center"
+                                >
+                                  Join Meeting Link
                                 </a>
-                              </span>
+                              </div>
                             )}
-                          </>
+                          </div>
                         ) : (
                           camp.streetAddress ? (
                             <>
