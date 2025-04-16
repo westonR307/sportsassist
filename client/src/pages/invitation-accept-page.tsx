@@ -36,8 +36,11 @@ const acceptInvitationSchema = z.object({
 
 type AcceptInvitationData = z.infer<typeof acceptInvitationSchema>;
 
-export default function InvitationAcceptPage() {
-  const { token } = useParams();
+interface InvitationAcceptPageProps {
+  token: string;
+}
+
+export default function InvitationAcceptPage({ token }: InvitationAcceptPageProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { loginMutation } = useAuth();

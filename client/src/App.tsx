@@ -232,9 +232,9 @@ function Router() {
       <ProtectedRoute path="/documents/:id" component={DocumentViewPage} />
       <ProtectedRoute path="/documents/:id/edit" component={DocumentEditPage} />
       <Route path="/sign/:token">
-        {(params) => (
+        {({token}) => (
           <SimpleLayout showBackButton={true}>
-            <SignaturePage {...params} />
+            <SignaturePage token={token} />
           </SimpleLayout>
         )}
       </Route>

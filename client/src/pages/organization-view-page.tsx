@@ -59,8 +59,11 @@ interface Organization {
   feature3Description: string | null;
 }
 
-export default function OrganizationViewPage() {
-  const { slugOrName } = useParams();
+interface OrganizationViewPageProps {
+  slugOrName: string;
+}
+
+export default function OrganizationViewPage({ slugOrName }: OrganizationViewPageProps) {
   const [activeTab, setActiveTab] = useState('about');
 
   // Fetch organization by slug or name

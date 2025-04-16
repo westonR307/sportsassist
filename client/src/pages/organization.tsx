@@ -60,8 +60,11 @@ interface Camp {
   slug?: string;
 }
 
-export default function OrganizationPublicProfile() {
-  const { slug } = useParams<{ slug: string }>();
+interface OrganizationPublicPageProps {
+  slug: string;
+}
+
+export default function OrganizationPublicProfile({ slug }: OrganizationPublicPageProps) {
   const [activeTab, setActiveTab] = React.useState('about');
   
   // Fetch organization data
