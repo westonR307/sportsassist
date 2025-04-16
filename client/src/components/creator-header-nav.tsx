@@ -46,6 +46,7 @@ export function CreatorHeaderNav() {
   const { user, logoutMutation } = useAuth();
   const [location, navigate] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
   
   // Function to prevent default behavior for touch events to fix scrolling issues
   const handleScroll = (e: React.TouchEvent | React.MouseEvent) => {
@@ -57,15 +58,21 @@ export function CreatorHeaderNav() {
   React.useEffect(() => {
     // Only add handlers when either menu is open
     const preventClosing = (e: TouchEvent) => {
-      // Prevent touch events from closing dropdown
-      e.stopPropagation();
+      // Check if the target is within a scroll area
+      const target = e.target as HTMLElement;
+      if (target.closest('.scroll-area') || target.closest('[data-radix-scroll-area-viewport]')) {
+        // Prevent touch events from closing dropdown only in scroll areas
+        e.stopPropagation();
+      }
     };
     
     if (mobileMenuOpen) {
       document.addEventListener('touchmove', preventClosing, { passive: false });
+      document.addEventListener('touchstart', preventClosing, { passive: false });
       
       return () => {
         document.removeEventListener('touchmove', preventClosing);
+        document.removeEventListener('touchstart', preventClosing);
       };
     }
   }, [mobileMenuOpen]);
@@ -204,10 +211,20 @@ export function CreatorHeaderNav() {
                   </DrawerClose>
                 </div>
                 <ScrollArea 
-                  className="h-[calc(100vh-90px)]" 
+                  className="h-[calc(100vh-90px)] scroll-area" 
                   onMouseDown={handleScroll} 
-                  onTouchStart={handleScroll}
-                  onTouchMove={(e) => e.stopPropagation()}
+                  onTouchStart={(e) => {
+                    handleScroll(e);
+                    setIsScrolling(true);
+                  }}
+                  onTouchMove={(e) => {
+                    e.stopPropagation();
+                    setIsScrolling(true);
+                  }}
+                  onTouchEnd={() => {
+                    // Small delay to ensure the click handler doesn't fire immediately
+                    setTimeout(() => setIsScrolling(false), 100);
+                  }}
                 >
                   <div className="space-y-3 pr-4">
                     {navItems.map((item) => (
@@ -217,8 +234,10 @@ export function CreatorHeaderNav() {
                         size="sm"
                         className="flex w-full justify-start gap-2 py-6"
                         onClick={() => {
-                          navigate(item.path);
-                          setMobileMenuOpen(false);
+                          if (!isScrolling) {
+                            navigate(item.path);
+                            setMobileMenuOpen(false);
+                          }
                         }}
                       >
                         {item.icon}
@@ -235,8 +254,10 @@ export function CreatorHeaderNav() {
                         size="sm"
                         className="flex w-full justify-start gap-2 py-6"
                         onClick={() => {
-                          navigate("/dashboard/settings");
-                          setMobileMenuOpen(false);
+                          if (!isScrolling) {
+                            navigate("/dashboard/settings");
+                            setMobileMenuOpen(false);
+                          }
                         }}
                       >
                         <User className="h-4 w-4" />
@@ -249,8 +270,10 @@ export function CreatorHeaderNav() {
                           size="sm"
                           className="flex w-full justify-start gap-2 py-6"
                           onClick={() => {
-                            navigate("/dashboard/permissions");
-                            setMobileMenuOpen(false);
+                            if (!isScrolling) {
+                              navigate("/dashboard/permissions");
+                              setMobileMenuOpen(false);
+                            }
                           }}
                         >
                           <ShieldCheck className="h-4 w-4" />
@@ -263,8 +286,10 @@ export function CreatorHeaderNav() {
                         size="sm"
                         className="flex w-full justify-start gap-2 py-6"
                         onClick={() => {
-                          navigate("/custom-fields");
-                          setMobileMenuOpen(false);
+                          if (!isScrolling) {
+                            navigate("/custom-fields");
+                            setMobileMenuOpen(false);
+                          }
                         }}
                       >
                         <FileText className="h-4 w-4" />
@@ -369,10 +394,20 @@ export function CreatorHeaderNav() {
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <ScrollArea 
-                className="max-h-[300px]" 
+                className="max-h-[300px] scroll-area" 
                 onMouseDown={handleScroll} 
-                onTouchStart={handleScroll}
-                onTouchMove={(e) => e.stopPropagation()}
+                onTouchStart={(e) => {
+                  handleScroll(e);
+                  setIsScrolling(true);
+                }}
+                onTouchMove={(e) => {
+                  e.stopPropagation();
+                  setIsScrolling(true);
+                }}
+                onTouchEnd={() => {
+                  // Small delay to ensure the click handler doesn't fire immediately
+                  setTimeout(() => setIsScrolling(false), 100);
+                }}
               >
                 <DropdownMenuGroup>
                   <DropdownMenuItem onClick={() => navigate("/dashboard/settings")}>
