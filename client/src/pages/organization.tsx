@@ -112,8 +112,11 @@ export default function OrganizationPublicProfile({ slug }: OrganizationPublicPa
   
   // Define a style object with the theme colors
   const orgStyles = {
-    '--org-primary': primaryColor,
-    '--org-secondary': secondaryColor,
+    '--primary': primaryColor,
+    '--primary-foreground': '#ffffff',
+    '--secondary': secondaryColor,
+    '--border': primaryColor,
+    '--ring': primaryColor,
   } as React.CSSProperties;
 
   return (

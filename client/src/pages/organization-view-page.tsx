@@ -8,7 +8,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
-  MapPin, Calendar, ArrowLeft, Building, Users, Mail, 
+  MapPin, Calendar, ArrowLeft as ArrowLeftIcon, Building, Users, Mail, 
   Globe, Phone, Instagram, Facebook, Twitter, Linkedin,
   MapPinned, Clock, Award, Star, User, CalendarRange,
   MessageCircle, Share2, Info, ChevronRight, Zap, Trophy
@@ -130,8 +130,11 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
     '--banner-height': '300px',
     '--header-height': '120px',
     '--header-padding': '30px',
-    '--org-primary': organization.primaryColor || 'hsl(var(--primary))',
-    '--org-secondary': organization.secondaryColor || 'hsl(var(--secondary))',
+    '--primary': organization.primaryColor || 'hsl(var(--primary))',
+    '--primary-foreground': '#ffffff',
+    '--secondary': organization.secondaryColor || 'hsl(var(--secondary))',
+    '--border': organization.primaryColor || 'hsl(var(--primary))',
+    '--ring': organization.primaryColor || 'hsl(var(--primary))',
   } as React.CSSProperties;
 
   // Hero background style with or without banner
@@ -154,7 +157,7 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
           className="flex items-center gap-2"
           onClick={() => window.history.back()}
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeftIcon className="h-4 w-4" />
           <span className="hidden sm:inline">Back</span>
         </Button>
       </div>
