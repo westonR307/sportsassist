@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { DashboardLayout } from "./dashboard";
-import { AlertTriangle, CheckCircle, Share2, Edit, Trash2, Copy, Loader2 } from "lucide-react";
+import { AlertTriangle, CheckCircle, Share2, Edit, Trash2, Copy, Loader2, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -13,15 +13,11 @@ function CampViewPage() {
   const params = useParams();
   const [location] = useLocation();
   const { user } = useAuth();
-  
-  console.log("CampViewPage - Params:", JSON.stringify(params, null, 2));
-  console.log("CampViewPage - location:", location);
-  console.log("Full route params:", params);
-  
+
   const [isParent, setIsParent] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
   const [hasPermission, setHasPermission] = useState(false);
-  const [camp, setCamp] = useState({});
+  const [camp, setCamp] = useState<any>({});
   const [registrations, setRegistrations] = useState([]);
 
   // Check if user is a parent
@@ -31,62 +27,23 @@ function CampViewPage() {
     }
   }, [user]);
 
-  // Manual approach to extract route parameters
-  const urlSegments = location.split('/');
-  console.log("URL segments:", urlSegments);
-  
-  // Determine if this is a slug route and extract the appropriate parameter
+  // Extract the correct parameter (id or slug) based on the URL pattern
   const isSlugRoute = location.includes('/slug/');
-  
-  // Get the parameter from the URL path directly
-  let paramValue;
-  
-  if (isSlugRoute) {
-    // For slug routes, get the segment after '/slug/'
-    const slugIndex = urlSegments.findIndex(segment => segment === 'slug');
-    if (slugIndex !== -1 && slugIndex + 1 < urlSegments.length) {
-      paramValue = urlSegments[slugIndex + 1];
-      console.log("Extracted slug from URL path:", paramValue);
-    }
-  } else {
-    // For ID routes, get the last segment (which should be the ID)
-    // We exclude any query parameters
-    const lastSegment = urlSegments[urlSegments.length - 1];
-    if (lastSegment && !lastSegment.includes('?')) {
-      paramValue = lastSegment;
-      console.log("Extracted ID from URL path:", paramValue);
-    }
-  }
-  
-  // Fallback if extraction failed
-  if (!paramValue) {
-    console.warn("Could not extract parameter from URL path. Falling back to last segment.");
-    const lastSegment = urlSegments[urlSegments.length - 1];
-    paramValue = lastSegment.split('?')[0]; // Remove any query parameters
-  }
-  
-  console.log("isSlugRoute:", isSlugRoute);
-  console.log("Final paramValue:", paramValue);
-  
+  const paramValue = isSlugRoute ? params.slug : params.id;
+
   // Construct the proper API endpoint based on whether we're using a slug or ID
   const apiEndpoint = isSlugRoute 
     ? `/api/camps/slug/${paramValue}` 
     : `/api/camps/${paramValue}`;
-  
-  console.log("Using API endpoint:", apiEndpoint);
-  
+
   // Fetch camp data
   const { isLoading, isError, error } = useQuery({
     queryKey: [apiEndpoint],
-    enabled: !!paramValue, // Only run the query if we have a valid parameter
-    retry: 1, // Limit retry attempts to prevent excessive API calls on failure
+    enabled: !!paramValue,
     onSuccess: (data) => {
-      console.log("Camp data received:", data);
       if (data) {
         setCamp(data);
         setHasPermission(data.permissions?.canManage || false);
-      } else {
-        console.warn("Received empty data from API");
       }
     },
     onError: (err) => {
@@ -97,17 +54,13 @@ function CampViewPage() {
   // Fetch registrations
   useEffect(() => {
     if (paramValue) {
-      // Use the same API endpoint pattern for consistency with the main query
       const registrationsEndpoint = isSlugRoute 
         ? `/api/camps/slug/${paramValue}/registrations` 
         : `/api/camps/${paramValue}/registrations`;
-      
-      console.log("Fetching registrations from:", registrationsEndpoint);
-      
+
       fetch(registrationsEndpoint)
         .then(res => res.json())
         .then(data => {
-          console.log("Registration data:", data);
           setRegistrations(data.registrations || []);
         })
         .catch(err => console.error("Failed to fetch registrations", err));
@@ -152,13 +105,13 @@ function CampViewPage() {
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
             {camp.name || "Camp Details"}
           </h1>
-          
+
           <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
             <TabsList>
               <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="registrations">Registrations</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="details" className="mt-4">
               <Card>
                 <CardHeader>
@@ -170,9 +123,21 @@ function CampViewPage() {
                     <p><strong>Dates:</strong> {camp.startDate && new Date(camp.startDate).toLocaleDateString()} - {camp.endDate && new Date(camp.endDate).toLocaleDateString()}</p>
                     <p><strong>Price:</strong> ${camp.price || "0"}</p>
                     <p><strong>Capacity:</strong> {camp.capacity || "0"} athletes</p>
-                    <p><strong>Location:</strong> {camp.isVirtual ? "Virtual Camp" : `${camp.city || ""}, ${camp.state || ""}`}</p>
+                    <div className="flex items-start gap-2">
+                      <MapPin className="h-5 w-5 mt-0.5" />
+                      <div>
+                        {camp.isVirtual ? (
+                          <p>Virtual Camp</p>
+                        ) : (
+                          <>
+                            <p>{camp.streetAddress}</p>
+                            <p>{camp.city}, {camp.state} {camp.zipCode}</p>
+                          </>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  
+
                   {hasPermission && (
                     <div className="mt-4 flex gap-2">
                       <Button>
@@ -188,7 +153,7 @@ function CampViewPage() {
                 </CardContent>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="registrations">
               <Card>
                 <CardHeader>
@@ -202,7 +167,7 @@ function CampViewPage() {
                     <p className="text-muted-foreground">No registrations yet</p>
                   ) : (
                     <div className="space-y-2">
-                      {registrations.map((reg, idx) => (
+                      {registrations.map((reg: any, idx: number) => (
                         <div key={idx} className="p-2 border rounded">
                           {reg.childName || "Athlete"}
                         </div>
@@ -218,16 +183,11 @@ function CampViewPage() {
     );
   };
 
-  // Simple conditional to determine layout based on user role
+  // For parent users, use a simple layout
   if (isParent) {
-    // Parent users get a simple layout
-    return (
-      <div className="p-4 md:p-6">
-        {renderContent()}
-      </div>
-    );
-  } 
-  
+    return renderContent();
+  }
+
   // For camp creators and admins, use the dashboard layout
   return <DashboardLayout>{renderContent()}</DashboardLayout>;
 }
