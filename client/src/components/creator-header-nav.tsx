@@ -51,11 +51,33 @@ export function CreatorHeaderNav() {
     ? `${user.first_name[0]}${user.last_name[0]}`
     : user?.username?.slice(0, 2).toUpperCase() || "??";
 
+  // Define Organization type
+  interface Organization {
+    id: number;
+    name: string;
+    description?: string;
+    logoUrl?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    website?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    createdAt?: string;
+    updatedAt?: string;
+  }
+
   // Fetch organization data if user is logged in and has an organization
-  const { data: organization } = useQuery({
-    queryKey: ['/api/organizations', user?.organizationId],
+  const { data: organization, isLoading: orgLoading, error: orgError } = useQuery<Organization>({
+    queryKey: [`/api/organizations/${user?.organizationId}`],
     enabled: !!user?.organizationId,
   });
+  
+  // Debug organization data
+  console.log("Organization data:", organization);
+  console.log("Organization loading:", orgLoading);
+  console.log("Organization error:", orgError);
 
   const handleLogout = () => {
     logoutMutation.mutate();
