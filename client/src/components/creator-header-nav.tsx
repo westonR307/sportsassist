@@ -21,8 +21,9 @@ import {
 } from "lucide-react";
 import { GiBaseballBat } from "react-icons/gi";
 import { useAuth } from "@/hooks/use-auth";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,6 +50,12 @@ export function CreatorHeaderNav() {
   const initials = user?.first_name && user?.last_name
     ? `${user.first_name[0]}${user.last_name[0]}`
     : user?.username?.slice(0, 2).toUpperCase() || "??";
+
+  // Fetch organization data if user is logged in and has an organization
+  const { data: organization } = useQuery({
+    queryKey: ['/api/organizations', user?.organizationId],
+    enabled: !!user?.organizationId,
+  });
 
   const handleLogout = () => {
     logoutMutation.mutate();
@@ -88,7 +95,17 @@ export function CreatorHeaderNav() {
         {/* Logo/Brand */}
         <div className="mr-4 flex items-center">
           <Link to="/dashboard" className="flex items-center gap-2">
-            <GiBaseballBat className="h-6 w-6 text-primary" />
+            {organization?.logoUrl ? (
+              <div className="h-8 w-8 overflow-hidden rounded-md">
+                <img 
+                  src={organization.logoUrl} 
+                  alt={`${organization?.name || 'Organization'} logo`} 
+                  className="h-full w-full object-contain" 
+                />
+              </div>
+            ) : (
+              <GiBaseballBat className="h-6 w-6 text-primary" />
+            )}
             <span className="text-lg font-bold">SportsAssist.io</span>
           </Link>
         </div>
@@ -122,7 +139,17 @@ export function CreatorHeaderNav() {
               <div className="px-4 py-4">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-2">
-                    <GiBaseballBat className="h-5 w-5 text-primary" />
+                    {organization?.logoUrl ? (
+                      <div className="h-7 w-7 overflow-hidden rounded-md">
+                        <img 
+                          src={organization.logoUrl} 
+                          alt={`${organization?.name || 'Organization'} logo`} 
+                          className="h-full w-full object-contain" 
+                        />
+                      </div>
+                    ) : (
+                      <GiBaseballBat className="h-5 w-5 text-primary" />
+                    )}
                     <h2 className="font-semibold text-lg">SportsAssist.io</h2>
                   </div>
                   <DrawerClose asChild>
