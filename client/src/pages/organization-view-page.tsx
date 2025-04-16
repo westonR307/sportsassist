@@ -520,10 +520,12 @@ function CampCard({
   primaryColor?: string | null,
   secondaryColor?: string | null
 }) {
-  const buttonStyle = primaryColor ? {
-    backgroundColor: primaryColor,
-    borderColor: primaryColor
-  } : {};
+  // Use amber/gold color for buttons instead of primary color
+  const buttonStyle = {
+    backgroundColor: '#F59E0B', // amber-500
+    borderColor: '#F59E0B',
+    color: '#ffffff' // white text
+  };
 
   return (
     <Card className="flex flex-col overflow-hidden h-full">
@@ -568,7 +570,7 @@ function CampCard({
       </CardContent>
       <CardFooter className="p-4 pt-0 flex items-center justify-between mt-auto">
         <div className="flex items-center">
-          <p className="font-bold text-lg" style={{ color: primaryColor || undefined }}>${camp.price}</p>
+          <p className="font-bold text-lg text-amber-500">${camp.price}</p>
           {camp.registeredCount !== undefined && (
             <p className="text-xs text-muted-foreground ml-2">
               {camp.registeredCount} registered
