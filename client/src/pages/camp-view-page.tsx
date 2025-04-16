@@ -846,165 +846,164 @@ function CampViewPage(props: { id?: string }) {
 
     return (
       <div className="space-y-6 pt-4">
-        <div className="flex flex-col w-full mb-6 mt-2">
-          <div className="flex w-full mb-3">
-            <BackButton
-              to={isParent ? "/find-camps" : "/dashboard"}
-              label={isParent ? "Back to Camps" : "Back to Dashboard"}
-              className="self-start"
-            />
-          </div>
+        <div className="container mx-auto p-6 max-w-5xl mb-6 mt-2">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <BackButton
+                to={isParent ? "/find-camps" : "/dashboard"}
+                label={isParent ? "Back to Camps" : "Back to Dashboard"}
+                className="mb-4"
+              />
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{camp.name}</h1>
+              <p className="text-muted-foreground flex items-center gap-2 mt-1">
+                {camp.isVirtual ? (
+                  <>Virtual Camp</>
+                ) : (
+                  <>{camp.city}, {camp.state}</>
+                )}
+              </p>
+            </div>
+            <div>
+              {hasPermission && (
+                <div className="flex flex-wrap gap-2 items-center justify-center">
+                  <div className="flex gap-2">
+                    <Button onClick={() => setEditDialogOpen(true)}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Camp
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowShareDialog(true)}>
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Share
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowDuplicateDialog(true)}>
+                      <Copy className="h-4 w-4 mr-2" />
+                      Duplicate
+                    </Button>
+                  </div>
+                  {registrationStatus === 'not_open' ? (
+                    <Button
+                      variant="destructive"
+                      onClick={() => setShowDeleteDialog(true)}
+                      size="sm"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                      onClick={() => setShowCancelDialog(true)}
+                      size="sm"
+                    >
+                      <AlertTriangle className="h-4 w-4 mr-2" />
+                      Cancel
+                    </Button>
+                  )}
+                </div>
+              )}
 
-          <div className="flex flex-col mb-4 w-full">
-            <h1 className="text-2xl md:text-3xl font-bold leading-tight break-words max-w-full">
-              {camp.name}
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              {camp.isVirtual ? "Virtual" : `${camp.city}, ${camp.state}`}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-2 items-center">
-            {hasPermission && (
-              <div className="flex flex-wrap gap-2 items-center justify-center">
+              {isParent && !hasPermission && (
                 <div className="flex gap-2">
-                  <Button onClick={() => setEditDialogOpen(true)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Camp
-                  </Button>
+                  {isUserRegistered() ? (
+                    <Button variant="outline" disabled>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      {isUserWaitlisted() ? 'On Waitlist' : 'Already Registered'}
+                    </Button>
+                  ) : registrationStatus === 'open' ? (
+                    <Button
+                      onClick={() => setShowChildSelectionDialog(true)}
+                      disabled={registerMutation.isPending}
+                    >
+                      {registerMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                      )}
+                      Register Now
+                    </Button>
+                  ) : registrationStatus === 'waitlist' ? (
+                    <Button
+                      onClick={() => setShowChildSelectionDialog(true)}
+                      variant="secondary"
+                      disabled={registerMutation.isPending}
+                    >
+                      {registerMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <ClipboardList className="h-4 w-4 mr-2" />
+                      )}
+                      Join Waitlist
+                    </Button>
+                  ) : null}
                   <Button variant="outline" onClick={() => setShowShareDialog(true)}>
                     <Share2 className="h-4 w-4 mr-2" />
                     Share
                   </Button>
-                  <Button variant="outline" onClick={() => setShowDuplicateDialog(true)}>
-                    <Copy className="h-4 w-4 mr-2" />
-                    Duplicate
+                </div>
+              )}
+
+              {user && !hasPermission && !isParent && (
+                <div className="flex gap-2">
+                  {isUserRegistered() ? (
+                    <Button variant="outline" disabled>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      {isUserWaitlisted() ? 'On Waitlist' : 'Already Registered'}
+                    </Button>
+                  ) : registrationStatus === 'waitlist' ? (
+                    <Button 
+                      variant="secondary"
+                      onClick={() => setShowChildSelectionDialog(true)}
+                      disabled={registerMutation.isPending}
+                    >
+                      {registerMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <ClipboardList className="h-4 w-4 mr-2" />
+                      )}
+                      Join Waitlist
+                    </Button>
+                  ) : registrationStatus === 'closed' ? (
+                    <Button variant="outline" disabled>
+                      <Ban className="h-4 w-4 mr-2" />
+                      Registration Closed
+                    </Button>
+                  ) : registrationStatus === 'full' ? (
+                    <Button variant="outline" disabled>
+                      <Users2 className="h-4 w-4 mr-2" />
+                      Camp Full
+                    </Button>
+                  ) : registrationStatus === 'not_open' ? (
+                    <Button variant="outline" disabled>
+                      <Clock className="h-4 w-4 mr-2" />
+                      Registration Opens {new Date(camp.registrationStartDate).toLocaleDateString()}
+                    </Button>
+                  ) : registrationStatus === 'in_progress' ? (
+                    <Button variant="outline" disabled>
+                      <AlertCircle className="h-4 w-4 mr-2" />
+                      Camp In Progress
+                    </Button>
+                  ) : (
+                    <Button variant="outline" disabled>
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Registration Unavailable
+                    </Button>
+                  )}
+                  <Button variant="outline" onClick={() => setShowShareDialog(true)}>
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Share
                   </Button>
                 </div>
-                {registrationStatus === 'not_open' ? (
-                  <Button
-                    variant="destructive"
-                    onClick={() => setShowDeleteDialog(true)}
-                    size="sm"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    className="text-amber-600 border-amber-200 hover:bg-amber-50"
-                    onClick={() => setShowCancelDialog(true)}
-                    size="sm"
-                  >
-                    <AlertTriangle className="h-4 w-4 mr-2" />
-                    Cancel
-                  </Button>
-                )}
-              </div>
-            )}
+              )}
 
-            {isParent && !hasPermission && (
-              <div className="flex gap-2">
-                {isUserRegistered() ? (
-                  <Button variant="outline" disabled>
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    {isUserWaitlisted() ? 'On Waitlist' : 'Already Registered'}
-                  </Button>
-                ) : registrationStatus === 'open' ? (
-                  <Button
-                    onClick={() => setShowChildSelectionDialog(true)}
-                    disabled={registerMutation.isPending}
-                  >
-                    {registerMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                    )}
-                    Register Now
-                  </Button>
-                ) : registrationStatus === 'waitlist' ? (
-                  <Button
-                    onClick={() => setShowChildSelectionDialog(true)}
-                    variant="secondary"
-                    disabled={registerMutation.isPending}
-                  >
-                    {registerMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <ClipboardList className="h-4 w-4 mr-2" />
-                    )}
-                    Join Waitlist
-                  </Button>
-                ) : null}
-                <Button variant="outline" onClick={() => setShowShareDialog(true)}>
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Share
-                </Button>
-              </div>
-            )}
-
-            {user && !hasPermission && !isParent && (
-              <div className="flex gap-2">
-                {isUserRegistered() ? (
-                  <Button variant="outline" disabled>
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    {isUserWaitlisted() ? 'On Waitlist' : 'Already Registered'}
-                  </Button>
-                ) : registrationStatus === 'waitlist' ? (
-                  <Button 
-                    variant="secondary"
-                    onClick={() => setShowChildSelectionDialog(true)}
-                    disabled={registerMutation.isPending}
-                  >
-                    {registerMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <ClipboardList className="h-4 w-4 mr-2" />
-                    )}
-                    Join Waitlist
-                  </Button>
-                ) : registrationStatus === 'closed' ? (
-                  <Button variant="outline" disabled>
-                    <Ban className="h-4 w-4 mr-2" />
-                    Registration Closed
-                  </Button>
-                ) : registrationStatus === 'full' ? (
-                  <Button variant="outline" disabled>
-                    <Users2 className="h-4 w-4 mr-2" />
-                    Camp Full
-                  </Button>
-                ) : registrationStatus === 'not_open' ? (
-                  <Button variant="outline" disabled>
-                    <Clock className="h-4 w-4 mr-2" />
-                    Registration Opens {new Date(camp.registrationStartDate).toLocaleDateString()}
-                  </Button>
-                ) : registrationStatus === 'in_progress' ? (
-                  <Button variant="outline" disabled>
-                    <AlertCircle className="h-4 w-4 mr-2" />
-                    Camp In Progress
-                  </Button>
-                ) : (
-                  <Button variant="outline" disabled>
-                    <XCircle className="h-4 w-4 mr-2" />
-                    Registration Unavailable
-                  </Button>
-                )}
-                <Button variant="outline" onClick={() => setShowShareDialog(true)}>
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Share
-                </Button>
-              </div>
-            )}
-
-            {!user && !hasPermission && !isParent && (
-              <div className="flex items-center text-muted-foreground">
-                <ShieldAlert className="h-4 w-4 mr-2" />
-                <span className="text-sm">View only</span>
-              </div>
-            )}
+              {!user && !hasPermission && !isParent && (
+                <div className="flex items-center text-muted-foreground">
+                  <ShieldAlert className="h-4 w-4 mr-2" />
+                  <span className="text-sm">View only</span>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6" id="camp-tabs">
           <TabsList className="mb-4 w-full grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-row gap-1 p-1">
