@@ -1,8 +1,9 @@
-import { pool } from "../server/db.js";
+import { Pool } from 'pg';
 
-/**
- * Add the button_color column to the organizations table
- */
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL
+});
+
 async function main() {
   const client = await pool.connect();
   
