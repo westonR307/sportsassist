@@ -68,7 +68,8 @@ import {
   Facebook,
   Mail,
   Twitter,
-  Search
+  Search,
+  ClipboardCheck
 } from "lucide-react";
 import {
   AlertDialog,
