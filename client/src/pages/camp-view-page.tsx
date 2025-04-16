@@ -14,8 +14,9 @@ function CampViewPage() {
   const [location] = useLocation();
   const { user } = useAuth();
   
-  console.log("CampViewPage - Params:", params);
+  console.log("CampViewPage - Params:", JSON.stringify(params, null, 2));
   console.log("CampViewPage - location:", location);
+  console.log("Full route params:", params);
   
   const [isParent, setIsParent] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
@@ -30,12 +31,42 @@ function CampViewPage() {
     }
   }, [user]);
 
-  // Extract the correct parameter (id or slug) based on the URL pattern
+  // Manual approach to extract route parameters
+  const urlSegments = location.split('/');
+  console.log("URL segments:", urlSegments);
+  
+  // Determine if this is a slug route and extract the appropriate parameter
   const isSlugRoute = location.includes('/slug/');
-  const paramValue = isSlugRoute ? params.slug : params.id;
+  
+  // Get the parameter from the URL path directly
+  let paramValue;
+  
+  if (isSlugRoute) {
+    // For slug routes, get the segment after '/slug/'
+    const slugIndex = urlSegments.findIndex(segment => segment === 'slug');
+    if (slugIndex !== -1 && slugIndex + 1 < urlSegments.length) {
+      paramValue = urlSegments[slugIndex + 1];
+      console.log("Extracted slug from URL path:", paramValue);
+    }
+  } else {
+    // For ID routes, get the last segment (which should be the ID)
+    // We exclude any query parameters
+    const lastSegment = urlSegments[urlSegments.length - 1];
+    if (lastSegment && !lastSegment.includes('?')) {
+      paramValue = lastSegment;
+      console.log("Extracted ID from URL path:", paramValue);
+    }
+  }
+  
+  // Fallback if extraction failed
+  if (!paramValue) {
+    console.warn("Could not extract parameter from URL path. Falling back to last segment.");
+    const lastSegment = urlSegments[urlSegments.length - 1];
+    paramValue = lastSegment.split('?')[0]; // Remove any query parameters
+  }
   
   console.log("isSlugRoute:", isSlugRoute);
-  console.log("paramValue:", paramValue);
+  console.log("Final paramValue:", paramValue);
   
   // Construct the proper API endpoint based on whether we're using a slug or ID
   const apiEndpoint = isSlugRoute 
@@ -47,10 +78,16 @@ function CampViewPage() {
   // Fetch camp data
   const { isLoading, isError, error } = useQuery({
     queryKey: [apiEndpoint],
+    enabled: !!paramValue, // Only run the query if we have a valid parameter
+    retry: 1, // Limit retry attempts to prevent excessive API calls on failure
     onSuccess: (data) => {
       console.log("Camp data received:", data);
-      setCamp(data);
-      setHasPermission(data.permissions?.canManage || false);
+      if (data) {
+        setCamp(data);
+        setHasPermission(data.permissions?.canManage || false);
+      } else {
+        console.warn("Received empty data from API");
+      }
     },
     onError: (err) => {
       console.error("Error fetching camp data:", err);
