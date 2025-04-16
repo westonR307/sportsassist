@@ -30,8 +30,12 @@ function CampViewPage() {
   const { isLoading, isError, error } = useQuery({
     queryKey: [`/api/camps/${id}`],
     onSuccess: (data) => {
+      console.log("Camp data received:", data);
       setCamp(data);
       setHasPermission(data.permissions?.canManage || false);
+    },
+    onError: (err) => {
+      console.error("Error fetching camp data:", err);
     }
   });
 

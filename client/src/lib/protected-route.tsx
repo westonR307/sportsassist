@@ -100,6 +100,7 @@ export function ProtectedRoute({
 
         // Pass route params to the component
         console.log("Protected route params:", routeParams);
+        console.log("Protected route path:", path);
         
         // Parent routes
         if (user.role === 'parent') {
