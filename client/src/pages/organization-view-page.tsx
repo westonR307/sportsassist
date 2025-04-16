@@ -38,6 +38,7 @@ interface Organization {
   logoUrl?: string | null;
   primaryColor?: string | null;
   secondaryColor?: string | null;
+  buttonColor?: string | null;
   aboutText?: string | null;
   contactEmail?: string | null;
   websiteUrl?: string | null;

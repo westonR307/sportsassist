@@ -456,6 +456,15 @@ export default function OrganizationProfilePage() {
         return;
       }
       
+      if (changedData.buttonColor && !validHexColor.test(changedData.buttonColor)) {
+        toast({
+          title: 'Invalid Color Format',
+          description: 'Button color must be a valid hex color (e.g., #fbbf24).',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
       console.log('Auto-saving changes:', changedData);
       updateProfileMutation.mutate(changedData);
     }, 1000),
