@@ -19,7 +19,7 @@ import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'wouter';
-import { CreatorLayout } from '@/components/creator-layout';
+import { AppLayout } from '@/components/app-layout';
 
 // Organization interface (match the server-side model)
 interface Organization {
@@ -78,23 +78,27 @@ export default function OrganizationPublicProfile() {
   
   if (orgLoading || campsLoading) {
     return (
-      <div className="flex justify-center items-center min-h-[50vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      <AppLayout>
+        <div className="flex justify-center items-center min-h-[50vh]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
     );
   }
   
   if (orgError || !organization) {
     return (
-      <div className="container mx-auto p-6 text-center">
-        <h1 className="text-2xl font-bold mb-4">Organization Not Found</h1>
-        <p className="text-muted-foreground">
-          We couldn't find the organization you're looking for.
-        </p>
-        <Button asChild className="mt-4">
-          <Link href="/">Return Home</Link>
-        </Button>
-      </div>
+      <AppLayout>
+        <div className="container mx-auto p-6 text-center">
+          <h1 className="text-2xl font-bold mb-4">Organization Not Found</h1>
+          <p className="text-muted-foreground">
+            We couldn't find the organization you're looking for.
+          </p>
+          <Button asChild className="mt-4">
+            <Link href="/">Return Home</Link>
+          </Button>
+        </div>
+      </AppLayout>
     );
   }
   
@@ -103,7 +107,7 @@ export default function OrganizationPublicProfile() {
   const secondaryColor = organization.secondaryColor || '#1e3a8a';
   
   return (
-    <CreatorLayout>
+    <AppLayout>
       <div className="container mx-auto p-4 md:p-6">
         {/* Banner and Logo Section */}
         <div 
@@ -343,6 +347,6 @@ export default function OrganizationPublicProfile() {
           </Tabs>
         </div>
       </div>
-    </CreatorLayout>
+    </AppLayout>
   );
 }

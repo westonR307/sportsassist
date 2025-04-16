@@ -18,7 +18,8 @@ import { format } from "date-fns";
 import { getSportName, skillLevelNames } from "@shared/sports-utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CreatorLayout } from "@/components/creator-layout";
+
+// Don't import CreatorLayout since we'll just add the public view of the organization profile
 
 interface ExtendedCamp extends Camp {
   sportName?: string;
@@ -32,22 +33,22 @@ interface ExtendedCamp extends Camp {
 interface Organization {
   id: number;
   name: string;
-  displayName: string | null;
   description: string | null;
-  logoUrl: string | null;
-  primaryColor: string | null;
-  secondaryColor: string | null;
-  aboutText: string | null;
-  contactEmail: string | null;
-  websiteUrl: string | null;
-  socialLinks: {
-    facebook?: string;
-    twitter?: string;
-    instagram?: string;
-    linkedin?: string;
-    [key: string]: string | undefined;
+  createdAt?: Date;
+  logoUrl?: string | null;
+  primaryColor?: string | null;
+  secondaryColor?: string | null;
+  aboutText?: string | null;
+  contactEmail?: string | null;
+  websiteUrl?: string | null;
+  socialLinks?: {
+    linkedin?: string | null;
+    facebook?: string | null;
+    twitter?: string | null;
+    instagram?: string | null;
   } | null;
-  bannerImageUrl: string | null;
+  bannerImageUrl?: string | null;
+  displayName?: string | null;
   slug: string | null;
   missionStatement: string | null;
   feature1Title: string | null;
@@ -68,92 +69,56 @@ export default function OrganizationViewPage() {
     enabled: !!slugOrName,
   });
 
-  // Once we have the organization, fetch their camps
-  const { data: camps = [], isLoading: campsLoading } = useQuery<ExtendedCamp[]>({
+  // Fetch organization's camps
+  const { data: camps, isLoading: isCampsLoading } = useQuery<ExtendedCamp[]>({
     queryKey: [`/api/organizations/public/${slugOrName}/camps`],
-    enabled: !!slugOrName,
+    enabled: !!slugOrName && !!organization?.id,
   });
 
-  // Apply organization branding to the page
+  // Set the page title when organization data is loaded
   useEffect(() => {
     if (organization) {
-      // Apply custom CSS variables for colors if they exist
-      const root = document.documentElement;
-
-      if (organization.primaryColor) {
-        root.style.setProperty('--org-primary-color', organization.primaryColor);
-      }
-
-      if (organization.secondaryColor) {
-        root.style.setProperty('--org-secondary-color', organization.secondaryColor);
-      }
-
-      // Clean up when component unmounts
-      return () => {
-        root.style.removeProperty('--org-primary-color');
-        root.style.removeProperty('--org-secondary-color');
-      };
+      document.title = `${organization.displayName || organization.name} - SportsAssist.io`;
     }
+    return () => {
+      document.title = 'SportsAssist.io';
+    };
   }, [organization]);
 
+  // Show loading state
   if (isOrgLoading) {
     return (
-      <CreatorLayout>
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex flex-col gap-6">
-            <Button variant="outline" asChild className="w-fit">
-              <Link to="/find-camps">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Find Camps
-              </Link>
-            </Button>
-
-            <div className="flex items-center gap-4">
-              <Skeleton className="h-24 w-24 rounded-lg" />
-              <div className="space-y-3">
-                <Skeleton className="h-8 w-64" />
-                <div className="flex gap-3">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-4 w-32" />
-                </div>
-              </div>
-            </div>
-
-            <Skeleton className="h-40 w-full rounded-lg" />
-
-            <div>
-              <Skeleton className="h-10 w-48 mb-4" />
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-80 w-full rounded-lg" />
-                ))}
-              </div>
-            </div>
-          </div>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-4">
+        <Skeleton className="h-16 w-16 rounded-full mb-4" />
+        <Skeleton className="h-8 w-64 mb-2" />
+        <Skeleton className="h-4 w-48 mb-8" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-3xl">
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-32 w-full" />
         </div>
-      </CreatorLayout>
+      </div>
     );
   }
 
+  // Show error state
   if (orgError || !organization) {
     return (
-      <CreatorLayout>
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex flex-col items-center justify-center text-center p-8 gap-4">
-            <Building className="h-16 w-16 text-muted-foreground" />
-            <h1 className="text-2xl font-bold">Organization Not Found</h1>
-            <p className="text-muted-foreground">
-              The organization you're looking for could not be found or may no longer be available.
-            </p>
-            <Button variant="outline" asChild>
-              <Link to="/find-camps">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Find Camps
-              </Link>
-            </Button>
-          </div>
+      <div className="min-h-[60vh] flex flex-col items-center justify-center p-6">
+        <Building className="h-16 w-16 text-muted-foreground mb-4" />
+        <h1 className="text-2xl font-bold mb-2">Organization Not Found</h1>
+        <p className="text-muted-foreground mb-6">
+          We couldn't find the organization you're looking for.
+          It may have been removed or you might have followed an invalid link.
+        </p>
+        <div className="flex space-x-4">
+          <Button asChild variant="outline">
+            <Link href="/browse">Browse Organizations</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/">Return Home</Link>
+          </Button>
         </div>
-      </CreatorLayout>
+      </div>
     );
   }
 
@@ -178,25 +143,23 @@ export default function OrganizationViewPage() {
       };
 
   return (
-    <CreatorLayout>
-      <div style={orgStyles} className="min-h-screen bg-background/95">
-        {/* Hero Section with Banner */}
-        <div 
-          className="relative w-full py-16 md:py-24 overflow-hidden"
-          style={heroBgStyle}
-        >
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
-          
-          {/* Back button - moved below the header */}
-          <div className="absolute top-4 left-4 z-20">
-            <Button variant="outline" asChild className="bg-white/90 hover:bg-white">
-              <Link to="/find-camps">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Find Camps
-              </Link>
-            </Button>
-          </div>
+    <div className="min-h-screen flex flex-col">
+      {/* Back button for mobile navigation */}
+      <div className="lg:hidden p-4 bg-background/80 backdrop-blur-md sticky top-0 z-40 border-b">
+        <Button variant="ghost" size="sm" asChild className="gap-1">
+          <Link href="/browse">
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back</span>
+          </Link>
+        </Button>
+      </div>
 
+      {/* Hero section with organization banner */}
+      <div 
+        className="w-full relative"
+        style={{ ...heroBgStyle, height: 'var(--banner-height)' }}
+      >
+        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
           {/* Organization Logo and Header */}
           <div className="container mx-auto px-4 relative z-10">
             <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
@@ -228,379 +191,326 @@ export default function OrganizationViewPage() {
                 )}
 
                 <div className="mt-8 flex flex-wrap items-center gap-4 justify-center md:justify-start">
-                  {organization.contactEmail && (
-                    <a href={`mailto:${organization.contactEmail}`} 
-                       className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm transition-all shadow-md">
-                      <Mail className="w-5 h-5" />
-                      <span>Contact Us</span>
-                    </a>
-                  )}
-
                   {organization.websiteUrl && (
-                    <a href={organization.websiteUrl} 
-                       target="_blank" 
-                       rel="noopener noreferrer" 
-                       className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm transition-all shadow-md">
-                      <Globe className="w-5 h-5" />
-                      <span>Visit Website</span>
+                    <a 
+                      href={organization.websiteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 transition rounded-full pl-4 pr-6 py-2 text-white"
+                    >
+                      <Globe className="h-4 w-4" />
+                      <span>Website</span>
                     </a>
                   )}
-
-                  {/* Social Media Links */}
-                  {organization.socialLinks && (
-                    <div className="flex items-center gap-3">
-                      {organization.socialLinks.facebook && (
-                        <a href={organization.socialLinks.facebook} 
-                           target="_blank" 
-                           rel="noopener noreferrer"
-                           className="rounded-full p-2.5 bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm transition-all shadow-md">
-                          <Facebook className="w-5 h-5" />
-                        </a>
-                      )}
-                      {organization.socialLinks.twitter && (
-                        <a href={organization.socialLinks.twitter} 
-                           target="_blank" 
-                           rel="noopener noreferrer"
-                           className="rounded-full p-2.5 bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm transition-all shadow-md">
-                          <Twitter className="w-5 h-5" />
-                        </a>
-                      )}
-                      {organization.socialLinks.instagram && (
-                        <a href={organization.socialLinks.instagram} 
-                           target="_blank" 
-                           rel="noopener noreferrer"
-                           className="rounded-full p-2.5 bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm transition-all shadow-md">
-                          <Instagram className="w-5 h-5" />
-                        </a>
-                      )}
-                      {organization.socialLinks.linkedin && (
-                        <a href={organization.socialLinks.linkedin} 
-                           target="_blank" 
-                           rel="noopener noreferrer"
-                           className="rounded-full p-2.5 bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm transition-all shadow-md">
-                          <Linkedin className="w-5 h-5" />
-                        </a>
-                      )}
-                    </div>
+                  
+                  {organization.contactEmail && (
+                    <a 
+                      href={`mailto:${organization.contactEmail}`}
+                      className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 transition rounded-full pl-4 pr-6 py-2 text-white"
+                    >
+                      <Mail className="h-4 w-4" />
+                      <span>Contact</span>
+                    </a>
                   )}
                 </div>
               </div>
             </div>
-
-            {/* Quick Stats */}
-            <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
-              <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 text-white text-center shadow-lg border border-white/20">
-                <Trophy className="w-8 h-8 mx-auto mb-2 text-amber-300" />
-                <div className="font-bold text-xl">{camps.length}</div>
-                <div className="text-sm text-white/80">Active Camps</div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 text-white text-center shadow-lg border border-white/20">
-                <Star className="w-8 h-8 mx-auto mb-2 text-amber-300" />
-                <div className="font-bold text-xl">
-                  {/* Calculate total registrations */}
-                  {camps.reduce((acc, camp) => acc + (camp.registeredCount || 0), 0)}
-                </div>
-                <div className="text-sm text-white/80">Total Participants</div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 text-white text-center shadow-lg border border-white/20">
-                <Calendar className="w-8 h-8 mx-auto mb-2 text-amber-300" />
-                <div className="font-bold text-xl">
-                  {/* Calculate unique sports */}
-                  {new Set(camps.flatMap(camp => 
-                    camp.campSports?.map(sport => sport.sportId) || [camp.sportName]
-                  )).size}
-                </div>
-                <div className="text-sm text-white/80">Sports Offered</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="container mx-auto px-4 py-8 -mt-12 relative z-20">
-          <div className="bg-background rounded-2xl shadow-xl overflow-hidden">
-            {/* Tabs Navigation */}
-            <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-              <div className="px-6 pt-6 pb-0">
-                <TabsList className="grid grid-cols-2 w-full max-w-md">
-                  <TabsTrigger value="about">About</TabsTrigger>
-                  <TabsTrigger value="camps">Our Camps</TabsTrigger>
-                </TabsList>
-              </div>
-
-              {/* About Tab */}
-              <TabsContent value="about" className="p-6">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  <div className="lg:col-span-2">
-                    <div className="bg-card rounded-xl shadow-md p-6 mb-6">
-                      <h2 className="text-2xl font-bold mb-4 flex items-center" 
-                          style={{ color: organization.primaryColor || undefined }}>
-                        <Info className="mr-2 h-5 w-5" />
-                        About Us
-                      </h2>
-                      {organization.aboutText ? (
-                        <div className="prose prose-lg max-w-none">
-                          <p className="whitespace-pre-line">
-                            {organization.aboutText}
-                          </p>
-                        </div>
-                      ) : (
-                        <p className="text-muted-foreground italic">
-                          No detailed information has been provided by {organization.displayName || organization.name} yet.
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="bg-card rounded-xl shadow-md p-6">
-                      <h2 className="text-2xl font-bold mb-4 flex items-center"
-                          style={{ color: organization.primaryColor || undefined }}>
-                        <Trophy className="mr-2 h-5 w-5" />
-                        Our Mission
-                      </h2>
-                      {organization.missionStatement ? (
-                        <p className="mb-6 whitespace-pre-line">
-                          {organization.missionStatement}
-                        </p>
-                      ) : (
-                        <p className="mb-6">
-                          We are dedicated to providing exceptional sports experiences that develop athletic skills,
-                          build character, and foster a lifelong love of sports in participants of all ages and abilities.
-                        </p>
-                      )}
-
-                      <h3 className="text-xl font-semibold mb-4 flex items-center"
-                         style={{ color: organization.primaryColor || undefined }}>
-                        <Award className="mr-2 h-5 w-5" />
-                        Why Choose Us
-                      </h3>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                        {/* Feature 1 */}
-                        <div className="flex items-start">
-                          <div className="rounded-full p-2 mr-3" 
-                               style={{ background: `${organization.primaryColor}20` || 'var(--primary/20)' }}>
-                            <Award className="h-5 w-5" style={{ color: organization.primaryColor || undefined }} />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold">{organization.feature1Title || "Quality Instruction"}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {organization.feature1Description || "Professional coaching from experienced instructors"}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Feature 2 */}
-                        <div className="flex items-start">
-                          <div className="rounded-full p-2 mr-3" 
-                               style={{ background: `${organization.primaryColor}20` || 'var(--primary/20)' }}>
-                            <User className="h-5 w-5" style={{ color: organization.primaryColor || undefined }} />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold">{organization.feature2Title || "Personal Development"}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {organization.feature2Description || "Focus on character building and life skills"}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Feature 3 */}
-                        <div className="flex items-start">
-                          <div className="rounded-full p-2 mr-3" 
-                               style={{ background: `${organization.primaryColor}20` || 'var(--primary/20)' }}>
-                            <Users className="h-5 w-5" style={{ color: organization.primaryColor || undefined }} />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold">{organization.feature3Title || "Inclusive Environment"}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {organization.feature3Description || "Welcoming atmosphere for participants of all levels"}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Default fourth feature if none of the custom ones are available */}
-                        {!organization.feature1Title && !organization.feature2Title && !organization.feature3Title && (
-                          <div className="flex items-start">
-                            <div className="rounded-full p-2 mr-3" 
-                                style={{ background: `${organization.primaryColor}20` || 'var(--primary/20)' }}>
-                              <Zap className="h-5 w-5" style={{ color: organization.primaryColor || undefined }} />
-                            </div>
-                            <div>
-                              <h3 className="font-semibold">Innovative Programs</h3>
-                              <p className="text-sm text-muted-foreground">Cutting-edge training methods and curriculum</p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="lg:col-span-1">
-                    <div className="bg-card rounded-xl shadow-md p-6 sticky top-6">
-                      <h3 className="text-xl font-bold mb-4 flex items-center"
-                          style={{ color: organization.primaryColor || undefined }}>
-                        <MessageCircle className="mr-2 h-5 w-5" />
-                        Contact Information
-                      </h3>
-
-                      <div className="space-y-4">
-                        {organization.contactEmail && (
-                          <div className="flex items-start">
-                            <Mail className="h-5 w-5 mr-3 text-muted-foreground" />
-                            <div>
-                              <p className="text-sm font-medium">Email</p>
-                              <a href={`mailto:${organization.contactEmail}`} className="text-sm hover:underline">
-                                {organization.contactEmail}
-                              </a>
-                            </div>
-                          </div>
-                        )}
-
-                        {organization.websiteUrl && (
-                          <div className="flex items-start">
-                            <Globe className="h-5 w-5 mr-3 text-muted-foreground" />
-                            <div>
-                              <p className="text-sm font-medium">Website</p>
-                              <a href={organization.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-sm hover:underline">
-                                {organization.websiteUrl}
-                              </a>
-                            </div>
-                          </div>
-                        )}
-
-                        <Separator className="my-4" />
-
-                        <div className="flex items-start">
-                          <Share2 className="h-5 w-5 mr-3 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm font-medium">Share Profile</p>
-                            <div className="flex gap-2 mt-2">
-                              {organization.socialLinks?.facebook && (
-                                <a href={organization.socialLinks.facebook} target="_blank" rel="noopener noreferrer"
-                                   className="text-facebook hover:text-facebook/80 transition-colors">
-                                  <Facebook className="h-4 w-4" />
-                                </a>
-                              )}
-                              {organization.socialLinks?.twitter && (
-                                <a href={organization.socialLinks.twitter} target="_blank" rel="noopener noreferrer"
-                                   className="text-twitter hover:text-twitter/80 transition-colors">
-                                  <Twitter className="h-4 w-4" />
-                                </a>
-                              )}
-                              {organization.socialLinks?.linkedin && (
-                                <a href={organization.socialLinks.linkedin} target="_blank" rel="noopener noreferrer"
-                                   className="text-linkedin hover:text-linkedin/80 transition-colors">
-                                  <Linkedin className="h-4 w-4" />
-                                </a>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-
-              {/* Camps Tab */}
-              <TabsContent value="camps" className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {camps.length > 0 ? (
-                    camps.map(camp => (
-                      <CampCard 
-                        key={camp.id} 
-                        camp={camp} 
-                        primaryColor={organization.primaryColor}
-                        secondaryColor={organization.secondaryColor}
-                      />
-                    ))
-                  ) : (
-                    <div className="col-span-full">
-                      <div className="bg-card rounded-xl shadow-md p-6 text-center">
-                        <Calendar className="w-12 h-12 mx-auto text-muted-foreground/60 mb-4" />
-                        <h3 className="text-xl font-semibold mb-2">No camps available</h3>
-                        <p className="text-muted-foreground">
-                          {organization.displayName || organization.name} doesn't have any active camps right now.
-                          Check back later or contact them directly for upcoming events.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-            </Tabs>
           </div>
         </div>
       </div>
-    </CreatorLayout>
+
+      {/* Main content area */}
+      <div className="flex-1 bg-background py-8">
+        <div className="container mx-auto px-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+            <TabsList className="grid w-full max-w-xl mx-auto grid-cols-4">
+              <TabsTrigger value="about" className="flex gap-2 items-center justify-center">
+                <Info className="h-4 w-4" />
+                <span className="hidden sm:inline">About</span>
+              </TabsTrigger>
+              <TabsTrigger value="camps" className="flex gap-2 items-center justify-center">
+                <Calendar className="h-4 w-4" />
+                <span className="hidden sm:inline">Camps</span>
+              </TabsTrigger>
+              <TabsTrigger value="features" className="flex gap-2 items-center justify-center">
+                <Star className="h-4 w-4" />
+                <span className="hidden sm:inline">Features</span>
+              </TabsTrigger>
+              <TabsTrigger value="contact" className="flex gap-2 items-center justify-center">
+                <MessageCircle className="h-4 w-4" />
+                <span className="hidden sm:inline">Contact</span>
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="about" className="mx-auto max-w-4xl">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Info className="h-5 w-5" />
+                    About {organization.displayName || organization.name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="prose prose-sm max-w-none">
+                  {organization.missionStatement && (
+                    <div className="mb-6 p-4 bg-muted/50 rounded-lg border border-muted">
+                      <h3 className="text-xl font-bold mb-2" style={{ color: organization.primaryColor || undefined }}>
+                        Our Mission
+                      </h3>
+                      <p className="italic">{organization.missionStatement}</p>
+                    </div>
+                  )}
+
+                  {organization.aboutText ? (
+                    <div>
+                      {organization.aboutText.split('\n').map((paragraph, i) => (
+                        <p key={i}>{paragraph}</p>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">No detailed information has been provided by this organization.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="camps" className="mx-auto max-w-6xl">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5" />
+                    Available Camps
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {isCampsLoading && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {[1, 2, 3].map(i => (
+                        <Skeleton key={i} className="h-64 w-full" />
+                      ))}
+                    </div>
+                  )}
+                  
+                  {camps && camps.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {camps.map(camp => (
+                        <CampCard 
+                          key={camp.id} 
+                          camp={camp} 
+                          primaryColor={organization.primaryColor} 
+                          secondaryColor={organization.secondaryColor}
+                        />
+                      ))}
+                    </div>
+                  ) : !isCampsLoading && (
+                    <div className="text-center py-16">
+                      <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                      <h3 className="text-xl font-semibold mb-2">No Camps Available</h3>
+                      <p className="text-muted-foreground max-w-md mx-auto">
+                        This organization doesn't have any active camps at the moment.
+                        Check back later or contact them directly for more information.
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="features" className="mx-auto max-w-4xl">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Star className="h-5 w-5" />
+                    Program Features
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(organization.feature1Title || organization.feature2Title || organization.feature3Title) ? (
+                    <div className="grid gap-8 md:grid-cols-3">
+                      {/* Feature 1 */}
+                      <div className="flex items-start">
+                        <div className="rounded-full p-2 mr-3" 
+                             style={{ background: `${organization.primaryColor}20` || 'var(--primary/20)' }}>
+                          <Trophy className="h-5 w-5" style={{ color: organization.primaryColor || undefined }} />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">{organization.feature1Title || "Expert Coaching"}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {organization.feature1Description || "Learn from the best in the field"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Feature 2 */}
+                      <div className="flex items-start">
+                        <div className="rounded-full p-2 mr-3" 
+                             style={{ background: `${organization.primaryColor}20` || 'var(--primary/20)' }}>
+                          <User className="h-5 w-5" style={{ color: organization.primaryColor || undefined }} />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">{organization.feature2Title || "Personal Development"}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {organization.feature2Description || "Focus on character building and life skills"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Feature 3 */}
+                      <div className="flex items-start">
+                        <div className="rounded-full p-2 mr-3" 
+                             style={{ background: `${organization.primaryColor}20` || 'var(--primary/20)' }}>
+                          <Users className="h-5 w-5" style={{ color: organization.primaryColor || undefined }} />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">{organization.feature3Title || "Team Environment"}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {organization.feature3Description || "Build lasting friendships and connections"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">This organization hasn't provided any feature details yet.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="contact" className="mx-auto max-w-3xl">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageCircle className="h-5 w-5" />
+                    Contact Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <div className="space-y-4">
+                      {organization.contactEmail && (
+                        <div className="flex items-center gap-3">
+                          <div className="rounded-full p-2 bg-primary/10">
+                            <Mail className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">Email</p>
+                            <a 
+                              href={`mailto:${organization.contactEmail}`} 
+                              className="text-sm text-primary hover:underline"
+                            >
+                              {organization.contactEmail}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+
+                      {organization.websiteUrl && (
+                        <div className="flex items-center gap-3">
+                          <div className="rounded-full p-2 bg-primary/10">
+                            <Globe className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">Website</p>
+                            <a 
+                              href={organization.websiteUrl} 
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-primary hover:underline"
+                            >
+                              {organization.websiteUrl.replace(/^https?:\/\/(www\.)?/, '')}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-4">
+                      {organization.socialLinks && (
+                        <div>
+                          <p className="text-sm font-medium">Share Profile</p>
+                          <div className="flex gap-2 mt-2">
+                            {organization.socialLinks?.facebook && (
+                              <a href={organization.socialLinks.facebook} target="_blank" rel="noopener noreferrer"
+                                 className="text-facebook hover:text-facebook/80 transition-colors">
+                                <Facebook className="h-4 w-4" />
+                              </a>
+                            )}
+                            {organization.socialLinks?.twitter && (
+                              <a href={organization.socialLinks.twitter} target="_blank" rel="noopener noreferrer"
+                                 className="text-twitter hover:text-twitter/80 transition-colors">
+                                <Twitter className="h-4 w-4" />
+                              </a>
+                            )}
+                            {organization.socialLinks?.linkedin && (
+                              <a href={organization.socialLinks.linkedin} target="_blank" rel="noopener noreferrer"
+                                 className="text-linkedin hover:text-linkedin/80 transition-colors">
+                                <Linkedin className="h-4 w-4" />
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+    </div>
   );
 }
 
-// Camp card subcomponent
+// Component for each camp card
 function CampCard({ 
   camp, 
-  primaryColor,
-  secondaryColor
+  primaryColor, 
+  secondaryColor 
 }: { 
-  camp: ExtendedCamp;
-  primaryColor: string | null;
-  secondaryColor: string | null;
+  camp: ExtendedCamp, 
+  primaryColor?: string | null,
+  secondaryColor?: string | null
 }) {
-  // Define camp card styles with organization branding
-  const cardStyle = {
-    borderTop: primaryColor ? `4px solid ${primaryColor}` : undefined,
-    borderColor: primaryColor ? `${primaryColor}` : undefined,
-  };
-
-  const buttonStyle = {
-    backgroundColor: primaryColor || undefined,
-    color: primaryColor ? 'white' : undefined,
-    borderColor: primaryColor || undefined,
-  };
-
-  const badgeStyle = {
-    borderColor: primaryColor || undefined,
-    color: primaryColor || undefined,
-  };
-
-  // Format dates
-  const formattedStartDate = format(new Date(camp.startDate), 'MMM d');
-  const formattedEndDate = format(new Date(camp.endDate), 'MMM d, yyyy');
+  const buttonStyle = primaryColor ? {
+    backgroundColor: primaryColor,
+    borderColor: primaryColor
+  } : {};
 
   return (
-    <Card className="h-full flex flex-col" style={cardStyle}>
-      <CardHeader className="p-4 pb-2">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <CardTitle className="text-lg font-bold line-clamp-2">
-              {camp.name}
-            </CardTitle>
-          </div>
-          {Array.isArray(camp.campSports) && camp.campSports.length > 0 ? (
-            camp.campSports.map((sport, idx) => (
-              <Badge key={idx} variant="outline" className="text-xs" style={badgeStyle}>
-                {sport.sportName} - {skillLevelNames[camp.skillLevel]}
-              </Badge>
-            ))
-          ) : (
-            <Badge variant="outline" className="text-xs" style={badgeStyle}>
-              {camp.sportName || "General"} - All levels
+    <Card className="flex flex-col overflow-hidden h-full">
+      <div 
+        className="h-2" 
+        style={{ backgroundColor: primaryColor || 'var(--primary)' }}
+      ></div>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg font-bold line-clamp-2">{camp.name}</CardTitle>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          {camp.sportName && (
+            <Badge variant="outline" className="text-xs">
+              {camp.sportName}
             </Badge>
           )}
+          <Badge variant="outline" className="text-xs">
+            {skillLevelNames[camp.skillLevel] || camp.skillLevel}
+          </Badge>
         </div>
       </CardHeader>
-      <CardContent className="p-4 pt-2 flex-1">
-        <div className="flex items-center gap-2 mb-3">
-          <MapPin className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground truncate">
-            {camp.isVirtual ? "Virtual" : camp.city && camp.state ? `${camp.city}, ${camp.state}` : "Location not specified"}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2 mb-3">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">
-            {format(new Date(camp.startDate), "MMM d")} - {format(new Date(camp.endDate), "MMM d, yyyy")}
-          </span>
+      <CardContent className="pb-0 flex-1">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+          {camp.location && (
+            <div className="flex items-center gap-1">
+              <MapPin className="h-3 w-3 text-muted-foreground" />
+              <span className="text-muted-foreground">{camp.location}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-1">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
+              {format(new Date(camp.startDate), "MMM d")} - {format(new Date(camp.endDate), "MMM d, yyyy")}
+            </span>
+          </div>
         </div>
 
         {camp.description && (
