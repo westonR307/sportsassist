@@ -99,6 +99,11 @@ function Router() {
           <OrganizationViewPage slugOrName={slugOrName} />
         )}
       </Route>
+      <Route path="/organizations/:slugOrName">
+        {({slugOrName}) => (
+          <OrganizationViewPage slugOrName={slugOrName} />
+        )}
+      </Route>
       <Route path="/org/:slug">
         {({slug}) => (
           <OrganizationPublicPage slug={slug} />
