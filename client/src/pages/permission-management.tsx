@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { DashboardLayout } from './dashboard';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -189,7 +188,7 @@ export function PermissionManagementPage() {
     : undefined;
   
   return (
-    <DashboardLayout>
+    <>
       <DashboardHeader
         title="Permission Management"
         description="Manage custom permission sets and user permissions for your organization"
@@ -452,6 +451,6 @@ export function PermissionManagementPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+    </>
   );
 }

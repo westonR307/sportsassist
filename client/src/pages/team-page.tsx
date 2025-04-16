@@ -382,82 +382,80 @@ function TeamPage() {
   });
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Team Management</h1>
-          <InviteMemberDialog />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Active Staff Members */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Active Staff</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!staff || staff.length === 0 ? (
-                <p className="text-gray-500">No active staff members</p>
-              ) : (
-                <div className="space-y-4">
-                  {staff.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
-                      <div>
-                        <p className="font-medium">
-                          {member.first_name && member.last_name 
-                            ? `${member.first_name} ${member.last_name}` 
-                            : member.username}
-                        </p>
-                        <p className="text-sm text-gray-500">{member.role}</p>
-                      </div>
-                      {user?.role === "camp_creator" && member.role !== "camp_creator" && (
-                        <EditRoleDialog 
-                          member={member} 
-                          organizationId={user.organizationId || 0} 
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Pending Invitations */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Pending Invitations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!invitations || invitations.length === 0 ? (
-                <p className="text-gray-500">No pending invitations</p>
-              ) : (
-                <div className="space-y-2">
-                  {invitations.map((invitation) => (
-                    <div key={invitation.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
-                      <div>
-                        <p className="font-medium">{invitation.email}</p>
-                        <p className="text-sm text-gray-500">{invitation.role}</p>
-                      </div>
-                      <div className="flex space-x-2">
-                        <ResendButton 
-                          invitation={invitation} 
-                          organizationId={user?.organizationId || 0} 
-                        />
-                        <DeleteButton
-                          invitation={invitation}
-                          organizationId={user?.organizationId || 0}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Team Management</h1>
+        <InviteMemberDialog />
       </div>
-    </DashboardLayout>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Active Staff Members */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Active Staff</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!staff || staff.length === 0 ? (
+              <p className="text-gray-500">No active staff members</p>
+            ) : (
+              <div className="space-y-4">
+                {staff.map((member) => (
+                  <div key={member.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
+                    <div>
+                      <p className="font-medium">
+                        {member.first_name && member.last_name 
+                          ? `${member.first_name} ${member.last_name}` 
+                          : member.username}
+                      </p>
+                      <p className="text-sm text-gray-500">{member.role}</p>
+                    </div>
+                    {user?.role === "camp_creator" && member.role !== "camp_creator" && (
+                      <EditRoleDialog 
+                        member={member} 
+                        organizationId={user.organizationId || 0} 
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Pending Invitations */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Pending Invitations</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!invitations || invitations.length === 0 ? (
+              <p className="text-gray-500">No pending invitations</p>
+            ) : (
+              <div className="space-y-2">
+                {invitations.map((invitation) => (
+                  <div key={invitation.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
+                    <div>
+                      <p className="font-medium">{invitation.email}</p>
+                      <p className="text-sm text-gray-500">{invitation.role}</p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <ResendButton 
+                        invitation={invitation} 
+                        organizationId={user?.organizationId || 0} 
+                      />
+                      <DeleteButton
+                        invitation={invitation}
+                        organizationId={user?.organizationId || 0}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }
 
