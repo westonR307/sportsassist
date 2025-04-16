@@ -120,7 +120,7 @@ export function CreatorHeaderNav() {
             {organization?.logoUrl ? (
               <div className="h-8 w-8 overflow-hidden rounded-md">
                 <img 
-                  src={organization.logoUrl} 
+                  src={organization.logoUrl.startsWith('http') ? organization.logoUrl : `${window.location.origin}${organization.logoUrl}`} 
                   alt={`${organization?.name || 'Organization'} logo`} 
                   className="h-full w-full object-contain" 
                 />
@@ -164,7 +164,7 @@ export function CreatorHeaderNav() {
                     {organization?.logoUrl ? (
                       <div className="h-7 w-7 overflow-hidden rounded-md">
                         <img 
-                          src={organization.logoUrl} 
+                          src={organization.logoUrl.startsWith('http') ? organization.logoUrl : `${window.location.origin}${organization.logoUrl}`} 
                           alt={`${organization?.name || 'Organization'} logo`} 
                           className="h-full w-full object-contain" 
                         />
@@ -180,7 +180,7 @@ export function CreatorHeaderNav() {
                     </Button>
                   </DrawerClose>
                 </div>
-                <ScrollArea className="h-[calc(100vh-200px)]">
+                <ScrollArea className="h-[calc(100vh-90px)]">
                   <div className="space-y-3 pr-4">
                     {navItems.map((item) => (
                       <Button
@@ -331,10 +331,10 @@ export function CreatorHeaderNav() {
                 <ChevronDown className="h-4 w-4 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-56" sideOffset={5} collisionPadding={10}>
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <ScrollArea className="h-[calc(100vh-200px)] max-h-[400px]">
+              <ScrollArea className="max-h-[300px]">
                 <DropdownMenuGroup>
                   <DropdownMenuItem onClick={() => navigate("/dashboard/settings")}>
                     <User className="mr-2 h-4 w-4" />
