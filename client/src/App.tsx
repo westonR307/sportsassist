@@ -96,23 +96,17 @@ function Router() {
       <Route path="/find-camps" component={FindCampsPage} />
       <Route path="/organization/:slugOrName">
         {({slugOrName}) => (
-          <SimpleLayout showBackButton={true}>
-            <OrganizationViewPage slugOrName={slugOrName} />
-          </SimpleLayout>
+          <OrganizationViewPage slugOrName={slugOrName} />
         )}
       </Route>
       <Route path="/org/:slug">
         {({slug}) => (
-          <SimpleLayout showBackButton={true}>
-            <OrganizationPublicPage slug={slug} />
-          </SimpleLayout>
+          <OrganizationPublicPage slug={slug} />
         )}
       </Route>
       <Route path="/invitations/:token/accept">
         {({token}) => (
-          <SimpleLayout showBackButton={true}>
-            <InvitationAcceptPage token={token} />
-          </SimpleLayout>
+          <InvitationAcceptPage token={token} />
         )}
       </Route>
       <ProtectedRoute path="/dashboard" component={DashboardRouter} />
@@ -233,9 +227,7 @@ function Router() {
       <ProtectedRoute path="/documents/:id/edit" component={DocumentEditPage} />
       <Route path="/sign/:token">
         {({token}) => (
-          <SimpleLayout showBackButton={true}>
-            <SignaturePage token={token} />
-          </SimpleLayout>
+          <SignaturePage token={token} />
         )}
       </Route>
       
