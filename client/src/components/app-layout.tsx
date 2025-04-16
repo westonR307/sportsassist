@@ -58,7 +58,7 @@ export function AppLayout({ children, showBackButton = false, showNavigation = t
     enabled: !!user?.organizationId,
   });
 
-  // Set sidebar state based on screen size on initial load
+  // Set sidebar state based on screen size on initial load and handle touch events
   React.useEffect(() => {
     const isDesktop = window.innerWidth >= 1024; // 1024px is the lg breakpoint in Tailwind
     setSidebarOpen(isDesktop);
@@ -70,11 +70,49 @@ export function AppLayout({ children, showBackButton = false, showNavigation = t
       }
     };
     
-    // Listen for location changes
+    // Touch event handlers for mobile scrolling
+    const handleTouchStart = () => {
+      // Clear any existing timeout
+      if (scrollTimeout.current !== null) {
+        window.clearTimeout(scrollTimeout.current);
+      }
+      setIsScrolling(false);
+    };
+
+    const handleTouchMove = () => {
+      setIsScrolling(true);
+      // Clear any existing timeout
+      if (scrollTimeout.current !== null) {
+        window.clearTimeout(scrollTimeout.current);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      // Set a timeout to reset isScrolling state after scrolling stops
+      if (scrollTimeout.current !== null) {
+        window.clearTimeout(scrollTimeout.current);
+      }
+      scrollTimeout.current = window.setTimeout(() => {
+        setIsScrolling(false);
+      }, 150); // Delay to ensure scroll has actually stopped
+    };
+    
+    // Listen for location changes and touch events
     window.addEventListener('popstate', handleRouteChange);
+    window.addEventListener('touchstart', handleTouchStart);
+    window.addEventListener('touchmove', handleTouchMove);
+    window.addEventListener('touchend', handleTouchEnd);
     
     return () => {
       window.removeEventListener('popstate', handleRouteChange);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+      
+      // Clean up any remaining timeout
+      if (scrollTimeout.current !== null) {
+        window.clearTimeout(scrollTimeout.current);
+      }
     };
   }, []);
   
@@ -96,7 +134,13 @@ export function AppLayout({ children, showBackButton = false, showNavigation = t
           <Button
             variant="outline"
             size="icon"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
+            onClick={() => {
+              if (!isScrolling) {
+                setSidebarOpen(!sidebarOpen);
+              }
+            }}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
           >
             <Menu className="h-4 w-4" />
           </Button>
@@ -109,7 +153,13 @@ export function AppLayout({ children, showBackButton = false, showNavigation = t
           <Button
             variant="outline"
             className="flex items-center gap-2"
-            onClick={() => window.history.back()}
+            onClick={() => {
+              if (!isScrolling) {
+                window.history.back();
+              }
+            }}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
           >
             <ArrowLeft className="h-4 w-4" />
             <span className="hidden sm:inline">Back</span>
@@ -139,7 +189,13 @@ export function AppLayout({ children, showBackButton = false, showNavigation = t
               variant="ghost" 
               size="icon"
               className="lg:hidden absolute right-2 top-3"
-              onClick={() => setSidebarOpen(false)}
+              onClick={() => {
+                if (!isScrolling) {
+                  setSidebarOpen(false);
+                }
+              }}
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
             >
               <X className="h-4 w-4" />
             </Button>
@@ -154,10 +210,15 @@ export function AppLayout({ children, showBackButton = false, showNavigation = t
           {/* Home Link for all users */}
           <button
             onClick={() => {
-              navigate("/");
-              // Close sidebar on mobile after navigation
-              if (window.innerWidth < 1024) setSidebarOpen(false);
+              // Only navigate if not scrolling
+              if (!isScrolling) {
+                navigate("/");
+                // Close sidebar on mobile after navigation
+                if (window.innerWidth < 1024) setSidebarOpen(false);
+              }
             }}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
             className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
               wouterLocation === "/" ? "bg-gray-100" : ""
             }`}
@@ -169,10 +230,15 @@ export function AppLayout({ children, showBackButton = false, showNavigation = t
           {/* Dashboard Link - Different path for parent users */}
           <button
             onClick={() => {
-              navigate(isParentOrAthlete ? "/parent-dashboard" : "/dashboard");
-              // Close sidebar on mobile after navigation
-              if (window.innerWidth < 1024) setSidebarOpen(false);
+              // Only navigate if not scrolling
+              if (!isScrolling) {
+                navigate(isParentOrAthlete ? "/parent-dashboard" : "/dashboard");
+                // Close sidebar on mobile after navigation
+                if (window.innerWidth < 1024) setSidebarOpen(false);
+              }
             }}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
             className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
               (wouterLocation === "/dashboard" || wouterLocation === "/parent-dashboard") ? "bg-gray-100" : ""
             }`}
@@ -450,10 +516,14 @@ export function AppLayout({ children, showBackButton = false, showNavigation = t
             variant="ghost"
             className="w-full justify-start whitespace-nowrap"
             onClick={() => {
-              logoutMutation.mutate();
-              // Close sidebar on mobile
-              if (window.innerWidth < 1024) setSidebarOpen(false);
+              if (!isScrolling) {
+                logoutMutation.mutate();
+                // Close sidebar on mobile
+                if (window.innerWidth < 1024) setSidebarOpen(false);
+              }
             }}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
           >
             <LogOut className="h-5 w-5 mr-2 flex-shrink-0" />
             <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Logout</span>
@@ -493,7 +563,13 @@ export function AppLayout({ children, showBackButton = false, showNavigation = t
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
+          onClick={() => {
+            if (!isScrolling) {
+              setSidebarOpen(false);
+            }
+          }}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
         />
       )}
     </div>
