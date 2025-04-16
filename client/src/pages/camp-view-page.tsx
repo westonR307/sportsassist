@@ -54,7 +54,6 @@ import {
   User,
   Trash2,
   CheckSquare,
-  ClipboardCheck,
   Download,
   Eye,
   FileEdit,
@@ -68,7 +67,8 @@ import {
   Link,
   Facebook,
   Mail,
-  Twitter
+  Twitter,
+  Search
 } from "lucide-react";
 import {
   AlertDialog,
@@ -224,7 +224,7 @@ function CampViewPage(props: { id?: string }) {
 
   // Define hasPermission before using it
   const hasPermission = camp?.permissions?.canManage || false;
-  
+
   // Fetch slot bookings for availability-based camps
   const { data: slotBookingsData, isLoading: isLoadingSlotBookings } = useQuery({
     queryKey: [`/api/camps/${camp?.id}/bookings`],
@@ -258,7 +258,7 @@ function CampViewPage(props: { id?: string }) {
 
   // Get all registrations from the API response
   const allRegistrations = registrationsData?.registrations || [];
-  
+
   // Deduplicate registrations based on childId to prevent duplicate displays
   // This ensures we only show one entry per child, even if multiple registrations exist
   const uniqueChildIds = new Set();
@@ -271,7 +271,7 @@ function CampViewPage(props: { id?: string }) {
     // Skip duplicate registrations for the same child
     return false;
   });
-  
+
   const slotBookings = slotBookingsData || [];
   const showMessagesTab = hasPermission || isParent;
 
@@ -312,7 +312,7 @@ function CampViewPage(props: { id?: string }) {
     if (camp?.schedulingType === 'availability') {
       return false;
     }
-    
+
     // For fixed-schedule camps, prevent registering the same child multiple times
     if (!registrations) return false;
     return registrations.some((reg: any) => reg.childId === childId);
@@ -327,7 +327,7 @@ function CampViewPage(props: { id?: string }) {
       reg.status === "waitlisted"
     );
   };
-  
+
   // Function to handle viewing an athlete
   const handleViewAthlete = (registration: any) => {
     // Get the custom field responses for this registration
@@ -335,7 +335,7 @@ function CampViewPage(props: { id?: string }) {
       id: registration.id,
       customFieldResponses: registration.customFieldResponses || []
     };
-    
+
     // Get the athlete data
     const athleteData = {
       id: registration.childId,
@@ -354,7 +354,7 @@ function CampViewPage(props: { id?: string }) {
       weight: registration.child?.weight || '',
       jerseySize: registration.child?.jerseySize || ''
     };
-    
+
     setSelectedAthlete(athleteData);
     setSelectedRegistration(registrationData);
     setViewAthleteDialogOpen(true);
@@ -377,7 +377,7 @@ function CampViewPage(props: { id?: string }) {
   const [exportFormat, setExportFormat] = useState<"pdf" | "csv">("pdf");
   const [showFormFieldsDialog, setShowFormFieldsDialog] = useState(false);
   const [showAllAvailabilitySlots, setShowAllAvailabilitySlots] = useState(false);
-  
+
   // State variables for the ViewAthleteDialog
   const [selectedAthlete, setSelectedAthlete] = useState<ExtendedChild | null>(null);
   const [viewAthleteDialogOpen, setViewAthleteDialogOpen] = useState(false);
@@ -400,7 +400,7 @@ function CampViewPage(props: { id?: string }) {
   const ChildSelectionDialog = () => {
     const isWaitlist = registrationStatus === 'waitlist';
     const isAvailabilityBased = camp?.schedulingType === 'availability';
-    
+
     if (isLoadingChildren || (isAvailabilityBased && isLoadingSlots)) {
       return (
         <div className="flex justify-center py-4">
@@ -495,7 +495,7 @@ function CampViewPage(props: { id?: string }) {
             </AlertDescription>
           </Alert>
         )}
-        
+
         {/* Custom registration fields if enabled for this camp */}
         {camp?.customRegistrationEnabled && selectedChildId && !isWaitlist && (
           <div className="mt-4">
@@ -505,7 +505,7 @@ function CampViewPage(props: { id?: string }) {
             />
           </div>
         )}
-        
+
         {/* Slot selection for availability-based camps */}
         {isAvailabilityBased && !isWaitlist && selectedChildId && availabilitySlots.length > 0 && (
           <div className="mt-6 border rounded-md p-4">
@@ -529,9 +529,9 @@ function CampViewPage(props: { id?: string }) {
                   const formattedDate = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
                   const formattedStartTime = startTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
                   const formattedEndTime = endTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-                  
+
                   const isSelected = selectedSlotIds.includes(slot.id);
-                  
+
                   return (
                     <div 
                       key={slot.id}
@@ -579,7 +579,7 @@ function CampViewPage(props: { id?: string }) {
                     </div>
                   );
                 })}
-              
+
               {availabilitySlots.filter((slot: any) => !slot.booked && slot.currentBookings < (slot.capacity || slot.maxBookings)).length === 0 && (
                 <div className="text-center py-4">
                   <p className="text-muted-foreground">No available time slots found.</p>
@@ -588,7 +588,7 @@ function CampViewPage(props: { id?: string }) {
             </div>
           </div>
         )}
-        
+
         <div className="flex justify-end gap-2 mt-4">
           <Button
             variant="outline"
@@ -637,11 +637,11 @@ function CampViewPage(props: { id?: string }) {
         }
 
         console.log("Registering for camp with ID:", campId);
-        
+
         // Handle multiple slot selections for availability-based camps
         if (camp.schedulingType === 'availability' && selectedSlotIds.length > 0) {
           console.log("Registering for multiple slots:", selectedSlotIds);
-          
+
           // Process each slot registration sequentially
           const results = [];
           for (const slotId of selectedSlotIds) {
@@ -651,16 +651,16 @@ function CampViewPage(props: { id?: string }) {
               slotId: slotId,
               customFieldResponses: Object.keys(customFieldResponses).length > 0 ? customFieldResponses : undefined,
             };
-            
+
             console.log("Registration request with custom fields and slot:", requestBody);
             const response = await apiRequest('POST', `/api/camps/${campId}/register`, requestBody);
             const result = await response.json();
             results.push(result);
-            
+
             // Add a small delay between requests to prevent race conditions
             await new Promise(resolve => setTimeout(resolve, 300));
           }
-          
+
           return { multipleRegistrations: true, results };
         } else {
           // Regular single registration
@@ -669,12 +669,12 @@ function CampViewPage(props: { id?: string }) {
             childId: selectedChildId,
             customFieldResponses: Object.keys(customFieldResponses).length > 0 ? customFieldResponses : undefined,
           };
-          
+
           // If this is an availability-based camp and a slot was selected, include it
           if (camp.schedulingType === 'availability' && selectedSlotId) {
             requestBody.slotId = selectedSlotId;
           }
-          
+
           console.log("Registration request with custom fields:", requestBody);
           const response = await apiRequest('POST', `/api/camps/${campId}/register`, requestBody);
           return await response.json();
@@ -691,7 +691,7 @@ function CampViewPage(props: { id?: string }) {
       if (data.multipleRegistrations && data.results) {
         const successfulCount = data.results.filter((r: any) => !r.error).length;
         const totalCount = data.results.length;
-        
+
         if (successfulCount === totalCount) {
           toast({
             title: "Multiple registrations successful",
@@ -1118,7 +1118,7 @@ function CampViewPage(props: { id?: string }) {
                         <p className="text-muted-foreground capitalize">{camp.type}</p>
                       </div>
                     </div>
-                    
+
                     {/* Display availability slots directly on the details page if this is an availability-based camp */}
                     {camp.schedulingType === 'availability' && (
                       <div className="mt-6 pt-6 border-t">
@@ -1127,7 +1127,7 @@ function CampViewPage(props: { id?: string }) {
                             <Calendar className="h-4 w-4 mr-2" />
                             Available Time Slots
                           </h3>
-                          
+
                           {/* Add a prominent "Manage Availability" button for camp creators */}
                           {hasPermission && (
                             <Button 
@@ -1140,7 +1140,7 @@ function CampViewPage(props: { id?: string }) {
                             </Button>
                           )}
                         </div>
-                        
+
                         {isLoadingSlots ? (
                           <div className="flex justify-center py-4">
                             <Loader2 className="h-6 w-6 animate-spin" />
@@ -1166,7 +1166,7 @@ function CampViewPage(props: { id?: string }) {
                                 const formattedDate = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
                                 const formattedStartTime = startTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
                                 const formattedEndTime = endTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-                                
+
                                 return (
                                   <div 
                                     key={slot.id}
@@ -1202,7 +1202,7 @@ function CampViewPage(props: { id?: string }) {
                                   </div>
                                 );
                               })}
-                            
+
                             {availabilitySlots.filter((slot: any) => !slot.booked && slot.currentBookings < (slot.capacity || slot.maxBookings)).length === 0 ? (
                               <div className="text-center py-4">
                                 <p className="text-muted-foreground">No available time slots found.</p>
@@ -1255,7 +1255,7 @@ function CampViewPage(props: { id?: string }) {
                   className="mb-6"
                 />
 
-{camp.schedulingType !== 'availability' && (
+                {camp.schedulingType !== 'availability' && (
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
                       <CardTitle>Camp Schedule</CardTitle>
@@ -1270,7 +1270,7 @@ function CampViewPage(props: { id?: string }) {
                             <Calendar className="h-4 w-4 mr-2" />
                             Edit Schedule
                           </Button>
-                          
+
                           {camp.schedulingType === "availability" && (
                             <Button
                               variant="outline"
@@ -1372,13 +1372,13 @@ function CampViewPage(props: { id?: string }) {
                       {registrations.map((registration: any) => {
                         // For availability-based camps, find slot bookings for this registration
                         let bookedSlots: any[] = [];
-                        
+
                         if (camp?.schedulingType === 'availability' && slotBookings?.length > 0) {
                           // Find slots this participant is registered for
                           bookedSlots = slotBookings.filter((slot: any) => {
                             console.log(`Checking slot ID ${slot.id} for childId ${registration.childId}`, 
                               `Bookings:`, JSON.stringify(slot.bookings, null, 2));
-                            
+
                             // Check if slot has bookings array and if any booking matches this child
                             return Array.isArray(slot.bookings) && slot.bookings.some((booking: any) => {
                               // Try different property names that might contain child ID
@@ -1387,17 +1387,17 @@ function CampViewPage(props: { id?: string }) {
                               const childObjectId = booking.child?.id;
                               // Compare with registration's childId
                               const match = bookingChildId === registration.childId || childObjectId === registration.childId;
-                              
+
                               if (match) {
                                 console.log(`Found match for child ${registration.childId} in slot ${slot.id}`);
                               }
                               return match;
                             });
                           });
-                          
+
                           console.log(`Found ${bookedSlots.length} booked slots for registration ${registration.id} (childId: ${registration.childId})`);
                         }
-                        
+
                         return (
                           <div
                             key={registration.id}
@@ -1438,7 +1438,7 @@ function CampViewPage(props: { id?: string }) {
                                 )}
                               </div>
                             </div>
-                            
+
                             {/* Display booked slots for availability-based camps */}
                             {camp?.schedulingType === 'availability' && hasPermission && bookedSlots.length > 0 && (
                               <div className="mt-2 pt-2 border-t">
@@ -1451,13 +1451,13 @@ function CampViewPage(props: { id?: string }) {
                                       month: 'short', 
                                       day: 'numeric'
                                     });
-                                    
+
                                     const startTime = new Date(`${slotDate.toISOString().split('T')[0]}T${slot.startTime}`);
                                     const endTime = new Date(`${slotDate.toISOString().split('T')[0]}T${slot.endTime}`);
-                                    
+
                                     const formattedTime = `${startTime.toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'})} - 
                                       ${endTime.toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'})}`;
-                                    
+
                                     return (
                                       <span key={slot.id} className="px-2 py-1 rounded-md text-xs bg-blue-50 text-blue-700 border border-blue-100">
                                         {formattedDate} • {formattedTime}
@@ -1618,7 +1618,7 @@ function CampViewPage(props: { id?: string }) {
                                         </TooltipContent>
                                       </Tooltip>
                                     </TooltipProvider>
-                                    
+
                                     <TooltipProvider>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
@@ -1729,17 +1729,17 @@ function CampViewPage(props: { id?: string }) {
               </Card>
             </TabsContent>
           )}
-          
+
           {camp?.schedulingType === "availability" && (
             <Dialog open={manageAvailabilityOpen} onOpenChange={setManageAvailabilityOpen}>
               <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
+                <Dialog<DialogHeader>
                   <DialogTitle>Manage Availability Slots</DialogTitle>
                   <DialogDescription>
                     Add, edit, or remove availability slots for this camp.
                   </DialogDescription>
                 </DialogHeader>
-                
+
                 <div className="py-4">
                   <CampAvailabilityTab 
                     campId={camp.id} 
@@ -1920,7 +1920,7 @@ function CampViewPage(props: { id?: string }) {
 
   // Determine the appropriate rendering approach based on user role and route
   // Most routes should be coming through Router in App.tsx with the appropriate layout
-  
+
   if (isParent) {
     // For parent users, determine if we should use the parent dashboard layout
     if (location.includes('/dashboard/camp/') || location.includes('/dashboard/register/camp/')) {
