@@ -234,7 +234,7 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             {/* Active Camps Stat */}
             <div className="bg-black/20 rounded-lg border border-white/10 p-6 flex flex-col items-center justify-center text-white text-center">
-              <div className="text-amber-300 mb-2">
+              <div className="mb-2" style={{ color: organization.primaryColor || '#FBBF24' }}>
                 <Trophy className="h-6 w-6" />
               </div>
               <div className="text-3xl font-bold mb-1">
@@ -247,7 +247,7 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
             
             {/* Total Participants Stat */}
             <div className="bg-black/20 rounded-lg border border-white/10 p-6 flex flex-col items-center justify-center text-white text-center">
-              <div className="text-amber-300 mb-2">
+              <div className="mb-2" style={{ color: organization.primaryColor || '#FBBF24' }}>
                 <Star className="h-6 w-6" />
               </div>
               <div className="text-3xl font-bold mb-1">
@@ -260,7 +260,7 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
             
             {/* Sports Offered Stat */}
             <div className="bg-black/20 rounded-lg border border-white/10 p-6 flex flex-col items-center justify-center text-white text-center">
-              <div className="text-amber-300 mb-2">
+              <div className="mb-2" style={{ color: organization.primaryColor || '#FBBF24' }}>
                 <CalendarRange className="h-6 w-6" />
               </div>
               <div className="text-3xl font-bold mb-1">
@@ -520,11 +520,15 @@ function CampCard({
   primaryColor?: string | null,
   secondaryColor?: string | null
 }) {
-  // Use amber/gold color for buttons instead of primary color
-  const buttonStyle = {
-    backgroundColor: '#F59E0B', // amber-500
-    borderColor: '#F59E0B',
+  // Use organization's primary/secondary colors for buttons
+  const buttonStyle = primaryColor ? {
+    backgroundColor: primaryColor,
+    borderColor: primaryColor,
     color: '#ffffff' // white text
+  } : {
+    backgroundColor: '#F59E0B', // amber-500 (fallback)
+    borderColor: '#F59E0B',
+    color: '#ffffff'
   };
 
   return (
@@ -570,7 +574,7 @@ function CampCard({
       </CardContent>
       <CardFooter className="p-4 pt-0 flex items-center justify-between mt-auto">
         <div className="flex items-center">
-          <p className="font-bold text-lg text-amber-500">${camp.price}</p>
+          <p className="font-bold text-lg" style={{ color: primaryColor || '#F59E0B' }}>${camp.price}</p>
           {camp.registeredCount !== undefined && (
             <p className="text-xs text-muted-foreground ml-2">
               {camp.registeredCount} registered
