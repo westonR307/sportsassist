@@ -841,7 +841,7 @@ function CampViewPage(props: { id?: string }) {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </div>;
     }
 
     return (
@@ -1936,18 +1936,20 @@ function CampViewPage(props: { id?: string }) {
     );
   };
 
-  // Simple conditional to determine layout based on user role
+  // Determine the appropriate rendering approach based on user role and route
+  // Most routes should be coming through Router in App.tsx with the appropriate layout
+
   if (isParent) {
-    // Parent users get a simple layout
+    // For parent users, we'll simplify this logic to avoid location.includes issues
     return (
       <div className="p-4 md:p-6">
         {renderContent()}
       </div>
     );
-  } 
-  
-  // For camp creators and admins, use the dashboard layout
-  return <DashboardLayout>{renderContent()}</DashboardLayout>;
+  } else {
+    // For camp creators and admins, we always use the dashboard layout
+    return <DashboardLayout>{renderContent()}</DashboardLayout>;
+  }
 }
 
 export default CampViewPage;
