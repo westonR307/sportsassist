@@ -48,6 +48,9 @@ export function AppLayout({ children, showBackButton = false, showNavigation = t
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   // Initialize settings menu as collapsed
   const [settingsExpanded, setSettingsExpanded] = React.useState(false);
+  // Track if user is scrolling to prevent accidental navigation
+  const [isScrolling, setIsScrolling] = React.useState(false);
+  const scrollTimeout = React.useRef<number | null>(null);
 
   // Load organization data if the user has an organizationId
   const { data: organization } = useQuery<Organization>({

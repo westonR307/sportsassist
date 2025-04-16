@@ -144,15 +144,7 @@ export default function OrganizationViewPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Back button for mobile navigation */}
-      <div className="lg:hidden p-4 bg-background/80 backdrop-blur-md sticky top-0 z-40 border-b">
-        <Button variant="ghost" size="sm" asChild className="gap-1">
-          <Link href="/browse">
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back</span>
-          </Link>
-        </Button>
-      </div>
+      {/* Removed back button since AppLayout already provides it */}
 
       {/* Hero section with organization banner */}
       <div 
