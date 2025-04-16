@@ -1941,7 +1941,7 @@ function CampViewPage(props: { id?: string }) {
 
   if (isParent) {
     // For parent users, determine if we should use the parent dashboard layout
-    const currentPath = location[0];
+    const currentPath = location;
     if (currentPath.includes('/dashboard/camp/') || currentPath.includes('/dashboard/register/camp/')) {
       // If it's a dashboard route, use plain content as parent dashboard layout is already applied
       return renderContent();
