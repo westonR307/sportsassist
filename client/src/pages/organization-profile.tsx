@@ -120,6 +120,8 @@ export default function OrganizationProfilePage() {
   const [activeTab, setActiveTab] = useState('basic-info');
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
 
   // Query to fetch the organization data for the current user
   const { data: organization, isLoading } = useQuery<Organization>({
@@ -429,180 +431,157 @@ export default function OrganizationProfilePage() {
     debounce((data: OrganizationProfileData) => {
       const changedData = getChangedFields(data);
       
-      // Validate color fields before submitting
-      const validatedData = { ...changedData };
-      const validHexRegex = /^#([0-9A-F]{3}){1,2}$/i;
-      
-      // Sanitize primary color if present
-      if (validatedData.primaryColor && !validHexRegex.test(validatedData.primaryColor)) {
-        console.log('Invalid primary color format, resetting to default:', validatedData.primaryColor);
-        validatedData.primaryColor = '#3730a3'; // Default primary color
+      // Validate color field
+      const validHexColor = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+      if (changedData.primaryColor && !validHexColor.test(changedData.primaryColor)) {
+        toast({
+          title: 'Invalid Color Format',
+          description: 'Primary color must be a valid hex color (e.g., #3730a3).',
+          variant: 'destructive',
+        });
+        return;
       }
       
-      // Sanitize secondary color if present
-      if (validatedData.secondaryColor && !validHexRegex.test(validatedData.secondaryColor)) {
-        console.log('Invalid secondary color format, resetting to default:', validatedData.secondaryColor);
-        validatedData.secondaryColor = '#1e3a8a'; // Default secondary color
+      if (changedData.secondaryColor && !validHexColor.test(changedData.secondaryColor)) {
+        toast({
+          title: 'Invalid Color Format',
+          description: 'Secondary color must be a valid hex color (e.g., #1e3a8a).',
+          variant: 'destructive',
+        });
+        return;
       }
       
-      console.log('Submitting only changed fields:', validatedData);
-      updateProfileMutation.mutate(validatedData as OrganizationProfileData);
-    }, 500),
-    [organization, updateProfileMutation]
+      console.log('Auto-saving changes:', changedData);
+      updateProfileMutation.mutate(changedData);
+    }, 1000),
+    [updateProfileMutation, getChangedFields, toast]
   );
+
+  // Auto-save when form values change
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      if (value.name) {
+        debouncedMutation(value as OrganizationProfileData);
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [form, debouncedMutation]);
 
   // Handle form submission
   const onSubmit = (data: OrganizationProfileData) => {
     console.log('Form submitted with data:', data);
+    const changedData = getChangedFields(data);
+    console.log('Submitting changed fields:', changedData);
+    updateProfileMutation.mutate(changedData);
     
-    // Ensure correct social links format
-    if (data.socialLinks) {
-      // Make sure all social links are defined with empty strings instead of undefined
-      data.socialLinks = {
-        facebook: data.socialLinks.facebook || '',
-        twitter: data.socialLinks.twitter || '',
-        linkedin: data.socialLinks.linkedin || '',
-        instagram: data.socialLinks.instagram || '',
-      };
+    // Also upload any files that were selected
+    if (logoFile) {
+      uploadLogoMutation.mutate(logoFile);
+      setLogoFile(null);
     }
     
-    // Instead of debouncing, directly submit the data
-    const changedData = getChangedFields(data);
-    console.log('Submitting data to server:', changedData);
-    
-    try {
-      updateProfileMutation.mutate(changedData as OrganizationProfileData);
-    } catch (error) {
-      console.error('Error during mutation submission:', error);
-      toast({
-        title: 'Submission Error',
-        description: `There was an error submitting your changes: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: 'destructive',
-      });
+    if (bannerFile) {
+      uploadBannerMutation.mutate(bannerFile);
+      setBannerFile(null);
     }
   };
 
   // Handle logo file change
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Preview
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      setLogoFile(file);
+      
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onload = () => {
         setLogoPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
-
-      // Upload
-      uploadLogoMutation.mutate(file);
     }
   };
 
   // Handle banner file change
   const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Preview
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      setBannerFile(file);
+      
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onload = () => {
         setBannerPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
-
-      // Upload
-      uploadBannerMutation.mutate(file);
     }
   };
-  
-  // Mutation to remove logo
-  const removeLogoMutation = useMutation({
-    mutationFn: async () => {
-      if (!user?.organizationId) {
-        throw new Error('No organization associated with this user');
-      }
-      
-      const response = await fetch(`/api/organizations/${user.organizationId}/logo`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`${response.status}: ${text}`);
-      }
-      
-      return response;
-    },
-    onSuccess: () => {
-      if (user?.organizationId) {
-        queryClient.invalidateQueries({ queryKey: ['/api/organizations', user.organizationId] });
-      }
-      setLogoPreview(null);
-      toast({
-        title: 'Logo Removed',
-        description: 'Your organization logo has been successfully removed.',
-        variant: 'default',
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Removal Failed',
-        description: `Failed to remove logo: ${error.message}`,
-        variant: 'destructive',
-      });
-    }
-  });
-  
-  // Mutation to remove banner
-  const removeBannerMutation = useMutation({
-    mutationFn: async () => {
-      if (!user?.organizationId) {
-        throw new Error('No organization associated with this user');
-      }
-      
-      const response = await fetch(`/api/organizations/${user.organizationId}/banner`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`${response.status}: ${text}`);
-      }
-      
-      return response;
-    },
-    onSuccess: () => {
-      if (user?.organizationId) {
-        queryClient.invalidateQueries({ queryKey: ['/api/organizations', user.organizationId] });
-      }
-      setBannerPreview(null);
-      toast({
-        title: 'Banner Removed',
-        description: 'Your organization banner has been successfully removed.',
-        variant: 'default',
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Removal Failed',
-        description: `Failed to remove banner: ${error.message}`,
-        variant: 'destructive',
-      });
-    }
-  });
-  
-  // Handle remove logo
+
+  // Handle logo removal
   const handleRemoveLogo = () => {
-    removeLogoMutation.mutate();
-  };
-  
-  // Handle remove banner
-  const handleRemoveBanner = () => {
-    removeBannerMutation.mutate();
+    setLogoPreview(null);
+    setLogoFile(null);
+    
+    if (organization?.logoUrl && user?.organizationId) {
+      fetch(`/api/organizations/${user.organizationId}/logo`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+        .then(response => {
+          if (response.ok) {
+            queryClient.invalidateQueries({ queryKey: ['/api/organizations', user.organizationId] });
+            toast({
+              title: 'Logo Removed',
+              description: 'Your organization logo has been removed.',
+              variant: 'default',
+            });
+          } else {
+            throw new Error('Failed to remove logo');
+          }
+        })
+        .catch(error => {
+          toast({
+            title: 'Removal Failed',
+            description: `Failed to remove logo: ${error.message}`,
+            variant: 'destructive',
+          });
+        });
+    }
   };
 
-  // Loading state
+  // Handle banner removal
+  const handleRemoveBanner = () => {
+    setBannerPreview(null);
+    setBannerFile(null);
+    
+    if (organization?.bannerImageUrl && user?.organizationId) {
+      fetch(`/api/organizations/${user.organizationId}/banner`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+        .then(response => {
+          if (response.ok) {
+            queryClient.invalidateQueries({ queryKey: ['/api/organizations', user.organizationId] });
+            toast({
+              title: 'Banner Removed',
+              description: 'Your organization banner has been removed.',
+              variant: 'default',
+            });
+          } else {
+            throw new Error('Failed to remove banner');
+          }
+        })
+        .catch(error => {
+          toast({
+            title: 'Removal Failed',
+            description: `Failed to remove banner: ${error.message}`,
+            variant: 'destructive',
+          });
+        });
+    }
+  };
+
+  // Show loading spinner while fetching data
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -634,378 +613,517 @@ export default function OrganizationProfilePage() {
           )}
         </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid grid-cols-4 w-full max-w-2xl">
-          <TabsTrigger value="basic-info" className="flex items-center gap-2">
-            <Building2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Basic Info</span>
-          </TabsTrigger>
-          <TabsTrigger value="branding" className="flex items-center gap-2">
-            <Palette className="h-4 w-4" />
-            <span className="hidden sm:inline">Branding</span>
-          </TabsTrigger>
-          <TabsTrigger value="about" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">About</span>
-          </TabsTrigger>
-          <TabsTrigger value="contact" className="flex items-center gap-2">
-            <Mail className="h-4 w-4" />
-            <span className="hidden sm:inline">Contact & Social</span>
-          </TabsTrigger>
-        </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+            <TabsTrigger value="basic-info" className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Basic Info</span>
+            </TabsTrigger>
+            <TabsTrigger value="branding" className="flex items-center gap-2">
+              <Palette className="h-4 w-4" />
+              <span className="hidden sm:inline">Branding</span>
+            </TabsTrigger>
+            <TabsTrigger value="about" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">About</span>
+            </TabsTrigger>
+            <TabsTrigger value="contact" className="flex items-center gap-2">
+              <Mail className="h-4 w-4" />
+              <span className="hidden sm:inline">Contact & Social</span>
+            </TabsTrigger>
+          </TabsList>
 
-        <Form {...form}>
-          <form onSubmit={(e) => {
-            e.preventDefault(); // Prevent default form submission behavior
-            console.log('Form submission event:', e);
-            console.log('Form state before submit:', form.getValues());
-            form.handleSubmit(onSubmit)(e);
-          }} className="space-y-6">
-            <TabsContent value="basic-info" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Basic Information</CardTitle>
-                  <CardDescription>
-                    Set your organization's name and basic details
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Organization Name*</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter your organization name" {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          This is your official organization name.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+          <Form {...form}>
+            <form onSubmit={(e) => {
+              e.preventDefault(); // Prevent default form submission behavior
+              console.log('Form submission event:', e);
+              console.log('Form state before submit:', form.getValues());
+              form.handleSubmit(onSubmit)(e);
+            }} className="space-y-6">
+              <TabsContent value="basic-info" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Basic Information</CardTitle>
+                    <CardDescription>
+                      Set your organization's name and basic details
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Organization Name*</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter your organization name" {...field} />
+                          </FormControl>
+                          <FormDescription>
+                            This is your official organization name.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="displayName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Display Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter display name (optional)" {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          Optional shorter or alternative name to display on your profile.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={form.control}
+                      name="displayName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Display Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter display name (optional)" {...field} />
+                          </FormControl>
+                          <FormDescription>
+                            Optional shorter or alternative name to display on your profile.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Short Description</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Brief description of your organization" 
-                            className="resize-none" 
-                            {...field} 
-                            value={field.value || ''}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          A brief tagline or description (250 characters max).
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="branding" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Branding</CardTitle>
-                  <CardDescription>
-                    Upload your logo and customize your brand colors
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="logo-upload">Logo</Label>
-                      <div className="mt-2 flex items-center gap-4">
-                        <div className="h-24 w-24 border rounded-md flex items-center justify-center overflow-hidden bg-gray-50">
-                          {(logoPreview || organization?.logoUrl) ? (
-                            <img 
-                              src={logoPreview || organization?.logoUrl || ''} 
-                              alt="Organization Logo" 
-                              className="h-full w-full object-contain" 
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Short Description</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Brief description of your organization" 
+                              className="resize-none" 
+                              {...field} 
+                              value={field.value || ''}
                             />
-                          ) : (
-                            <UserCircle className="h-16 w-16 text-gray-300" />
-                          )}
+                          </FormControl>
+                          <FormDescription>
+                            A brief tagline or description (250 characters max).
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="branding" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Branding</CardTitle>
+                    <CardDescription>
+                      Upload your logo and customize your brand colors
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="logo-upload">Logo</Label>
+                        <div className="mt-2 flex items-center gap-4">
+                          <div className="h-24 w-24 border rounded-md flex items-center justify-center overflow-hidden bg-gray-50">
+                            {(logoPreview || organization?.logoUrl) ? (
+                              <img 
+                                src={logoPreview || organization?.logoUrl || ''} 
+                                alt="Organization Logo" 
+                                className="h-full w-full object-contain" 
+                              />
+                            ) : (
+                              <UserCircle className="h-16 w-16 text-gray-300" />
+                            )}
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            <div className="flex gap-2">
+                              <Label 
+                                htmlFor="logo-upload" 
+                                className="cursor-pointer inline-flex items-center px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md text-sm font-medium"
+                              >
+                                <Upload className="mr-2 h-4 w-4" />
+                                Upload Logo
+                              </Label>
+                              {(logoPreview || organization?.logoUrl) && (
+                                <Button
+                                  variant="outline"
+                                  type="button"
+                                  className="inline-flex items-center text-destructive hover:text-destructive"
+                                  onClick={handleRemoveLogo}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Remove
+                                </Button>
+                              )}
+                            </div>
+                            <input 
+                              id="logo-upload" 
+                              type="file" 
+                              className="hidden" 
+                              accept="image/*"
+                              onChange={handleLogoChange}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Recommended size: 400x400 pixels (square)
+                            </p>
+                          </div>
                         </div>
-                        <div className="flex flex-col gap-2">
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="banner-upload">Banner Image</Label>
+                        <div className="mt-2 flex flex-col gap-4">
+                          <div className="h-32 border rounded-md flex items-center justify-center overflow-hidden bg-gray-50 relative">
+                            {(bannerPreview || organization?.bannerImageUrl) ? (
+                              <img 
+                                src={bannerPreview || organization?.bannerImageUrl || ''} 
+                                alt="Organization Banner" 
+                                className="w-full h-full object-cover" 
+                              />
+                            ) : (
+                              <div className="text-center text-gray-300">
+                                <Building2 className="h-16 w-16 mx-auto" />
+                                <p className="text-sm">No banner uploaded</p>
+                              </div>
+                            )}
+                          </div>
                           <div className="flex gap-2">
                             <Label 
-                              htmlFor="logo-upload" 
+                              htmlFor="banner-upload" 
                               className="cursor-pointer inline-flex items-center px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md text-sm font-medium"
                             >
                               <Upload className="mr-2 h-4 w-4" />
-                              Upload Logo
+                              Upload Banner
                             </Label>
-                            {(logoPreview || organization?.logoUrl) && (
+                            {(bannerPreview || organization?.bannerImageUrl) && (
                               <Button
                                 variant="outline"
                                 type="button"
                                 className="inline-flex items-center text-destructive hover:text-destructive"
-                                onClick={handleRemoveLogo}
+                                onClick={handleRemoveBanner}
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Remove
                               </Button>
                             )}
+                            <input 
+                              id="banner-upload" 
+                              type="file" 
+                              className="hidden" 
+                              accept="image/*"
+                              onChange={handleBannerChange}
+                            />
                           </div>
-                          <input 
-                            id="logo-upload" 
-                            type="file" 
-                            className="hidden" 
-                            accept="image/*"
-                            onChange={handleLogoChange}
-                          />
                           <p className="text-xs text-muted-foreground">
-                            Recommended size: 400x400 pixels (square)
+                            Recommended size: 1200x300 pixels (4:1 ratio)
+                          </p>
+                        </div>
+                      </div>
+
+                      <Separator className="my-4" />
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="primaryColorInput">Primary Color</Label>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="h-10 w-10 rounded border"
+                              style={{ backgroundColor: form.watch('primaryColor') || '#3730a3' }}
+                            ></div>
+                            <Input 
+                              id="primaryColorInput"
+                              type="text" 
+                              value={form.watch('primaryColor') || '#3730a3'}
+                              onChange={(e) => form.setValue('primaryColor', e.target.value)}
+                              placeholder="#3730a3"
+                              maxLength={7}
+                              className="w-32"
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            Main color for your organization's branding (HEX format: #RRGGBB).
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="secondaryColorInput">Secondary Color</Label>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="h-10 w-10 rounded border"
+                              style={{ backgroundColor: form.watch('secondaryColor') || '#1e3a8a' }}
+                            ></div>
+                            <Input 
+                              id="secondaryColorInput"
+                              type="text" 
+                              value={form.watch('secondaryColor') || '#1e3a8a'}
+                              onChange={(e) => form.setValue('secondaryColor', e.target.value)}
+                              placeholder="#1e3a8a"
+                              maxLength={7}
+                              className="w-32"
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            Accent color for your organization's branding (HEX format: #RRGGBB).
                           </p>
                         </div>
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="about" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>About Section</CardTitle>
+                    <CardDescription>
+                      Share information about your organization
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <FormField
+                      control={form.control}
+                      name="aboutText"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>About Us</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Tell people about your organization, history, and values..." 
+                              className="min-h-[200px]" 
+                              {...field} 
+                              value={field.value || ''}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            This text will be displayed on your public profile page.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <Separator />
+                    
+                    <FormField
+                      control={form.control}
+                      name="missionStatement"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Mission Statement</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="What is your organization's mission or purpose?" 
+                              className="min-h-[120px]" 
+                              {...field} 
+                              value={field.value || ''}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            This will be featured prominently on your profile page.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <Separator />
                     
                     <div>
-                      <Label htmlFor="banner-upload">Banner Image</Label>
-                      <div className="mt-2 flex flex-col gap-4">
-                        <div className="h-32 border rounded-md flex items-center justify-center overflow-hidden bg-gray-50 relative">
-                          {(bannerPreview || organization?.bannerImageUrl) ? (
-                            <img 
-                              src={bannerPreview || organization?.bannerImageUrl || ''} 
-                              alt="Organization Banner" 
-                              className="w-full h-full object-cover" 
+                      <h3 className="text-lg font-medium mb-4">Feature Highlights</h3>
+                      <p className="text-sm text-muted-foreground mb-6">
+                        Add up to three unique features or benefits of your organization that you want to highlight.
+                      </p>
+                      
+                      <div className="space-y-6">
+                        {/* Feature 1 */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="md:col-span-1">
+                            <FormField
+                              control={form.control}
+                              name="feature1Title"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Feature 1 Title</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="e.g., Expert Coaches" {...field} value={field.value || ''} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
                             />
-                          ) : (
-                            <div className="text-center text-gray-300">
-                              <Building2 className="h-16 w-16 mx-auto" />
-                              <p className="text-sm">No banner uploaded</p>
-                            </div>
-                          )}
+                          </div>
+                          <div className="md:col-span-2">
+                            <FormField
+                              control={form.control}
+                              name="feature1Description"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Feature 1 Description</FormLabel>
+                                  <FormControl>
+                                    <Textarea 
+                                      placeholder="Brief description of this feature..." 
+                                      className="resize-none" 
+                                      {...field} 
+                                      value={field.value || ''}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
                         </div>
-                        <div className="flex gap-2">
-                          <Label 
-                            htmlFor="banner-upload" 
-                            className="cursor-pointer inline-flex items-center px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md text-sm font-medium"
-                          >
-                            <Upload className="mr-2 h-4 w-4" />
-                            Upload Banner
-                          </Label>
-                          {(bannerPreview || organization?.bannerImageUrl) && (
-                            <Button
-                              variant="outline"
-                              type="button"
-                              className="inline-flex items-center text-destructive hover:text-destructive"
-                              onClick={handleRemoveBanner}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Remove
-                            </Button>
-                          )}
-                          <input 
-                            id="banner-upload" 
-                            type="file" 
-                            className="hidden" 
-                            accept="image/*"
-                            onChange={handleBannerChange}
-                          />
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Recommended size: 1200x300 pixels (4:1 ratio)
-                        </p>
-                      </div>
-                    </div>
-
-                    <Separator className="my-4" />
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="primaryColorInput">Primary Color</Label>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="h-10 w-10 rounded border"
-                            style={{ backgroundColor: form.watch('primaryColor') || '#3730a3' }}
-                          ></div>
-                          <Input 
-                            id="primaryColorInput"
-                            type="text" 
-                            value={form.watch('primaryColor') || '#3730a3'}
-                            onChange={(e) => form.setValue('primaryColor', e.target.value)}
-                            placeholder="#3730a3"
-                            maxLength={7}
-                            className="w-32"
-                          />
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          Main color for your organization's branding (HEX format: #RRGGBB).
-                        </p>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="secondaryColorInput">Secondary Color</Label>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="h-10 w-10 rounded border"
-                            style={{ backgroundColor: form.watch('secondaryColor') || '#1e3a8a' }}
-                          ></div>
-                          <Input 
-                            id="secondaryColorInput"
-                            type="text" 
-                            value={form.watch('secondaryColor') || '#1e3a8a'}
-                            onChange={(e) => form.setValue('secondaryColor', e.target.value)}
-                            placeholder="#1e3a8a"
-                            maxLength={7}
-                            className="w-32"
-                          />
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          Accent color for your organization's branding (HEX format: #RRGGBB).
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="about" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>About Section</CardTitle>
-                  <CardDescription>
-                    Share information about your organization
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <FormField
-                    control={form.control}
-                    name="aboutText"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>About Us</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Tell people about your organization, history, and values..." 
-                            className="min-h-[200px]" 
-                            {...field} 
-                            value={field.value || ''}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          This text will be displayed on your public profile page.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Separator />
-                  
-                  <FormField
-                    control={form.control}
-                    name="missionStatement"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Mission Statement</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="What is your organization's mission or purpose?" 
-                            className="min-h-[120px]" 
-                            {...field} 
-                            value={field.value || ''}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          This will be featured prominently on your profile page.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Separator />
-                  
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">Feature Highlights</h3>
-                    <p className="text-sm text-muted-foreground mb-6">
-                      Add up to three unique features or benefits of your organization that you want to highlight.
-                    </p>
-                    
-                    <div className="space-y-6">
-                      {/* Feature 1 */}
-                      <div className="grid gap-3">
-                        <FormField
-                          control={form.control}
-                          name="feature1Title"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Feature 1 Title</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  placeholder="e.g., Expert Coaching" 
-                                  {...field} 
-                                  value={field.value || ''}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
                         
-                        <FormField
-                          control={form.control}
-                          name="feature1Description"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Feature 1 Description</FormLabel>
-                              <FormControl>
-                                <Textarea 
-                                  placeholder="Brief description of this feature or benefit" 
-                                  {...field} 
-                                  value={field.value || ''}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                        {/* Feature 2 */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="md:col-span-1">
+                            <FormField
+                              control={form.control}
+                              name="feature2Title"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Feature 2 Title</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="e.g., Small Class Sizes" {...field} value={field.value || ''} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <FormField
+                              control={form.control}
+                              name="feature2Description"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Feature 2 Description</FormLabel>
+                                  <FormControl>
+                                    <Textarea 
+                                      placeholder="Brief description of this feature..." 
+                                      className="resize-none" 
+                                      {...field} 
+                                      value={field.value || ''}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </div>
+                        
+                        {/* Feature 3 */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="md:col-span-1">
+                            <FormField
+                              control={form.control}
+                              name="feature3Title"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Feature 3 Title</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="e.g., State-of-the-art Facilities" {...field} value={field.value || ''} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <FormField
+                              control={form.control}
+                              name="feature3Description"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Feature 3 Description</FormLabel>
+                                  <FormControl>
+                                    <Textarea 
+                                      placeholder="Brief description of this feature..." 
+                                      className="resize-none" 
+                                      {...field} 
+                                      value={field.value || ''}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </div>
                       </div>
-                      
-                      {/* Feature 2 */}
-                      <div className="grid gap-3">
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="contact" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Contact Information</CardTitle>
+                    <CardDescription>
+                      How people can reach your organization
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="contactEmail"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Contact Email</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="contact@example.com" 
+                              type="email" 
+                              {...field} 
+                              value={field.value || ''}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Public email address for inquiries.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="websiteUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Website URL</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="https://www.example.com" 
+                              {...field} 
+                              value={field.value || ''}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Your organization's official website.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <Separator className="my-6" />
+
+                    <div>
+                      <h3 className="text-lg font-medium mb-4">Social Media Links</h3>
+                      <div className="space-y-4">
                         <FormField
                           control={form.control}
-                          name="feature2Title"
+                          name="socialLinks.facebook"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Feature 2 Title</FormLabel>
+                              <FormLabel className="flex items-center gap-2">
+                                <Facebook className="h-4 w-4" />
+                                Facebook
+                              </FormLabel>
                               <FormControl>
                                 <Input 
-                                  placeholder="e.g., State-of-the-Art Facilities" 
+                                  placeholder="https://facebook.com/your-page" 
                                   {...field} 
                                   value={field.value || ''}
                                 />
@@ -1014,37 +1132,19 @@ export default function OrganizationProfilePage() {
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={form.control}
-                          name="feature2Description"
+                          name="socialLinks.twitter"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Feature 2 Description</FormLabel>
-                              <FormControl>
-                                <Textarea 
-                                  placeholder="Brief description of this feature or benefit" 
-                                  {...field} 
-                                  value={field.value || ''}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      
-                      {/* Feature 3 */}
-                      <div className="grid gap-3">
-                        <FormField
-                          control={form.control}
-                          name="feature3Title"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Feature 3 Title</FormLabel>
+                              <FormLabel className="flex items-center gap-2">
+                                <Twitter className="h-4 w-4" />
+                                Twitter
+                              </FormLabel>
                               <FormControl>
                                 <Input 
-                                  placeholder="e.g., Personalized Development" 
+                                  placeholder="https://twitter.com/your-handle" 
                                   {...field} 
                                   value={field.value || ''}
                                 />
@@ -1053,16 +1153,40 @@ export default function OrganizationProfilePage() {
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={form.control}
-                          name="feature3Description"
+                          name="socialLinks.instagram"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Feature 3 Description</FormLabel>
+                              <FormLabel className="flex items-center gap-2">
+                                <Instagram className="h-4 w-4" />
+                                Instagram
+                              </FormLabel>
                               <FormControl>
-                                <Textarea 
-                                  placeholder="Brief description of this feature or benefit" 
+                                <Input 
+                                  placeholder="https://instagram.com/your-handle" 
+                                  {...field} 
+                                  value={field.value || ''}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="socialLinks.linkedin"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="flex items-center gap-2">
+                                <Linkedin className="h-4 w-4" />
+                                LinkedIn
+                              </FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder="https://linkedin.com/company/your-company" 
                                   {...field} 
                                   value={field.value || ''}
                                 />
@@ -1073,280 +1197,101 @@ export default function OrganizationProfilePage() {
                         />
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-            <TabsContent value="contact" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Contact Information</CardTitle>
-                  <CardDescription>
-                    How people can reach your organization
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="contactEmail"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Contact Email</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="contact@yourorganization.com" 
-                            type="email" 
-                            {...field} 
-                            value={field.value || ''}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Public email address for inquiries.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="websiteUrl"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Website</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="https://yourorganization.com" 
-                            type="url" 
-                            {...field} 
-                            value={field.value || ''}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Your organization's website URL.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Separator className="my-4" />
-
-                  <div>
-                    <h3 className="text-sm font-medium mb-3">Social Media Links</h3>
-                    <div className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="socialLinks.facebook"
-                        render={({ field }) => (
-                          <FormItem>
-                            <div className="flex items-center gap-2">
-                              <Facebook className="h-5 w-5 text-blue-600" />
-                              <FormLabel className="w-24">Facebook</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  placeholder="https://facebook.com/yourpage" 
-                                  {...field} 
-                                  value={field.value || ''}
-                                />
-                              </FormControl>
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="socialLinks.twitter"
-                        render={({ field }) => (
-                          <FormItem>
-                            <div className="flex items-center gap-2">
-                              <Twitter className="h-5 w-5 text-blue-400" />
-                              <FormLabel className="w-24">Twitter</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  placeholder="https://twitter.com/yourhandle" 
-                                  {...field} 
-                                  value={field.value || ''}
-                                />
-                              </FormControl>
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="socialLinks.linkedin"
-                        render={({ field }) => (
-                          <FormItem>
-                            <div className="flex items-center gap-2">
-                              <Linkedin className="h-5 w-5 text-blue-800" />
-                              <FormLabel className="w-24">LinkedIn</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  placeholder="https://linkedin.com/company/yourcompany" 
-                                  {...field} 
-                                  value={field.value || ''}
-                                />
-                              </FormControl>
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="socialLinks.instagram"
-                        render={({ field }) => (
-                          <FormItem>
-                            <div className="flex items-center gap-2">
-                              <Instagram className="h-5 w-5 text-pink-600" />
-                              <FormLabel className="w-24">Instagram</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  placeholder="https://instagram.com/yourhandle" 
-                                  {...field} 
-                                  value={field.value || ''}
-                                />
-                              </FormControl>
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+              <div className="flex items-center justify-between pt-6">
+                <div className="flex items-center gap-2">
+                  {(updateProfileMutation.isPending || uploadLogoMutation.isPending || uploadBannerMutation.isPending) ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Saving changes...</span>
                     </div>
-                  </div>
-                </CardContent>
-
-              </Card>
-            </TabsContent>
-
-            <div className="mt-8 flex flex-col sm:flex-row sm:justify-end gap-4">
-              <Button 
-                type="button" 
-                variant="outline" 
-                disabled={updateProfileMutation.isPending}
-                onClick={() => form.reset()}
-                className="w-full sm:w-auto order-2 sm:order-1"
-              >
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Reset All Changes
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={updateProfileMutation.isPending}
-                className="w-full sm:w-auto order-1 sm:order-2"
-                size="lg"
-              >
-                {updateProfileMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Saving Profile...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-5 w-5" />
-                    Save Organization Profile
-                  </>
-                )}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </Tabs>
-      
-      <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-100">
-        <h2 className="text-sm font-medium text-gray-700 mb-2">Profile Preview</h2>
-        <div className="relative rounded-lg overflow-hidden border border-gray-200">
-          {/* Banner Preview */}
-          <div className="h-32 bg-gray-200 relative">
-            {(bannerPreview || organization?.bannerImageUrl) ? (
-              <img 
-                src={bannerPreview || organization?.bannerImageUrl || ''} 
-                alt="Banner Preview" 
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-                Banner Preview
-              </div>
-            )}
-            
-            {/* Logo Preview - positioned overlapping the banner */}
-            <div className="absolute -bottom-12 left-4 h-24 w-24 rounded-full border-4 border-white bg-white overflow-hidden">
-              {(logoPreview || organization?.logoUrl) ? (
-                <img 
-                  src={logoPreview || organization?.logoUrl || ''} 
-                  alt="Logo Preview" 
-                  className="h-full w-full object-contain"
-                />
-              ) : (
-                <div className="h-full w-full flex items-center justify-center bg-gray-100 text-gray-400">
-                  <UserCircle className="h-16 w-16" />
+                  ) : updateProfileMutation.isSuccess ? (
+                    <div className="flex items-center gap-2 text-sm text-green-600">
+                      <Check className="h-4 w-4" />
+                      <span>Changes saved</span>
+                    </div>
+                  ) : null}
                 </div>
-              )}
-            </div>
-          </div>
-          
-          {/* Organization Details */}
-          <div className="pt-16 pb-4 px-4 bg-white">
-            <h2 className="text-xl font-bold" style={{ color: form.watch('primaryColor') || '#3730a3' }}>
-              {form.watch('displayName') || form.watch('name') || 'Organization Name'}
-            </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              {form.watch('description') || 'Organization description will appear here'}
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      form.reset(defaultFormValues);
+                      if (organization?.logoUrl) {
+                        setLogoPreview(organization.logoUrl);
+                      } else {
+                        setLogoPreview(null);
+                      }
+                      if (organization?.bannerImageUrl) {
+                        setBannerPreview(organization.bannerImageUrl);
+                      } else {
+                        setBannerPreview(null);
+                      }
+                      setLogoFile(null);
+                      setBannerFile(null);
+                    }}
+                    disabled={updateProfileMutation.isPending}
+                    className="flex items-center gap-1"
+                  >
+                    <RotateCcw className="h-4 w-4 mr-1" />
+                    Reset
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={updateProfileMutation.isPending || !form.formState.isDirty}
+                    className="flex items-center gap-1"
+                  >
+                    {updateProfileMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4 mr-1" />
+                    )}
+                    Save Changes
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </Form>
+        </Tabs>
+
+        <div className="mt-8 flex flex-col sm:flex-row items-center gap-4 border-t pt-6">
+          <div className="flex-1">
+            <h3 className="text-lg font-medium">Profile Preview</h3>
+            <p className="text-sm text-muted-foreground">
+              See how your organization profile will appear to users
             </p>
-            
-            <div className="mt-4 flex flex-wrap gap-2">
-              {form.watch('websiteUrl') && (
-                <div className="flex items-center text-xs gap-1 text-gray-600">
-                  <Globe className="h-3 w-3" />
-                  <span className="truncate max-w-[200px]">{form.watch('websiteUrl')}</span>
-                </div>
-              )}
-              {form.watch('contactEmail') && (
-                <div className="flex items-center text-xs gap-1 text-gray-600">
-                  <Mail className="h-3 w-3" />
-                  <span>{form.watch('contactEmail')}</span>
-                </div>
-              )}
-            </div>
-            
-            {/* Social Icons */}
-            <div className="mt-3 flex gap-2">
-              {form.watch('socialLinks.facebook') && (
-                <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white">
-                  <Facebook className="h-3 w-3" />
-                </div>
-              )}
-              {form.watch('socialLinks.twitter') && (
-                <div className="w-6 h-6 rounded-full bg-blue-400 flex items-center justify-center text-white">
-                  <Twitter className="h-3 w-3" />
-                </div>
-              )}
-              {form.watch('socialLinks.linkedin') && (
-                <div className="w-6 h-6 rounded-full bg-blue-800 flex items-center justify-center text-white">
-                  <Linkedin className="h-3 w-3" />
-                </div>
-              )}
-              {form.watch('socialLinks.instagram') && (
-                <div className="w-6 h-6 rounded-full bg-pink-600 flex items-center justify-center text-white">
-                  <Instagram className="h-3 w-3" />
-                </div>
-              )}
-            </div>
-            
-            {/* About Preview */}
-            {form.watch('aboutText') && (
-              <div className="mt-4 text-xs text-gray-600 line-clamp-3">
-                <span style={{ color: form.watch('secondaryColor') || '#1e3a8a' }} className="font-medium">About Us:</span> {form.watch('aboutText')}
+          </div>
+          <div className="flex gap-3 flex-wrap justify-end">
+            <div className="flex flex-col items-center p-4 border rounded-lg max-w-xs bg-card">
+              <div className="w-16 h-16 rounded-full overflow-hidden mb-3 bg-background flex items-center justify-center">
+                {(logoPreview || organization?.logoUrl) ? (
+                  <img 
+                    src={logoPreview || organization?.logoUrl || ''} 
+                    alt={organization?.name} 
+                    className="w-full h-full object-cover" 
+                  />
+                ) : (
+                  <Building2 className="w-8 h-8 text-muted-foreground" />
+                )}
               </div>
-            )}
+              <h3 className="text-base font-bold text-center" style={{ color: form.watch('primaryColor') || '#3730a3' }}>
+                {form.watch('displayName') || form.watch('name')}
+              </h3>
+              {form.watch('description') && (
+                <p className="text-xs text-center text-muted-foreground mt-1 line-clamp-2">
+                  {form.watch('description')}
+                </p>
+              )}
+              {form.watch('aboutText') && (
+                <div className="mt-4 text-xs text-gray-600 line-clamp-3">
+                  <span style={{ color: form.watch('secondaryColor') || '#1e3a8a' }} className="font-medium">About Us:</span> {form.watch('aboutText')}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
