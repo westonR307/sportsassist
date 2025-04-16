@@ -349,6 +349,7 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
                           camp={camp} 
                           primaryColor={organization.primaryColor} 
                           secondaryColor={organization.secondaryColor}
+                          buttonColor={organization.buttonColor}
                         />
                       ))}
                     </div>
@@ -514,15 +515,21 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
 // Component for each camp card
 function CampCard({ 
   camp, 
-  primaryColor, 
-  secondaryColor 
+  primaryColor,
+  secondaryColor, 
+  buttonColor
 }: { 
   camp: ExtendedCamp, 
   primaryColor?: string | null,
-  secondaryColor?: string | null
+  secondaryColor?: string | null,
+  buttonColor?: string | null
 }) {
-  // Use organization's primary/secondary colors for buttons
-  const buttonStyle = primaryColor ? {
+  // Use organization's button color (or primary color as fallback)
+  const buttonStyle = buttonColor ? {
+    backgroundColor: buttonColor,
+    borderColor: buttonColor,
+    color: '#ffffff' // white text
+  } : primaryColor ? {
     backgroundColor: primaryColor,
     borderColor: primaryColor,
     color: '#ffffff' // white text
