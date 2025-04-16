@@ -20,7 +20,7 @@ import ParentMessagesPage from "@/pages/parent-messages-page";
 import ReportsPage from "@/pages/reports-page";
 import TeamPage from "@/pages/team-page";
 import SettingsPage from "@/pages/settings-page";
-import CampViewPage from "@/pages/camp-view-page.jsx";
+import CampViewPage from "@/pages/camp-view-page";
 import InvitationAcceptPage from "@/pages/invitation-accept-page";
 import CustomFieldsPage from "@/pages/custom-fields-page";
 import MyAthletesPage from "@/pages/my-athletes-page";
