@@ -10,9 +10,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 
 function CampViewPage() {
-  const { id } = useParams();
+  const params = useParams();
+  const { id } = params;
   const [location] = useLocation();
   const { user } = useAuth();
+  
+  console.log("CampViewPage - Params:", params);
+  console.log("CampViewPage - id:", id);
+  console.log("CampViewPage - location:", location);
   const [isParent, setIsParent] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
   const [hasPermission, setHasPermission] = useState(false);
@@ -26,9 +31,16 @@ function CampViewPage() {
     }
   }, [user]);
 
+  // Determine if we're using a slug or ID based on the URL
+  const isSlugRoute = location.includes('/slug/');
+  const apiEndpoint = isSlugRoute ? `/api/camps/slug/${id}` : `/api/camps/${id}`;
+  
+  console.log("Using API endpoint:", apiEndpoint);
+  console.log("Is slug route:", isSlugRoute);
+  
   // Fetch camp data
   const { isLoading, isError, error } = useQuery({
-    queryKey: [`/api/camps/${id}`],
+    queryKey: [apiEndpoint],
     onSuccess: (data) => {
       console.log("Camp data received:", data);
       setCamp(data);
@@ -42,14 +54,22 @@ function CampViewPage() {
   // Fetch registrations
   useEffect(() => {
     if (id) {
-      fetch(`/api/camps/${id}/registrations`)
+      // Use the same API endpoint pattern for consistency with the main query
+      const registrationsEndpoint = isSlugRoute 
+        ? `/api/camps/slug/${id}/registrations` 
+        : `/api/camps/${id}/registrations`;
+      
+      console.log("Fetching registrations from:", registrationsEndpoint);
+      
+      fetch(registrationsEndpoint)
         .then(res => res.json())
         .then(data => {
+          console.log("Registration data:", data);
           setRegistrations(data.registrations || []);
         })
         .catch(err => console.error("Failed to fetch registrations", err));
     }
-  }, [id]);
+  }, [id, isSlugRoute]);
 
   // Loading state
   if (isLoading) {
