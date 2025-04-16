@@ -140,7 +140,7 @@ function Router() {
         requiredRoles={["camp_creator" as const, "platform_admin" as const]} 
       />
       <ProtectedRoute 
-        path="/dashboard/camps/slug/:id" 
+        path="/dashboard/camps/slug/:slug" 
         component={CampViewPage}
         requiredRoles={["camp_creator" as const, "platform_admin" as const]} 
       />
