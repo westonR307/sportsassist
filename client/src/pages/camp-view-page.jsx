@@ -11,13 +11,12 @@ import { useAuth } from "@/hooks/use-auth";
 
 function CampViewPage() {
   const params = useParams();
-  const { id } = params;
   const [location] = useLocation();
   const { user } = useAuth();
   
   console.log("CampViewPage - Params:", params);
-  console.log("CampViewPage - id:", id);
   console.log("CampViewPage - location:", location);
+  
   const [isParent, setIsParent] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
   const [hasPermission, setHasPermission] = useState(false);
@@ -31,12 +30,19 @@ function CampViewPage() {
     }
   }, [user]);
 
-  // Determine if we're using a slug or ID based on the URL
+  // Extract the correct parameter (id or slug) based on the URL pattern
   const isSlugRoute = location.includes('/slug/');
-  const apiEndpoint = isSlugRoute ? `/api/camps/slug/${id}` : `/api/camps/${id}`;
+  const paramValue = isSlugRoute ? params.slug : params.id;
+  
+  console.log("isSlugRoute:", isSlugRoute);
+  console.log("paramValue:", paramValue);
+  
+  // Construct the proper API endpoint based on whether we're using a slug or ID
+  const apiEndpoint = isSlugRoute 
+    ? `/api/camps/slug/${paramValue}` 
+    : `/api/camps/${paramValue}`;
   
   console.log("Using API endpoint:", apiEndpoint);
-  console.log("Is slug route:", isSlugRoute);
   
   // Fetch camp data
   const { isLoading, isError, error } = useQuery({
@@ -53,11 +59,11 @@ function CampViewPage() {
 
   // Fetch registrations
   useEffect(() => {
-    if (id) {
+    if (paramValue) {
       // Use the same API endpoint pattern for consistency with the main query
       const registrationsEndpoint = isSlugRoute 
-        ? `/api/camps/slug/${id}/registrations` 
-        : `/api/camps/${id}/registrations`;
+        ? `/api/camps/slug/${paramValue}/registrations` 
+        : `/api/camps/${paramValue}/registrations`;
       
       console.log("Fetching registrations from:", registrationsEndpoint);
       
@@ -69,7 +75,7 @@ function CampViewPage() {
         })
         .catch(err => console.error("Failed to fetch registrations", err));
     }
-  }, [id, isSlugRoute]);
+  }, [paramValue, isSlugRoute]);
 
   // Loading state
   if (isLoading) {

@@ -150,7 +150,7 @@ function Router() {
         showNavigation={user?.role !== "parent"} // Only show AppLayout navigation if not a parent
       />
       <ProtectedRoute 
-        path="/camp/slug/:id" 
+        path="/camp/slug/:slug" 
         component={CampViewPage}
         showNavigation={user?.role !== "parent"} // Only show AppLayout navigation if not a parent
       />
@@ -160,7 +160,7 @@ function Router() {
         showNavigation={user?.role !== "parent"} // Only show AppLayout navigation if not a parent
       />
       <ProtectedRoute 
-        path="/register/camp/slug/:id" 
+        path="/register/camp/slug/:slug" 
         component={CampViewPage}
         showNavigation={user?.role !== "parent"} // Only show AppLayout navigation if not a parent
       />

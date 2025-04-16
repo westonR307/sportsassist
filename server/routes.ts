@@ -2654,7 +2654,7 @@ export async function registerRoutes(app: Express) {
       }
       
       // Default response for unauthenticated users - just return basic info about registrations count
-      const totalRegistrations = await storage.getRegistrationsCount(camp.id);
+      const totalRegistrations = await storage.getTotalRegistrationsCount(camp.id);
       return res.json({
         count: totalRegistrations,
         registrations: [],
