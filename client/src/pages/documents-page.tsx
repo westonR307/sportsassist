@@ -30,7 +30,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { Document } from "../../../shared/schema";
-import { DashboardLayout } from "./dashboard";
 
 export function DocumentsPageContent() {
   const { toast } = useToast();
@@ -304,9 +303,5 @@ export function DocumentsPageContent() {
 }
 
 export default function DocumentsPage() {
-  return (
-    <DashboardLayout>
-      <DocumentsPageContent />
-    </DashboardLayout>
-  );
+  return <DocumentsPageContent />;
 }
