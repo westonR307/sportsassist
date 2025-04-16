@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { DashboardLayout } from './dashboard';
-import { DashboardHeader } from '@/components/dashboard-header';
+import { CreatorLayout } from '@/components/creator-layout';
 import { useAuth } from '@/hooks/use-auth';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'wouter';
@@ -613,13 +612,13 @@ export default function OrganizationProfilePage() {
   }
 
   return (
-    <DashboardLayout>
+    <CreatorLayout>
       <div className="container mx-auto p-6 max-w-5xl">
         <div className="flex justify-between items-start">
-          <DashboardHeader
-            title="Organization Profile"
-            description="Customize your organization's profile and appearance"
-          />
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Organization Profile</h1>
+            <p className="text-muted-foreground">Customize your organization's profile and appearance</p>
+          </div>
           {organization?.name && (
             <Link
               to={`/organization/${organization.slug || organization.name.toLowerCase().replace(/\s+/g, '-')}`}
@@ -1352,6 +1351,6 @@ export default function OrganizationProfilePage() {
         </div>
       </div>
     </div>
-    </DashboardLayout>
+    </CreatorLayout>
   );
 }
