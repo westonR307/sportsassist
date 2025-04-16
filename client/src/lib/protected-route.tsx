@@ -58,12 +58,9 @@ export function ProtectedRoute({
     <Route path={path}>
       {(params) => {
         // Ensure params is an object and includes the path params
-        // Don't override existing property if it exists (like 'slug')
+        // Preserve ALL route parameters without forcing id overrides
         const routeParams = {
-          ...params,
-          id: params?.id || params?.["*"],
-          // Ensure slug is preserved if it exists
-          slug: params?.slug || params?.id
+          ...params
         };
         console.log("Full route params:", routeParams);
         
@@ -146,19 +143,19 @@ export function ProtectedRoute({
             const pageTitle = getPageTitleFromPath(path);
             return (
               <CreatorLayout title={pageTitle}>
-                <Component id={routeParams.id} {...routeParams} />
+                <Component {...routeParams} />
               </CreatorLayout>
             );
           } else if (showNavigation) {
             // Use AppLayout for non-dashboard routes
             return (
               <AppLayout showBackButton={showBackButton}>
-                <Component id={routeParams.id} {...routeParams} />
+                <Component {...routeParams} />
               </AppLayout>
             );
           } else {
             // No layout for routes that don't need navigation
-            return <Component id={routeParams.id} {...routeParams} />;
+            return <Component {...routeParams} />;
           }
         }
         // Platform admin routes and others
@@ -166,11 +163,11 @@ export function ProtectedRoute({
           if (showNavigation) {
             return (
               <AppLayout showBackButton={showBackButton}>
-                <Component id={routeParams.id} {...routeParams} />
+                <Component {...routeParams} />
               </AppLayout>
             );
           } else {
-            return <Component id={routeParams.id} {...routeParams} />;
+            return <Component {...routeParams} />;
           }
         }
       }}
