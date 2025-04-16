@@ -482,14 +482,22 @@ export function CreatorHeaderNav() {
                     </DropdownMenuItem>
                   )}
                   
-                  <DropdownMenuItem onClick={() => navigate("/documents")}>
+                  <DropdownMenuItem onClick={() => {
+                    if (!isScrolling) {
+                      navigate("/documents");
+                    }
+                  }}>
                     <ClipboardList className="mr-2 h-4 w-4" />
                     <span>Documents</span>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
+                <DropdownMenuItem onClick={() => {
+                  if (!isScrolling) {
+                    handleLogout();
+                  }
+                }}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Logout</span>
                 </DropdownMenuItem>
