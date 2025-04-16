@@ -1083,12 +1083,25 @@ function CampViewPage(props: { id?: string }) {
                       <h3 className="font-medium">Location</h3>
                       <p className="text-muted-foreground">
                         {camp.isVirtual ? (
-                          <>Virtual</>
-                        ) : (
                           <>
-                            {camp.streetAddress}<br />
-                            {camp.city}, {camp.state} {camp.zipCode}
+                            Virtual Camp
+                            {camp.virtualMeetingUrl && (
+                              <span className="block text-sm text-blue-500 hover:text-blue-600">
+                                <a href={camp.virtualMeetingUrl} target="_blank" rel="noopener noreferrer">
+                                  Join Meeting
+                                </a>
+                              </span>
+                            )}
                           </>
+                        ) : (
+                          camp.streetAddress ? (
+                            <>
+                              {camp.streetAddress}<br />
+                              {camp.city}, {camp.state} {camp.zipCode}
+                            </>
+                          ) : (
+                            "Location details not available"
+                          )
                         )}
                       </p>
                     </div>
