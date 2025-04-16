@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useParams, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { DashboardLayout } from "./dashboard";
 import { AlertTriangle, CheckCircle, Share2, Edit, Trash2, Copy, Loader2, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,11 +15,8 @@ interface CampViewPageProps {
 }
 
 function CampViewPage(props: CampViewPageProps) {
-  const params = useParams();
   const [location] = useLocation();
   const { user } = useAuth();
-  
-  console.log("CampViewPage - Props:", props);
 
   const [isParent, setIsParent] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
@@ -35,35 +32,22 @@ function CampViewPage(props: CampViewPageProps) {
   }, [user]);
 
   // Use props first if available, otherwise try to extract from URL path
-  // Check if props have the id or slug
   let paramValue = props.id || props.slug;
   const isSlugRoute = props.slug || location.includes('/slug/');
-  
+
   // If we don't have props, try to extract from URL path as fallback
   if (!paramValue) {
-    // Manual URL parsing as a fallback since useParams() appears to be empty
     const urlParts = location.split('/');
-    const slugIndex = urlParts.indexOf('slug');
-    
-    if (slugIndex !== -1 && slugIndex + 1 < urlParts.length) {
-      // This is a slug route, get the slug
-      paramValue = urlParts[slugIndex + 1];
-      console.log("Extracted slug from URL:", paramValue);
-    } else {
-      // This is probably an ID route, get the last part of the URL
-      paramValue = urlParts[urlParts.length - 1];
-      console.log("Extracted ID from URL:", paramValue);
-    }
+    const lastPart = urlParts[urlParts.length - 1];
+    paramValue = lastPart;
   }
-  
-  console.log("Final param value:", paramValue);
 
   // Construct the proper API endpoint based on whether we're using a slug or ID
   const apiEndpoint = isSlugRoute 
     ? `/api/camps/slug/${paramValue}` 
     : `/api/camps/${paramValue}`;
 
-  // Fetch camp data - use TanStack Query v5 format with proper typing
+  // Fetch camp data
   const { 
     isLoading,
     isError, 
@@ -77,16 +61,8 @@ function CampViewPage(props: CampViewPageProps) {
   // Process camp data when it changes
   useEffect(() => {
     if (campData) {
-      console.log("Camp data received:", campData);
       setCamp(campData);
-      
-      // Handle permissions safely
-      if (typeof campData === 'object' && campData !== null && 'permissions' in campData) {
-        const permissions = (campData as any).permissions;
-        setHasPermission(permissions?.canManage || false);
-      } else {
-        setHasPermission(false);
-      }
+      setHasPermission(campData.permissions?.canManage || false);
     }
   }, [campData]);
 
@@ -94,25 +70,17 @@ function CampViewPage(props: CampViewPageProps) {
   const registrationsEndpoint = isSlugRoute 
     ? `/api/camps/slug/${paramValue}/registrations` 
     : `/api/camps/${paramValue}/registrations`;
-    
+
   // Fetch registrations with useQuery
   const { data: registrationsData } = useQuery({
     queryKey: [registrationsEndpoint],
     enabled: !!paramValue
   });
-  
+
   // Process registrations data when it changes
   useEffect(() => {
     if (registrationsData) {
-      console.log("Registrations data received:", registrationsData);
-      
-      // Handle the registrations safely
-      if (typeof registrationsData === 'object' && registrationsData !== null) {
-        const regs = (registrationsData as any).registrations;
-        setRegistrations(Array.isArray(regs) ? regs : []);
-      } else {
-        setRegistrations([]);
-      }
+      setRegistrations(Array.isArray(registrationsData.registrations) ? registrationsData.registrations : []);
     }
   }, [registrationsData]);
 
