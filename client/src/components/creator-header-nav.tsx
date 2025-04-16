@@ -301,8 +301,10 @@ export function CreatorHeaderNav() {
                         size="sm"
                         className="flex w-full justify-start gap-2 py-6"
                         onClick={() => {
-                          navigate("/dashboard/organization-profile");
-                          setMobileMenuOpen(false);
+                          if (!isScrolling) {
+                            navigate("/dashboard/organization-profile");
+                            setMobileMenuOpen(false);
+                          }
                         }}
                       >
                         <Users2 className="h-4 w-4" />
@@ -315,8 +317,10 @@ export function CreatorHeaderNav() {
                           size="sm"
                           className="flex w-full justify-start gap-2 py-6"
                           onClick={() => {
-                            navigate("/dashboard/stripe-connect");
-                            setMobileMenuOpen(false);
+                            if (!isScrolling) {
+                              navigate("/dashboard/stripe-connect");
+                              setMobileMenuOpen(false);
+                            }
                           }}
                         >
                           <DollarSign className="h-4 w-4" />
@@ -330,8 +334,10 @@ export function CreatorHeaderNav() {
                           size="sm"
                           className="flex w-full justify-start gap-2 py-6"
                           onClick={() => {
-                            navigate("/dashboard/subscription-plans");
-                            setMobileMenuOpen(false);
+                            if (!isScrolling) {
+                              navigate("/dashboard/subscription-plans");
+                              setMobileMenuOpen(false);
+                            }
                           }}
                         >
                           <CreditCard className="h-4 w-4" />
@@ -344,8 +350,10 @@ export function CreatorHeaderNav() {
                         size="sm"
                         className="flex w-full justify-start gap-2 py-6"
                         onClick={() => {
-                          navigate("/documents");
-                          setMobileMenuOpen(false);
+                          if (!isScrolling) {
+                            navigate("/documents");
+                            setMobileMenuOpen(false);
+                          }
                         }}
                       >
                         <ClipboardList className="h-4 w-4" />
@@ -357,7 +365,11 @@ export function CreatorHeaderNav() {
                       variant="ghost"
                       size="sm"
                       className="flex w-full justify-start gap-2 py-6 mt-6"
-                      onClick={handleLogout}
+                      onClick={() => {
+                        if (!isScrolling) {
+                          handleLogout();
+                        }
+                      }}
                       disabled={logoutMutation.isPending}
                     >
                       <LogOut className="h-4 w-4" />
@@ -410,37 +422,61 @@ export function CreatorHeaderNav() {
                 }}
               >
                 <DropdownMenuGroup>
-                  <DropdownMenuItem onClick={() => navigate("/dashboard/settings")}>
+                  <DropdownMenuItem onClick={() => {
+                    if (!isScrolling) {
+                      navigate("/dashboard/settings");
+                    }
+                  }}>
                     <User className="mr-2 h-4 w-4" />
                     <span>Account Settings</span>
                   </DropdownMenuItem>
                   
                   {user?.role === "camp_creator" && (
-                    <DropdownMenuItem onClick={() => navigate("/dashboard/permissions")}>
+                    <DropdownMenuItem onClick={() => {
+                      if (!isScrolling) {
+                        navigate("/dashboard/permissions");
+                      }
+                    }}>
                       <ShieldCheck className="mr-2 h-4 w-4" />
                       <span>Permissions</span>
                     </DropdownMenuItem>
                   )}
                   
-                  <DropdownMenuItem onClick={() => navigate("/custom-fields")}>
+                  <DropdownMenuItem onClick={() => {
+                    if (!isScrolling) {
+                      navigate("/custom-fields");
+                    }
+                  }}>
                     <FileText className="mr-2 h-4 w-4" />
                     <span>Custom Fields</span>
                   </DropdownMenuItem>
                   
-                  <DropdownMenuItem onClick={() => navigate("/dashboard/organization-profile")}>
+                  <DropdownMenuItem onClick={() => {
+                    if (!isScrolling) {
+                      navigate("/dashboard/organization-profile");
+                    }
+                  }}>
                     <Users2 className="mr-2 h-4 w-4" />
                     <span>Organization Profile</span>
                   </DropdownMenuItem>
                   
                   {user?.role === "camp_creator" && (
-                    <DropdownMenuItem onClick={() => navigate("/dashboard/stripe-connect")}>
+                    <DropdownMenuItem onClick={() => {
+                      if (!isScrolling) {
+                        navigate("/dashboard/stripe-connect");
+                      }
+                    }}>
                       <DollarSign className="mr-2 h-4 w-4" />
                       <span>Stripe Connect</span>
                     </DropdownMenuItem>
                   )}
                   
                   {user?.role === "camp_creator" && (
-                    <DropdownMenuItem onClick={() => navigate("/dashboard/subscription-plans")}>
+                    <DropdownMenuItem onClick={() => {
+                      if (!isScrolling) {
+                        navigate("/dashboard/subscription-plans");
+                      }
+                    }}>
                       <CreditCard className="mr-2 h-4 w-4" />
                       <span>Subscription Plans</span>
                     </DropdownMenuItem>
