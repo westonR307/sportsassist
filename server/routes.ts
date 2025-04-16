@@ -859,7 +859,7 @@ export async function registerRoutes(app: Express) {
       // Get a list of fields we're allowing to be updated
       const allowedFields = [
         'name', 'description', 'displayName', 'logoUrl', 
-        'primaryColor', 'secondaryColor', 'aboutText',
+        'primaryColor', 'secondaryColor', 'buttonColor', 'aboutText',
         'contactEmail', 'websiteUrl', 'socialLinks', 'slug'
       ];
       
@@ -4262,7 +4262,7 @@ export async function registerRoutes(app: Express) {
       // Filter request body to only allow specific fields for update
       // This prevents sending unnecessary data to the database
       const allowedFields = [
-        'name', 'description', 'primaryColor', 'secondaryColor', 
+        'name', 'description', 'primaryColor', 'secondaryColor', 'buttonColor',
         'aboutText', 'contactEmail', 'websiteUrl', 'socialLinks',
         'displayName', 'slug'
       ];
