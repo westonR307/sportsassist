@@ -230,6 +230,48 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
       {/* Main content area */}
       <div className="flex-1 py-8" style={{ background: heroBgStyle.background || (organization.bannerImageUrl ? 'rgba(0,0,0,0.9)' : 'var(--primary)') }}>
         <div className="container mx-auto px-4">
+          {/* Organization Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            {/* Active Camps Stat */}
+            <div className="bg-black/20 rounded-lg border border-white/10 p-6 flex flex-col items-center justify-center text-white text-center">
+              <div className="text-amber-300 mb-2">
+                <Trophy className="h-6 w-6" />
+              </div>
+              <div className="text-3xl font-bold mb-1">
+                {camps?.length || 0}
+              </div>
+              <div className="text-white/80 text-sm">
+                Active Camps
+              </div>
+            </div>
+            
+            {/* Total Participants Stat */}
+            <div className="bg-black/20 rounded-lg border border-white/10 p-6 flex flex-col items-center justify-center text-white text-center">
+              <div className="text-amber-300 mb-2">
+                <Star className="h-6 w-6" />
+              </div>
+              <div className="text-3xl font-bold mb-1">
+                {camps?.reduce((total, camp) => total + (camp.registeredCount || 0), 0) || 0}
+              </div>
+              <div className="text-white/80 text-sm">
+                Total Participants
+              </div>
+            </div>
+            
+            {/* Sports Offered Stat */}
+            <div className="bg-black/20 rounded-lg border border-white/10 p-6 flex flex-col items-center justify-center text-white text-center">
+              <div className="text-amber-300 mb-2">
+                <CalendarRange className="h-6 w-6" />
+              </div>
+              <div className="text-3xl font-bold mb-1">
+                {new Set(camps?.map(camp => camp.sportName).filter(Boolean)).size || 0}
+              </div>
+              <div className="text-white/80 text-sm">
+                Sports Offered
+              </div>
+            </div>
+          </div>
+
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
             <TabsList className="grid w-full max-w-xl mx-auto grid-cols-4 bg-white/20 text-white">
               <TabsTrigger value="about" className="flex gap-2 items-center justify-center data-[state=active]:bg-white/30 data-[state=active]:text-white">
