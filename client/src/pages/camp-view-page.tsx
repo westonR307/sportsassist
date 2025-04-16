@@ -1733,7 +1733,7 @@ function CampViewPage(props: { id?: string }) {
           {camp?.schedulingType === "availability" && (
             <Dialog open={manageAvailabilityOpen} onOpenChange={setManageAvailabilityOpen}>
               <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                <Dialog<DialogHeader>
+                <DialogHeader>
                   <DialogTitle>Manage Availability Slots</DialogTitle>
                   <DialogDescription>
                     Add, edit, or remove availability slots for this camp.
