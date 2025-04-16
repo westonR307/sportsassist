@@ -160,6 +160,7 @@ export const organizations = pgTable("organizations", {
   logoUrl: text("logo_url"),
   primaryColor: text("primary_color"),
   secondaryColor: text("secondary_color"),
+  buttonColor: text("button_color"),
   aboutText: text("about_text"),
   contactEmail: text("contact_email"),
   websiteUrl: text("website_url"),

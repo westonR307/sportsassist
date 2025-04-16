@@ -234,7 +234,7 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             {/* Active Camps Stat */}
             <div className="bg-black/20 rounded-lg border border-white/10 p-6 flex flex-col items-center justify-center text-white text-center">
-              <div className="mb-2" style={{ color: organization.primaryColor || '#FBBF24' }}>
+              <div className="text-amber-300 mb-2">
                 <Trophy className="h-6 w-6" />
               </div>
               <div className="text-3xl font-bold mb-1">
@@ -247,7 +247,7 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
             
             {/* Total Participants Stat */}
             <div className="bg-black/20 rounded-lg border border-white/10 p-6 flex flex-col items-center justify-center text-white text-center">
-              <div className="mb-2" style={{ color: organization.primaryColor || '#FBBF24' }}>
+              <div className="text-amber-300 mb-2">
                 <Star className="h-6 w-6" />
               </div>
               <div className="text-3xl font-bold mb-1">
@@ -260,7 +260,7 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
             
             {/* Sports Offered Stat */}
             <div className="bg-black/20 rounded-lg border border-white/10 p-6 flex flex-col items-center justify-center text-white text-center">
-              <div className="mb-2" style={{ color: organization.primaryColor || '#FBBF24' }}>
+              <div className="text-amber-300 mb-2">
                 <CalendarRange className="h-6 w-6" />
               </div>
               <div className="text-3xl font-bold mb-1">
