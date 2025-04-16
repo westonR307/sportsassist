@@ -1936,10 +1936,10 @@ function CampViewPage(props: { id?: string }) {
 
   if (isParent) {
     // For parent users, determine if we should use the parent dashboard layout
-    if (location.includes('/dashboard/camp/') || location.includes('/dashboard/register/camp/')) {
+    if (location[0].includes('/dashboard/camp/') || location[0].includes('/dashboard/register/camp/')) {
       // If it's a dashboard route, use plain content as parent dashboard layout is already applied
       return renderContent();
-    } else if (location.includes('/camp/') || location.includes('/register/camp/')) {
+    } else if (location[0].includes('/camp/') || location[0].includes('/register/camp/')) {
       // If coming through /camp/ routes, content is already wrapped in AppLayout
       // Just render content without additional wrapper
       return renderContent();
