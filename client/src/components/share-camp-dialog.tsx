@@ -37,7 +37,7 @@ interface ShareCampDialogProps {
 export function ShareCampDialog({ isOpen, onClose, campName, campSlug }: ShareCampDialogProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
-  const shareUrl = window.location.origin + '/camps/' + campSlug;
+  const shareUrl = window.location.origin + '/camp/slug/' + campSlug;
   
   const handleCopyToClipboard = () => {
     navigator.clipboard.writeText(shareUrl).then(
