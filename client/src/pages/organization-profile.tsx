@@ -1350,7 +1350,6 @@ export default function OrganizationProfilePage() {
           </div>
         </div>
       </div>
-    </div>
     </CreatorLayout>
   );
 }
