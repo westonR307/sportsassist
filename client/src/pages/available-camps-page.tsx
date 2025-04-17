@@ -51,11 +51,21 @@ interface ExtendedCamp extends BaseCamp {
   defaultStartTime?: string;
   defaultEndTime?: string;
   location?: string;
+  registeredCount?: number;
 }
 
 // Helper function to get organization colors
-const getOrganizationColors = (organizations: any[], organizationId: number | undefined) => {
-  const organization = organizations.find((org: any) => org.id === organizationId);
+interface Organization {
+  id: number;
+  name?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  buttonColor?: string;
+}
+
+const getOrganizationColors = (organizations: any, organizationId: number | undefined) => {
+  const orgs = Array.isArray(organizations) ? organizations : [];
+  const organization = orgs.find(org => org?.id === organizationId);
   return {
     organization,
     colors: {
@@ -448,10 +458,14 @@ function CompactCampCard({ camp }: CampCardProps) {
   const daysUntilStart = Math.ceil((startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   const showStartingSoon = daysUntilStart <= 7 && daysUntilStart > 0;
   
-  // Get organization data for styling
-  const organization = organizations.find(org => org.id === camp.organizationId);
-  const primaryColor = organization?.primaryColor || '#BA0C2F';
-  const secondaryColor = organization?.secondaryColor || '#cc0000';
+  // Get organizations data and extract styling for this camp
+  const { data: orgList = [] } = useQuery({
+    queryKey: ['/api/organizations'],
+    enabled: true,
+  });
+  const { colors } = getOrganizationColors(orgList, camp.organizationId);
+  const primaryColor = colors.primaryColor;
+  const secondaryColor = colors.secondaryColor;
   
   // Determine schedule type badge text
   const hasFixedSchedule = camp.defaultStartTime && camp.defaultEndTime;
@@ -702,10 +716,14 @@ function CampCard({ camp }: CampCardProps) {
   const startDate = new Date(camp.startDate);
   const daysUntilStart = Math.ceil((startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   
-  // Get organization data for styling
-  const organization = organizations.find(org => org.id === camp.organizationId);
-  const primaryColor = organization?.primaryColor || '#BA0C2F';
-  const secondaryColor = organization?.secondaryColor || '#cc0000';
+  // Get organizations data and extract styling for this camp
+  const { data: orgList = [] } = useQuery({
+    queryKey: ['/api/organizations'],
+    enabled: true,
+  });
+  const { colors } = getOrganizationColors(orgList, camp.organizationId);
+  const primaryColor = colors.primaryColor;
+  const secondaryColor = colors.secondaryColor;
   
   // Determine schedule type
   const hasFixedSchedule = camp.defaultStartTime && camp.defaultEndTime;
