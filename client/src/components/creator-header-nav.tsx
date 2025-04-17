@@ -322,59 +322,57 @@ export function CreatorHeaderNav() {
                       </a>
                       
                       {user?.role === "camp_creator" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="flex w-full justify-start gap-2 py-6"
-                          onClick={() => {
+                        <a
+                          href="/dashboard/stripe-connect"
+                          className="flex w-full justify-start items-center gap-2 py-3 px-3 rounded-md text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground"
+                          onClick={(e) => {
+                            e.preventDefault();
                             if (!isScrolling) {
-                              navigate("/dashboard/stripe-connect");
+                              window.location.href = "/dashboard/stripe-connect";
                               setMobileMenuOpen(false);
                             }
                           }}
                         >
                           <DollarSign className="h-4 w-4" />
                           <span>Stripe Connect</span>
-                        </Button>
+                        </a>
                       )}
                       
                       {user?.role === "camp_creator" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="flex w-full justify-start gap-2 py-6"
-                          onClick={() => {
+                        <a
+                          href="/dashboard/subscription-plans"
+                          className="flex w-full justify-start items-center gap-2 py-3 px-3 rounded-md text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground"
+                          onClick={(e) => {
+                            e.preventDefault();
                             if (!isScrolling) {
-                              navigate("/dashboard/subscription-plans");
+                              window.location.href = "/dashboard/subscription-plans";
                               setMobileMenuOpen(false);
                             }
                           }}
                         >
                           <CreditCard className="h-4 w-4" />
                           <span>Subscription Plans</span>
-                        </Button>
+                        </a>
                       )}
 
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="flex w-full justify-start gap-2 py-6"
-                        onClick={() => {
+                      <a
+                        href="/documents"
+                        className="flex w-full justify-start items-center gap-2 py-3 px-3 rounded-md text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground"
+                        onClick={(e) => {
+                          e.preventDefault();
                           if (!isScrolling) {
-                            navigate("/documents");
+                            window.location.href = "/documents";
                             setMobileMenuOpen(false);
                           }
                         }}
                       >
                         <ClipboardList className="h-4 w-4" />
                         <span>Documents</span>
-                      </Button>
+                      </a>
                     </div>
                     
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="flex w-full justify-start gap-2 py-6 mt-6"
+                    <button
+                      className="flex w-full justify-start items-center gap-2 py-3 px-3 mt-6 rounded-md text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground"
                       onClick={() => {
                         if (!isScrolling) {
                           handleLogout();
@@ -384,7 +382,7 @@ export function CreatorHeaderNav() {
                     >
                       <LogOut className="h-4 w-4" />
                       <span>Logout</span>
-                    </Button>
+                    </button>
                   </div>
                 </ScrollArea>
               </div>
@@ -448,74 +446,116 @@ export function CreatorHeaderNav() {
                   </DropdownMenuItem>
                   
                   {user?.role === "camp_creator" && (
-                    <DropdownMenuItem onClick={() => {
-                      if (!isScrolling) {
-                        navigate("/dashboard/permissions");
-                      }
-                    }}>
-                      <ShieldCheck className="mr-2 h-4 w-4" />
-                      <span>Permissions</span>
+                    <DropdownMenuItem asChild>
+                      <a 
+                        href="/dashboard/permissions"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (!isScrolling) {
+                            window.location.href = "/dashboard/permissions";
+                          }
+                        }}
+                      >
+                        <ShieldCheck className="mr-2 h-4 w-4" />
+                        <span>Permissions</span>
+                      </a>
                     </DropdownMenuItem>
                   )}
                   
-                  <DropdownMenuItem onClick={() => {
-                    if (!isScrolling) {
-                      navigate("/custom-fields");
-                    }
-                  }}>
-                    <FileText className="mr-2 h-4 w-4" />
-                    <span>Custom Fields</span>
+                  <DropdownMenuItem asChild>
+                    <a 
+                      href="/custom-fields"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (!isScrolling) {
+                          window.location.href = "/custom-fields";
+                        }
+                      }}
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      <span>Custom Fields</span>
+                    </a>
                   </DropdownMenuItem>
                   
-                  <DropdownMenuItem onClick={() => {
-                    if (!isScrolling) {
-                      navigate("/dashboard/organization-profile");
-                    }
-                  }}>
-                    <Users2 className="mr-2 h-4 w-4" />
-                    <span>Organization Profile</span>
+                  <DropdownMenuItem asChild>
+                    <a 
+                      href="/dashboard/organization-profile"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (!isScrolling) {
+                          window.location.href = "/dashboard/organization-profile";
+                        }
+                      }}
+                    >
+                      <Users2 className="mr-2 h-4 w-4" />
+                      <span>Organization Profile</span>
+                    </a>
                   </DropdownMenuItem>
                   
                   {user?.role === "camp_creator" && (
-                    <DropdownMenuItem onClick={() => {
-                      if (!isScrolling) {
-                        navigate("/dashboard/stripe-connect");
-                      }
-                    }}>
-                      <DollarSign className="mr-2 h-4 w-4" />
-                      <span>Stripe Connect</span>
+                    <DropdownMenuItem asChild>
+                      <a 
+                        href="/dashboard/stripe-connect"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (!isScrolling) {
+                            window.location.href = "/dashboard/stripe-connect";
+                          }
+                        }}
+                      >
+                        <DollarSign className="mr-2 h-4 w-4" />
+                        <span>Stripe Connect</span>
+                      </a>
                     </DropdownMenuItem>
                   )}
                   
                   {user?.role === "camp_creator" && (
-                    <DropdownMenuItem onClick={() => {
-                      if (!isScrolling) {
-                        navigate("/dashboard/subscription-plans");
-                      }
-                    }}>
-                      <CreditCard className="mr-2 h-4 w-4" />
-                      <span>Subscription Plans</span>
+                    <DropdownMenuItem asChild>
+                      <a 
+                        href="/dashboard/subscription-plans"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (!isScrolling) {
+                            window.location.href = "/dashboard/subscription-plans";
+                          }
+                        }}
+                      >
+                        <CreditCard className="mr-2 h-4 w-4" />
+                        <span>Subscription Plans</span>
+                      </a>
                     </DropdownMenuItem>
                   )}
                   
-                  <DropdownMenuItem onClick={() => {
-                    if (!isScrolling) {
-                      navigate("/documents");
-                    }
-                  }}>
-                    <ClipboardList className="mr-2 h-4 w-4" />
-                    <span>Documents</span>
+                  <DropdownMenuItem asChild>
+                    <a 
+                      href="/documents"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (!isScrolling) {
+                          window.location.href = "/documents";
+                        }
+                      }}
+                    >
+                      <ClipboardList className="mr-2 h-4 w-4" />
+                      <span>Documents</span>
+                    </a>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => {
-                  if (!isScrolling) {
-                    handleLogout();
-                  }
-                }}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Logout</span>
+                <DropdownMenuItem asChild>
+                  <button
+                    className="flex w-full justify-start items-center"
+                    onClick={() => {
+                      if (!isScrolling) {
+                        handleLogout();
+                      }
+                    }}
+                    disabled={logoutMutation.isPending}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Logout</span>
+                  </button>
                 </DropdownMenuItem>
               </ScrollArea>
             </DropdownMenuContent>
