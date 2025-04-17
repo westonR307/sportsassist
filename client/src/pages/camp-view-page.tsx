@@ -930,21 +930,27 @@ function CampViewPage(props: { id?: string }) {
           
           <div className="relative z-0 p-6 pb-12 md:p-10 md:pb-16">
             <div className="pt-8 md:pt-10 text-white">
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight break-words max-w-full drop-shadow-md">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight break-words max-w-full drop-shadow-md" 
+                  style={{
+                    textShadow: `0 2px 4px rgba(0,0,0,0.3)`,
+                    color: organization?.banner_image_url || organization?.bannerImageUrl ? 'white' : '#ffffff'
+                  }}>
                 {camp.name}
               </h1>
               
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 mt-4 text-white/95">
                 <div className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  <span className="text-base md:text-lg font-medium">
+                  <MapPin className="h-5 w-5" style={{filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))'}} />
+                  <span className="text-base md:text-lg font-medium" 
+                        style={{textShadow: '0 1px 2px rgba(0,0,0,0.3)'}}>
                     {camp.isVirtual ? "Virtual Camp" : `${camp.city}, ${camp.state}`}
                   </span>
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  <CalendarRange className="h-5 w-5" />
-                  <span className="text-base md:text-lg font-medium">
+                  <CalendarRange className="h-5 w-5" style={{filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))'}} />
+                  <span className="text-base md:text-lg font-medium"
+                        style={{textShadow: '0 1px 2px rgba(0,0,0,0.3)'}}>
                     {format(new Date(camp.startDate), 'MMM d')} - {format(new Date(camp.endDate), 'MMM d, yyyy')}
                   </span>
                 </div>
@@ -1117,8 +1123,10 @@ function CampViewPage(props: { id?: string }) {
           <TabsContent value="details" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-6">
-                <Card className="border-t-4 shadow-md" style={{borderTopColor: organization?.primary_color || organization?.primaryColor || 'hsl(var(--primary))'}}>
-                  <CardHeader className="pb-3">
+                <Card className="border-t-[6px] shadow-md" style={{borderTopColor: organization?.primary_color || organization?.primaryColor || 'hsl(var(--primary))'}}>
+                  <CardHeader className="pb-3"
+                    style={{borderTopLeftRadius: 'calc(var(--radius) - 2px)', borderTopRightRadius: 'calc(var(--radius) - 2px)'}}
+                  >
                     <div className="flex justify-between items-center">
                       <CardTitle className="text-xl flex items-center gap-2">
                         <Info className="h-5 w-5" style={{color: organization?.primary_color || organization?.primaryColor}} />
