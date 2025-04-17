@@ -4220,7 +4220,7 @@ export async function registerRoutes(app: Express) {
       const currentDate = new Date();
       
       // Filter active camps (where start date <= today <= end date)
-      const allCamps = await storage.getCamps({ organizationId, status: "active", includeDeleted: false });
+      const allCamps = await storage.getCampsByStatus(organizationId, "active");
       const activeCamps = Array.isArray(allCamps) ? allCamps.filter(camp => {
         const startDate = new Date(camp.startDate);
         const endDate = new Date(camp.endDate);
