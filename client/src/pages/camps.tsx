@@ -188,16 +188,53 @@ export default function CampsPage() {
               </Badge>
             );
             
-            // Create the card front
+            // Create the card front with improved design
             const frontCard = (
-              <Card className="h-full" data-camp-id={camp.id}>
-                <CardContent className="p-3 h-full flex flex-col">
+              <Card className="h-full overflow-hidden" data-camp-id={camp.id}>
+                {/* Card header with colored band based on camp status */}
+                <div 
+                  className="h-1.5" 
+                  style={{ 
+                    backgroundColor: isActive ? '#BA0C2F' : 
+                                    isUpcoming ? '#cc0000' : 
+                                    '#94a3b8'
+                  }}
+                ></div>
+                
+                <CardContent className="p-3 pt-3 h-full flex flex-col">
                   <div className="mb-2 flex justify-between items-start">
                     <h3 className="font-semibold line-clamp-2 flex-1">{camp.name}</h3>
-                    {statusBadge}
+                    
+                    {/* Display virtual badge next to camp name if applicable */}
+                    {camp.isVirtual && (
+                      <Badge variant="outline" className="ml-1 text-xs flex items-center gap-1">
+                        <span className="hidden sm:inline">Virtual</span>
+                      </Badge>
+                    )}
                   </div>
                   
-                  <div className="mt-1 space-y-1 text-sm flex-1">
+                  {/* Camp schedule type and registration status badges */}
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {statusBadge}
+                    <Badge 
+                      variant="outline" 
+                      className="text-xs flex items-center gap-1"
+                    >
+                      {camp.schedulingType === "fixed" ? (
+                        <>
+                          <Calendar className="h-3 w-3" />
+                          <span>Fixed Schedule</span>
+                        </>
+                      ) : (
+                        <>
+                          <Clock className="h-3 w-3" />
+                          <span>Availability-based</span>
+                        </>
+                      )}
+                    </Badge>
+                  </div>
+                  
+                  <div className="mt-1 space-y-1.5 text-sm flex-1">
                     <div className="flex items-center text-muted-foreground">
                       <Calendar className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />
                       <span>
@@ -207,12 +244,33 @@ export default function CampsPage() {
                     
                     <div className="flex items-center text-muted-foreground">
                       <Map className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />
-                      <span className="truncate">{camp.location}</span>
+                      <span className="truncate">
+                        {camp.isVirtual ? 'Online' : (camp.city && camp.state ? `${camp.city}, ${camp.state}` : 'Location TBD')}
+                      </span>
                     </div>
                     
-                    <div className="flex items-center text-muted-foreground">
+                    {/* Improved capacity display showing spots taken vs total */}
+                    <div className="flex items-center">
                       <Users className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />
-                      <span>{camp.registeredCount || 0}/{camp.capacity}</span>
+                      <div className="flex items-center gap-1">
+                        <span className={`font-medium ${(camp.registeredCount || 0) >= camp.capacity ? 'text-red-600' : 'text-green-600'}`}>
+                          {camp.registeredCount || 0}/{camp.capacity}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {(camp.registeredCount || 0) >= camp.capacity ? 'Full' : 'Spots'}
+                        </span>
+                        
+                        {/* Show capacity progress bar */}
+                        <div className="w-16 h-1.5 bg-gray-200 rounded-full ml-1">
+                          <div 
+                            className="h-full rounded-full" 
+                            style={{ 
+                              width: `${Math.min(((camp.registeredCount || 0) / camp.capacity) * 100, 100)}%`,
+                              backgroundColor: (camp.registeredCount || 0) >= camp.capacity ? '#dc2626' : '#16a34a'
+                            }}
+                          ></div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   
@@ -237,10 +295,25 @@ export default function CampsPage() {
             
             // Create the card back with more detailed information
             const backCard = (
-              <Card className="h-full" data-camp-id={camp.id}>
-                <CardContent className="p-3 flex flex-col h-full">
+              <Card className="h-full overflow-hidden" data-camp-id={camp.id}>
+                {/* Card header with colored band based on camp status */}
+                <div 
+                  className="h-1.5" 
+                  style={{ 
+                    backgroundColor: isActive ? '#BA0C2F' : 
+                                    isUpcoming ? '#cc0000' : 
+                                    '#94a3b8'
+                  }}
+                ></div>
+                
+                <CardContent className="p-3 pt-3 flex flex-col h-full">
                   <div className="mb-1">
-                    <h3 className="font-semibold mb-1">{camp.name}</h3>
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-semibold mb-1 line-clamp-1">{camp.name}</h3>
+                      {camp.isVirtual && (
+                        <Badge variant="outline" className="ml-1 text-xs">Virtual</Badge>
+                      )}
+                    </div>
                     
                     <div className="flex flex-wrap gap-1 mt-1 mb-2">
                       {statusBadge}
@@ -248,7 +321,7 @@ export default function CampsPage() {
                     </div>
                   </div>
                   
-                  <div className="text-xs space-y-1 flex-1 overflow-hidden">
+                  <div className="text-xs space-y-1.5 flex-1 overflow-hidden">
                     {/* Show camp description if available */}
                     {camp.description && (
                       <p className="text-muted-foreground overflow-hidden line-clamp-2 mb-2">
@@ -256,15 +329,59 @@ export default function CampsPage() {
                       </p>
                     )}
                     
+                    {/* Registration capacity */}
+                    <div className="flex items-center mt-1.5">
+                      <Users className="h-3.5 w-3.5 mr-1.5 flex-shrink-0 text-muted-foreground" />
+                      <div className="w-full">
+                        <div className="flex justify-between text-xs mb-0.5">
+                          <span>Registration capacity</span>
+                          <span className="font-medium">{camp.registeredCount || 0}/{camp.capacity}</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-gray-200 rounded-full">
+                          <div 
+                            className="h-full rounded-full transition-all duration-300" 
+                            style={{ 
+                              width: `${Math.min(((camp.registeredCount || 0) / camp.capacity) * 100, 100)}%`,
+                              backgroundColor: (camp.registeredCount || 0) >= camp.capacity ? '#dc2626' : '#16a34a'
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Camp type info */}
+                    <div className="flex items-center justify-between mt-1.5 text-muted-foreground">
+                      <div className="flex items-center">
+                        <Map className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />
+                        <span>
+                          {camp.isVirtual ? 'Online' : (camp.city && camp.state ? `${camp.city}, ${camp.state}` : 'Location TBD')}
+                        </span>
+                      </div>
+                      <span className="font-medium">{formatCurrency(camp.price)}</span>
+                    </div>
+                    
                     {/* Show upcoming sessions if available */}
                     {camp.schedules && camp.schedules.length > 0 && (
-                      <div className="mt-1">
-                        <p className="font-medium text-xs mb-0.5">Sessions:</p>
+                      <div className="mt-2 pt-1.5 border-t border-gray-100">
+                        <p className="font-medium text-xs mb-1 flex items-center">
+                          <Clock className="h-3.5 w-3.5 mr-1.5" />
+                          Schedule:
+                        </p>
                         <CampScheduleSummary 
                           camp={camp} 
                           maxSessions={2} 
                           className="text-muted-foreground" 
                         />
+                      </div>
+                    )}
+                    
+                    {/* Show scheduling type if no sessions */}
+                    {(!camp.schedules || camp.schedules.length === 0) && (
+                      <div className="mt-2 pt-1.5 border-t border-gray-100">
+                        <p className="font-medium text-xs mb-1 flex items-center">
+                          <Clock className="h-3.5 w-3.5 mr-1.5" />
+                          Scheduling: {camp.schedulingType === "fixed" ? "Fixed schedule" : "Availability-based"}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -286,8 +403,8 @@ export default function CampsPage() {
                       </Button>
                     )}
                     
-                    {/* View Camp Button */}
-                    <div className="col-span-2 mt-1">
+                    {/* View Camp Button - always present */}
+                    <div className={canManageCamp ? "" : "col-span-2"}>
                       <Button 
                         className="w-full text-xs h-7"
                         onClick={() => navigate(camp.slug 
@@ -304,11 +421,11 @@ export default function CampsPage() {
 
             // Return the flip card with both sides defined
             return (
-              <div key={`camp-${camp.id}`} className="h-[220px]">
+              <div key={`camp-${camp.id}`} className="h-[240px]">
                 <FlipCard
                   front={frontCard}
                   back={backCard}
-                  className={`rounded-md overflow-hidden transition-all duration-200 h-full ${!canManageCamp ? "opacity-90" : ""}`}
+                  className={`rounded-md overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 h-full ${!canManageCamp ? "opacity-90" : ""}`}
                 />
               </div>
             );
