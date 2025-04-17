@@ -170,6 +170,61 @@ export interface IStorage {
   getTotalRegistrationsCount(organizationId: number): Promise<number>;
   getCampCountsByStatus(organizationId: number): Promise<{ status: string; count: number }[]>;
   
+  // Enhanced reporting methods with date filtering
+  getRegistrationsReport(
+    organizationId: number, 
+    dateRange?: { startDate: Date, endDate: Date }
+  ): Promise<{
+    total: number;
+    paid: number;
+    unpaid: number;
+    waitlisted: number;
+    revenue: number;
+    byDay: { date: string; count: number; revenue: number }[];
+    byCamp: { campId: number; campName: string; count: number; revenue: number }[];
+  }>;
+  
+  getCampPerformanceReport(
+    organizationId: number,
+    dateRange?: { startDate: Date, endDate: Date }
+  ): Promise<{
+    totalCamps: number;
+    activeCamps: number;
+    upcomingCamps: number;
+    completedCamps: number;
+    canceledCamps: number;
+    capacityUtilization: number;
+    avgRegistrationsPerCamp: number;
+    mostPopularCamps: { id: number; name: string; registrationCount: number; capacityPercentage: number }[];
+  }>;
+  
+  getFinancialReport(
+    organizationId: number,
+    dateRange?: { startDate: Date, endDate: Date }
+  ): Promise<{
+    totalRevenue: number;
+    paidRegistrations: number;
+    unpaidRegistrations: number;
+    averageRegistrationValue: number;
+    revenueByDay: { date: string; revenue: number }[];
+    revenueByCamp: { campId: number; campName: string; revenue: number }[];
+    platformFees: number;
+    netRevenue: number;
+    subscriptionCosts: number;
+  }>;
+  
+  getAttendanceReport(
+    organizationId: number,
+    dateRange?: { startDate: Date, endDate: Date }
+  ): Promise<{
+    totalSessions: number;
+    totalAttendedSessions: number;
+    attendanceRate: number;
+    sessionsByStatus: Record<string, number>;
+    attendanceByDay: { date: string; total: number; attended: number; rate: number }[];
+    attendanceByCamp: { campId: number; campName: string; total: number; attended: number; rate: number }[];
+  }>;
+  
   // Recurrence Pattern methods
   createRecurrencePattern(pattern: InsertRecurrencePattern): Promise<RecurrencePattern>;
   getRecurrencePatterns(campId: number): Promise<RecurrencePattern[]>;
@@ -3006,6 +3061,620 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error getting camp counts by status:", error);
       throw new Error(`Failed to get camp counts by status: ${error.message}`);
+    }
+  }
+  
+  async getRegistrationsReport(
+    organizationId: number,
+    dateRange?: { startDate: Date, endDate: Date }
+  ): Promise<{
+    total: number;
+    paid: number;
+    unpaid: number;
+    waitlisted: number;
+    revenue: number;
+    byDay: { date: string; count: number; revenue: number }[];
+    byCamp: { campId: number; campName: string; count: number; revenue: number }[];
+  }> {
+    try {
+      // Get all camps for the organization
+      const orgCamps = await db.select().from(camps).where(
+        and(
+          eq(camps.organizationId, organizationId),
+          eq(camps.isDeleted, false)
+        )
+      );
+      
+      if (!orgCamps.length) {
+        return {
+          total: 0,
+          paid: 0,
+          unpaid: 0,
+          waitlisted: 0,
+          revenue: 0,
+          byDay: [],
+          byCamp: []
+        };
+      }
+      
+      const campIds = orgCamps.map(camp => camp.id);
+      
+      // Prepare date filtering conditions
+      let dateConditions = sql`1=1`; // Default: no date filter
+      if (dateRange) {
+        dateConditions = and(
+          gte(registrations.registeredAt, dateRange.startDate),
+          lte(registrations.registeredAt, dateRange.endDate)
+        );
+      }
+      
+      // Get all registrations for these camps with date filtering
+      const allRegistrations = await db.select({
+        id: registrations.id,
+        campId: registrations.campId,
+        paid: registrations.paid,
+        waitlisted: registrations.waitlisted,
+        registeredAt: registrations.registeredAt
+      })
+      .from(registrations)
+      .where(
+        and(
+          inArray(registrations.campId, campIds),
+          dateConditions
+        )
+      );
+      
+      // Create a map of camp id to camp object for price lookups
+      const campsMap = new Map(orgCamps.map(camp => [camp.id, camp]));
+      
+      // Calculate total metrics
+      const total = allRegistrations.length;
+      const paid = allRegistrations.filter(reg => reg.paid).length;
+      const unpaid = allRegistrations.filter(reg => !reg.paid).length;
+      const waitlisted = allRegistrations.filter(reg => reg.waitlisted).length;
+      
+      // Calculate revenue from paid registrations
+      const revenue = allRegistrations
+        .filter(reg => reg.paid)
+        .reduce((sum, reg) => {
+          const campPrice = campsMap.get(reg.campId)?.price || 0;
+          return sum + campPrice;
+        }, 0);
+      
+      // Group by day for the byDay report
+      const registrationsByDay = new Map<string, { count: number, revenue: number }>();
+      
+      allRegistrations.forEach(reg => {
+        const dateStr = new Date(reg.registeredAt).toISOString().split('T')[0];
+        const campPrice = campsMap.get(reg.campId)?.price || 0;
+        
+        if (!registrationsByDay.has(dateStr)) {
+          registrationsByDay.set(dateStr, { count: 0, revenue: 0 });
+        }
+        
+        const dayData = registrationsByDay.get(dateStr)!;
+        dayData.count += 1;
+        if (reg.paid) {
+          dayData.revenue += campPrice;
+        }
+      });
+      
+      // Convert to array and sort by date
+      const byDay = Array.from(registrationsByDay.entries())
+        .map(([date, data]) => ({ date, ...data }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+      
+      // Group by camp for the byCamp report
+      const registrationsByCamp = new Map<number, { count: number, revenue: number }>();
+      
+      allRegistrations.forEach(reg => {
+        if (!registrationsByCamp.has(reg.campId)) {
+          registrationsByCamp.set(reg.campId, { count: 0, revenue: 0 });
+        }
+        
+        const campData = registrationsByCamp.get(reg.campId)!;
+        campData.count += 1;
+        if (reg.paid) {
+          campData.revenue += campsMap.get(reg.campId)?.price || 0;
+        }
+      });
+      
+      // Convert to array with camp names
+      const byCamp = Array.from(registrationsByCamp.entries())
+        .map(([campId, data]) => ({
+          campId,
+          campName: campsMap.get(campId)?.name || 'Unknown Camp',
+          ...data
+        }))
+        .sort((a, b) => b.count - a.count); // Sort by most registrations
+      
+      return {
+        total,
+        paid,
+        unpaid,
+        waitlisted,
+        revenue,
+        byDay,
+        byCamp
+      };
+    } catch (error) {
+      console.error("Error generating registrations report:", error);
+      throw new Error(`Failed to generate registrations report: ${error.message}`);
+    }
+  }
+  
+  async getCampPerformanceReport(
+    organizationId: number,
+    dateRange?: { startDate: Date, endDate: Date }
+  ): Promise<{
+    totalCamps: number;
+    activeCamps: number;
+    upcomingCamps: number;
+    completedCamps: number;
+    canceledCamps: number;
+    capacityUtilization: number;
+    avgRegistrationsPerCamp: number;
+    mostPopularCamps: { id: number; name: string; registrationCount: number; capacityPercentage: number }[];
+  }> {
+    try {
+      const now = new Date();
+      
+      // Prepare date filtering conditions for camps
+      let campDateConditions = sql`1=1`; // Default: no date filter
+      if (dateRange) {
+        campDateConditions = or(
+          // Camps that start or end within the date range
+          and(
+            gte(camps.startDate, dateRange.startDate),
+            lte(camps.startDate, dateRange.endDate)
+          ),
+          and(
+            gte(camps.endDate, dateRange.startDate),
+            lte(camps.endDate, dateRange.endDate)
+          ),
+          // Camps that span the entire date range
+          and(
+            lte(camps.startDate, dateRange.startDate),
+            gte(camps.endDate, dateRange.endDate)
+          )
+        );
+      }
+      
+      // Get all camps for the organization with date filtering
+      const orgCamps = await db.select().from(camps).where(
+        and(
+          eq(camps.organizationId, organizationId),
+          eq(camps.isDeleted, false),
+          campDateConditions
+        )
+      );
+      
+      if (!orgCamps.length) {
+        return {
+          totalCamps: 0,
+          activeCamps: 0,
+          upcomingCamps: 0,
+          completedCamps: 0,
+          canceledCamps: 0,
+          capacityUtilization: 0,
+          avgRegistrationsPerCamp: 0,
+          mostPopularCamps: []
+        };
+      }
+      
+      // Calculate camp status counts
+      const totalCamps = orgCamps.length;
+      const activeCamps = orgCamps.filter(camp => 
+        !camp.isCancelled && 
+        camp.startDate <= now && 
+        camp.endDate >= now
+      ).length;
+      const upcomingCamps = orgCamps.filter(camp => 
+        !camp.isCancelled && 
+        camp.startDate > now
+      ).length;
+      const completedCamps = orgCamps.filter(camp => 
+        !camp.isCancelled && 
+        camp.endDate < now
+      ).length;
+      const canceledCamps = orgCamps.filter(camp => camp.isCancelled).length;
+      
+      // Get registration counts for each camp
+      const campIds = orgCamps.map(camp => camp.id);
+      
+      // Map of campId to registration count
+      const campRegistrationCounts = new Map<number, number>();
+      for (const campId of campIds) {
+        const count = await db.select({ value: count() })
+          .from(registrations)
+          .where(eq(registrations.campId, campId))
+          .then(res => Number(res[0]?.value || 0));
+        
+        campRegistrationCounts.set(campId, count);
+      }
+      
+      // Calculate capacity utilization
+      const totalCapacity = orgCamps.reduce((sum, camp) => sum + camp.capacity, 0);
+      const totalRegistrations = Array.from(campRegistrationCounts.values()).reduce((sum, count) => sum + count, 0);
+      const capacityUtilization = totalCapacity > 0 ? (totalRegistrations / totalCapacity) * 100 : 0;
+      
+      // Calculate average registrations per camp
+      const avgRegistrationsPerCamp = totalCamps > 0 ? totalRegistrations / totalCamps : 0;
+      
+      // Generate most popular camps list
+      const campPopularity = orgCamps.map(camp => {
+        const registrationCount = campRegistrationCounts.get(camp.id) || 0;
+        const capacityPercentage = camp.capacity > 0 ? (registrationCount / camp.capacity) * 100 : 0;
+        
+        return {
+          id: camp.id,
+          name: camp.name,
+          registrationCount,
+          capacityPercentage
+        };
+      });
+      
+      // Sort by registration count (descending)
+      const mostPopularCamps = campPopularity
+        .sort((a, b) => b.registrationCount - a.registrationCount)
+        .slice(0, 10); // Limit to top 10
+      
+      return {
+        totalCamps,
+        activeCamps,
+        upcomingCamps,
+        completedCamps,
+        canceledCamps,
+        capacityUtilization,
+        avgRegistrationsPerCamp,
+        mostPopularCamps
+      };
+    } catch (error) {
+      console.error("Error generating camp performance report:", error);
+      throw new Error(`Failed to generate camp performance report: ${error.message}`);
+    }
+  }
+  
+  async getFinancialReport(
+    organizationId: number,
+    dateRange?: { startDate: Date, endDate: Date }
+  ): Promise<{
+    totalRevenue: number;
+    paidRegistrations: number;
+    unpaidRegistrations: number;
+    averageRegistrationValue: number;
+    revenueByDay: { date: string; revenue: number }[];
+    revenueByCamp: { campId: number; campName: string; revenue: number }[];
+    platformFees: number;
+    netRevenue: number;
+    subscriptionCosts: number;
+  }> {
+    try {
+      // Get all camps for the organization
+      const orgCamps = await db.select().from(camps).where(
+        and(
+          eq(camps.organizationId, organizationId),
+          eq(camps.isDeleted, false)
+        )
+      );
+      
+      if (!orgCamps.length) {
+        return {
+          totalRevenue: 0,
+          paidRegistrations: 0,
+          unpaidRegistrations: 0,
+          averageRegistrationValue: 0,
+          revenueByDay: [],
+          revenueByCamp: [],
+          platformFees: 0,
+          netRevenue: 0,
+          subscriptionCosts: 0
+        };
+      }
+      
+      const campIds = orgCamps.map(camp => camp.id);
+      
+      // Prepare date filtering conditions
+      let dateConditions = sql`1=1`; // Default: no date filter
+      if (dateRange) {
+        dateConditions = and(
+          gte(registrations.registeredAt, dateRange.startDate),
+          lte(registrations.registeredAt, dateRange.endDate)
+        );
+      }
+      
+      // Get all registrations for these camps with date filtering
+      const allRegistrations = await db.select({
+        id: registrations.id,
+        campId: registrations.campId,
+        paid: registrations.paid,
+        registeredAt: registrations.registeredAt
+      })
+      .from(registrations)
+      .where(
+        and(
+          inArray(registrations.campId, campIds),
+          dateConditions
+        )
+      );
+      
+      // Create a map of camp id to camp object for price lookups
+      const campsMap = new Map(orgCamps.map(camp => [camp.id, camp]));
+      
+      // Count paid vs. unpaid registrations
+      const paidRegistrations = allRegistrations.filter(reg => reg.paid).length;
+      const unpaidRegistrations = allRegistrations.filter(reg => !reg.paid).length;
+      
+      // Calculate revenue from paid registrations
+      const totalRevenue = allRegistrations
+        .filter(reg => reg.paid)
+        .reduce((sum, reg) => {
+          const campPrice = campsMap.get(reg.campId)?.price || 0;
+          return sum + campPrice;
+        }, 0);
+      
+      // Calculate average registration value
+      const averageRegistrationValue = paidRegistrations > 0 ? totalRevenue / paidRegistrations : 0;
+      
+      // Group by day for the revenueByDay report
+      const revenueByDayMap = new Map<string, number>();
+      
+      allRegistrations
+        .filter(reg => reg.paid)
+        .forEach(reg => {
+          const dateStr = new Date(reg.registeredAt).toISOString().split('T')[0];
+          const campPrice = campsMap.get(reg.campId)?.price || 0;
+          
+          if (!revenueByDayMap.has(dateStr)) {
+            revenueByDayMap.set(dateStr, 0);
+          }
+          
+          revenueByDayMap.set(dateStr, revenueByDayMap.get(dateStr)! + campPrice);
+        });
+      
+      // Convert to array and sort by date
+      const revenueByDay = Array.from(revenueByDayMap.entries())
+        .map(([date, revenue]) => ({ date, revenue }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+      
+      // Group by camp for the revenueByCamp report
+      const revenueByCampMap = new Map<number, number>();
+      
+      allRegistrations
+        .filter(reg => reg.paid)
+        .forEach(reg => {
+          if (!revenueByCampMap.has(reg.campId)) {
+            revenueByCampMap.set(reg.campId, 0);
+          }
+          
+          revenueByCampMap.set(reg.campId, revenueByCampMap.get(reg.campId)! + (campsMap.get(reg.campId)?.price || 0));
+        });
+      
+      // Convert to array with camp names
+      const revenueByCamp = Array.from(revenueByCampMap.entries())
+        .map(([campId, revenue]) => ({
+          campId,
+          campName: campsMap.get(campId)?.name || 'Unknown Camp',
+          revenue
+        }))
+        .sort((a, b) => b.revenue - a.revenue); // Sort by highest revenue
+      
+      // Get the organization for platform fee percentage
+      const organization = await this.getOrganization(organizationId);
+      const platformFeePercent = organization?.stripePlatformFeePercent || 10; // Default to 10% if not set
+      
+      // Calculate platform fees
+      const platformFees = (totalRevenue * platformFeePercent) / 100;
+      
+      // Calculate net revenue
+      const netRevenue = totalRevenue - platformFees;
+      
+      // Get subscription costs
+      let subscriptionCosts = 0;
+      const activeSubscription = await this.getOrganizationActiveSubscription(organizationId);
+      if (activeSubscription) {
+        // If annual subscription, prorate the cost for the reporting period
+        if (activeSubscription.billingInterval === 'year') {
+          // Calculate daily cost of the subscription
+          const annualCost = activeSubscription.plan.annualPrice || 0;
+          const dailyCost = annualCost / 365;
+          
+          // Calculate number of days in the date range
+          let days = 30; // Default to 30 days if no date range
+          if (dateRange) {
+            days = Math.ceil((dateRange.endDate.getTime() - dateRange.startDate.getTime()) / (1000 * 60 * 60 * 24));
+          }
+          
+          subscriptionCosts = dailyCost * days;
+        } else {
+          // Monthly subscription
+          subscriptionCosts = activeSubscription.plan.price || 0;
+        }
+      }
+      
+      return {
+        totalRevenue,
+        paidRegistrations,
+        unpaidRegistrations,
+        averageRegistrationValue,
+        revenueByDay,
+        revenueByCamp,
+        platformFees,
+        netRevenue,
+        subscriptionCosts
+      };
+    } catch (error) {
+      console.error("Error generating financial report:", error);
+      throw new Error(`Failed to generate financial report: ${error.message}`);
+    }
+  }
+  
+  async getAttendanceReport(
+    organizationId: number,
+    dateRange?: { startDate: Date, endDate: Date }
+  ): Promise<{
+    totalSessions: number;
+    totalAttendedSessions: number;
+    attendanceRate: number;
+    sessionsByStatus: Record<string, number>;
+    attendanceByDay: { date: string; total: number; attended: number; rate: number }[];
+    attendanceByCamp: { campId: number; campName: string; total: number; attended: number; rate: number }[];
+  }> {
+    try {
+      // Get all camps for the organization
+      const orgCamps = await db.select().from(camps).where(
+        and(
+          eq(camps.organizationId, organizationId),
+          eq(camps.isDeleted, false)
+        )
+      );
+      
+      if (!orgCamps.length) {
+        return {
+          totalSessions: 0,
+          totalAttendedSessions: 0,
+          attendanceRate: 0,
+          sessionsByStatus: {},
+          attendanceByDay: [],
+          attendanceByCamp: []
+        };
+      }
+      
+      const campIds = orgCamps.map(camp => camp.id);
+      
+      // Prepare date filtering conditions
+      let dateConditions = sql`1=1`; // Default: no date filter
+      if (dateRange) {
+        dateConditions = and(
+          gte(campSessions.sessionDate, dateRange.startDate),
+          lte(campSessions.sessionDate, dateRange.endDate)
+        );
+      }
+      
+      // Get all sessions for these camps with date filtering
+      const allSessions = await db.select()
+        .from(campSessions)
+        .where(
+          and(
+            inArray(campSessions.campId, campIds),
+            dateConditions
+          )
+        );
+      
+      if (!allSessions.length) {
+        return {
+          totalSessions: 0,
+          totalAttendedSessions: 0,
+          attendanceRate: 0,
+          sessionsByStatus: {},
+          attendanceByDay: [],
+          attendanceByCamp: []
+        };
+      }
+      
+      // Create a map of camp id to camp object for name lookups
+      const campsMap = new Map(orgCamps.map(camp => [camp.id, camp]));
+      
+      // Count sessions by status
+      const sessionsByStatus: Record<string, number> = {};
+      allSessions.forEach(session => {
+        if (!sessionsByStatus[session.status]) {
+          sessionsByStatus[session.status] = 0;
+        }
+        sessionsByStatus[session.status]++;
+      });
+      
+      // Get all attendance records for these sessions
+      const sessionIds = allSessions.map(session => session.id);
+      const attendanceRecords = await db.select()
+        .from(attendanceRecords)
+        .where(inArray(attendanceRecords.sessionId, sessionIds));
+      
+      // Count attended sessions (present or late)
+      const totalAttendedSessions = attendanceRecords.filter(
+        record => record.status === 'present' || record.status === 'late'
+      ).length;
+      
+      // Calculate attendance rate
+      const totalExpectedAttendance = sessionIds.length * (await this.getTotalRegistrationsCount(organizationId));
+      const attendanceRate = totalExpectedAttendance > 0 
+        ? (totalAttendedSessions / totalExpectedAttendance) * 100 
+        : 0;
+      
+      // Group by day for the attendanceByDay report
+      const attendanceByDayMap = new Map<string, { total: number, attended: number }>();
+      
+      allSessions.forEach(session => {
+        const dateStr = new Date(session.sessionDate).toISOString().split('T')[0];
+        
+        if (!attendanceByDayMap.has(dateStr)) {
+          attendanceByDayMap.set(dateStr, { total: 0, attended: 0 });
+        }
+        
+        const dayData = attendanceByDayMap.get(dateStr)!;
+        dayData.total++;
+        
+        // Count attended for this session
+        const sessionAttendance = attendanceRecords.filter(
+          record => record.sessionId === session.id && 
+                  (record.status === 'present' || record.status === 'late')
+        ).length;
+        
+        dayData.attended += sessionAttendance;
+      });
+      
+      // Convert to array and calculate rates
+      const attendanceByDay = Array.from(attendanceByDayMap.entries())
+        .map(([date, data]) => ({
+          date,
+          total: data.total,
+          attended: data.attended,
+          rate: data.total > 0 ? (data.attended / data.total) * 100 : 0
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+      
+      // Group by camp for the attendanceByCamp report
+      const attendanceByCampMap = new Map<number, { total: number, attended: number }>();
+      
+      allSessions.forEach(session => {
+        if (!attendanceByCampMap.has(session.campId)) {
+          attendanceByCampMap.set(session.campId, { total: 0, attended: 0 });
+        }
+        
+        const campData = attendanceByCampMap.get(session.campId)!;
+        campData.total++;
+        
+        // Count attended for this session
+        const sessionAttendance = attendanceRecords.filter(
+          record => record.sessionId === session.id && 
+                  (record.status === 'present' || record.status === 'late')
+        ).length;
+        
+        campData.attended += sessionAttendance;
+      });
+      
+      // Convert to array with camp names and calculate rates
+      const attendanceByCamp = Array.from(attendanceByCampMap.entries())
+        .map(([campId, data]) => ({
+          campId,
+          campName: campsMap.get(campId)?.name || 'Unknown Camp',
+          total: data.total,
+          attended: data.attended,
+          rate: data.total > 0 ? (data.attended / data.total) * 100 : 0
+        }))
+        .sort((a, b) => b.rate - a.rate); // Sort by highest attendance rate
+      
+      return {
+        totalSessions: allSessions.length,
+        totalAttendedSessions,
+        attendanceRate,
+        sessionsByStatus,
+        attendanceByDay,
+        attendanceByCamp
+      };
+    } catch (error) {
+      console.error("Error generating attendance report:", error);
+      throw new Error(`Failed to generate attendance report: ${error.message}`);
     }
   }
 
