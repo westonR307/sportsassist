@@ -8,6 +8,7 @@ import fetch from "node-fetch";
 import { campStaff } from "@shared/tables";
 import { PLATFORM_FEE_PERCENTAGE } from "./constants";
 import registerCustomFieldRoutes from "./custom-field-routes";
+import { getCachedCamps, getCachedCamp, getCachedOrgCamps, invalidateCampCaches } from "./cache-utils";
 
 // Function to calculate subscription revenue from actual data
 async function calculateSubscriptionRevenue() {
@@ -1300,6 +1301,19 @@ export async function registerRoutes(app: Express) {
       let organizationId: number | undefined;
       let includeDeleted = req.query.includeDeleted === 'true';
       
+      // Parse pagination parameters with defaults
+      const page = parseInt(req.query.page as string || '1', 10);
+      const pageSize = parseInt(req.query.pageSize as string || '20', 10);
+      
+      // Validate pagination parameters
+      if (isNaN(page) || page < 1) {
+        return res.status(400).json({ message: "Invalid page parameter (must be a positive number)" });
+      }
+      
+      if (isNaN(pageSize) || pageSize < 1 || pageSize > 100) {
+        return res.status(400).json({ message: "Invalid pageSize parameter (must be between 1 and 100)" });
+      }
+      
       // Check if we should filter by organization
       if (req.user) {
         const userType = req.user.role;
@@ -1326,9 +1340,18 @@ export async function registerRoutes(app: Express) {
       };
       
       // Use the caching utility to get camps with all filters applied
-      const camps = await getCachedCamps(filters);
+      const allCamps = await getCachedCamps(filters);
       
-      console.log(`Retrieved ${camps.length} camps after filtering`);
+      // Calculate total items and pages for pagination
+      const totalItems = allCamps.length;
+      const totalPages = Math.ceil(totalItems / pageSize);
+      
+      // Apply pagination
+      const startIndex = (page - 1) * pageSize;
+      const endIndex = startIndex + pageSize;
+      const paginatedCamps = allCamps.slice(startIndex, endIndex);
+      
+      console.log(`Retrieved ${totalItems} camps, returning page ${page} of ${totalPages} (${paginatedCamps.length} items)`);
 
       // Set response cache headers that allow caching for a brief period
       // This helps with reducing load on the server while maintaining reasonable freshness
@@ -1336,10 +1359,23 @@ export async function registerRoutes(app: Express) {
       res.set({
         'Cache-Control': `public, max-age=${maxAge}`,
         'Vary': 'Authorization, Content-Type', // Vary based on auth to prevent sharing private data
-        'ETag': `"camps-${Date.now()}"` // ETag for validation
+        'ETag': `"camps-${Date.now()}"`, // ETag for validation
+        'X-Pagination-Page': page.toString(),
+        'X-Pagination-PageSize': pageSize.toString(),
+        'X-Pagination-TotalItems': totalItems.toString(),
+        'X-Pagination-TotalPages': totalPages.toString()
       });
 
-      res.json(camps);
+      // Return a structured response with data and pagination info
+      res.json({
+        data: paginatedCamps,
+        pagination: {
+          page,
+          pageSize,
+          totalItems,
+          totalPages
+        }
+      });
     } catch (error) {
       console.error("Error fetching camps:", {
         message: error.message,
