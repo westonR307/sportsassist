@@ -1293,18 +1293,12 @@ export async function registerRoutes(app: Express) {
     try {
       console.log("Fetching camps list");
       
-      let organizationId: number | undefined;
-      let includeDeleted = false;
-      
       // Parse query parameters for filtering
       const status = req.query.status as string | undefined;
       const type = req.query.type as string | undefined;
       const search = req.query.search as string | undefined;
-      
-      // If explicitly set in the query, override the default includeDeleted
-      if (req.query.includeDeleted === 'true') {
-        includeDeleted = true;
-      }
+      let organizationId: number | undefined;
+      let includeDeleted = req.query.includeDeleted === 'true';
       
       // Check if we should filter by organization
       if (req.user) {
@@ -1322,54 +1316,27 @@ export async function registerRoutes(app: Express) {
         console.log("Unauthenticated user - showing all public camps");
       }
       
-      // Get camps from storage
-      let camps = await storage.listCamps(organizationId, includeDeleted);
+      // Build filter object for getCachedCamps
+      const filters = {
+        organizationId,
+        includeDeleted,
+        status,
+        type,
+        search
+      };
       
-      // Apply additional filters based on query parameters
-      if (status) {
-        // Apply status filtering based on date logic
-        const now = new Date();
-        
-        if (status === 'active') {
-          camps = camps.filter(camp => 
-            new Date(camp.startDate) <= now && new Date(camp.endDate) >= now && !camp.isCancelled
-          );
-        } else if (status === 'upcoming') {
-          camps = camps.filter(camp => 
-            new Date(camp.startDate) > now && !camp.isCancelled
-          );
-        } else if (status === 'past') {
-          camps = camps.filter(camp => 
-            new Date(camp.endDate) < now || camp.isCancelled
-          );
-        } else if (status === 'cancelled') {
-          camps = camps.filter(camp => camp.isCancelled);
-        }
-      }
-      
-      // Filter by camp type
-      if (type) {
-        camps = camps.filter(camp => camp.type === type);
-      }
-      
-      // Filter by search term (name or description)
-      if (search) {
-        const searchLower = search.toLowerCase();
-        camps = camps.filter(camp => 
-          camp.name.toLowerCase().includes(searchLower) || 
-          (camp.description && camp.description.toLowerCase().includes(searchLower))
-        );
-      }
+      // Use the caching utility to get camps with all filters applied
+      const camps = await getCachedCamps(filters);
       
       console.log(`Retrieved ${camps.length} camps after filtering`);
 
-      // Force fresh response with multiple cache control headers
+      // Set response cache headers that allow caching for a brief period
+      // This helps with reducing load on the server while maintaining reasonable freshness
+      const maxAge = 60; // 60 seconds (1 minute) cache duration
       res.set({
-        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-        'Surrogate-Control': 'no-store',
-        'ETag': Date.now().toString() // Force new ETag each time
+        'Cache-Control': `public, max-age=${maxAge}`,
+        'Vary': 'Authorization, Content-Type', // Vary based on auth to prevent sharing private data
+        'ETag': `"camps-${Date.now()}"` // ETag for validation
       });
 
       res.json(camps);
