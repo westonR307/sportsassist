@@ -1904,8 +1904,8 @@ function CampViewPage(props: { id?: string }) {
                 <div className="py-4">
                   <CampAvailabilityTab 
                     campId={camp.id} 
-                    startDate={new Date(camp.startDate)} 
-                    endDate={new Date(camp.endDate)}
+                    startDate={parseISO(camp.startDate)} 
+                    endDate={parseISO(camp.endDate)}
                     onClose={() => setManageAvailabilityOpen(false)} 
                   />
                 </div>
@@ -1932,8 +1932,8 @@ function CampViewPage(props: { id?: string }) {
                 {camp && (
                   <EnhancedScheduleEditor
                     campId={camp.id}
-                    startDate={camp.startDate}
-                    endDate={camp.endDate}
+                    startDate={parseISO(camp.startDate)}
+                    endDate={parseISO(camp.endDate)}
                     onSave={() => setScheduleEditorOpen(false)}
                     editable={true}
                   />
