@@ -237,6 +237,19 @@ function CampViewPage(props: { id?: string }) {
       } as React.CSSProperties);
     }
   }, [organization]);
+  
+  // Define hero background style based on organization colors
+  const heroBgStyle = organization?.bannerImageUrl 
+    ? { 
+        backgroundImage: `url(${organization.bannerImageUrl})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      } 
+    : { 
+        background: organization?.primaryColor 
+          ? `linear-gradient(135deg, ${organization.primaryColor}, ${organization.secondaryColor || organization.primaryColor})`
+          : 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.8))'
+      };
 
 
   // Only fetch registrations using the camp numeric ID (not the slug)
@@ -867,24 +880,33 @@ function CampViewPage(props: { id?: string }) {
     }
 
     return (
-      <div className="space-y-6 pt-4">
-        <div className="flex flex-col w-full mb-6 mt-2">
-          <div className="flex w-full mb-3">
+      <div className="space-y-6">
+        {/* Hero section with gradient background */}
+        <div 
+          className="relative w-full rounded-lg overflow-hidden"
+          style={heroBgStyle}
+        >
+          <div className="absolute top-4 left-4 z-10">
             <BackButton
               to={isParent ? "/find-camps" : "/dashboard"}
               label={isParent ? "Back to Camps" : "Back to Dashboard"}
-              className="self-start"
+              className="bg-white/90 hover:bg-white shadow-md"
             />
           </div>
-
-          <div className="flex flex-col mb-4 w-full">
-            <h1 className="text-2xl md:text-3xl font-bold leading-tight break-words max-w-full">
-              {camp.name}
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              {camp.isVirtual ? "Virtual" : `${camp.city}, ${camp.state}`}
-            </p>
+          
+          <div className="relative z-0 p-6 pb-12 md:p-10 md:pb-16">
+            <div className="pt-8 md:pt-10 text-white">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight break-words max-w-full drop-shadow-md">
+                {camp.name}
+              </h1>
+              <p className="text-white/90 mt-2 text-lg md:text-xl font-medium drop-shadow-sm">
+                {camp.isVirtual ? "Virtual Camp" : `${camp.city}, ${camp.state}`}
+              </p>
+            </div>
           </div>
+        </div>
+        
+        <div className="flex flex-col w-full px-1">
 
           <div className="flex flex-wrap gap-2 items-center">
             {hasPermission && (
