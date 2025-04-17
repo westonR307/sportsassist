@@ -4243,6 +4243,178 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ message: error.message || "Failed to fetch organization profile" });
     }
   });
+  
+  // =====================================================================
+  // ORGANIZATION REPORTING ENDPOINTS
+  // =====================================================================
+  
+  /**
+   * Get registration report for an organization with optional date range filtering
+   */
+  app.get("/api/organizations/:orgId/reports/registrations", async (req: Request, res: Response) => {
+    try {
+      // Get authenticated user's organization ID and check authorization
+      const userOrgId = authAndGetOrgId(req);
+      const requestedOrgId = parseInt(req.params.orgId);
+      
+      // Verify permissions
+      if (userOrgId !== requestedOrgId && req.user.role !== "platform_admin") {
+        throw new HttpError(403, "Not authorized to access reports for this organization");
+      }
+      
+      // Parse date range filters from query params if provided
+      const startDateStr = req.query.startDate as string;
+      const endDateStr = req.query.endDate as string;
+      
+      let dateRange: { startDate: Date, endDate: Date } | undefined;
+      
+      if (startDateStr && endDateStr) {
+        dateRange = {
+          startDate: new Date(startDateStr),
+          endDate: new Date(endDateStr)
+        };
+        
+        // Set endDate to end of day to include full day
+        dateRange.endDate.setHours(23, 59, 59, 999);
+      }
+      
+      // Get the report from storage
+      const report = await storage.getRegistrationsReport(requestedOrgId, dateRange);
+      
+      res.json(report);
+    } catch (error: any) {
+      console.error("Error fetching registration report:", error);
+      res.status(error.status || 500).json({ 
+        message: error.message || "Failed to fetch registration report" 
+      });
+    }
+  });
+  
+  /**
+   * Get camp performance report for an organization with optional date range filtering
+   */
+  app.get("/api/organizations/:orgId/reports/camps", async (req: Request, res: Response) => {
+    try {
+      // Get authenticated user's organization ID and check authorization
+      const userOrgId = authAndGetOrgId(req);
+      const requestedOrgId = parseInt(req.params.orgId);
+      
+      // Verify permissions
+      if (userOrgId !== requestedOrgId && req.user.role !== "platform_admin") {
+        throw new HttpError(403, "Not authorized to access reports for this organization");
+      }
+      
+      // Parse date range filters from query params if provided
+      const startDateStr = req.query.startDate as string;
+      const endDateStr = req.query.endDate as string;
+      
+      let dateRange: { startDate: Date, endDate: Date } | undefined;
+      
+      if (startDateStr && endDateStr) {
+        dateRange = {
+          startDate: new Date(startDateStr),
+          endDate: new Date(endDateStr)
+        };
+        
+        // Set endDate to end of day to include full day
+        dateRange.endDate.setHours(23, 59, 59, 999);
+      }
+      
+      // Get the report from storage
+      const report = await storage.getCampPerformanceReport(requestedOrgId, dateRange);
+      
+      res.json(report);
+    } catch (error: any) {
+      console.error("Error fetching camp performance report:", error);
+      res.status(error.status || 500).json({ 
+        message: error.message || "Failed to fetch camp performance report" 
+      });
+    }
+  });
+  
+  /**
+   * Get financial report for an organization with optional date range filtering
+   */
+  app.get("/api/organizations/:orgId/reports/financials", async (req: Request, res: Response) => {
+    try {
+      // Get authenticated user's organization ID and check authorization
+      const userOrgId = authAndGetOrgId(req);
+      const requestedOrgId = parseInt(req.params.orgId);
+      
+      // Verify permissions
+      if (userOrgId !== requestedOrgId && req.user.role !== "platform_admin") {
+        throw new HttpError(403, "Not authorized to access reports for this organization");
+      }
+      
+      // Parse date range filters from query params if provided
+      const startDateStr = req.query.startDate as string;
+      const endDateStr = req.query.endDate as string;
+      
+      let dateRange: { startDate: Date, endDate: Date } | undefined;
+      
+      if (startDateStr && endDateStr) {
+        dateRange = {
+          startDate: new Date(startDateStr),
+          endDate: new Date(endDateStr)
+        };
+        
+        // Set endDate to end of day to include full day
+        dateRange.endDate.setHours(23, 59, 59, 999);
+      }
+      
+      // Get the report from storage
+      const report = await storage.getFinancialReport(requestedOrgId, dateRange);
+      
+      res.json(report);
+    } catch (error: any) {
+      console.error("Error fetching financial report:", error);
+      res.status(error.status || 500).json({ 
+        message: error.message || "Failed to fetch financial report" 
+      });
+    }
+  });
+  
+  /**
+   * Get attendance report for an organization with optional date range filtering
+   */
+  app.get("/api/organizations/:orgId/reports/attendance", async (req: Request, res: Response) => {
+    try {
+      // Get authenticated user's organization ID and check authorization
+      const userOrgId = authAndGetOrgId(req);
+      const requestedOrgId = parseInt(req.params.orgId);
+      
+      // Verify permissions
+      if (userOrgId !== requestedOrgId && req.user.role !== "platform_admin") {
+        throw new HttpError(403, "Not authorized to access reports for this organization");
+      }
+      
+      // Parse date range filters from query params if provided
+      const startDateStr = req.query.startDate as string;
+      const endDateStr = req.query.endDate as string;
+      
+      let dateRange: { startDate: Date, endDate: Date } | undefined;
+      
+      if (startDateStr && endDateStr) {
+        dateRange = {
+          startDate: new Date(startDateStr),
+          endDate: new Date(endDateStr)
+        };
+        
+        // Set endDate to end of day to include full day
+        dateRange.endDate.setHours(23, 59, 59, 999);
+      }
+      
+      // Get the report from storage
+      const report = await storage.getAttendanceReport(requestedOrgId, dateRange);
+      
+      res.json(report);
+    } catch (error: any) {
+      console.error("Error fetching attendance report:", error);
+      res.status(error.status || 500).json({ 
+        message: error.message || "Failed to fetch attendance report" 
+      });
+    }
+  });
 
   // Update organization profile (requires authentication and ownership)
   app.patch("/api/organizations/:orgId/profile", async (req, res) => {
