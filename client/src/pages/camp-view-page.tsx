@@ -8,6 +8,7 @@ import { CampMetaFieldsDisplay } from "@/components/camp-meta-fields-display";
 import { DuplicateCampDialog } from "@/components/duplicate-camp-dialog";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
