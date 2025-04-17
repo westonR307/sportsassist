@@ -240,12 +240,25 @@ function CampViewPage(props: { id?: string }) {
     enabled: !!camp?.organizationId,
   });
   
+  // Debug log the organization data
+  useEffect(() => {
+    if (organization) {
+      console.log("Organization data loaded:", organization);
+    }
+  }, [organization]);
+  
   // Set organization styling when organization data is available
   useEffect(() => {
     if (organization) {
-      // Use actual organization colors instead of hardcoded values
-      const primaryColor = organization.primaryColor || '#BA0C2F'; // fallback to a default if not set
-      const secondaryColor = organization.secondaryColor || primaryColor; // use primary as fallback
+      // Check both camelCase and snake_case property versions for maximum compatibility
+      // This handles API response format differences
+      const primaryColor = organization.primary_color || organization.primaryColor || '#BA0C2F';
+      const secondaryColor = organization.secondary_color || organization.secondaryColor || primaryColor;
+      
+      console.log("Setting organization colors:", {
+        primary: primaryColor,
+        secondary: secondaryColor
+      });
       
       setOrgStyles({
         '--primary': primaryColor,
@@ -258,14 +271,18 @@ function CampViewPage(props: { id?: string }) {
   }, [organization]);
   
   // Define hero background style based on organization colors
-  const heroBgStyle = organization?.bannerImageUrl 
+  const heroBgStyle = organization && (organization.banner_image_url || organization.bannerImageUrl)
     ? { 
-        backgroundImage: `url(${organization.bannerImageUrl})`,
+        backgroundImage: `url(${organization.banner_image_url || organization.bannerImageUrl})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       } 
     : { 
-        background: `linear-gradient(135deg, ${organization?.primaryColor || '#BA0C2F'}, ${organization?.secondaryColor || organization?.primaryColor || '#cc0000'})`
+        // Check both camelCase and snake_case property versions for maximum compatibility
+        background: `linear-gradient(135deg, 
+          ${organization?.primary_color || organization?.primaryColor || '#BA0C2F'}, 
+          ${organization?.secondary_color || organization?.secondaryColor || 
+            organization?.primary_color || organization?.primaryColor || '#cc0000'})`
       };
 
 
