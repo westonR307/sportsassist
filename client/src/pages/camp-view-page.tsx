@@ -360,9 +360,9 @@ function CampViewPage(props: { id?: string }) {
     if (!camp) return 'unknown';
 
     const now = new Date();
-    const regStartDate = new Date(camp.registrationStartDate);
-    const regEndDate = new Date(camp.registrationEndDate);
-    const campStartDate = new Date(camp.startDate);
+    const regStartDate = parseISO(camp.registrationStartDate);
+    const regEndDate = parseISO(camp.registrationEndDate);
+    const campStartDate = parseISO(camp.startDate);
 
     if (now > regEndDate) return 'closed';
     if (now > campStartDate) return 'in_progress';
@@ -555,7 +555,7 @@ function CampViewPage(props: { id?: string }) {
                     <div>
                       <p className="font-medium">{child.fullName}</p>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(child.dateOfBirth).toLocaleDateString()}
+                        {formatSafeDate(child.dateOfBirth, 'PPP')}
                       </p>
                     </div>
                   </div>
@@ -1086,7 +1086,7 @@ function CampViewPage(props: { id?: string }) {
                 ) : registrationStatus === 'not_open' ? (
                   <Button variant="outline" disabled>
                     <Clock className="h-4 w-4 mr-2" />
-                    Registration Opens {new Date(camp.registrationStartDate).toLocaleDateString()}
+                    Registration Opens {formatSafeDate(camp.registrationStartDate, 'PPP')}
                   </Button>
                 ) : registrationStatus === 'in_progress' ? (
                   <Button variant="outline" disabled>
@@ -1223,7 +1223,7 @@ function CampViewPage(props: { id?: string }) {
                           Camp Dates
                         </h3>
                         <p className="text-muted-foreground">
-                          {new Date(camp.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(camp.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          {formatSafeDate(camp.startDate, 'MMM d')} - {formatSafeDate(camp.endDate, 'MMM d, yyyy')}
                         </p>
                       </div>
                       
@@ -1233,7 +1233,7 @@ function CampViewPage(props: { id?: string }) {
                           Registration Period
                         </h3>
                         <p className="text-muted-foreground">
-                          {new Date(camp.registrationStartDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(camp.registrationEndDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          {formatSafeDate(camp.registrationStartDate, 'MMM d')} - {formatSafeDate(camp.registrationEndDate, 'MMM d, yyyy')}
                         </p>
                       </div>
                       
@@ -1576,7 +1576,7 @@ function CampViewPage(props: { id?: string }) {
                                     {registration.child?.fullName || `Athlete ID: ${registration.childId}`}
                                   </p>
                                   <p className="text-sm text-muted-foreground">
-                                    Registered: {new Date(registration.registeredAt).toLocaleDateString()}
+                                    Registered: {formatSafeDate(registration.registeredAt, 'PPP')}
                                   </p>
                                 </div>
                               </div>
@@ -1732,7 +1732,7 @@ function CampViewPage(props: { id?: string }) {
                                         {registration.child?.fullName || `Athlete #${registration.childId}`}
                                       </p>
                                       <p className="text-xs text-muted-foreground">
-                                        Registered on {new Date(registration.registeredAt).toLocaleDateString()}
+                                        Registered on {formatSafeDate(registration.registeredAt, 'PPP')}
                                       </p>
                                     </div>
                                   </div>
@@ -1758,7 +1758,7 @@ function CampViewPage(props: { id?: string }) {
                                   )}
                                 </TableCell>
                                 <TableCell className="text-center text-sm">
-                                  {new Date().toLocaleDateString()}
+                                  {formatSafeDate(new Date(), 'PP')}
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex justify-end gap-2">
