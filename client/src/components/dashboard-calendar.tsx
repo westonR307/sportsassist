@@ -119,13 +119,15 @@ function DashboardCalendar() {
 
   // Calculate dates that have sessions
   const sessionDays = React.useMemo(() => {
-    if (!allSessions || allSessions.length === 0) return new Set<string>();
+    // Make sure allSessions is an array with proper type checking
+    const sessionsArray = Array.isArray(allSessions) ? allSessions : [];
+    if (sessionsArray.length === 0) return new Set<string>();
 
     const dates = new Set<string>();
-    allSessions.forEach(session => {
+    sessionsArray.forEach(session => {
       try {
-        // Handle different date formats
-        if (session.sessionDate) {
+        // Ensure session is a valid object
+        if (session && typeof session === 'object' && session.sessionDate) {
           const normalizedDate = normalizeDate(session.sessionDate);
           dates.add(normalizedDate);
 
@@ -144,13 +146,17 @@ function DashboardCalendar() {
 
   // Get the sessions for the selected date
   const selectedDateSessions = React.useMemo(() => {
-    if (!allSessions || !selectedDate) return [];
+    if (!selectedDate) return [];
+    
+    // Ensure allSessions is an array
+    const sessionsArray = Array.isArray(allSessions) ? allSessions : [];
+    if (sessionsArray.length === 0) return [];
 
     // Normalize the selected date for comparison
     const normalizedSelectedDate = normalizeDate(selectedDate);
     console.log(`Finding sessions for normalized selected date: ${normalizedSelectedDate}`);
 
-    return allSessions.filter(session => {
+    return sessionsArray.filter(session => {
       try {
         // Normalize the session date
         const normalizedSessionDate = normalizeDate(session.sessionDate);
