@@ -467,6 +467,13 @@ function CampsDashboard() {
     refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
+  
+  // Fetch organizations for organization-specific colors
+  const { data: organizations = [] } = useQuery<Organization[]>({
+    queryKey: ['/api/organizations'],
+    enabled: true,
+    staleTime: 60000, // Cache for 1 minute
+  });
   const [location, navigate] = useWouterLocation();
   
   // Check if user is a camp creator or manager who can create camps
@@ -516,6 +523,11 @@ function CampsDashboard() {
             // Check if user can manage this specific camp
             const canManageCamp = camp.permissions?.canManage || false;
             
+            // Get organization colors for this camp
+            const orgColors = getOrganizationColors(organizations, camp.organizationId);
+            const primaryColor = orgColors.colors.primaryColor;
+            const secondaryColor = orgColors.colors.secondaryColor;
+            
             // Calculate date ranges and format for better display
             const now = new Date();
             const startDate = new Date(camp.startDate);
@@ -554,7 +566,10 @@ function CampsDashboard() {
             // We'll create two cards - one for the front and one for the back of the flip card
             const frontCard = (
               <Card className="h-full border-0 shadow-none">
-                <div className={`h-2 w-full ${campStatus === 'active' ? 'bg-green-500' : campStatus === 'upcoming' ? 'bg-blue-500' : 'bg-gray-400'}`} />
+                <div 
+                  className="h-2 w-full" 
+                  style={{ backgroundColor: primaryColor }}
+                />
                 
                 <CardHeader className="p-3 pb-1">
                   <div className="space-y-1">
@@ -618,7 +633,10 @@ function CampsDashboard() {
             
             const backCard = (
               <Card className="h-full border-0 shadow-none overflow-y-auto">
-                <div className={`h-2 w-full ${campStatus === 'active' ? 'bg-green-500' : campStatus === 'upcoming' ? 'bg-blue-500' : 'bg-gray-400'}`} />
+                <div 
+                  className="h-2 w-full" 
+                  style={{ backgroundColor: primaryColor }}
+                />
                 
                 <CardHeader className="p-3 pb-1">
                   <div className="flex justify-between items-start">
