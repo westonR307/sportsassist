@@ -96,7 +96,7 @@ import {
   type InsertOrganizationSubscription,
   type Sport
 } from "@shared/schema";
-import { type Role, type SportLevel, type StaffRole } from "@shared/types";
+import { type Role, type SportLevel, type StaffRole, type CampStatus, type SessionStatus } from "@shared/types";
 import { db } from "./db";
 import { eq, sql, and, or, gte, lte, inArray, desc, asc, gt, ne, isNull, count } from "drizzle-orm";
 import session from "express-session";
@@ -170,7 +170,7 @@ export interface IStorage {
   getTotalRegistrationsCount(organizationId: number): Promise<number>;
   getRecentRegistrationsCount(organizationId: number, hours?: number): Promise<number>;
   getCampCountsByStatus(organizationId: number): Promise<{ status: string; count: number }[]>;
-  getCampsByStatus(organizationId: number, status: string): Promise<Camp[]>;
+  getCampsByStatus(organizationId: number, status: CampStatus): Promise<Camp[]>;
   getUpcomingSessions(organizationId: number, startDate: Date, endDate: Date): Promise<(CampSession & { camp: Camp })[]>;
   
   // Recurrence Pattern methods
@@ -2924,8 +2924,8 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  // Define camp status type for type safety
-  async getCampsByStatus(organizationId: number, status: string): Promise<Camp[]> {
+  // Use CampStatus type for type safety
+  async getCampsByStatus(organizationId: number, status: CampStatus): Promise<Camp[]> {
     try {
       console.log(`Fetching camps with status ${status} for organization ${organizationId}`);
       
