@@ -87,12 +87,26 @@ export default function CampsPage() {
     return url.pathname + url.search;
   }, [filters]);
 
+  // Define a type for the paginated response
+  interface PaginatedCampsResponse {
+    data: CampWithPermissions[];
+    pagination: {
+      page: number;
+      pageSize: number;
+      totalItems: number;
+      totalPages: number;
+    }
+  }
+
   // Update the query key when filters change
-  const { data: camps, isLoading } = useQuery<CampWithPermissions[]>({
+  const { data: campsResponse, isLoading } = useQuery<PaginatedCampsResponse>({
     queryKey: [queryUrl],
     staleTime: 5000, // Only refetch after 5 seconds
     refetchOnWindowFocus: false,
   });
+  
+  // Extract camps array from the paginated response, or use empty array as fallback
+  const camps = campsResponse?.data || [];
 
   // Check if user is a camp creator or manager who can create camps
   const canCreateCamps = user && ['camp_creator', 'manager'].includes(user.role);
