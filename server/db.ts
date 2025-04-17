@@ -12,7 +12,12 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+export const pool = new Pool({ 
+  connectionString: process.env.DATABASE_URL,
+  max: 20, // Increased from default 10 connections for high traffic
+  idleTimeoutMillis: 30000, // Connection idle timeout (30 seconds)
+  connectionTimeoutMillis: 2000, // Connection acquisition timeout (2 seconds)
+});
 
 // Create a drizzle instance with merged schemas
 // Combine schema and tables into a single schema object
