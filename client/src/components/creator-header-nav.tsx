@@ -46,7 +46,6 @@ export function CreatorHeaderNav() {
   const { user, logoutMutation } = useAuth();
   const [location, navigate] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isScrolling, setIsScrolling] = useState(false);
   
   // Function to prevent default behavior for touch events to fix scrolling issues
   const handleScroll = (e: React.TouchEvent | React.MouseEvent) => {
@@ -221,15 +220,9 @@ export function CreatorHeaderNav() {
                   onMouseDown={handleScroll} 
                   onTouchStart={(e) => {
                     handleScroll(e);
-                    setIsScrolling(true);
                   }}
                   onTouchMove={(e) => {
                     e.stopPropagation();
-                    setIsScrolling(true);
-                  }}
-                  onTouchEnd={() => {
-                    // Small delay to ensure the click handler doesn't fire immediately
-                    setTimeout(() => setIsScrolling(false), 100);
                   }}
                 >
                   <div className="space-y-3 pr-4">
@@ -244,10 +237,8 @@ export function CreatorHeaderNav() {
                         }`}
                         onClick={(e) => {
                           e.preventDefault();
-                          if (!isScrolling) {
-                            window.location.href = item.path;
-                            setMobileMenuOpen(false);
-                          }
+                          window.location.href = item.path;
+                          setMobileMenuOpen(false);
                         }}
                       >
                         {item.icon}
@@ -395,15 +386,9 @@ export function CreatorHeaderNav() {
                 onMouseDown={handleScroll} 
                 onTouchStart={(e) => {
                   handleScroll(e);
-                  setIsScrolling(true);
                 }}
                 onTouchMove={(e) => {
                   e.stopPropagation();
-                  setIsScrolling(true);
-                }}
-                onTouchEnd={() => {
-                  // Small delay to ensure the click handler doesn't fire immediately
-                  setTimeout(() => setIsScrolling(false), 100);
                 }}
               >
                 <DropdownMenuGroup>
