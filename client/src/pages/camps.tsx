@@ -75,6 +75,23 @@ export default function CampsPage() {
 
   const { user } = useAuth();
 
+  // Get organization data for the logged-in user
+  const { data: organizationData } = useQuery<{
+    id: number;
+    name: string;
+    primary_color?: string;
+    primaryColor?: string;
+    secondary_color?: string;
+    secondaryColor?: string;
+  }>({
+    queryKey: [`/api/organizations/${user?.organizationId}`],
+    enabled: !!user?.organizationId,
+  });
+
+  // Extract organization colors, preferring snake_case but falling back to camelCase
+  const primaryColor = organizationData?.primary_color || organizationData?.primaryColor || '#000000';
+  const secondaryColor = organizationData?.secondary_color || organizationData?.secondaryColor || '#c89b63';
+
   // Build the query URL with filter parameters
   const queryUrl = React.useMemo(() => {
     const url = new URL("/api/camps", window.location.origin);
