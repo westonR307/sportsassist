@@ -897,7 +897,7 @@ function CampViewPage(props: { id?: string }) {
       <div className="space-y-6">
         {/* Hero section with gradient background */}
         <div 
-          className="relative w-full rounded-lg overflow-hidden"
+          className="relative w-full rounded-lg overflow-hidden shadow-lg"
           style={heroBgStyle}
         >
           <div className="absolute top-4 left-4 z-10">
@@ -913,9 +913,29 @@ function CampViewPage(props: { id?: string }) {
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight break-words max-w-full drop-shadow-md">
                 {camp.name}
               </h1>
-              <p className="text-white/90 mt-2 text-lg md:text-xl font-medium drop-shadow-sm">
-                {camp.isVirtual ? "Virtual Camp" : `${camp.city}, ${camp.state}`}
-              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 mt-4 text-white/95">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  <span className="text-base md:text-lg font-medium">
+                    {camp.isVirtual ? "Virtual Camp" : `${camp.city}, ${camp.state}`}
+                  </span>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <CalendarRange className="h-5 w-5" />
+                  <span className="text-base md:text-lg font-medium">
+                    {format(new Date(camp.startDate), 'MMM d')} - {format(new Date(camp.endDate), 'MMM d, yyyy')}
+                  </span>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Users2 className="h-5 w-5" />
+                  <span className="text-base md:text-lg font-medium">
+                    {registrations.length} / {camp.capacity} athletes
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1077,11 +1097,11 @@ function CampViewPage(props: { id?: string }) {
           <TabsContent value="details" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-6">
-                <Card className="border-t-4" style={{borderTopColor: organization?.primaryColor || 'hsl(var(--primary))'}}>
-                  <CardHeader>
+                <Card className="border-t-4 shadow-md" style={{borderTopColor: organization?.primaryColor || 'hsl(var(--primary))'}}>
+                  <CardHeader className="pb-3">
                     <div className="flex justify-between items-center">
                       <CardTitle className="text-xl flex items-center gap-2">
-                        <Info className="h-5 w-5 text-muted-foreground" />
+                        <Info className="h-5 w-5" style={{color: organization?.primaryColor}} />
                         Camp Details
                       </CardTitle>
                       {registrationStatus === 'open' && (
