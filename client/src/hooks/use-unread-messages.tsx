@@ -41,9 +41,20 @@ export function useUnreadMessages() {
   });
 
   useEffect(() => {
-    if (messages) {
-      const count = messages.filter(msg => !msg.recipient.isRead).length;
+    // Ensure messages is an array before using array methods
+    const messagesArray = Array.isArray(messages) ? messages : [];
+    
+    if (messagesArray.length > 0) {
+      // Use proper type checking within the filter as well
+      const count = messagesArray.filter(msg => 
+        msg && typeof msg === 'object' && 
+        msg.recipient && typeof msg.recipient === 'object' && 
+        msg.recipient.isRead === false
+      ).length;
+      
       setUnreadCount(count);
+    } else {
+      setUnreadCount(0);
     }
   }, [messages]);
 
