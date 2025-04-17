@@ -1218,7 +1218,7 @@ function CampViewPage(props: { id?: string }) {
                       
                       <div className="border rounded-lg p-4">
                         <h3 className="font-medium mb-2 flex items-center gap-2">
-                          <CalendarRange className="h-4 w-4" style={{color: organization?.primaryColor}} />
+                          <CalendarRange className="h-4 w-4" style={{color: organization?.primary_color || organization?.primaryColor}} />
                           Registration Period
                         </h3>
                         <p className="text-muted-foreground">
@@ -1230,21 +1230,21 @@ function CampViewPage(props: { id?: string }) {
                         <div className="grid grid-cols-3 gap-2">
                           <div>
                             <h3 className="font-medium mb-1 flex items-center gap-1">
-                              <DollarSign className="h-3 w-3" style={{color: organization?.primaryColor}} />
+                              <DollarSign className="h-3 w-3" style={{color: organization?.primary_color || organization?.primaryColor}} />
                               Price
                             </h3>
                             <p className="text-muted-foreground font-medium">${camp.price}</p>
                           </div>
                           <div>
                             <h3 className="font-medium mb-1 flex items-center gap-1">
-                              <Users className="h-3 w-3" style={{color: organization?.primaryColor}} />
+                              <Users className="h-3 w-3" style={{color: organization?.primary_color || organization?.primaryColor}} />
                               Capacity
                             </h3>
                             <p className="text-muted-foreground">{camp.capacity}</p>
                           </div>
                           <div>
                             <h3 className="font-medium mb-1 flex items-center gap-1">
-                              <BadgeInfo className="h-3 w-3" style={{color: organization?.primaryColor}} />
+                              <BadgeInfo className="h-3 w-3" style={{color: organization?.primary_color || organization?.primaryColor}} />
                               Type
                             </h3>
                             <p className="text-muted-foreground capitalize">{camp.type}</p>
@@ -1390,7 +1390,7 @@ function CampViewPage(props: { id?: string }) {
                 />
 
                 {camp.schedulingType !== 'availability' && (
-                  <Card className="border-t-4" style={{borderTopColor: organization?.secondaryColor || organization?.primaryColor || 'hsl(var(--primary))'}}>
+                  <Card className="border-t-4" style={{borderTopColor: organization?.secondary_color || organization?.secondaryColor || organization?.primary_color || organization?.primaryColor || 'hsl(var(--primary))'}}>
                     <CardHeader className="flex flex-row items-center justify-between">
                       <div>
                         <CardTitle className="text-xl flex items-center gap-2">
@@ -1409,8 +1409,8 @@ function CampViewPage(props: { id?: string }) {
                             onClick={() => setScheduleEditorOpen(true)}
                             className="h-8 mr-2"
                             style={{
-                              borderColor: organization?.primaryColor,
-                              color: organization?.primaryColor
+                              borderColor: organization?.primary_color || organization?.primaryColor,
+                              color: organization?.primary_color || organization?.primaryColor
                             }}
                           >
                             <Calendar className="h-4 w-4 mr-2" />
@@ -1424,8 +1424,8 @@ function CampViewPage(props: { id?: string }) {
                               onClick={() => setManageAvailabilityOpen(true)}
                               className="h-8"
                               style={{
-                                borderColor: organization?.primaryColor,
-                                color: organization?.primaryColor
+                                borderColor: organization?.primary_color || organization?.primaryColor,
+                                color: organization?.primary_color || organization?.primaryColor
                               }}
                             >
                               <CalendarDays className="h-4 w-4 mr-2" />
