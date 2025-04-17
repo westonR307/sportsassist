@@ -1398,11 +1398,13 @@ function CampViewPage(props: { id?: string }) {
                 />
 
                 {camp.schedulingType !== 'availability' && (
-                  <Card className="border-t-4" style={{borderTopColor: organization?.secondary_color || organization?.secondaryColor || organization?.primary_color || organization?.primaryColor || 'hsl(var(--primary))'}}>
-                    <CardHeader className="flex flex-row items-center justify-between">
+                  <Card className="border-t-[6px] shadow-md" style={{borderTopColor: organization?.secondary_color || organization?.secondaryColor || organization?.primary_color || organization?.primaryColor || 'hsl(var(--primary))'}}>
+                    <CardHeader className="flex flex-row items-center justify-between"
+                      style={{borderTopLeftRadius: 'calc(var(--radius) - 2px)', borderTopRightRadius: 'calc(var(--radius) - 2px)'}}
+                    >
                       <div>
                         <CardTitle className="text-xl flex items-center gap-2">
-                          <CalendarClock className="h-5 w-5 text-muted-foreground" />
+                          <CalendarClock className="h-5 w-5" style={{color: organization?.primary_color || organization?.primaryColor}} />
                           Camp Schedule
                         </CardTitle>
                         <CardDescription>
@@ -1453,8 +1455,10 @@ function CampViewPage(props: { id?: string }) {
           </TabsContent>
 
           <TabsContent value="registrations">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
+            <Card className="border-t-[6px] shadow-md" style={{borderTopColor: organization?.primary_color || organization?.primaryColor || 'hsl(var(--primary))'}}>
+              <CardHeader className="flex flex-row items-center justify-between"
+                style={{borderTopLeftRadius: 'calc(var(--radius) - 2px)', borderTopRightRadius: 'calc(var(--radius) - 2px)'}}
+              >
                 <CardTitle>
                   Registered Athletes
                   {hasPermission ? '' : ' (Limited View)'}
@@ -1638,10 +1642,12 @@ function CampViewPage(props: { id?: string }) {
 
           {hasPermission && (
             <TabsContent value="attendance">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+              <Card className="border-t-[6px] shadow-md" style={{borderTopColor: organization?.secondary_color || organization?.secondaryColor || organization?.primary_color || organization?.primaryColor || 'hsl(var(--primary))'}}>
+                <CardHeader className="flex flex-row items-center justify-between"
+                  style={{borderTopLeftRadius: 'calc(var(--radius) - 2px)', borderTopRightRadius: 'calc(var(--radius) - 2px)'}}
+                >
                   <CardTitle className="flex items-center gap-2">
-                    <ClipboardCheck className="h-5 w-5" />
+                    <ClipboardCheck className="h-5 w-5" style={{color: organization?.primary_color || organization?.primaryColor}} />
                     Attendance Tracking
                   </CardTitle>
                   <div className="flex items-center gap-2">
@@ -1876,8 +1882,16 @@ function CampViewPage(props: { id?: string }) {
 
           {showMessagesTab && (
             <TabsContent value="messages">
-              <Card>
-                <CardContent className="pt-6">
+              <Card className="border-t-[6px] shadow-md" style={{borderTopColor: organization?.secondary_color || organization?.secondaryColor || organization?.primary_color || organization?.primaryColor || 'hsl(var(--primary))'}}>
+                <CardHeader className="flex flex-row items-center justify-between"
+                  style={{borderTopLeftRadius: 'calc(var(--radius) - 2px)', borderTopRightRadius: 'calc(var(--radius) - 2px)'}}
+                >
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5" style={{color: organization?.primary_color || organization?.primaryColor}} />
+                    Camp Messages
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
                   {isParent ? (
                     <ParentCampMessagesTab campId={camp.id} />
                   ) : (
