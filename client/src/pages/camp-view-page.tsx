@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { DashboardLayout } from "./dashboard";
+import { CreatorLayout } from "@/components/creator-layout";
 import { ParentSidebar } from "@/components/parent-sidebar";
 import { BackButton } from "@/components/back-button";
 import { ShareCampDialog } from "@/components/share-camp-dialog";
@@ -2145,8 +2146,8 @@ function CampViewPage(props: { id?: string }) {
       );
     }
   } else {
-    // For camp creators and admins, we always use the dashboard layout
-    return <DashboardLayout>{renderContent()}</DashboardLayout>;
+    // For camp creators and admins, use the CreatorLayout with nav for consistency
+    return <CreatorLayout title={camp?.name || "Camp Details"}>{renderContent()}</CreatorLayout>;
   }
 }
 
