@@ -271,22 +271,28 @@ function CampViewPage(props: { id?: string }) {
   }, [organization]);
   
   // Define hero background style based on organization colors
+  // Convert the organization colors to variables for easier use
+  const primaryColor = organization?.primary_color || organization?.primaryColor || '#BA0C2F';
+  const secondaryColor = organization?.secondary_color || organization?.secondaryColor || '#c89b63';
+  
+  // If the primary color is black (#000000), we'll use the secondary color as the primary accent
+  const usePrimaryAsAccent = primaryColor === '#000000' ? secondaryColor : primaryColor;
+  
   const heroBgStyle = organization && (organization.banner_image_url || organization.bannerImageUrl)
     ? { 
-        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(${organization.banner_image_url || organization.bannerImageUrl})`,
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(${organization.banner_image_url || organization.bannerImageUrl})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        borderTop: `6px solid ${organization?.primary_color || organization?.primaryColor || '#BA0C2F'}`,
-        borderBottom: `6px solid ${organization?.secondary_color || organization?.secondaryColor || organization?.primary_color || organization?.primaryColor || '#BA0C2F'}`,
+        borderTop: `6px solid ${usePrimaryAsAccent}`,
+        borderBottom: `6px solid ${secondaryColor}`,
       } 
     : { 
         // Check both camelCase and snake_case property versions for maximum compatibility
         background: `linear-gradient(135deg, 
-          ${organization?.primary_color || organization?.primaryColor || '#BA0C2F'}, 
-          ${organization?.secondary_color || organization?.secondaryColor || 
-            organization?.primary_color || organization?.primaryColor || '#cc0000'})`,
-        borderTop: `6px solid ${organization?.primary_color || organization?.primaryColor || '#BA0C2F'}`,
-        borderBottom: `6px solid ${organization?.secondary_color || organization?.secondaryColor || organization?.primary_color || organization?.primaryColor || '#BA0C2F'}`,
+          ${primaryColor === '#000000' ? '#333333' : primaryColor}, 
+          ${secondaryColor})`,
+        borderTop: `6px solid ${usePrimaryAsAccent}`,
+        borderBottom: `6px solid ${secondaryColor}`,
       };
 
 
@@ -938,7 +944,7 @@ function CampViewPage(props: { id?: string }) {
                   style={{
                     textShadow: `0 2px 4px rgba(0,0,0,0.5)`,
                     color: 'white',
-                    borderBottom: `3px solid ${organization?.secondary_color || organization?.secondaryColor || 'rgba(255,255,255,0.7)'}`
+                    borderBottom: `3px solid ${secondaryColor}`
                   }}>
                 {camp.name}
               </h1>
@@ -948,7 +954,7 @@ function CampViewPage(props: { id?: string }) {
                   <MapPin className="h-5 w-5" 
                     style={{
                       filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
-                      color: organization?.secondary_color || organization?.secondaryColor || 'white'
+                      color: secondaryColor
                     }} 
                   />
                   <span className="text-base md:text-lg font-medium" 
@@ -961,7 +967,7 @@ function CampViewPage(props: { id?: string }) {
                   <CalendarRange className="h-5 w-5" 
                     style={{
                       filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
-                      color: organization?.secondary_color || organization?.secondaryColor || 'white'
+                      color: secondaryColor
                     }} 
                   />
                   <span className="text-base md:text-lg font-medium"
@@ -974,7 +980,7 @@ function CampViewPage(props: { id?: string }) {
                   <Users2 className="h-5 w-5" 
                     style={{
                       filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
-                      color: organization?.secondary_color || organization?.secondaryColor || 'white'
+                      color: secondaryColor
                     }} 
                   />
                   <span className="text-base md:text-lg font-medium"
