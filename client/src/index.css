@@ -31,6 +31,28 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
   
+  /* Gillette Bulldogs Brand Colors Override */
+  :root {
+    --primary: 344 93% 39%; /* #BA0C2F converted to HSL */
+    --primary-foreground: 0 0% 100%; /* white */
+    --secondary: 0 100% 40%; /* #cc0000 converted to HSL */
+    --secondary-foreground: 0 0% 100%; /* white */
+  }
+
+  /* Button styling overrides */
+  .bg-primary {
+    background-color: #BA0C2F !important; 
+  }
+  .text-primary {
+    color: #BA0C2F !important;
+  }
+  .border-primary {
+    border-color: #BA0C2F !important;
+  }
+  .hover\:bg-primary\/90:hover {
+    background-color: rgba(186, 12, 47, 0.9) !important;
+  }
+  
   /* React Day Picker Custom Styles */
   .rdp {
     --rdp-cell-size: 40px; /* Size of cell */
