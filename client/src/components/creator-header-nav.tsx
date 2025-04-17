@@ -165,16 +165,22 @@ export function CreatorHeaderNav() {
         {/* Desktop Navigation */}
         <nav className="mx-6 hidden gap-4 md:flex">
           {navItems.map((item) => (
-            <Button
+            <a
               key={item.path}
-              variant={location === item.path ? "default" : "ghost"}
-              size="sm"
-              className="flex gap-1"
-              onClick={() => navigate(item.path)}
+              href={item.path}
+              className={`flex items-center gap-1 px-3 py-2 rounded-md text-sm font-medium ${
+                location === item.path 
+                ? "bg-primary text-primary-foreground" 
+                : "text-foreground hover:bg-accent hover:text-accent-foreground"
+              }`}
+              onClick={(e) => {
+                e.preventDefault();
+                window.location.href = item.path;
+              }}
             >
               {item.icon}
               <span>{item.name}</span>
-            </Button>
+            </a>
           ))}
         </nav>
 
@@ -228,88 +234,92 @@ export function CreatorHeaderNav() {
                 >
                   <div className="space-y-3 pr-4">
                     {navItems.map((item) => (
-                      <Button
+                      <a
                         key={item.path}
-                        variant={location === item.path ? "default" : "ghost"}
-                        size="sm"
-                        className="flex w-full justify-start gap-2 py-6"
-                        onClick={() => {
+                        href={item.path}
+                        className={`flex w-full justify-start items-center gap-2 py-3 px-3 rounded-md text-sm font-medium ${
+                          location === item.path 
+                            ? "bg-primary text-primary-foreground" 
+                            : "text-foreground hover:bg-accent hover:text-accent-foreground"
+                        }`}
+                        onClick={(e) => {
+                          e.preventDefault();
                           if (!isScrolling) {
-                            navigate(item.path);
+                            window.location.href = item.path;
                             setMobileMenuOpen(false);
                           }
                         }}
                       >
                         {item.icon}
                         <span>{item.name}</span>
-                      </Button>
+                      </a>
                     ))}
                     
                     {/* Settings submenu in mobile dropdown */}
                     <div className="pt-4">
                       <h3 className="font-medium text-muted-foreground mb-2 pl-2">Settings</h3>
                       
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="flex w-full justify-start gap-2 py-6"
-                        onClick={() => {
+                      <a
+                        href="/dashboard/settings"
+                        className="flex w-full justify-start items-center gap-2 py-3 px-3 rounded-md text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground"
+                        onClick={(e) => {
+                          e.preventDefault();
                           if (!isScrolling) {
-                            navigate("/dashboard/settings");
+                            window.location.href = "/dashboard/settings";
                             setMobileMenuOpen(false);
                           }
                         }}
                       >
                         <User className="h-4 w-4" />
                         <span>Account Settings</span>
-                      </Button>
+                      </a>
                       
                       {user?.role === "camp_creator" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="flex w-full justify-start gap-2 py-6"
-                          onClick={() => {
+                        <a
+                          href="/dashboard/permissions"
+                          className="flex w-full justify-start items-center gap-2 py-3 px-3 rounded-md text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground"
+                          onClick={(e) => {
+                            e.preventDefault();
                             if (!isScrolling) {
-                              navigate("/dashboard/permissions");
+                              window.location.href = "/dashboard/permissions";
                               setMobileMenuOpen(false);
                             }
                           }}
                         >
                           <ShieldCheck className="h-4 w-4" />
                           <span>Permissions</span>
-                        </Button>
+                        </a>
                       )}
                       
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="flex w-full justify-start gap-2 py-6"
-                        onClick={() => {
+                      <a
+                        href="/custom-fields"
+                        className="flex w-full justify-start items-center gap-2 py-3 px-3 rounded-md text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground"
+                        onClick={(e) => {
+                          e.preventDefault();
                           if (!isScrolling) {
-                            navigate("/custom-fields");
+                            window.location.href = "/custom-fields";
                             setMobileMenuOpen(false);
                           }
                         }}
                       >
                         <FileText className="h-4 w-4" />
                         <span>Custom Fields</span>
-                      </Button>
+                      </a>
                       
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="flex w-full justify-start gap-2 py-6"
-                        onClick={() => {
+                      <a
+                        href="/dashboard/organization-profile"
+                        className="flex w-full justify-start items-center gap-2 py-3 px-3 rounded-md text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground"
+                        onClick={(e) => {
+                          e.preventDefault();
                           if (!isScrolling) {
-                            navigate("/dashboard/organization-profile");
+                            window.location.href = "/dashboard/organization-profile";
                             setMobileMenuOpen(false);
                           }
                         }}
                       >
                         <Users2 className="h-4 w-4" />
                         <span>Organization Profile</span>
-                      </Button>
+                      </a>
                       
                       {user?.role === "camp_creator" && (
                         <Button
@@ -422,13 +432,19 @@ export function CreatorHeaderNav() {
                 }}
               >
                 <DropdownMenuGroup>
-                  <DropdownMenuItem onClick={() => {
-                    if (!isScrolling) {
-                      navigate("/dashboard/settings");
-                    }
-                  }}>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Account Settings</span>
+                  <DropdownMenuItem asChild>
+                    <a 
+                      href="/dashboard/settings"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (!isScrolling) {
+                          window.location.href = "/dashboard/settings";
+                        }
+                      }}
+                    >
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Account Settings</span>
+                    </a>
                   </DropdownMenuItem>
                   
                   {user?.role === "camp_creator" && (
