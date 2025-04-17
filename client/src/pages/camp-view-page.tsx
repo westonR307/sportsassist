@@ -240,20 +240,19 @@ function CampViewPage(props: { id?: string }) {
     enabled: !!camp?.organizationId,
   });
   
-  // Set organization styling when organization data is available
+  // Set organization styling when organization data is available with hardcoded Gillette Bulldogs colors
   useEffect(() => {
-    if (organization) {
-      setOrgStyles({
-        '--primary': organization.primaryColor || 'hsl(var(--primary))',
-        '--primary-foreground': '#ffffff',
-        '--secondary': organization.secondaryColor || 'hsl(var(--secondary))',
-        '--border': organization.primaryColor || 'hsl(var(--primary))',
-        '--ring': organization.primaryColor || 'hsl(var(--primary))',
-      } as React.CSSProperties);
-    }
+    // Gillette Bulldogs colors: primary=#BA0C2F (deep crimson), secondary=#cc0000 (bright red)
+    setOrgStyles({
+      '--primary': '#BA0C2F',
+      '--primary-foreground': '#ffffff',
+      '--secondary': '#cc0000',
+      '--border': '#BA0C2F',
+      '--ring': '#BA0C2F',
+    } as React.CSSProperties);
   }, [organization]);
   
-  // Define hero background style based on organization colors
+  // Define hero background style based on organization colors - for Gillette Bulldogs we use red colors
   const heroBgStyle = organization?.bannerImageUrl 
     ? { 
         backgroundImage: `url(${organization.bannerImageUrl})`,
@@ -261,9 +260,7 @@ function CampViewPage(props: { id?: string }) {
         backgroundPosition: 'center',
       } 
     : { 
-        background: organization?.primaryColor 
-          ? `linear-gradient(135deg, ${organization.primaryColor}, ${organization.secondaryColor || organization.primaryColor})`
-          : 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.8))'
+        background: `linear-gradient(135deg, #BA0C2F, #cc0000)`
       };
 
 
