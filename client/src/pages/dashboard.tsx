@@ -445,27 +445,12 @@ function CampsDashboard() {
     };
   }, []);
   
-  // Define a type for the paginated response
-  interface PaginatedCampsResponse {
-    data: CampWithPermissions[];
-    pagination: {
-      page: number;
-      pageSize: number;
-      totalItems: number;
-      totalPages: number;
-    }
-  }
-
-  // Update query to handle the new paginated response format
-  const { data: campsResponse, isLoading } = useQuery<PaginatedCampsResponse, Error>({
+  const { data: camps = [], isLoading } = useQuery<CampWithPermissions[], Error, CampWithPermissions[]>({
     queryKey: ["/api/camps"],
     staleTime: 5000, // Only refetch after 5 seconds
     refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
-  
-  // Extract camps array from the paginated response, or use empty array as fallback
-  const camps = campsResponse?.data || [];
   const [location, navigate] = useWouterLocation();
   
   // Check if user is a camp creator or manager who can create camps

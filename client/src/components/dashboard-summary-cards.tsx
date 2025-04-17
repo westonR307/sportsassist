@@ -74,32 +74,24 @@ function DashboardSummaryCards() {
             <div className="flex justify-center py-4">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
-          ) : (() => {
-            // Make sure todaySessions is an array
-            const sessions = Array.isArray(todaySessions) ? todaySessions : [];
-            const sessionCount = sessions.length;
-            
-            if (sessionCount === 0) {
-              return <p className="text-sm text-muted-foreground">No sessions scheduled for today.</p>;
-            }
-            
-            return (
-              <div className="space-y-2">
-                <p className="text-2xl font-bold">{sessionCount}</p>
-                <div className="max-h-[100px] overflow-y-auto space-y-1">
-                  {sessions.map((session: CampSession) => (
-                    <Link 
-                      key={session.id} 
-                      href={`/dashboard/camps/${session.camp.slug}`}
-                      className="block text-xs hover:underline text-primary truncate"
-                    >
-                      {formatTime(session.startTime)} - {session.camp.name}
-                    </Link>
-                  ))}
-                </div>
+          ) : !todaySessions || todaySessions.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No sessions scheduled for today.</p>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-2xl font-bold">{todaySessions.length}</p>
+              <div className="max-h-[100px] overflow-y-auto space-y-1">
+                {todaySessions.map((session: CampSession) => (
+                  <Link 
+                    key={session.id} 
+                    href={`/dashboard/camps/${session.camp.slug}`}
+                    className="block text-xs hover:underline text-primary truncate"
+                  >
+                    {formatTime(session.startTime)} - {session.camp.name}
+                  </Link>
+                ))}
               </div>
-            );
-          })()}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -118,11 +110,7 @@ function DashboardSummaryCards() {
             </div>
           ) : (
             <>
-              <p className="text-2xl font-bold">{
-                typeof activeCamps === 'object' && activeCamps !== null && 'count' in activeCamps 
-                  ? activeCamps.count 
-                  : 0
-              }</p>
+              <p className="text-2xl font-bold">{activeCamps?.count || 0}</p>
               <p className="text-xs text-muted-foreground mt-1">
                 Currently running camps
               </p>
@@ -146,11 +134,7 @@ function DashboardSummaryCards() {
             </div>
           ) : (
             <>
-              <p className="text-2xl font-bold">{
-                typeof upcomingSessions === 'object' && upcomingSessions !== null && 'count' in upcomingSessions 
-                  ? upcomingSessions.count 
-                  : 0
-              }</p>
+              <p className="text-2xl font-bold">{upcomingSessions?.count || 0}</p>
               <p className="text-xs text-muted-foreground mt-1">
                 Next 7 days
               </p>
@@ -174,11 +158,7 @@ function DashboardSummaryCards() {
             </div>
           ) : (
             <>
-              <p className="text-2xl font-bold">{
-                typeof registrationsData === 'object' && registrationsData !== null && 'recent' in registrationsData
-                  ? registrationsData.recent 
-                  : 0
-              }</p>
+              <p className="text-2xl font-bold">{registrationsData?.recent || 0}</p>
               <p className="text-xs text-muted-foreground mt-1">
                 Last 48 hours
               </p>

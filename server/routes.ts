@@ -8,7 +8,6 @@ import fetch from "node-fetch";
 import { campStaff } from "@shared/tables";
 import { PLATFORM_FEE_PERCENTAGE } from "./constants";
 import registerCustomFieldRoutes from "./custom-field-routes";
-import { getCachedCamps, getCachedCamp, getCachedOrgCamps, invalidateCampCaches } from "./cache-utils";
 
 // Function to calculate subscription revenue from actual data
 async function calculateSubscriptionRevenue() {
@@ -1294,24 +1293,17 @@ export async function registerRoutes(app: Express) {
     try {
       console.log("Fetching camps list");
       
+      let organizationId: number | undefined;
+      let includeDeleted = false;
+      
       // Parse query parameters for filtering
       const status = req.query.status as string | undefined;
       const type = req.query.type as string | undefined;
       const search = req.query.search as string | undefined;
-      let organizationId: number | undefined;
-      let includeDeleted = req.query.includeDeleted === 'true';
       
-      // Parse pagination parameters with defaults
-      const page = parseInt(req.query.page as string || '1', 10);
-      const pageSize = parseInt(req.query.pageSize as string || '20', 10);
-      
-      // Validate pagination parameters
-      if (isNaN(page) || page < 1) {
-        return res.status(400).json({ message: "Invalid page parameter (must be a positive number)" });
-      }
-      
-      if (isNaN(pageSize) || pageSize < 1 || pageSize > 100) {
-        return res.status(400).json({ message: "Invalid pageSize parameter (must be between 1 and 100)" });
+      // If explicitly set in the query, override the default includeDeleted
+      if (req.query.includeDeleted === 'true') {
+        includeDeleted = true;
       }
       
       // Check if we should filter by organization
@@ -1330,52 +1322,57 @@ export async function registerRoutes(app: Express) {
         console.log("Unauthenticated user - showing all public camps");
       }
       
-      // Build filter object for getCachedCamps
-      const filters = {
-        organizationId,
-        includeDeleted,
-        status,
-        type,
-        search
-      };
+      // Get camps from storage
+      let camps = await storage.listCamps(organizationId, includeDeleted);
       
-      // Use the caching utility to get camps with all filters applied
-      const allCamps = await getCachedCamps(filters);
-      
-      // Calculate total items and pages for pagination
-      const totalItems = allCamps.length;
-      const totalPages = Math.ceil(totalItems / pageSize);
-      
-      // Apply pagination
-      const startIndex = (page - 1) * pageSize;
-      const endIndex = startIndex + pageSize;
-      const paginatedCamps = allCamps.slice(startIndex, endIndex);
-      
-      console.log(`Retrieved ${totalItems} camps, returning page ${page} of ${totalPages} (${paginatedCamps.length} items)`);
-
-      // Set response cache headers that allow caching for a brief period
-      // This helps with reducing load on the server while maintaining reasonable freshness
-      const maxAge = 60; // 60 seconds (1 minute) cache duration
-      res.set({
-        'Cache-Control': `public, max-age=${maxAge}`,
-        'Vary': 'Authorization, Content-Type', // Vary based on auth to prevent sharing private data
-        'ETag': `"camps-${Date.now()}"`, // ETag for validation
-        'X-Pagination-Page': page.toString(),
-        'X-Pagination-PageSize': pageSize.toString(),
-        'X-Pagination-TotalItems': totalItems.toString(),
-        'X-Pagination-TotalPages': totalPages.toString()
-      });
-
-      // Return a structured response with data and pagination info
-      res.json({
-        data: paginatedCamps,
-        pagination: {
-          page,
-          pageSize,
-          totalItems,
-          totalPages
+      // Apply additional filters based on query parameters
+      if (status) {
+        // Apply status filtering based on date logic
+        const now = new Date();
+        
+        if (status === 'active') {
+          camps = camps.filter(camp => 
+            new Date(camp.startDate) <= now && new Date(camp.endDate) >= now && !camp.isCancelled
+          );
+        } else if (status === 'upcoming') {
+          camps = camps.filter(camp => 
+            new Date(camp.startDate) > now && !camp.isCancelled
+          );
+        } else if (status === 'past') {
+          camps = camps.filter(camp => 
+            new Date(camp.endDate) < now || camp.isCancelled
+          );
+        } else if (status === 'cancelled') {
+          camps = camps.filter(camp => camp.isCancelled);
         }
+      }
+      
+      // Filter by camp type
+      if (type) {
+        camps = camps.filter(camp => camp.type === type);
+      }
+      
+      // Filter by search term (name or description)
+      if (search) {
+        const searchLower = search.toLowerCase();
+        camps = camps.filter(camp => 
+          camp.name.toLowerCase().includes(searchLower) || 
+          (camp.description && camp.description.toLowerCase().includes(searchLower))
+        );
+      }
+      
+      console.log(`Retrieved ${camps.length} camps after filtering`);
+
+      // Force fresh response with multiple cache control headers
+      res.set({
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Surrogate-Control': 'no-store',
+        'ETag': Date.now().toString() // Force new ETag each time
       });
+
+      res.json(camps);
     } catch (error) {
       console.error("Error fetching camps:", {
         message: error.message,
@@ -4209,79 +4206,6 @@ export async function registerRoutes(app: Express) {
       }
       console.error("Error getting total registrations count:", error.message);
       res.status(500).json({ error: error.message || "Failed to get total registrations count" });
-    }
-  });
-  
-  app.get("/api/dashboard/active-camps", async (req: Request, res: Response) => {
-    try {
-      const organizationId = authAndGetOrgId(req);
-      
-      // Use the optimized getActiveCamps method that includes date filtering
-      const result = await storage.getActiveCamps(organizationId);
-      
-      console.log(`Found ${result.count} active camps for dashboard`);
-      
-      // Return just the count as that's all the dashboard needs
-      return res.json(result);
-    } catch (error: any) {
-      if (error instanceof HttpError) {
-        return res.status(error.status).json({ error: error.message });
-      }
-      console.error("Error getting active camps:", error.message);
-      res.status(500).json({ error: error.message || "Failed to get active camps" });
-    }
-  });
-
-  app.get("/api/dashboard/upcoming-sessions", async (req: Request, res: Response) => {
-    try {
-      const organizationId = authAndGetOrgId(req);
-      
-      // Get days parameter from query string, default to 7
-      const days = req.query.days ? parseInt(req.query.days as string) : 7;
-      
-      // Calculate date range
-      const startDate = new Date();
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + days);
-      
-      // Get upcoming sessions
-      const upcomingSessions = await storage.getUpcomingSessions(organizationId, startDate, endDate);
-      
-      console.log(`Found ${upcomingSessions?.length || 0} upcoming sessions for dashboard`);
-      
-      return res.json({
-        count: upcomingSessions?.length || 0,
-        sessions: upcomingSessions || []
-      });
-    } catch (error: any) {
-      if (error instanceof HttpError) {
-        return res.status(error.status).json({ error: error.message });
-      }
-      console.error("Error getting upcoming sessions:", error.message);
-      res.status(500).json({ error: error.message || "Failed to get upcoming sessions" });
-    }
-  });
-
-  app.get("/api/dashboard/registrations", async (req: Request, res: Response) => {
-    try {
-      const organizationId = authAndGetOrgId(req);
-      
-      // Get the registration counts
-      const totalCount = await storage.getTotalRegistrationsCount(organizationId);
-      const recentCount = await storage.getRecentRegistrationsCount(organizationId, 48);
-      
-      console.log(`Dashboard registrations: total=${totalCount}, recent=${recentCount}`);
-      
-      return res.json({
-        total: totalCount,
-        recent: recentCount
-      });
-    } catch (error: any) {
-      if (error instanceof HttpError) {
-        return res.status(error.status).json({ error: error.message });
-      }
-      console.error("Error getting registration data:", error.message);
-      res.status(500).json({ error: error.message || "Failed to get registration data" });
     }
   });
   

@@ -5,7 +5,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { parseISO, isValid, format } from "date-fns";
 
 import { BasicInfoMetaFields, BasicInfoMetaFieldsRef } from "@/components/custom-fields/basic-info-meta-fields";
 import {
@@ -98,37 +97,10 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
     console.log("Edit Camp Dialog - Sports List:", sportsList);
   }, [campSports, isLoadingSports, sportsError]);
 
-  // Helper function to safely format a date for display
-  const formatSafeDate = (dateValue: string | Date | null | undefined, formatPattern = 'yyyy-MM-dd') => {
-    if (!dateValue) return '';
-    
-    try {
-      // If it's already a Date object, use it directly
-      const date = typeof dateValue === 'string' ? parseISO(dateValue) : dateValue;
-      
-      // Validate the date before formatting
-      if (!isValid(date)) return '';
-      
-      // Format the date using the specified pattern
-      return format(date, formatPattern);
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return '';
-    }
-  };
-
-  // Format date string to YYYY-MM-DD for input[type=date] with error handling
-  const formatDateForInput = (dateString: string | Date | null | undefined) => {
-    if (!dateString) return '';
-    
-    try {
-      const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
-      if (!isValid(date)) return '';
-      return date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
-    } catch (error) {
-      console.error('Error formatting date for input:', error);
-      return '';
-    }
+  // Format date string to YYYY-MM-DD for input[type=date]
+  const formatDateForInput = (dateString: string | Date) => {
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    return date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
   };
 
   // Form setup with default values from the existing camp
@@ -156,28 +128,13 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
   const updateCampMutation = useMutation({
     mutationFn: async (values: FormValues) => {
       try {
-        // Safely convert date strings to proper ISO format with error handling
-        const safeConvertDateToISO = (dateString: string) => {
-          try {
-            if (!dateString) return '';
-            const date = parseISO(dateString);
-            if (!isValid(date)) {
-              console.warn('Invalid date detected:', dateString);
-              return new Date().toISOString(); // Fallback to current date
-            }
-            return date.toISOString();
-          } catch (error) {
-            console.error('Error converting date to ISO:', error);
-            return new Date().toISOString(); // Fallback to current date
-          }
-        };
-
+        // Convert date strings to proper ISO format
         const formattedValues = {
           ...values,
-          startDate: safeConvertDateToISO(values.startDate),
-          endDate: safeConvertDateToISO(values.endDate),
-          registrationStartDate: safeConvertDateToISO(values.registrationStartDate),
-          registrationEndDate: safeConvertDateToISO(values.registrationEndDate),
+          startDate: new Date(values.startDate).toISOString(),
+          endDate: new Date(values.endDate).toISOString(),
+          registrationStartDate: new Date(values.registrationStartDate).toISOString(),
+          registrationEndDate: new Date(values.registrationEndDate).toISOString(),
         };
 
         console.log("Making PATCH request with values:", formattedValues);

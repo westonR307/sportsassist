@@ -16,18 +16,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 export function NotificationBell() {
-  const { unreadCount: originalUnreadCount, messages: originalMessages } = useUnreadMessages();
+  const { unreadCount, messages } = useUnreadMessages();
   const [open, setOpen] = useState(false);
-  
-  // Ensure messages is an array
-  const messages = Array.isArray(originalMessages) ? originalMessages : [];
-  // Use actual count from array if needed
-  const unreadCount = typeof originalUnreadCount === 'number' ? originalUnreadCount : 0;
 
-  // Group messages by camp with proper type checking
-  const messagesByCamp = messages.reduce((acc: Record<string, any[]>, msg) => {
-    if (!msg || !msg.message || !msg.message.campId) return acc;
-    
+  // Group messages by camp
+  const messagesByCamp = messages?.reduce((acc: Record<string, any[]>, msg) => {
     const campId = msg.message.campId;
     if (!acc[campId]) {
       acc[campId] = [];
@@ -36,14 +29,13 @@ export function NotificationBell() {
     return acc;
   }, {});
 
-  // Sort messages by date (newest first) - create a new array to avoid mutation
-  const sortedMessages = [...messages].sort((a, b) => {
-    if (!a?.message?.createdAt || !b?.message?.createdAt) return 0;
+  // Sort messages by date (newest first)
+  const sortedMessages = messages?.sort((a, b) => {
     return new Date(b.message.createdAt).getTime() - new Date(a.message.createdAt).getTime();
   });
 
   // Get most recent 5 messages
-  const recentMessages = sortedMessages.slice(0, 5);
+  const recentMessages = sortedMessages?.slice(0, 5);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

@@ -11,7 +11,6 @@ export type StaffRole = "manager" | "coach" | "volunteer";
 export type CampStatus = "active" | "cancelled" | "deleted";
 export type AvailabilityStatus = "available" | "booked" | "unavailable";
 export type BookingStatus = "confirmed" | "cancelled" | "rescheduled" | "waitlisted";
-export type SessionStatus = "active" | "cancelled" | "rescheduled";
 
 // Permission system types
 export type ResourceType = 

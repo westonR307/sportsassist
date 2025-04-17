@@ -96,7 +96,7 @@ import {
   type InsertOrganizationSubscription,
   type Sport
 } from "@shared/schema";
-import { type Role, type SportLevel, type StaffRole, type CampStatus, type SessionStatus } from "@shared/types";
+import { type Role, type SportLevel, type StaffRole } from "@shared/types";
 import { db } from "./db";
 import { eq, sql, and, or, gte, lte, inArray, desc, asc, gt, ne, isNull, count } from "drizzle-orm";
 import session from "express-session";
@@ -168,11 +168,7 @@ export interface IStorage {
   getTodaySessions(organizationId: number): Promise<(CampSession & { camp: Camp })[]>;
   getRecentRegistrations(organizationId: number, hours?: number): Promise<Registration[]>;
   getTotalRegistrationsCount(organizationId: number): Promise<number>;
-  getRecentRegistrationsCount(organizationId: number, hours?: number): Promise<number>;
   getCampCountsByStatus(organizationId: number): Promise<{ status: string; count: number }[]>;
-  getCampsByStatus(organizationId: number, status: CampStatus): Promise<Camp[]>;
-  getActiveCamps(organizationId: number): Promise<{ count: number }>;
-  getUpcomingSessions(organizationId: number, startDate: Date, endDate: Date): Promise<(CampSession & { camp: Camp })[]>;
   
   // Recurrence Pattern methods
   createRecurrencePattern(pattern: InsertRecurrencePattern): Promise<RecurrencePattern>;
@@ -325,9 +321,6 @@ export interface IStorage {
   getOrganizationSubscription(organizationId: number): Promise<OrganizationSubscription | undefined>;
   updateOrganizationSubscription(id: number, data: Partial<Omit<OrganizationSubscription, "id" | "createdAt" | "updatedAt">>): Promise<OrganizationSubscription>;
   getOrganizationActiveSubscription(organizationId: number): Promise<(OrganizationSubscription & { plan: SubscriptionPlan }) | undefined>;
-  
-  // Dashboard methods
-  getActiveCamps(organizationId: number): Promise<{ count: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -338,37 +331,6 @@ export class DatabaseStorage implements IStorage {
       pool,
       createTableIfMissing: true,
     });
-  }
-  
-  async getActiveCamps(organizationId: number): Promise<{ count: number }> {
-    try {
-      console.log(`Fetching active camps for organization ${organizationId}`);
-      
-      // Get current date
-      const currentDate = new Date();
-      
-      // Get camps with status 'active'
-      const activeCamps = await db.select()
-        .from(camps)
-        .where(
-          and(
-            eq(camps.organizationId, organizationId),
-            eq(camps.status, "active" as CampStatus),
-            eq(camps.isDeleted, false),
-            lte(camps.startDate, currentDate), // Start date <= current date
-            gte(camps.endDate, currentDate)    // End date >= current date
-          )
-        );
-      
-      console.log(`Found ${activeCamps.length} currently active camps for organization ${organizationId}`);
-      
-      return {
-        count: activeCamps.length
-      };
-    } catch (error: any) {
-      console.error(`Error fetching active camps for org ${organizationId}:`, error);
-      return { count: 0 };
-    }
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -2956,124 +2918,6 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error getting recent registrations:", error);
       throw new Error(`Failed to get recent registrations: ${error.message}`);
-    }
-  }
-  
-  // Use CampStatus type for type safety
-  async getCampsByStatus(organizationId: number, status: CampStatus): Promise<Camp[]> {
-    try {
-      console.log(`Fetching camps with status ${status} for organization ${organizationId}`);
-      
-      const campResults = await db.select()
-        .from(camps)
-        .where(
-          and(
-            eq(camps.organizationId, organizationId),
-            eq(camps.status, status as CampStatus),
-            eq(camps.deleted, false)
-          )
-        )
-        .orderBy(desc(camps.createdAt))
-        .limit(100); // Reasonable limit to prevent excessive data fetching
-      
-      console.log(`Found ${campResults.length} camps with status ${status}`);
-      return campResults;
-    } catch (error: any) {
-      console.error(`Error fetching camps by status for org ${organizationId}:`, error);
-      return [];
-    }
-  }
-  
-  // Implementation provided earlier in this file
-  
-  async getUpcomingSessions(organizationId: number, startDate: Date, endDate: Date): Promise<(CampSession & { camp: Camp })[]> {
-    try {
-      console.log(`Fetching upcoming sessions between ${startDate.toISOString()} and ${endDate.toISOString()}`);
-      
-      // First get all active camps for the organization
-      const activeCamps = await db.select({id: camps.id})
-        .from(camps)
-        .where(
-          and(
-            eq(camps.organizationId, organizationId),
-            eq(camps.status, "active" as CampStatus),
-            eq(camps.deleted, false)
-          )
-        );
-      
-      const campIds = activeCamps.map(camp => camp.id);
-      
-      if (campIds.length === 0) {
-        console.log("No active camps found, returning empty sessions array");
-        return [];
-      }
-      
-      console.log(`Searching for sessions in ${campIds.length} active camps`);
-      
-      // Now fetch the sessions with their camp info
-      const sessions = await db.select({
-        session: campSessions,
-        camp: camps
-      })
-        .from(campSessions)
-        .innerJoin(camps, eq(campSessions.campId, camps.id))
-        .where(
-          and(
-            inArray(campSessions.campId, campIds),
-            gte(campSessions.date, startDate),
-            lte(campSessions.date, endDate),
-            eq(campSessions.status, "active" as SessionStatus)
-          )
-        )
-        .orderBy(asc(campSessions.date), asc(campSessions.startTime));
-      
-      // Transform the result to match the expected format
-      const result = sessions.map(item => ({
-        ...item.session,
-        camp: item.camp
-      }));
-      
-      console.log(`Found ${result.length} upcoming sessions`);
-      return result;
-    } catch (error: any) {
-      console.error("Error fetching upcoming sessions:", error);
-      return [];
-    }
-  }
-  
-  async getRecentRegistrationsCount(organizationId: number, hours: number = 48): Promise<number> {
-    try {
-      const cutoffDate = new Date();
-      cutoffDate.setHours(cutoffDate.getHours() - hours);
-      
-      // First get camp IDs for the organization
-      const orgCamps = await db.select({id: camps.id})
-        .from(camps)
-        .where(eq(camps.organizationId, organizationId));
-      
-      const campIds = orgCamps.map(camp => camp.id);
-      
-      if (campIds.length === 0) {
-        return 0;
-      }
-      
-      // Get count of registrations in the time period
-      const [result] = await db
-        .select({
-          count: count()
-        })
-        .from(registrations)
-        .where(
-          and(
-            inArray(registrations.campId, campIds),
-            gte(registrations.registeredAt, cutoffDate)
-          )
-        );
-      
-      return result?.count || 0;
-    } catch (error: any) {
-      console.error(`Error counting recent registrations for org ${organizationId}:`, error);
-      return 0;
     }
   }
   

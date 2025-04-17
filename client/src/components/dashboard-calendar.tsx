@@ -46,16 +46,10 @@ function DashboardCalendar() {
     console.log('Dashboard calendar - All Sessions:', allSessions);
     console.log('Dashboard calendar - Loading state:', sessionsLoading);
 
-    // Add detailed logging for camp slugs with proper type checking
-    // Make sure allSessions is an array
-    const sessionsArray = Array.isArray(allSessions) ? allSessions : [];
-    if (sessionsArray.length > 0) {
-      sessionsArray.forEach(session => {
-        if (session && typeof session === 'object' && session.camp) {
-          console.log(`Session ID: ${session.id}, Camp ID: ${session.campId}, Camp Name: ${session.camp.name}, Camp Slug: ${session.camp.slug}`);
-        } else {
-          console.warn('Invalid session format detected:', session);
-        }
+    // Add detailed logging for camp slugs
+    if (allSessions && allSessions.length > 0) {
+      allSessions.forEach(session => {
+        console.log(`Session ID: ${session.id}, Camp ID: ${session.campId}, Camp Name: ${session.camp.name}, Camp Slug: ${session.camp.slug}`);
       });
     }
 
@@ -125,15 +119,13 @@ function DashboardCalendar() {
 
   // Calculate dates that have sessions
   const sessionDays = React.useMemo(() => {
-    // Make sure allSessions is an array with proper type checking
-    const sessionsArray = Array.isArray(allSessions) ? allSessions : [];
-    if (sessionsArray.length === 0) return new Set<string>();
+    if (!allSessions || allSessions.length === 0) return new Set<string>();
 
     const dates = new Set<string>();
-    sessionsArray.forEach(session => {
+    allSessions.forEach(session => {
       try {
-        // Ensure session is a valid object
-        if (session && typeof session === 'object' && session.sessionDate) {
+        // Handle different date formats
+        if (session.sessionDate) {
           const normalizedDate = normalizeDate(session.sessionDate);
           dates.add(normalizedDate);
 
@@ -152,17 +144,13 @@ function DashboardCalendar() {
 
   // Get the sessions for the selected date
   const selectedDateSessions = React.useMemo(() => {
-    if (!selectedDate) return [];
-    
-    // Ensure allSessions is an array
-    const sessionsArray = Array.isArray(allSessions) ? allSessions : [];
-    if (sessionsArray.length === 0) return [];
+    if (!allSessions || !selectedDate) return [];
 
     // Normalize the selected date for comparison
     const normalizedSelectedDate = normalizeDate(selectedDate);
     console.log(`Finding sessions for normalized selected date: ${normalizedSelectedDate}`);
 
-    return sessionsArray.filter(session => {
+    return allSessions.filter(session => {
       try {
         // Normalize the session date
         const normalizedSessionDate = normalizeDate(session.sessionDate);

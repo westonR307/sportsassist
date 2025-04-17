@@ -59,11 +59,7 @@ export function CampMetaFieldsDisplay({
   }
 
   // Only show the component if there are fields to display
-  // First ensure metaFields is valid and an array
-  const isValidArray = Array.isArray(metaFields);
-  const isEmpty = !isValidArray || metaFields.length === 0;
-  
-  if (isEmpty) {
+  if (!metaFields || metaFields.length === 0) {
     if (canManage) {
       return (
         <div className={`p-4 border rounded-md bg-muted/20 ${className}`}>
@@ -80,19 +76,9 @@ export function CampMetaFieldsDisplay({
     return null; // Don't show anything if there are no fields and user can't manage
   }
 
-  // Group fields by isInternal status, ensuring metaFields is an array
-  const metaFieldsArray = Array.isArray(metaFields) ? metaFields : [];
-  
-  // Add debug info
-  console.log('Meta fields type:', typeof metaFields);
-  console.log('Meta fields value:', metaFields);
-  
-  const publicFields = metaFieldsArray.filter((field: any) => 
-    field && field.field && !field.field.isInternal
-  );
-  const internalFields = metaFieldsArray.filter((field: any) => 
-    field && field.field && field.field.isInternal
-  );
+  // Group fields by isInternal status
+  const publicFields = metaFields.filter((field: any) => !field.field.isInternal);
+  const internalFields = metaFields.filter((field: any) => field.field.isInternal);
 
   // If you can't manage and there are no public fields, don't show anything
   if (!canManage && publicFields.length === 0) {

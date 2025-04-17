@@ -24,92 +24,36 @@ export async function apiRequest(
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
-// Create a memory cache to avoid excessive API calls
-const localMemoryCache = new Map<string, {data: any, timestamp: number}>();
-
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const cacheKey = Array.isArray(queryKey) ? queryKey.join('|') : String(queryKey[0]);
-    const url = queryKey[0] as string;
-    
-    // Check if we have a valid memory cache entry (not expired)
-    const cachedEntry = localMemoryCache.get(cacheKey);
-    if (cachedEntry && (Date.now() - cachedEntry.timestamp < 10000)) { // 10 second memory cache
-      return cachedEntry.data;
+    const res = await fetch(queryKey[0] as string, {
+      credentials: "include",
+    });
+
+    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+      return null;
     }
 
-    try {
-      // Use AbortController to set timeout for fetch requests
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-      
-      const res = await fetch(url, {
-        credentials: "include",
-        signal: controller.signal,
-        headers: {
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache', // Tell CDN/browser not to cache
-        }
-      });
-      
-      clearTimeout(timeoutId);
-
-      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-        return null;
-      }
-
-      await throwIfResNotOk(res);
-      const data = await res.json();
-      
-      // Store in memory cache
-      localMemoryCache.set(cacheKey, {
-        data,
-        timestamp: Date.now()
-      });
-      
-      // Clean up memory cache if it gets too large (prevent memory leaks)
-      if (localMemoryCache.size > 100) {
-        // Get all entries, convert to array
-        const entries = Array.from(localMemoryCache.entries());
-        
-        // Sort by timestamp and get the oldest 20 to delete
-        const keysToDelete = entries
-          .sort((a, b) => a[1].timestamp - b[1].timestamp)
-          .slice(0, 20)
-          .map(entry => entry[0]);
-          
-        // Delete old entries
-        keysToDelete.forEach(key => localMemoryCache.delete(key));
-      }
-      
-      return data;
-    } catch (error) {
-      // If fetch fails and we have a cached entry (even if expired), return it as fallback
-      if (cachedEntry) {
-        console.warn('Using stale cached data due to fetch error');
-        return cachedEntry.data;
-      }
-      throw error;
-    }
+    await throwIfResNotOk(res);
+    return await res.json();
   };
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
-      refetchInterval: false, // Don't auto-refetch by default - component specific when needed
-      refetchOnWindowFocus: false, // Disable refetch on window focus for better performance
-      staleTime: 60000, // Increased stale time to 1 minute (less network requests)
-      retry: 1, // Reduced retry count
-      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 10000), // Faster retry with lower max
-      gcTime: 600000, // Increased cache time to 10 minutes (renamed from cacheTime in React Query v5)
-      placeholderData: 'previousData', // Keep previous data while fetching new data (v5 way)
+      refetchInterval: 30000, // Automatically refetch every 30 seconds
+      refetchOnWindowFocus: true,
+      staleTime: 5000, // Very short stale time - 5 seconds
+      retry: 3, // Retry failed requests up to 3 times
+      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+      cacheTime: 300000, // Cache for 5 minutes
     },
     mutations: {
-      retry: 1, // Reduced retry count
+      retry: 2,
     },
   },
 });

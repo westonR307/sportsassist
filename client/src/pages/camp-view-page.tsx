@@ -8,41 +8,8 @@ import { CampMetaFieldsDisplay } from "@/components/camp-meta-fields-display";
 import { DuplicateCampDialog } from "@/components/duplicate-camp-dialog";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { format, parseISO, isValid } from "date-fns";
+import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-
-// Safe date formatter utility that handles possibly invalid date strings
-const formatSafeDate = (dateStr: string | Date | null | undefined, formatStr: string): string => {
-  if (!dateStr) return 'N/A';
-  
-  try {
-    // If it's already a Date object
-    if (dateStr instanceof Date) {
-      if (isValid(dateStr)) {
-        return format(dateStr, formatStr);
-      }
-      return 'Invalid date';
-    }
-    
-    // If it's a string, try to parse it
-    // First try parseISO which is safer for ISO strings
-    const parsed = parseISO(dateStr.toString());
-    if (isValid(parsed)) {
-      return format(parsed, formatStr);
-    }
-    
-    // Fallback to regular Date constructor
-    const date = new Date(dateStr);
-    if (isValid(date)) {
-      return format(date, formatStr);
-    }
-    
-    return 'Invalid date';
-  } catch (error) {
-    console.error('Date formatting error:', error);
-    return 'Invalid date';
-  }
-};
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -360,10 +327,9 @@ function CampViewPage(props: { id?: string }) {
     if (!camp) return 'unknown';
 
     const now = new Date();
-    // Add null checks to prevent errors with undefined dates
-    const regStartDate = camp.registrationStartDate ? parseISO(camp.registrationStartDate) : new Date();
-    const regEndDate = camp.registrationEndDate ? parseISO(camp.registrationEndDate) : new Date();
-    const campStartDate = camp.startDate ? parseISO(camp.startDate) : new Date();
+    const regStartDate = new Date(camp.registrationStartDate);
+    const regEndDate = new Date(camp.registrationEndDate);
+    const campStartDate = new Date(camp.startDate);
 
     if (now > regEndDate) return 'closed';
     if (now > campStartDate) return 'in_progress';
@@ -556,7 +522,7 @@ function CampViewPage(props: { id?: string }) {
                     <div>
                       <p className="font-medium">{child.fullName}</p>
                       <p className="text-sm text-muted-foreground">
-                        {formatSafeDate(child.dateOfBirth, 'PPP')}
+                        {new Date(child.dateOfBirth).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
@@ -957,7 +923,7 @@ function CampViewPage(props: { id?: string }) {
                 <div className="flex items-center gap-2">
                   <CalendarRange className="h-5 w-5" />
                   <span className="text-base md:text-lg font-medium">
-                    {formatSafeDate(camp.startDate, 'MMM d')} - {formatSafeDate(camp.endDate, 'MMM d, yyyy')}
+                    {format(new Date(camp.startDate), 'MMM d')} - {format(new Date(camp.endDate), 'MMM d, yyyy')}
                   </span>
                 </div>
                 
@@ -1087,7 +1053,7 @@ function CampViewPage(props: { id?: string }) {
                 ) : registrationStatus === 'not_open' ? (
                   <Button variant="outline" disabled>
                     <Clock className="h-4 w-4 mr-2" />
-                    Registration Opens {formatSafeDate(camp.registrationStartDate, 'PPP')}
+                    Registration Opens {new Date(camp.registrationStartDate).toLocaleDateString()}
                   </Button>
                 ) : registrationStatus === 'in_progress' ? (
                   <Button variant="outline" disabled>
@@ -1224,7 +1190,7 @@ function CampViewPage(props: { id?: string }) {
                           Camp Dates
                         </h3>
                         <p className="text-muted-foreground">
-                          {formatSafeDate(camp.startDate, 'MMM d')} - {formatSafeDate(camp.endDate, 'MMM d, yyyy')}
+                          {new Date(camp.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(camp.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </p>
                       </div>
                       
@@ -1234,7 +1200,7 @@ function CampViewPage(props: { id?: string }) {
                           Registration Period
                         </h3>
                         <p className="text-muted-foreground">
-                          {formatSafeDate(camp.registrationStartDate, 'MMM d')} - {formatSafeDate(camp.registrationEndDate, 'MMM d, yyyy')}
+                          {new Date(camp.registrationStartDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(camp.registrationEndDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </p>
                       </div>
                       
@@ -1577,7 +1543,7 @@ function CampViewPage(props: { id?: string }) {
                                     {registration.child?.fullName || `Athlete ID: ${registration.childId}`}
                                   </p>
                                   <p className="text-sm text-muted-foreground">
-                                    Registered: {formatSafeDate(registration.registeredAt, 'PPP')}
+                                    Registered: {new Date(registration.registeredAt).toLocaleDateString()}
                                   </p>
                                 </div>
                               </div>
@@ -1733,7 +1699,7 @@ function CampViewPage(props: { id?: string }) {
                                         {registration.child?.fullName || `Athlete #${registration.childId}`}
                                       </p>
                                       <p className="text-xs text-muted-foreground">
-                                        Registered on {formatSafeDate(registration.registeredAt, 'PPP')}
+                                        Registered on {new Date(registration.registeredAt).toLocaleDateString()}
                                       </p>
                                     </div>
                                   </div>
@@ -1759,7 +1725,7 @@ function CampViewPage(props: { id?: string }) {
                                   )}
                                 </TableCell>
                                 <TableCell className="text-center text-sm">
-                                  {formatSafeDate(new Date(), 'PP')}
+                                  {new Date().toLocaleDateString()}
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex justify-end gap-2">
@@ -1905,8 +1871,8 @@ function CampViewPage(props: { id?: string }) {
                 <div className="py-4">
                   <CampAvailabilityTab 
                     campId={camp.id} 
-                    startDate={camp.startDate ? parseISO(camp.startDate) : new Date()} 
-                    endDate={camp.endDate ? parseISO(camp.endDate) : new Date()}
+                    startDate={new Date(camp.startDate)} 
+                    endDate={new Date(camp.endDate)}
                     onClose={() => setManageAvailabilityOpen(false)} 
                   />
                 </div>
@@ -1933,8 +1899,8 @@ function CampViewPage(props: { id?: string }) {
                 {camp && (
                   <EnhancedScheduleEditor
                     campId={camp.id}
-                    startDate={camp.startDate ? parseISO(camp.startDate) : new Date()}
-                    endDate={camp.endDate ? parseISO(camp.endDate) : new Date()}
+                    startDate={camp.startDate}
+                    endDate={camp.endDate}
                     onSave={() => setScheduleEditorOpen(false)}
                     editable={true}
                   />
