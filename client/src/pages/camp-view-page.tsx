@@ -8,8 +8,41 @@ import { CampMetaFieldsDisplay } from "@/components/camp-meta-fields-display";
 import { DuplicateCampDialog } from "@/components/duplicate-camp-dialog";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+
+// Safe date formatter utility that handles possibly invalid date strings
+const formatSafeDate = (dateStr: string | Date | null | undefined, formatStr: string): string => {
+  if (!dateStr) return 'N/A';
+  
+  try {
+    // If it's already a Date object
+    if (dateStr instanceof Date) {
+      if (isValid(dateStr)) {
+        return format(dateStr, formatStr);
+      }
+      return 'Invalid date';
+    }
+    
+    // If it's a string, try to parse it
+    // First try parseISO which is safer for ISO strings
+    const parsed = parseISO(dateStr.toString());
+    if (isValid(parsed)) {
+      return format(parsed, formatStr);
+    }
+    
+    // Fallback to regular Date constructor
+    const date = new Date(dateStr);
+    if (isValid(date)) {
+      return format(date, formatStr);
+    }
+    
+    return 'Invalid date';
+  } catch (error) {
+    console.error('Date formatting error:', error);
+    return 'Invalid date';
+  }
+};
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -923,7 +956,7 @@ function CampViewPage(props: { id?: string }) {
                 <div className="flex items-center gap-2">
                   <CalendarRange className="h-5 w-5" />
                   <span className="text-base md:text-lg font-medium">
-                    {format(new Date(camp.startDate), 'MMM d')} - {format(new Date(camp.endDate), 'MMM d, yyyy')}
+                    {formatSafeDate(camp.startDate, 'MMM d')} - {formatSafeDate(camp.endDate, 'MMM d, yyyy')}
                   </span>
                 </div>
                 
