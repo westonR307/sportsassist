@@ -135,33 +135,33 @@ function Router() {
         requiredRoles={["camp_creator" as const, "platform_admin" as const]} 
       />
       <ProtectedRoute 
-        path="/dashboard/camps/slug/:slug" 
-        component={(params) => <CampViewPage slug={params.slug} />}
-        requiredRoles={["camp_creator" as const, "platform_admin" as const]} 
-      />
-      <ProtectedRoute 
         path="/dashboard/camps/:id" 
-        component={(params) => <CampViewPage id={params.id} />}
+        component={CampViewPage}
         requiredRoles={["camp_creator" as const, "platform_admin" as const]} 
       />
       <ProtectedRoute 
-        path="/camp/slug/:slug" 
-        component={(params) => <CampViewPage slug={params.slug} />}
-        showNavigation={user?.role !== "parent"} // Only show AppLayout navigation if not a parent
+        path="/dashboard/camps/slug/:id" 
+        component={CampViewPage}
+        requiredRoles={["camp_creator" as const, "platform_admin" as const]} 
       />
       <ProtectedRoute 
         path="/camp/:id" 
-        component={(params) => <CampViewPage id={params.id} />}
+        component={CampViewPage}
         showNavigation={user?.role !== "parent"} // Only show AppLayout navigation if not a parent
       />
       <ProtectedRoute 
-        path="/register/camp/slug/:slug" 
-        component={(params) => <CampViewPage slug={params.slug} />}
+        path="/camp/slug/:id" 
+        component={CampViewPage}
         showNavigation={user?.role !== "parent"} // Only show AppLayout navigation if not a parent
       />
       <ProtectedRoute 
         path="/register/camp/:id" 
-        component={(params) => <CampViewPage id={params.id} />}
+        component={CampViewPage}
+        showNavigation={user?.role !== "parent"} // Only show AppLayout navigation if not a parent
+      />
+      <ProtectedRoute 
+        path="/register/camp/slug/:id" 
+        component={CampViewPage}
         showNavigation={user?.role !== "parent"} // Only show AppLayout navigation if not a parent
       />
       <ProtectedRoute 

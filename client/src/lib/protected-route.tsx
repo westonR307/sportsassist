@@ -58,9 +58,9 @@ export function ProtectedRoute({
     <Route path={path}>
       {(params) => {
         // Ensure params is an object and includes the path params
-        // Preserve ALL route parameters without forcing id overrides
         const routeParams = {
-          ...params
+          ...params,
+          id: params?.id || params?.["*"]
         };
         console.log("Full route params:", routeParams);
         
@@ -100,7 +100,6 @@ export function ProtectedRoute({
 
         // Pass route params to the component
         console.log("Protected route params:", routeParams);
-        console.log("Protected route path:", path);
         
         // Parent routes
         if (user.role === 'parent') {
@@ -115,10 +114,10 @@ export function ProtectedRoute({
           
           if (isParentDashboardRoute) {
             // Never wrap parent dashboard with AppLayout - it has its own layout
-            return <Component {...routeParams} />;
+            return <Component id={routeParams.id} {...routeParams} />;
           } else {
             // Camp view and other pages - render directly with no layout
-            return <Component {...routeParams} />;
+            return <Component id={routeParams.id} {...routeParams} />;
           }
         } 
         // Camp creator/manager routes
@@ -143,19 +142,19 @@ export function ProtectedRoute({
             const pageTitle = getPageTitleFromPath(path);
             return (
               <CreatorLayout title={pageTitle}>
-                <Component {...routeParams} />
+                <Component id={routeParams.id} {...routeParams} />
               </CreatorLayout>
             );
           } else if (showNavigation) {
             // Use AppLayout for non-dashboard routes
             return (
               <AppLayout showBackButton={showBackButton}>
-                <Component {...routeParams} />
+                <Component id={routeParams.id} {...routeParams} />
               </AppLayout>
             );
           } else {
             // No layout for routes that don't need navigation
-            return <Component {...routeParams} />;
+            return <Component id={routeParams.id} {...routeParams} />;
           }
         }
         // Platform admin routes and others
@@ -163,11 +162,11 @@ export function ProtectedRoute({
           if (showNavigation) {
             return (
               <AppLayout showBackButton={showBackButton}>
-                <Component {...routeParams} />
+                <Component id={routeParams.id} {...routeParams} />
               </AppLayout>
             );
           } else {
-            return <Component {...routeParams} />;
+            return <Component id={routeParams.id} {...routeParams} />;
           }
         }
       }}
