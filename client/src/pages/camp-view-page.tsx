@@ -360,9 +360,10 @@ function CampViewPage(props: { id?: string }) {
     if (!camp) return 'unknown';
 
     const now = new Date();
-    const regStartDate = parseISO(camp.registrationStartDate);
-    const regEndDate = parseISO(camp.registrationEndDate);
-    const campStartDate = parseISO(camp.startDate);
+    // Add null checks to prevent errors with undefined dates
+    const regStartDate = camp.registrationStartDate ? parseISO(camp.registrationStartDate) : new Date();
+    const regEndDate = camp.registrationEndDate ? parseISO(camp.registrationEndDate) : new Date();
+    const campStartDate = camp.startDate ? parseISO(camp.startDate) : new Date();
 
     if (now > regEndDate) return 'closed';
     if (now > campStartDate) return 'in_progress';
@@ -1904,8 +1905,8 @@ function CampViewPage(props: { id?: string }) {
                 <div className="py-4">
                   <CampAvailabilityTab 
                     campId={camp.id} 
-                    startDate={parseISO(camp.startDate)} 
-                    endDate={parseISO(camp.endDate)}
+                    startDate={camp.startDate ? parseISO(camp.startDate) : new Date()} 
+                    endDate={camp.endDate ? parseISO(camp.endDate) : new Date()}
                     onClose={() => setManageAvailabilityOpen(false)} 
                   />
                 </div>
@@ -1932,8 +1933,8 @@ function CampViewPage(props: { id?: string }) {
                 {camp && (
                   <EnhancedScheduleEditor
                     campId={camp.id}
-                    startDate={parseISO(camp.startDate)}
-                    endDate={parseISO(camp.endDate)}
+                    startDate={camp.startDate ? parseISO(camp.startDate) : new Date()}
+                    endDate={camp.endDate ? parseISO(camp.endDate) : new Date()}
                     onSave={() => setScheduleEditorOpen(false)}
                     editable={true}
                   />
