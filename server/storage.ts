@@ -171,6 +171,7 @@ export interface IStorage {
   getRecentRegistrationsCount(organizationId: number, hours?: number): Promise<number>;
   getCampCountsByStatus(organizationId: number): Promise<{ status: string; count: number }[]>;
   getCampsByStatus(organizationId: number, status: CampStatus): Promise<Camp[]>;
+  getActiveCamps(organizationId: number): Promise<{ count: number }>;
   getUpcomingSessions(organizationId: number, startDate: Date, endDate: Date): Promise<(CampSession & { camp: Camp })[]>;
   
   // Recurrence Pattern methods
@@ -324,6 +325,9 @@ export interface IStorage {
   getOrganizationSubscription(organizationId: number): Promise<OrganizationSubscription | undefined>;
   updateOrganizationSubscription(id: number, data: Partial<Omit<OrganizationSubscription, "id" | "createdAt" | "updatedAt">>): Promise<OrganizationSubscription>;
   getOrganizationActiveSubscription(organizationId: number): Promise<(OrganizationSubscription & { plan: SubscriptionPlan }) | undefined>;
+  
+  // Dashboard methods
+  getActiveCamps(organizationId: number): Promise<{ count: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -334,6 +338,37 @@ export class DatabaseStorage implements IStorage {
       pool,
       createTableIfMissing: true,
     });
+  }
+  
+  async getActiveCamps(organizationId: number): Promise<{ count: number }> {
+    try {
+      console.log(`Fetching active camps for organization ${organizationId}`);
+      
+      // Get current date
+      const currentDate = new Date();
+      
+      // Get camps with status 'active'
+      const activeCamps = await db.select()
+        .from(camps)
+        .where(
+          and(
+            eq(camps.organizationId, organizationId),
+            eq(camps.status, "active" as CampStatus),
+            eq(camps.isDeleted, false),
+            lte(camps.startDate, currentDate), // Start date <= current date
+            gte(camps.endDate, currentDate)    // End date >= current date
+          )
+        );
+      
+      console.log(`Found ${activeCamps.length} currently active camps for organization ${organizationId}`);
+      
+      return {
+        count: activeCamps.length
+      };
+    } catch (error: any) {
+      console.error(`Error fetching active camps for org ${organizationId}:`, error);
+      return { count: 0 };
+    }
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -2946,6 +2981,37 @@ export class DatabaseStorage implements IStorage {
     } catch (error: any) {
       console.error(`Error fetching camps by status for org ${organizationId}:`, error);
       return [];
+    }
+  }
+  
+  async getActiveCamps(organizationId: number): Promise<{ count: number }> {
+    try {
+      console.log(`Fetching active camps for organization ${organizationId}`);
+      
+      // Get current date
+      const currentDate = new Date();
+      
+      // Get camps with status 'active'
+      const activeCamps = await db.select()
+        .from(camps)
+        .where(
+          and(
+            eq(camps.organizationId, organizationId),
+            eq(camps.status, "active" as CampStatus),
+            eq(camps.deleted, false),
+            lte(camps.startDate, currentDate), // Start date <= current date
+            gte(camps.endDate, currentDate)    // End date >= current date
+          )
+        );
+      
+      console.log(`Found ${activeCamps.length} currently active camps for organization ${organizationId}`);
+      
+      return {
+        count: activeCamps.length
+      };
+    } catch (error: any) {
+      console.error(`Error fetching active camps for org ${organizationId}:`, error);
+      return { count: 0 };
     }
   }
   

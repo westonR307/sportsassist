@@ -4216,23 +4216,13 @@ export async function registerRoutes(app: Express) {
     try {
       const organizationId = authAndGetOrgId(req);
       
-      // Get current date
-      const currentDate = new Date();
+      // Use the optimized getActiveCamps method that includes date filtering
+      const result = await storage.getActiveCamps(organizationId);
       
-      // Filter active camps (where start date <= today <= end date)
-      const allCamps = await storage.getCampsByStatus(organizationId, "active");
-      const activeCamps = Array.isArray(allCamps) ? allCamps.filter(camp => {
-        const startDate = new Date(camp.startDate);
-        const endDate = new Date(camp.endDate);
-        return startDate <= currentDate && currentDate <= endDate;
-      }) : [];
+      console.log(`Found ${result.count} active camps for dashboard`);
       
-      console.log(`Found ${activeCamps.length} active camps for dashboard`);
-      
-      return res.json({
-        count: activeCamps.length,
-        camps: activeCamps
-      });
+      // Return just the count as that's all the dashboard needs
+      return res.json(result);
     } catch (error: any) {
       if (error instanceof HttpError) {
         return res.status(error.status).json({ error: error.message });
