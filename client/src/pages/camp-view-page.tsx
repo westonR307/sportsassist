@@ -1,27 +1,26 @@
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { DashboardLayout } from "./dashboard";
-import { AlertTriangle, CheckCircle, Share2, Edit, Trash2, Copy, Loader2, MapPin } from "lucide-react";
+import { AlertTriangle, CheckCircle, Share2, Edit, Trash2, Copy, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 
-interface CampViewPageProps {
-  id?: string;
-  slug?: string;
-}
-
-function CampViewPage(props: CampViewPageProps) {
+function CampViewPage() {
+  const params = useParams();
   const [location] = useLocation();
   const { user } = useAuth();
-
+  
+  console.log("CampViewPage - Params:", params);
+  console.log("CampViewPage - location:", location);
+  
   const [isParent, setIsParent] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
   const [hasPermission, setHasPermission] = useState(false);
-  const [camp, setCamp] = useState<any>({});
+  const [camp, setCamp] = useState({});
   const [registrations, setRegistrations] = useState([]);
 
   // Check if user is a parent
@@ -31,58 +30,52 @@ function CampViewPage(props: CampViewPageProps) {
     }
   }, [user]);
 
-  // Use props first if available, otherwise try to extract from URL path
-  let paramValue = props.id || props.slug;
-  const isSlugRoute = props.slug || location.includes('/slug/');
-
-  // If we don't have props, try to extract from URL path as fallback
-  if (!paramValue) {
-    const urlParts = location.split('/');
-    const lastPart = urlParts[urlParts.length - 1];
-    paramValue = lastPart;
-  }
-
+  // Extract the correct parameter (id or slug) based on the URL pattern
+  const isSlugRoute = location.includes('/slug/');
+  const paramValue = isSlugRoute ? params.slug : params.id;
+  
+  console.log("isSlugRoute:", isSlugRoute);
+  console.log("paramValue:", paramValue);
+  
   // Construct the proper API endpoint based on whether we're using a slug or ID
   const apiEndpoint = isSlugRoute 
     ? `/api/camps/slug/${paramValue}` 
     : `/api/camps/${paramValue}`;
-
+  
+  console.log("Using API endpoint:", apiEndpoint);
+  
   // Fetch camp data
-  const { 
-    isLoading,
-    isError, 
-    error,
-    data: campData
-  } = useQuery({
+  const { isLoading, isError, error } = useQuery({
     queryKey: [apiEndpoint],
-    enabled: !!paramValue
+    onSuccess: (data) => {
+      console.log("Camp data received:", data);
+      setCamp(data);
+      setHasPermission(data.permissions?.canManage || false);
+    },
+    onError: (err) => {
+      console.error("Error fetching camp data:", err);
+    }
   });
 
-  // Process camp data when it changes
+  // Fetch registrations
   useEffect(() => {
-    if (campData) {
-      setCamp(campData);
-      setHasPermission(campData.permissions?.canManage || false);
+    if (paramValue) {
+      // Use the same API endpoint pattern for consistency with the main query
+      const registrationsEndpoint = isSlugRoute 
+        ? `/api/camps/slug/${paramValue}/registrations` 
+        : `/api/camps/${paramValue}/registrations`;
+      
+      console.log("Fetching registrations from:", registrationsEndpoint);
+      
+      fetch(registrationsEndpoint)
+        .then(res => res.json())
+        .then(data => {
+          console.log("Registration data:", data);
+          setRegistrations(data.registrations || []);
+        })
+        .catch(err => console.error("Failed to fetch registrations", err));
     }
-  }, [campData]);
-
-  // Construct registrations endpoint
-  const registrationsEndpoint = isSlugRoute 
-    ? `/api/camps/slug/${paramValue}/registrations` 
-    : `/api/camps/${paramValue}/registrations`;
-
-  // Fetch registrations with useQuery
-  const { data: registrationsData } = useQuery({
-    queryKey: [registrationsEndpoint],
-    enabled: !!paramValue
-  });
-
-  // Process registrations data when it changes
-  useEffect(() => {
-    if (registrationsData) {
-      setRegistrations(Array.isArray(registrationsData.registrations) ? registrationsData.registrations : []);
-    }
-  }, [registrationsData]);
+  }, [paramValue, isSlugRoute]);
 
   // Loading state
   if (isLoading) {
@@ -122,13 +115,13 @@ function CampViewPage(props: CampViewPageProps) {
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
             {camp.name || "Camp Details"}
           </h1>
-
+          
           <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
             <TabsList>
               <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="registrations">Registrations</TabsTrigger>
             </TabsList>
-
+            
             <TabsContent value="details" className="mt-4">
               <Card>
                 <CardHeader>
@@ -140,21 +133,9 @@ function CampViewPage(props: CampViewPageProps) {
                     <p><strong>Dates:</strong> {camp.startDate && new Date(camp.startDate).toLocaleDateString()} - {camp.endDate && new Date(camp.endDate).toLocaleDateString()}</p>
                     <p><strong>Price:</strong> ${camp.price || "0"}</p>
                     <p><strong>Capacity:</strong> {camp.capacity || "0"} athletes</p>
-                    <div className="flex items-start gap-2">
-                      <MapPin className="h-5 w-5 mt-0.5" />
-                      <div>
-                        {camp.isVirtual ? (
-                          <p>Virtual Camp</p>
-                        ) : (
-                          <>
-                            <p>{camp.streetAddress}</p>
-                            <p>{camp.city}, {camp.state} {camp.zipCode}</p>
-                          </>
-                        )}
-                      </div>
-                    </div>
+                    <p><strong>Location:</strong> {camp.isVirtual ? "Virtual Camp" : `${camp.city || ""}, ${camp.state || ""}`}</p>
                   </div>
-
+                  
                   {hasPermission && (
                     <div className="mt-4 flex gap-2">
                       <Button>
@@ -170,7 +151,7 @@ function CampViewPage(props: CampViewPageProps) {
                 </CardContent>
               </Card>
             </TabsContent>
-
+            
             <TabsContent value="registrations">
               <Card>
                 <CardHeader>
@@ -184,7 +165,7 @@ function CampViewPage(props: CampViewPageProps) {
                     <p className="text-muted-foreground">No registrations yet</p>
                   ) : (
                     <div className="space-y-2">
-                      {registrations.map((reg: any, idx: number) => (
+                      {registrations.map((reg, idx) => (
                         <div key={idx} className="p-2 border rounded">
                           {reg.childName || "Athlete"}
                         </div>
@@ -200,11 +181,16 @@ function CampViewPage(props: CampViewPageProps) {
     );
   };
 
-  // For parent users, use a simple layout
+  // Simple conditional to determine layout based on user role
   if (isParent) {
-    return renderContent();
-  }
-
+    // Parent users get a simple layout
+    return (
+      <div className="p-4 md:p-6">
+        {renderContent()}
+      </div>
+    );
+  } 
+  
   // For camp creators and admins, use the dashboard layout
   return <DashboardLayout>{renderContent()}</DashboardLayout>;
 }

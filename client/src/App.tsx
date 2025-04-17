@@ -136,32 +136,32 @@ function Router() {
       />
       <ProtectedRoute 
         path="/dashboard/camps/slug/:slug" 
-        component={(params) => <CampViewPage slug={params.slug} />}
+        component={CampViewPage}
         requiredRoles={["camp_creator" as const, "platform_admin" as const]} 
       />
       <ProtectedRoute 
         path="/dashboard/camps/:id" 
-        component={(params) => <CampViewPage id={params.id} />}
+        component={CampViewPage}
         requiredRoles={["camp_creator" as const, "platform_admin" as const]} 
       />
       <ProtectedRoute 
         path="/camp/slug/:slug" 
-        component={(params) => <CampViewPage slug={params.slug} />}
+        component={CampViewPage}
         showNavigation={user?.role !== "parent"} // Only show AppLayout navigation if not a parent
       />
       <ProtectedRoute 
         path="/camp/:id" 
-        component={(params) => <CampViewPage id={params.id} />}
+        component={CampViewPage}
         showNavigation={user?.role !== "parent"} // Only show AppLayout navigation if not a parent
       />
       <ProtectedRoute 
         path="/register/camp/slug/:slug" 
-        component={(params) => <CampViewPage slug={params.slug} />}
+        component={CampViewPage}
         showNavigation={user?.role !== "parent"} // Only show AppLayout navigation if not a parent
       />
       <ProtectedRoute 
         path="/register/camp/:id" 
-        component={(params) => <CampViewPage id={params.id} />}
+        component={CampViewPage}
         showNavigation={user?.role !== "parent"} // Only show AppLayout navigation if not a parent
       />
       <ProtectedRoute 
