@@ -46,10 +46,16 @@ function DashboardCalendar() {
     console.log('Dashboard calendar - All Sessions:', allSessions);
     console.log('Dashboard calendar - Loading state:', sessionsLoading);
 
-    // Add detailed logging for camp slugs
-    if (allSessions && allSessions.length > 0) {
-      allSessions.forEach(session => {
-        console.log(`Session ID: ${session.id}, Camp ID: ${session.campId}, Camp Name: ${session.camp.name}, Camp Slug: ${session.camp.slug}`);
+    // Add detailed logging for camp slugs with proper type checking
+    // Make sure allSessions is an array
+    const sessionsArray = Array.isArray(allSessions) ? allSessions : [];
+    if (sessionsArray.length > 0) {
+      sessionsArray.forEach(session => {
+        if (session && typeof session === 'object' && session.camp) {
+          console.log(`Session ID: ${session.id}, Camp ID: ${session.campId}, Camp Name: ${session.camp.name}, Camp Slug: ${session.camp.slug}`);
+        } else {
+          console.warn('Invalid session format detected:', session);
+        }
       });
     }
 
