@@ -272,26 +272,33 @@ function CampViewPage(props: { id?: string }) {
   
   // Define hero background style based on organization colors
   // Convert the organization colors to variables for easier use
-  const primaryColor = organization?.primary_color || organization?.primaryColor || '#BA0C2F';
+  // For this organization, primary_color is #000000 (black) and secondary_color is #c89b63 (gold/bronze)
+  const primaryColor = organization?.primary_color || organization?.primaryColor || '#000000';
   const secondaryColor = organization?.secondary_color || organization?.secondaryColor || '#c89b63';
   
-  // If the primary color is black (#000000), we'll use the secondary color as the primary accent
-  const usePrimaryAsAccent = primaryColor === '#000000' ? secondaryColor : primaryColor;
+  // For the gradient background when no banner image is present
+  // If primary is black, create a nice dark gradient with secondary color
+  let gradientStart = primaryColor;
+  let gradientEnd = secondaryColor;
+  
+  // Create a special gradient if the primary color is black
+  if (primaryColor === '#000000') {
+    gradientStart = '#333333'; // Dark gray instead of pure black
+    gradientEnd = secondaryColor;
+  }
   
   const heroBgStyle = organization && (organization.banner_image_url || organization.bannerImageUrl)
     ? { 
         backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(${organization.banner_image_url || organization.bannerImageUrl})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        borderTop: `6px solid ${usePrimaryAsAccent}`,
+        borderTop: `6px solid ${secondaryColor}`,
         borderBottom: `6px solid ${secondaryColor}`,
       } 
     : { 
-        // Check both camelCase and snake_case property versions for maximum compatibility
-        background: `linear-gradient(135deg, 
-          ${primaryColor === '#000000' ? '#333333' : primaryColor}, 
-          ${secondaryColor})`,
-        borderTop: `6px solid ${usePrimaryAsAccent}`,
+        // Create a gradient using the organization's colors
+        background: `linear-gradient(135deg, ${gradientStart}, ${gradientEnd})`,
+        borderTop: `6px solid ${secondaryColor}`,
         borderBottom: `6px solid ${secondaryColor}`,
       };
 
