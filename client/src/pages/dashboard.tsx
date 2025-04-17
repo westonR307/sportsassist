@@ -53,8 +53,24 @@ interface Organization {
   description: string | null;
   logoUrl?: string | null;
   stripeAccountId?: string | null;
+  primaryColor?: string | null;
+  secondaryColor?: string | null;
+  buttonColor?: string | null;
   createdAt?: Date;
 }
+
+// Helper function to get organization colors for a camp
+const getOrganizationColors = (organizations: Organization[] | undefined, organizationId: number | undefined) => {
+  const orgs = Array.isArray(organizations) ? organizations : [];
+  const organization = orgs.find(org => org?.id === organizationId);
+  return {
+    organization,
+    colors: {
+      primaryColor: organization?.primaryColor || '#BA0C2F',
+      secondaryColor: organization?.secondaryColor || '#cc0000',
+    }
+  };
+};
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useWouterLocation();
