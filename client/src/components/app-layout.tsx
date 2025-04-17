@@ -208,11 +208,13 @@ export function AppLayout({ children, showBackButton = false, showNavigation = t
         </div>
         <nav className="p-4 space-y-2">
           {/* Home Link for all users */}
-          <button
-            onClick={() => {
+          <a 
+            href="/"
+            onClick={(e) => {
+              e.preventDefault();
               // Only navigate if not scrolling
               if (!isScrolling) {
-                navigate("/");
+                window.location.href = "/";
                 // Close sidebar on mobile after navigation
                 if (window.innerWidth < 1024) setSidebarOpen(false);
               }
@@ -220,19 +222,21 @@ export function AppLayout({ children, showBackButton = false, showNavigation = t
             onTouchStart={(e) => e.stopPropagation()}
             onTouchMove={(e) => e.stopPropagation()}
             className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
-              wouterLocation === "/" ? "bg-gray-100" : ""
+              wouterLocation === "/" ? "bg-gray-100 camp-primary-bg text-white" : ""
             }`}
           >
             <Home className="h-5 w-5 flex-shrink-0" />
             <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Home</span>
-          </button>
+          </a>
 
           {/* Dashboard Link - Different path for parent users */}
-          <button
-            onClick={() => {
+          <a
+            href={isParentOrAthlete ? "/parent-dashboard" : "/dashboard"}
+            onClick={(e) => {
+              e.preventDefault();
               // Only navigate if not scrolling
               if (!isScrolling) {
-                navigate(isParentOrAthlete ? "/parent-dashboard" : "/dashboard");
+                window.location.href = isParentOrAthlete ? "/parent-dashboard" : "/dashboard";
                 // Close sidebar on mobile after navigation
                 if (window.innerWidth < 1024) setSidebarOpen(false);
               }
@@ -240,29 +244,31 @@ export function AppLayout({ children, showBackButton = false, showNavigation = t
             onTouchStart={(e) => e.stopPropagation()}
             onTouchMove={(e) => e.stopPropagation()}
             className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
-              (wouterLocation === "/dashboard" || wouterLocation === "/parent-dashboard") ? "bg-gray-100" : ""
+              (wouterLocation === "/dashboard" || wouterLocation === "/parent-dashboard") ? "bg-gray-100 camp-primary-bg text-white" : ""
             }`}
           >
             <Calendar className="h-5 w-5 flex-shrink-0" />
             <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Dashboard</span>
-          </button>
+          </a>
 
           {/* Camp Creator and Platform Admin Routes */}
           {(user?.role === "camp_creator" || user?.role === "platform_admin" || user?.role === "manager") && (
             <>
-              <button
-                onClick={() => {
-                  navigate("/dashboard/camps");
+              <a
+                href="/dashboard/camps"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.location.href = "/dashboard/camps";
                   // Close sidebar on mobile after navigation
                   if (window.innerWidth < 1024) setSidebarOpen(false);
                 }}
                 className={`flex w-full items-center gap-2 p-2 rounded-lg hover:bg-gray-100 whitespace-nowrap text-left ${
-                  wouterLocation === "/dashboard/camps" ? "bg-gray-100" : ""
+                  wouterLocation === "/dashboard/camps" ? "bg-gray-100 camp-primary-bg text-white" : ""
                 }`}
               >
                 <GiBaseballBat className="h-5 w-5 flex-shrink-0" />
                 <span className={!sidebarOpen ? "lg:opacity-0" : ""}>Camps</span>
-              </button>
+              </a>
               <button
                 onClick={() => {
                   navigate("/dashboard/reports");
