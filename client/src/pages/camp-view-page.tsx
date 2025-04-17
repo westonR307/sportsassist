@@ -1063,10 +1063,13 @@ function CampViewPage(props: { id?: string }) {
           <TabsContent value="details" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-6">
-                <Card>
+                <Card className="border-t-4" style={{borderTopColor: organization?.primaryColor || 'hsl(var(--primary))'}}>
                   <CardHeader>
                     <div className="flex justify-between items-center">
-                      <CardTitle>Camp Information</CardTitle>
+                      <CardTitle className="text-xl flex items-center gap-2">
+                        <Info className="h-5 w-5 text-muted-foreground" />
+                        Camp Details
+                      </CardTitle>
                       {registrationStatus === 'open' && (
                         <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
                           <CheckCircle className="h-3 w-3 mr-1" />
@@ -1119,48 +1122,80 @@ function CampViewPage(props: { id?: string }) {
                       )}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <h3 className="font-medium">Description</h3>
+                  <CardContent className="space-y-6">
+                    <div className="bg-slate-50 p-4 rounded-lg">
+                      <h3 className="font-medium mb-2 flex items-center gap-2">
+                        <FileText className="h-4 w-4" style={{color: organization?.primaryColor}} />
+                        Description
+                      </h3>
                       <p className="text-muted-foreground">{camp.description}</p>
                     </div>
-                    <div>
-                      <h3 className="font-medium">Location</h3>
-                      <p className="text-muted-foreground">
-                        {camp.isVirtual ? (
-                          <>Virtual</>
-                        ) : (
-                          <>
-                            {camp.streetAddress}<br />
-                            {camp.city}, {camp.state} {camp.zipCode}
-                          </>
-                        )}
-                      </p>
-                    </div>
-                    <div>
-                      <h3 className="font-medium">Dates</h3>
-                      <p className="text-muted-foreground">
-                        {new Date(camp.startDate).toLocaleDateString()} - {new Date(camp.endDate).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div>
-                      <h3 className="font-medium">Registration Period</h3>
-                      <p className="text-muted-foreground">
-                        {new Date(camp.registrationStartDate).toLocaleDateString()} - {new Date(camp.registrationEndDate).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex justify-between">
-                      <div>
-                        <h3 className="font-medium">Price</h3>
-                        <p className="text-muted-foreground">${camp.price}</p>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <div className="border rounded-lg p-4">
+                        <h3 className="font-medium mb-2 flex items-center gap-2">
+                          <MapPin className="h-4 w-4" style={{color: organization?.primaryColor}} />
+                          Location
+                        </h3>
+                        <p className="text-muted-foreground">
+                          {camp.isVirtual ? (
+                            <span className="flex items-center">
+                              <Video className="h-4 w-4 mr-2" />
+                              Virtual
+                            </span>
+                          ) : (
+                            <>
+                              {camp.streetAddress}<br />
+                              {camp.city}, {camp.state} {camp.zipCode}
+                            </>
+                          )}
+                        </p>
                       </div>
-                      <div>
-                        <h3 className="font-medium">Capacity</h3>
-                        <p className="text-muted-foreground">{camp.capacity} athletes</p>
+                      
+                      <div className="border rounded-lg p-4">
+                        <h3 className="font-medium mb-2 flex items-center gap-2">
+                          <Calendar className="h-4 w-4" style={{color: organization?.primaryColor}} />
+                          Camp Dates
+                        </h3>
+                        <p className="text-muted-foreground">
+                          {new Date(camp.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(camp.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
                       </div>
-                      <div>
-                        <h3 className="font-medium">Type</h3>
-                        <p className="text-muted-foreground capitalize">{camp.type}</p>
+                      
+                      <div className="border rounded-lg p-4">
+                        <h3 className="font-medium mb-2 flex items-center gap-2">
+                          <CalendarRange className="h-4 w-4" style={{color: organization?.primaryColor}} />
+                          Registration Period
+                        </h3>
+                        <p className="text-muted-foreground">
+                          {new Date(camp.registrationStartDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(camp.registrationEndDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                      </div>
+                      
+                      <div className="border rounded-lg p-4">
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <h3 className="font-medium mb-1 flex items-center gap-1">
+                              <DollarSign className="h-3 w-3" style={{color: organization?.primaryColor}} />
+                              Price
+                            </h3>
+                            <p className="text-muted-foreground font-medium">${camp.price}</p>
+                          </div>
+                          <div>
+                            <h3 className="font-medium mb-1 flex items-center gap-1">
+                              <Users className="h-3 w-3" style={{color: organization?.primaryColor}} />
+                              Capacity
+                            </h3>
+                            <p className="text-muted-foreground">{camp.capacity}</p>
+                          </div>
+                          <div>
+                            <h3 className="font-medium mb-1 flex items-center gap-1">
+                              <BadgeInfo className="h-3 w-3" style={{color: organization?.primaryColor}} />
+                              Type
+                            </h3>
+                            <p className="text-muted-foreground capitalize">{camp.type}</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -1301,16 +1336,28 @@ function CampViewPage(props: { id?: string }) {
                 />
 
                 {camp.schedulingType !== 'availability' && (
-                  <Card>
+                  <Card className="border-t-4" style={{borderTopColor: organization?.secondaryColor || organization?.primaryColor || 'hsl(var(--primary))'}}>
                     <CardHeader className="flex flex-row items-center justify-between">
-                      <CardTitle>Camp Schedule</CardTitle>
+                      <div>
+                        <CardTitle className="text-xl flex items-center gap-2">
+                          <CalendarClock className="h-5 w-5 text-muted-foreground" />
+                          Camp Schedule
+                        </CardTitle>
+                        <CardDescription>
+                          Session dates and times for this camp
+                        </CardDescription>
+                      </div>
                       {hasPermission && (
-                        <>
+                        <div className="flex">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => setScheduleEditorOpen(true)}
                             className="h-8 mr-2"
+                            style={{
+                              borderColor: organization?.primaryColor,
+                              color: organization?.primaryColor
+                            }}
                           >
                             <Calendar className="h-4 w-4 mr-2" />
                             Edit Schedule
@@ -1322,12 +1369,16 @@ function CampViewPage(props: { id?: string }) {
                               size="sm"
                               onClick={() => setManageAvailabilityOpen(true)}
                               className="h-8"
+                              style={{
+                                borderColor: organization?.primaryColor,
+                                color: organization?.primaryColor
+                              }}
                             >
                               <CalendarDays className="h-4 w-4 mr-2" />
                               Manage Availability
                             </Button>
                           )}
-                        </>
+                        </div>
                       )}
                     </CardHeader>
                     <CardContent>
