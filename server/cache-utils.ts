@@ -45,6 +45,7 @@ export async function getCachedCamp(campId: number): Promise<Camp | null> {
 /**
  * Gets all camps with caching and filtering options
  * Uses an efficient cache structure with appropriate timeouts
+ * Enhanced with better error handling for Redis unavailability
  */
 export async function getCachedCamps(filters: {
   organizationId?: number;
@@ -56,13 +57,21 @@ export async function getCachedCamps(filters: {
   // Generate a cache key based on the filters
   const cacheKey = getListCacheKey('camps', filters);
   
-  // Try to get from cache first
-  const cachedCamps = await cacheGetJson<any[]>(cacheKey);
-  if (cachedCamps) {
-    return cachedCamps;
+  try {
+    // Try to get from cache first
+    const cachedCamps = await cacheGetJson<any[]>(cacheKey);
+    if (cachedCamps && Array.isArray(cachedCamps) && cachedCamps.length > 0) {
+      console.log(`Cache hit for camps with filters: ${JSON.stringify(filters)}, found ${cachedCamps.length} camps`);
+      return cachedCamps;
+    }
+  } catch (error) {
+    // Log cache retrieval error but continue to fetch from DB
+    console.error(`Error retrieving camps from cache:`, error);
   }
   
-  // If not in cache, fetch from database with filters
+  console.log(`Cache miss for camps with filters: ${JSON.stringify(filters)}, fetching from database`);
+  
+  // If not in cache or cache error, fetch from database with filters
   let query = db.select().from(camps);
   
   // Build conditions array
@@ -123,31 +132,60 @@ export async function getCachedCamps(filters: {
     }
   }
   
-  // Execute the query
-  const campsList = await query;
-  
-  // Enrich camps with sports info (basic info only for listing)
-  const enrichedCamps = await Promise.all(campsList.map(async (camp) => {
-    // Get basic sports info for this camp
-    const campSportsList = await db.select()
-      .from(campSports)
-      .where(eq(campSports.campId, camp.id));
+  try {
+    // Execute the query with better error handling
+    const campsList = await query;
     
-    return {
-      ...camp,
-      campSports: campSportsList
-    };
-  }));
-  
-  // Cache the result with appropriate TTL
-  // Use shorter cache time for filtered queries that might change more often
-  const cacheTtl = filters.status || filters.search 
-    ? CACHE_TTL.SHORT   // 1 minute for filtered queries
-    : CACHE_TTL.MEDIUM; // 5 minutes for basic organization queries
-  
-  await cacheSetJson(cacheKey, enrichedCamps, cacheTtl);
-  
-  return enrichedCamps;
+    // Ensure we got a valid array from the database
+    if (!Array.isArray(campsList)) {
+      console.error("Database returned non-array result for camps query:", campsList);
+      return [];
+    }
+    
+    console.log(`Retrieved ${campsList.length} camps from database`);
+    
+    // Enrich camps with sports info (basic info only for listing)
+    const enrichedCamps = await Promise.all(campsList.map(async (camp) => {
+      try {
+        // Get basic sports info for this camp
+        const campSportsList = await db.select()
+          .from(campSports)
+          .where(eq(campSports.campId, camp.id));
+        
+        return {
+          ...camp,
+          campSports: Array.isArray(campSportsList) ? campSportsList : []
+        };
+      } catch (error) {
+        console.error(`Error fetching sports for camp ${camp.id}:`, error);
+        return {
+          ...camp,
+          campSports: [] // Default to empty array if there's an error
+        };
+      }
+    }));
+    
+    // Only try to cache if we got valid results
+    if (Array.isArray(enrichedCamps) && enrichedCamps.length > 0) {
+      try {
+        // Cache the result with appropriate TTL
+        // Use shorter cache time for filtered queries that might change more often
+        const cacheTtl = filters.status || filters.search 
+          ? CACHE_TTL.SHORT   // 1 minute for filtered queries
+          : CACHE_TTL.MEDIUM; // 5 minutes for basic organization queries
+        
+        await cacheSetJson(cacheKey, enrichedCamps, cacheTtl);
+      } catch (error) {
+        console.error(`Error caching enriched camps:`, error);
+        // Continue even if caching fails
+      }
+    }
+    
+    return enrichedCamps;
+  } catch (error) {
+    console.error(`Error fetching camps from database:`, error);
+    return []; // Return empty array on error
+  }
 }
 
 /**
