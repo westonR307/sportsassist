@@ -4212,6 +4212,89 @@ export async function registerRoutes(app: Express) {
     }
   });
   
+  app.get("/api/dashboard/active-camps", async (req: Request, res: Response) => {
+    try {
+      const organizationId = authAndGetOrgId(req);
+      
+      // Get current date
+      const currentDate = new Date();
+      
+      // Filter active camps (where start date <= today <= end date)
+      const allCamps = await storage.getCamps({ organizationId, status: "active", includeDeleted: false });
+      const activeCamps = Array.isArray(allCamps) ? allCamps.filter(camp => {
+        const startDate = new Date(camp.startDate);
+        const endDate = new Date(camp.endDate);
+        return startDate <= currentDate && currentDate <= endDate;
+      }) : [];
+      
+      console.log(`Found ${activeCamps.length} active camps for dashboard`);
+      
+      return res.json({
+        count: activeCamps.length,
+        camps: activeCamps
+      });
+    } catch (error: any) {
+      if (error instanceof HttpError) {
+        return res.status(error.status).json({ error: error.message });
+      }
+      console.error("Error getting active camps:", error.message);
+      res.status(500).json({ error: error.message || "Failed to get active camps" });
+    }
+  });
+
+  app.get("/api/dashboard/upcoming-sessions", async (req: Request, res: Response) => {
+    try {
+      const organizationId = authAndGetOrgId(req);
+      
+      // Get days parameter from query string, default to 7
+      const days = req.query.days ? parseInt(req.query.days as string) : 7;
+      
+      // Calculate date range
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + days);
+      
+      // Get upcoming sessions
+      const upcomingSessions = await storage.getUpcomingSessions(organizationId, startDate, endDate);
+      
+      console.log(`Found ${upcomingSessions?.length || 0} upcoming sessions for dashboard`);
+      
+      return res.json({
+        count: upcomingSessions?.length || 0,
+        sessions: upcomingSessions || []
+      });
+    } catch (error: any) {
+      if (error instanceof HttpError) {
+        return res.status(error.status).json({ error: error.message });
+      }
+      console.error("Error getting upcoming sessions:", error.message);
+      res.status(500).json({ error: error.message || "Failed to get upcoming sessions" });
+    }
+  });
+
+  app.get("/api/dashboard/registrations", async (req: Request, res: Response) => {
+    try {
+      const organizationId = authAndGetOrgId(req);
+      
+      // Get the registration counts
+      const totalCount = await storage.getTotalRegistrationsCount(organizationId);
+      const recentCount = await storage.getRecentRegistrationsCount(organizationId, 48);
+      
+      console.log(`Dashboard registrations: total=${totalCount}, recent=${recentCount}`);
+      
+      return res.json({
+        total: totalCount,
+        recent: recentCount
+      });
+    } catch (error: any) {
+      if (error instanceof HttpError) {
+        return res.status(error.status).json({ error: error.message });
+      }
+      console.error("Error getting registration data:", error.message);
+      res.status(500).json({ error: error.message || "Failed to get registration data" });
+    }
+  });
+  
   app.get("/api/dashboard/camp-stats", async (req: Request, res: Response) => {
     try {
       const organizationId = authAndGetOrgId(req);

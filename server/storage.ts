@@ -168,7 +168,10 @@ export interface IStorage {
   getTodaySessions(organizationId: number): Promise<(CampSession & { camp: Camp })[]>;
   getRecentRegistrations(organizationId: number, hours?: number): Promise<Registration[]>;
   getTotalRegistrationsCount(organizationId: number): Promise<number>;
+  getRecentRegistrationsCount(organizationId: number, hours?: number): Promise<number>;
   getCampCountsByStatus(organizationId: number): Promise<{ status: string; count: number }[]>;
+  getCampsByStatus(organizationId: number, status: string): Promise<Camp[]>;
+  getUpcomingSessions(organizationId: number, startDate: Date, endDate: Date): Promise<(CampSession & { camp: Camp })[]>;
   
   // Recurrence Pattern methods
   createRecurrencePattern(pattern: InsertRecurrencePattern): Promise<RecurrencePattern>;
