@@ -76,8 +76,15 @@ export default function AvailableCampsPage() {
   // Min-max prices from available camps
   const [priceMinMax, setPriceMinMax] = useState<[number, number]>([0, 1000]);
 
+  // Get all camps
   const { data: camps = [], isLoading } = useQuery<ExtendedCamp[]>({
     queryKey: ["/api/camps"],
+    enabled: !!user,
+  });
+  
+  // Get organizations map for styling
+  const { data: organizations = [] } = useQuery({
+    queryKey: ['/api/organizations'],
     enabled: !!user,
   });
 
@@ -429,6 +436,15 @@ function CompactCampCard({ camp }: CampCardProps) {
   const daysUntilStart = Math.ceil((startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   const showStartingSoon = daysUntilStart <= 7 && daysUntilStart > 0;
   
+  // Get organization data for styling
+  const organization = organizations.find(org => org.id === camp.organizationId);
+  const primaryColor = organization?.primaryColor || '#BA0C2F';
+  const secondaryColor = organization?.secondaryColor || '#cc0000';
+  
+  // Determine schedule type badge text
+  const hasFixedSchedule = camp.defaultStartTime && camp.defaultEndTime;
+  const scheduleType = hasFixedSchedule ? "Fixed Schedule" : "Availability Based";
+  
   // Registration mutation
   const registerMutation = useMutation({
     mutationFn: async (campId: number) => {
@@ -480,39 +496,61 @@ function CompactCampCard({ camp }: CampCardProps) {
     <Collapsible
       open={isOpen}
       onOpenChange={setIsOpen}
-      className="w-full border rounded-md overflow-hidden bg-background shadow-sm hover:shadow transition-shadow"
+      className="w-full border rounded-md overflow-hidden bg-background shadow-sm hover:shadow-md transition-shadow"
     >
+      {/* Colored header strip using organization's primary color */}
+      <div 
+        className="h-2" 
+        style={{ backgroundColor: primaryColor }}
+      ></div>
+      
       <div className="p-4 cursor-pointer flex items-center" onClick={() => setIsOpen(!isOpen)}>
         <div className="flex-1">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full gap-2">
             <div className="flex-1">
-              <div className="flex items-start">
+              <div className="flex items-start flex-wrap gap-2">
                 <h3 className="font-medium text-lg">{camp.name}</h3>
                 {showStartingSoon && (
-                  <Badge variant="destructive" className="ml-2 text-[10px] h-5">
-                    Starting Soon
+                  <Badge variant="destructive" className="text-[10px] h-5 flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    <span>Starting Soon</span>
                   </Badge>
                 )}
                 {isVirtual && (
-                  <Badge variant="outline" className="ml-2 flex items-center gap-1 h-5">
+                  <Badge variant="outline" className="flex items-center gap-1 h-5">
                     <Laptop className="h-3 w-3" />
                     <span>Virtual</span>
                   </Badge>
                 )}
+                <Badge 
+                  variant="outline" 
+                  className="flex items-center gap-1 h-5"
+                  style={{ 
+                    borderColor: hasFixedSchedule ? primaryColor : 'var(--border)',
+                    color: hasFixedSchedule ? primaryColor : 'var(--muted-foreground)'
+                  }}
+                >
+                  <Clock className="h-3 w-3" />
+                  <span>{scheduleType}</span>
+                </Badge>
               </div>
               
-              <div className="flex flex-wrap mt-1 gap-2 text-sm text-muted-foreground">
+              <div className="flex flex-wrap mt-2 gap-3 text-sm text-muted-foreground">
                 <div className="flex items-center">
-                  <Calendar className="h-3.5 w-3.5 mr-1" />
+                  <Calendar className="h-3.5 w-3.5 mr-1" style={{color: primaryColor}} />
                   <span>{formatDateRange()}</span>
                 </div>
                 <div className="flex items-center">
-                  <DollarSign className="h-3.5 w-3.5 mr-1" />
+                  <DollarSign className="h-3.5 w-3.5 mr-1" style={{color: primaryColor}} />
                   <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(camp.price)}</span>
+                </div>
+                <div className="flex items-center">
+                  <Users className="h-3.5 w-3.5 mr-1" style={{color: primaryColor}} />
+                  <span>{camp.registeredCount || 0}/{camp.capacity} spots</span>
                 </div>
                 {!isVirtual && camp.location && (
                   <div className="flex items-center">
-                    <MapPin className="h-3.5 w-3.5 mr-1" />
+                    <MapPin className="h-3.5 w-3.5 mr-1" style={{color: primaryColor}} />
                     <span>{camp.city}, {camp.state}</span>
                   </div>
                 )}
@@ -528,6 +566,10 @@ function CompactCampCard({ camp }: CampCardProps) {
                       onClick={handleRegister}
                       disabled={registerMutation.isPending}
                       className="flex items-center gap-1"
+                      style={{
+                        backgroundColor: primaryColor,
+                        borderColor: primaryColor
+                      }}
                     >
                       <Plus className="h-3.5 w-3.5" />
                       {registerMutation.isPending ? 'Registering...' : 'Register'}
@@ -549,12 +591,16 @@ function CompactCampCard({ camp }: CampCardProps) {
           
           {/* Sport badges - visible even when collapsed */}
           {camp.campSports && camp.campSports.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
+            <div className="flex flex-wrap gap-1 mt-3">
               {camp.campSports.map((sport: CampSport, index: number) => (
                 <Badge 
                   key={index} 
                   variant="secondary"
                   className="text-xs"
+                  style={{
+                    backgroundColor: `${primaryColor}20`,
+                    color: primaryColor
+                  }}
                 >
                   {sport.sportId ? getSportName(sport.sportId as number) : "Unknown"} ({skillLevelNames[sport.skillLevel]})
                 </Badge>
@@ -644,20 +690,48 @@ function CampCard({ camp }: CampCardProps) {
   const startDate = new Date(camp.startDate);
   const daysUntilStart = Math.ceil((startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   
+  // Get organization data for styling
+  const organization = organizations.find(org => org.id === camp.organizationId);
+  const primaryColor = organization?.primaryColor || '#BA0C2F';
+  const secondaryColor = organization?.secondaryColor || '#cc0000';
+  
+  // Determine schedule type
+  const hasFixedSchedule = camp.defaultStartTime && camp.defaultEndTime;
+  const scheduleType = hasFixedSchedule ? "Fixed Schedule" : "Availability Based";
+  
   // Show "Starting soon" badge if camp starts within 7 days
   const showStartingSoon = daysUntilStart <= 7 && daysUntilStart > 0;
   
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+      {/* Colored header strip using organization's primary color */}
+      <div 
+        className="h-2" 
+        style={{ backgroundColor: primaryColor }}
+      ></div>
+      
       <CardHeader className="pb-2">
         <div className="flex justify-between">
           <CardTitle className="flex-1">{camp.name}</CardTitle>
-          {isVirtual && (
-            <Badge variant="outline" className="flex items-center gap-1">
-              <Laptop className="h-3 w-3" />
-              <span>Virtual</span>
+          <div className="flex gap-1">
+            {isVirtual && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                <Laptop className="h-3 w-3" />
+                <span>Virtual</span>
+              </Badge>
+            )}
+            <Badge 
+              variant="outline" 
+              className="flex items-center gap-1 h-5"
+              style={{ 
+                borderColor: hasFixedSchedule ? primaryColor : 'var(--border)',
+                color: hasFixedSchedule ? primaryColor : 'var(--muted-foreground)'
+              }}
+            >
+              <Clock className="h-3 w-3" />
+              <span>{scheduleType}</span>
             </Badge>
-          )}
+          </div>
         </div>
         
         {/* Sport badges */}
@@ -668,6 +742,10 @@ function CampCard({ camp }: CampCardProps) {
                 key={index} 
                 variant="secondary"
                 className="text-xs"
+                style={{
+                  backgroundColor: `${primaryColor}20`,
+                  color: primaryColor
+                }}
               >
                 {sport.sportId ? getSportName(sport.sportId as number) : "Unknown"} ({skillLevelNames[sport.skillLevel]})
               </Badge>
@@ -679,12 +757,15 @@ function CampCard({ camp }: CampCardProps) {
       <CardContent>
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-            <Calendar className="h-5 w-5 text-muted-foreground" />
+            <Calendar className="h-5 w-5" style={{color: primaryColor}} />
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">Dates</span>
                 {showStartingSoon && (
-                  <Badge variant="destructive" className="text-[10px] h-5">Starting Soon</Badge>
+                  <Badge variant="destructive" className="text-[10px] h-5 flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    <span>Starting Soon</span>
+                  </Badge>
                 )}
               </div>
               <span className="text-sm text-muted-foreground">
@@ -694,7 +775,7 @@ function CampCard({ camp }: CampCardProps) {
           </div>
           
           <div className="flex items-center gap-3">
-            <Clock className="h-5 w-5 text-muted-foreground" />
+            <Clock className="h-5 w-5" style={{color: primaryColor}} />
             <div className="flex flex-col">
               <span className="text-sm font-medium">Time</span>
               <span className="text-sm text-muted-foreground">
@@ -708,9 +789,19 @@ function CampCard({ camp }: CampCardProps) {
             </div>
           </div>
           
+          <div className="flex items-center gap-3">
+            <Users className="h-5 w-5" style={{color: primaryColor}} />
+            <div className="flex flex-col">
+              <span className="text-sm font-medium">Capacity</span>
+              <span className="text-sm text-muted-foreground">
+                {camp.registeredCount || 0}/{camp.capacity} spots
+              </span>
+            </div>
+          </div>
+          
           {!isVirtual && camp.location && (
             <div className="flex items-center gap-3">
-              <MapPin className="h-5 w-5 text-muted-foreground" />
+              <MapPin className="h-5 w-5" style={{color: primaryColor}} />
               <div className="flex flex-col">
                 <span className="text-sm font-medium">Location</span>
                 <span className="text-sm text-muted-foreground">{camp.location}</span>
@@ -719,7 +810,7 @@ function CampCard({ camp }: CampCardProps) {
           )}
           
           <div className="flex items-center gap-3">
-            <User className="h-5 w-5 text-muted-foreground" />
+            <User className="h-5 w-5" style={{color: primaryColor}} />
             <div className="flex flex-col">
               <span className="text-sm font-medium">Type</span>
               <span className="text-sm text-muted-foreground capitalize">
@@ -737,7 +828,15 @@ function CampCard({ camp }: CampCardProps) {
       </CardContent>
       
       <CardFooter>
-        <Button variant="default" className="w-full flex items-center gap-2" asChild>
+        <Button 
+          variant="default" 
+          className="w-full flex items-center gap-2" 
+          asChild
+          style={{
+            backgroundColor: primaryColor,
+            borderColor: primaryColor
+          }}
+        >
           <a href={camp.slug ? `/dashboard/camps/slug/${camp.slug}` : `/dashboard/camps/${String(camp.id)}`}>
             <span>View Details</span>
             <ArrowRight className="h-4 w-4" />
