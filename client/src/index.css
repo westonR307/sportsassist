@@ -31,27 +31,23 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
   
-  /* Gillette Bulldogs Brand Colors Override */
-  :root {
-    --primary: 344 93% 39%; /* #BA0C2F converted to HSL */
-    --primary-foreground: 0 0% 100%; /* white */
-    --secondary: 0 100% 40%; /* #cc0000 converted to HSL */
-    --secondary-foreground: 0 0% 100%; /* white */
-  }
+  /* Default theme colors are handled by theme.json and should not be hardcoded here.
+     Organization-specific colors should only be applied to organization-specific pages,
+     not globally to the entire site */
 
-  /* Custom camp styling that doesn't override site navigation */
-  /* These are fully custom classes that won't conflict with other elements */
+  /* Custom camp styling - use CSS variables instead of hardcoded colors
+     This ensures that camp colors are taken from the organization's settings */
   .camp-primary-bg {
-    background-color: #BA0C2F; 
+    background-color: hsl(var(--primary)); 
   }
   .camp-primary-text {
-    color: #BA0C2F;
+    color: hsl(var(--primary));
   }
   .camp-primary-border {
-    border-color: #BA0C2F;
+    border-color: hsl(var(--primary));
   }
   .camp-primary-hover:hover {
-    background-color: rgba(186, 12, 47, 0.9);
+    background-color: hsl(var(--primary) / 0.9);
   }
   
   /* We're completely removing styling overrides for global classes like .bg-primary */
