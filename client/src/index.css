@@ -39,18 +39,26 @@
     --secondary-foreground: 0 0% 100%; /* white */
   }
 
-  /* Button styling overrides */
-  .bg-primary {
-    background-color: #BA0C2F !important; 
+  /* Button styling overrides - more targeted selectors */
+  button.bg-primary, 
+  .camp-card .bg-primary, 
+  .camp-details .bg-primary {
+    background-color: #BA0C2F; 
   }
-  .text-primary {
-    color: #BA0C2F !important;
+  button.text-primary, 
+  .camp-card .text-primary, 
+  .camp-details .text-primary {
+    color: #BA0C2F;
   }
-  .border-primary {
-    border-color: #BA0C2F !important;
+  button.border-primary, 
+  .camp-card .border-primary, 
+  .camp-details .border-primary {
+    border-color: #BA0C2F;
   }
-  .hover\:bg-primary\/90:hover {
-    background-color: rgba(186, 12, 47, 0.9) !important;
+  button.hover\:bg-primary\/90:hover,
+  .camp-card .hover\:bg-primary\/90:hover,
+  .camp-details .hover\:bg-primary\/90:hover {
+    background-color: rgba(186, 12, 47, 0.9);
   }
   
   /* React Day Picker Custom Styles */
