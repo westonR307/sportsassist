@@ -206,6 +206,9 @@ function CampViewPage(props: { id?: string }) {
   const [activeTab, setActiveTab] = useState("details");
   const [manageAvailabilityOpen, setManageAvailabilityOpen] = useState(false);
   const queryClient = useQueryClient();
+  
+  // State to hold the organization's data for applying styling
+  const [orgStyles, setOrgStyles] = useState<React.CSSProperties>({});
 
   useEffect(() => {
     if (location.includes('#schedule-editor')) {
@@ -215,6 +218,25 @@ function CampViewPage(props: { id?: string }) {
 
   const isParent = user?.role === 'parent';
   const { isLoading, camp, campError } = useCampData(id);
+  
+  // Query to get organization details for styling
+  const { data: organization } = useQuery({
+    queryKey: ['/api/organizations', camp?.organizationId],
+    enabled: !!camp?.organizationId,
+  });
+  
+  // Set organization styling when organization data is available
+  useEffect(() => {
+    if (organization) {
+      setOrgStyles({
+        '--primary': organization.primaryColor || 'hsl(var(--primary))',
+        '--primary-foreground': '#ffffff',
+        '--secondary': organization.secondaryColor || 'hsl(var(--secondary))',
+        '--border': organization.primaryColor || 'hsl(var(--primary))',
+        '--ring': organization.primaryColor || 'hsl(var(--primary))',
+      } as React.CSSProperties);
+    }
+  }, [organization]);
 
 
   // Only fetch registrations using the camp numeric ID (not the slug)
