@@ -423,11 +423,8 @@ export function CreatorHeaderNav() {
                     <DropdownMenuItem asChild>
                       <a 
                         href="/dashboard/permissions"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (!isScrolling) {
-                            window.location.href = "/dashboard/permissions";
-                          }
+                        onClick={() => {
+                          window.location.href = "/dashboard/permissions";
                         }}
                       >
                         <ShieldCheck className="mr-2 h-4 w-4" />
@@ -439,11 +436,8 @@ export function CreatorHeaderNav() {
                   <DropdownMenuItem asChild>
                     <a 
                       href="/custom-fields"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (!isScrolling) {
-                          window.location.href = "/custom-fields";
-                        }
+                      onClick={() => {
+                        window.location.href = "/custom-fields";
                       }}
                     >
                       <FileText className="mr-2 h-4 w-4" />
@@ -454,11 +448,8 @@ export function CreatorHeaderNav() {
                   <DropdownMenuItem asChild>
                     <a 
                       href="/dashboard/organization-profile"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (!isScrolling) {
-                          window.location.href = "/dashboard/organization-profile";
-                        }
+                      onClick={() => {
+                        window.location.href = "/dashboard/organization-profile";
                       }}
                     >
                       <Users2 className="mr-2 h-4 w-4" />
@@ -470,11 +461,8 @@ export function CreatorHeaderNav() {
                     <DropdownMenuItem asChild>
                       <a 
                         href="/dashboard/stripe-connect"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (!isScrolling) {
-                            window.location.href = "/dashboard/stripe-connect";
-                          }
+                        onClick={() => {
+                          window.location.href = "/dashboard/stripe-connect";
                         }}
                       >
                         <DollarSign className="mr-2 h-4 w-4" />
@@ -487,11 +475,8 @@ export function CreatorHeaderNav() {
                     <DropdownMenuItem asChild>
                       <a 
                         href="/dashboard/subscription-plans"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (!isScrolling) {
-                            window.location.href = "/dashboard/subscription-plans";
-                          }
+                        onClick={() => {
+                          window.location.href = "/dashboard/subscription-plans";
                         }}
                       >
                         <CreditCard className="mr-2 h-4 w-4" />
@@ -503,11 +488,8 @@ export function CreatorHeaderNav() {
                   <DropdownMenuItem asChild>
                     <a 
                       href="/documents"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (!isScrolling) {
-                          window.location.href = "/documents";
-                        }
+                      onClick={() => {
+                        window.location.href = "/documents";
                       }}
                     >
                       <ClipboardList className="mr-2 h-4 w-4" />
@@ -521,9 +503,7 @@ export function CreatorHeaderNav() {
                   <button
                     className="flex w-full justify-start items-center"
                     onClick={() => {
-                      if (!isScrolling) {
-                        handleLogout();
-                      }
+                      handleLogout();
                     }}
                     disabled={logoutMutation.isPending}
                   >
