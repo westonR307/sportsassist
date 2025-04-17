@@ -69,7 +69,21 @@ import {
   Mail,
   Twitter,
   Search,
-  ClipboardCheck
+  ClipboardCheck,
+  BadgeInfo,
+  CalendarClock,
+  CalendarRange,
+  Check,
+  CheckCheck,
+  Info,
+  MapPin,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Send,
+  Video,
+  X,
+  ArrowRight
 } from "lucide-react";
 import {
   AlertDialog,
