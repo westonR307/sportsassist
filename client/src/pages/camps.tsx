@@ -212,8 +212,8 @@ export default function CampsPage() {
                 <div 
                   className="h-1.5" 
                   style={{ 
-                    backgroundColor: isActive ? '#BA0C2F' : 
-                                    isUpcoming ? '#cc0000' : 
+                    backgroundColor: isActive ? primaryColor : 
+                                    isUpcoming ? primaryColor : 
                                     '#94a3b8'
                   }}
                 ></div>
@@ -317,8 +317,8 @@ export default function CampsPage() {
                 <div 
                   className="h-1.5" 
                   style={{ 
-                    backgroundColor: isActive ? '#BA0C2F' : 
-                                    isUpcoming ? '#cc0000' : 
+                    backgroundColor: isActive ? primaryColor : 
+                                    isUpcoming ? primaryColor : 
                                     '#94a3b8'
                   }}
                 ></div>
@@ -420,22 +420,23 @@ export default function CampsPage() {
                       </Button>
                     )}
                     
-                    {/* View Camp Button - always present */}
-                    <div className={canManageCamp ? "" : "col-span-2"}>
-                      <Button 
-                        className="w-full text-xs h-7"
-                        onClick={() => navigate(camp.slug 
+                    {/* View Details Button */}
+                    <Button 
+                      className={`text-xs h-7 ${canManageCamp ? '' : 'col-span-2'}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(camp.slug 
                           ? `/dashboard/camps/slug/${camp.slug}` 
-                          : `/dashboard/camps/${camp.id}`)}
-                      >
-                        View Details
-                      </Button>
-                    </div>
+                          : `/dashboard/camps/${camp.id}`);
+                      }}
+                    >
+                      View Details
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
             );
-
+            
             // Return the flip card with both sides defined
             return (
               <div key={`camp-${camp.id}`} className="h-[240px]">
