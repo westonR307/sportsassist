@@ -39,27 +39,22 @@
     --secondary-foreground: 0 0% 100%; /* white */
   }
 
-  /* Button styling overrides - more targeted selectors */
-  button.bg-primary, 
-  .camp-card .bg-primary, 
-  .camp-details .bg-primary {
+  /* Custom camp styling that doesn't override site navigation */
+  /* These are fully custom classes that won't conflict with other elements */
+  .camp-primary-bg {
     background-color: #BA0C2F; 
   }
-  button.text-primary, 
-  .camp-card .text-primary, 
-  .camp-details .text-primary {
+  .camp-primary-text {
     color: #BA0C2F;
   }
-  button.border-primary, 
-  .camp-card .border-primary, 
-  .camp-details .border-primary {
+  .camp-primary-border {
     border-color: #BA0C2F;
   }
-  button.hover\:bg-primary\/90:hover,
-  .camp-card .hover\:bg-primary\/90:hover,
-  .camp-details .hover\:bg-primary\/90:hover {
+  .camp-primary-hover:hover {
     background-color: rgba(186, 12, 47, 0.9);
   }
+  
+  /* We're completely removing styling overrides for global classes like .bg-primary */
   
   /* React Day Picker Custom Styles */
   .rdp {

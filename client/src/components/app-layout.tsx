@@ -534,7 +534,7 @@ export function AppLayout({ children, showBackButton = false, showNavigation = t
 
       {/* Organization Logo in Top Center */}
       {organization?.logoUrl && (
-        <div className="fixed top-0 left-0 right-0 z-30 flex justify-center items-center h-16 pointer-events-none">
+        <div className="fixed top-0 left-0 right-0 z-10 flex justify-center items-center h-16 pointer-events-none">
           <div className="bg-white p-2 rounded-b-lg shadow-sm">
             <img 
               src={organization.logoUrl} 
