@@ -1117,11 +1117,11 @@ function CampViewPage(props: { id?: string }) {
           <TabsContent value="details" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-6">
-                <Card className="border-t-4 shadow-md" style={{borderTopColor: organization?.primaryColor || 'hsl(var(--primary))'}}>
+                <Card className="border-t-4 shadow-md" style={{borderTopColor: organization?.primary_color || organization?.primaryColor || 'hsl(var(--primary))'}}>
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-center">
                       <CardTitle className="text-xl flex items-center gap-2">
-                        <Info className="h-5 w-5" style={{color: organization?.primaryColor}} />
+                        <Info className="h-5 w-5" style={{color: organization?.primary_color || organization?.primaryColor}} />
                         Camp Details
                       </CardTitle>
                       {registrationStatus === 'open' && (
@@ -1179,7 +1179,7 @@ function CampViewPage(props: { id?: string }) {
                   <CardContent className="space-y-6">
                     <div className="bg-slate-50 p-4 rounded-lg">
                       <h3 className="font-medium mb-2 flex items-center gap-2">
-                        <FileText className="h-4 w-4" style={{color: organization?.primaryColor}} />
+                        <FileText className="h-4 w-4" style={{color: organization?.primary_color || organization?.primaryColor}} />
                         Description
                       </h3>
                       <p className="text-muted-foreground">{camp.description}</p>
@@ -1188,7 +1188,7 @@ function CampViewPage(props: { id?: string }) {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       <div className="border rounded-lg p-4">
                         <h3 className="font-medium mb-2 flex items-center gap-2">
-                          <MapPin className="h-4 w-4" style={{color: organization?.primaryColor}} />
+                          <MapPin className="h-4 w-4" style={{color: organization?.primary_color || organization?.primaryColor}} />
                           Location
                         </h3>
                         <p className="text-muted-foreground">
@@ -1208,7 +1208,7 @@ function CampViewPage(props: { id?: string }) {
                       
                       <div className="border rounded-lg p-4">
                         <h3 className="font-medium mb-2 flex items-center gap-2">
-                          <Calendar className="h-4 w-4" style={{color: organization?.primaryColor}} />
+                          <Calendar className="h-4 w-4" style={{color: organization?.primary_color || organization?.primaryColor}} />
                           Camp Dates
                         </h3>
                         <p className="text-muted-foreground">
