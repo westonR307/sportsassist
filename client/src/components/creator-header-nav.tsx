@@ -262,12 +262,9 @@ export function CreatorHeaderNav() {
                       <a
                         href="/dashboard/settings"
                         className="flex w-full justify-start items-center gap-2 py-3 px-3 rounded-md text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (!isScrolling) {
-                            window.location.href = "/dashboard/settings";
-                            setMobileMenuOpen(false);
-                          }
+                        onClick={() => {
+                          window.location.href = "/dashboard/settings";
+                          setMobileMenuOpen(false);
                         }}
                       >
                         <User className="h-4 w-4" />
@@ -278,12 +275,9 @@ export function CreatorHeaderNav() {
                         <a
                           href="/dashboard/permissions"
                           className="flex w-full justify-start items-center gap-2 py-3 px-3 rounded-md text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            if (!isScrolling) {
-                              window.location.href = "/dashboard/permissions";
-                              setMobileMenuOpen(false);
-                            }
+                          onClick={() => {
+                            window.location.href = "/dashboard/permissions";
+                            setMobileMenuOpen(false);
                           }}
                         >
                           <ShieldCheck className="h-4 w-4" />
@@ -294,12 +288,9 @@ export function CreatorHeaderNav() {
                       <a
                         href="/custom-fields"
                         className="flex w-full justify-start items-center gap-2 py-3 px-3 rounded-md text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (!isScrolling) {
-                            window.location.href = "/custom-fields";
-                            setMobileMenuOpen(false);
-                          }
+                        onClick={() => {
+                          window.location.href = "/custom-fields";
+                          setMobileMenuOpen(false);
                         }}
                       >
                         <FileText className="h-4 w-4" />
@@ -309,12 +300,9 @@ export function CreatorHeaderNav() {
                       <a
                         href="/dashboard/organization-profile"
                         className="flex w-full justify-start items-center gap-2 py-3 px-3 rounded-md text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (!isScrolling) {
-                            window.location.href = "/dashboard/organization-profile";
-                            setMobileMenuOpen(false);
-                          }
+                        onClick={() => {
+                          window.location.href = "/dashboard/organization-profile";
+                          setMobileMenuOpen(false);
                         }}
                       >
                         <Users2 className="h-4 w-4" />
@@ -325,12 +313,9 @@ export function CreatorHeaderNav() {
                         <a
                           href="/dashboard/stripe-connect"
                           className="flex w-full justify-start items-center gap-2 py-3 px-3 rounded-md text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            if (!isScrolling) {
-                              window.location.href = "/dashboard/stripe-connect";
-                              setMobileMenuOpen(false);
-                            }
+                          onClick={() => {
+                            window.location.href = "/dashboard/stripe-connect";
+                            setMobileMenuOpen(false);
                           }}
                         >
                           <DollarSign className="h-4 w-4" />
@@ -342,12 +327,9 @@ export function CreatorHeaderNav() {
                         <a
                           href="/dashboard/subscription-plans"
                           className="flex w-full justify-start items-center gap-2 py-3 px-3 rounded-md text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            if (!isScrolling) {
-                              window.location.href = "/dashboard/subscription-plans";
-                              setMobileMenuOpen(false);
-                            }
+                          onClick={() => {
+                            window.location.href = "/dashboard/subscription-plans";
+                            setMobileMenuOpen(false);
                           }}
                         >
                           <CreditCard className="h-4 w-4" />
@@ -358,12 +340,9 @@ export function CreatorHeaderNav() {
                       <a
                         href="/documents"
                         className="flex w-full justify-start items-center gap-2 py-3 px-3 rounded-md text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (!isScrolling) {
-                            window.location.href = "/documents";
-                            setMobileMenuOpen(false);
-                          }
+                        onClick={() => {
+                          window.location.href = "/documents";
+                          setMobileMenuOpen(false);
                         }}
                       >
                         <ClipboardList className="h-4 w-4" />
@@ -374,9 +353,7 @@ export function CreatorHeaderNav() {
                     <button
                       className="flex w-full justify-start items-center gap-2 py-3 px-3 mt-6 rounded-md text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground"
                       onClick={() => {
-                        if (!isScrolling) {
-                          handleLogout();
-                        }
+                        handleLogout();
                       }}
                       disabled={logoutMutation.isPending}
                     >
@@ -433,11 +410,8 @@ export function CreatorHeaderNav() {
                   <DropdownMenuItem asChild>
                     <a 
                       href="/dashboard/settings"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (!isScrolling) {
-                          window.location.href = "/dashboard/settings";
-                        }
+                      onClick={() => {
+                        window.location.href = "/dashboard/settings";
                       }}
                     >
                       <User className="mr-2 h-4 w-4" />
