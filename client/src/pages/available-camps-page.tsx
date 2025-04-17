@@ -53,6 +53,18 @@ interface ExtendedCamp extends BaseCamp {
   location?: string;
 }
 
+// Helper function to get organization colors
+const getOrganizationColors = (organizations: any[], organizationId: number | undefined) => {
+  const organization = organizations.find((org: any) => org.id === organizationId);
+  return {
+    organization,
+    colors: {
+      primaryColor: organization?.primaryColor || '#BA0C2F',
+      secondaryColor: organization?.secondaryColor || '#cc0000',
+    }
+  };
+};
+
 export default function AvailableCampsPage() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
