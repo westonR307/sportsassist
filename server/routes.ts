@@ -3230,23 +3230,30 @@ export async function registerRoutes(app: Express) {
   });
   
   // Get all camp messages for an organization
-  app.get("/api/organizations/camp-messages", async (req, res) => {
-    console.log("API endpoint /api/organizations/camp-messages was called");
+  app.get("/api/organizations/:orgId/camp-messages", async (req, res) => {
+    console.log("API endpoint /api/organizations/:orgId/camp-messages was called");
     if (!req.user) {
       console.log("Unauthorized - user not authenticated");
       return res.status(401).json({ message: "Unauthorized" });
     }
     
+    const orgId = parseInt(req.params.orgId);
     const organizationId = req.user.organizationId;
-    console.log(`User organizationId: ${organizationId}`);
+    console.log(`User organizationId: ${organizationId}, Requested orgId: ${orgId}`);
+    
     if (!organizationId) {
       console.log("User is not associated with an organization");
-      return res.status(403).json({ error: "Not associated with an organization" });
+      return res.status(403).json({ message: "Not associated with an organization" });
+    }
+    
+    if (organizationId !== orgId) {
+      console.log("User not authorized for this organization");
+      return res.status(403).json({ message: "Not authorized for this organization" });
     }
     
     try {
-      console.log(`Fetching camp messages for organization ${organizationId}`);
-      const messages = await storage.getOrganizationCampMessages(organizationId);
+      console.log(`Fetching camp messages for organization ${orgId}`);
+      const messages = await storage.getOrganizationCampMessages(orgId);
       console.log(`Retrieved ${messages.length} messages`);
       res.json(messages);
     } catch (error) {

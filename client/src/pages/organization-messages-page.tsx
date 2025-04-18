@@ -89,7 +89,8 @@ export default function OrganizationMessagesPage() {
   
   // Fetch all camp messages for organization
   const { data: messages, isLoading } = useQuery<CampMessage[]>({
-    queryKey: ["/api/organizations/camp-messages"],
+    queryKey: organization ? [`/api/organizations/${organization.id}/camp-messages`] : null,
+    enabled: !!organization?.id,
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchInterval: false,
