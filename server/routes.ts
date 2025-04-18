@@ -3186,12 +3186,22 @@ export async function registerRoutes(app: Express) {
   
   // Get all basic camp info (for the messages page dropdown)
   app.get("/api/camps/basic-info", async (req, res) => {
+    console.log("API endpoint /api/camps/basic-info was called");
     if (!req.user) {
+      console.log("Unauthorized - user not authenticated");
       return res.status(401).json({ message: "Unauthorized" });
     }
     
+    const organizationId = req.user.organizationId;
+    if (!organizationId) {
+      console.log("User is not associated with an organization");
+      return res.status(403).json({ message: "Not associated with an organization" });
+    }
+    
+    console.log(`Fetching basic camp info for organization ${organizationId}`);
     try {
-      const camps = await storage.getCampBasicInfo(req.user.organizationId);
+      const camps = await storage.getCampBasicInfo(organizationId);
+      console.log(`Retrieved ${camps.length} camps for basic info`);
       res.json(camps);
     } catch (error) {
       console.error("Error fetching basic camp info:", error);
@@ -3231,7 +3241,7 @@ export async function registerRoutes(app: Express) {
     console.log(`User organizationId: ${organizationId}`);
     if (!organizationId) {
       console.log("User is not associated with an organization");
-      return res.status(403).json({ message: "Not associated with an organization" });
+      return res.status(403).json({ error: "Not associated with an organization" });
     }
     
     try {

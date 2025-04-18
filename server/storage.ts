@@ -4057,12 +4057,43 @@ export class DatabaseStorage implements IStorage {
         countMap.set(row.messageId, Number(row.count));
       });
       
-      // Combine the messages with the camp names and recipient counts
-      return messages.map(message => ({
-        ...message,
-        campName: campNameMap.get(message.campId) || "Unknown Camp",
-        recipientsCount: message.sentToAll ? 0 : (countMap.get(message.id) || 0),
-      }));
+      // Get all replies for these messages
+      const messagesWithReplies = await Promise.all(
+        messages.map(async (message) => {
+          const replies = await this.getCampMessageReplies(message.id);
+          
+          // Format sender name for each reply
+          const formattedReplies = replies.map(reply => {
+            const senderName = reply.sender_name || 
+              (reply.sentBy ? 
+                `${reply.sentBy.first_name || ''} ${reply.sentBy.last_name || ''}`.trim() : 
+                'Unknown User');
+            
+            return {
+              id: reply.id,
+              messageId: reply.messageId,
+              senderId: reply.senderId,
+              senderName,
+              content: reply.content,
+              createdAt: reply.createdAt
+            };
+          });
+          
+          return {
+            ...message,
+            campName: campNameMap.get(message.campId) || "Unknown Camp",
+            recipientsCount: message.sentToAll ? 0 : (countMap.get(message.id) || 0),
+            replies: formattedReplies, // Add the replies
+            senderName: message.sender_name || 
+              `${message.sentBy?.first_name || ''} ${message.sentBy?.last_name || ''}`.trim() || 
+              'Unknown User'
+          };
+        })
+      );
+      
+      console.log(`Found ${messagesWithReplies.length} messages with replies for organization ${organizationId}`);
+      
+      return messagesWithReplies;
     } catch (error: any) {
       console.error(`Error fetching organization camp messages for org ID ${organizationId}:`, error);
       throw new Error(`Failed to fetch organization camp messages: ${error.message}`);
