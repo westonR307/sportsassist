@@ -4,6 +4,29 @@ import { DashboardLayout } from "./dashboard";
 import { CreatorLayout } from "@/components/creator-layout";
 import { ParentLayout } from "@/components/parent-layout";
 import { SimpleLayout } from "@/components/simple-layout";
+
+// Utility function to shade a color - used for creating gradient variations
+function shadeColor(color: string, percent: number): string {
+  // Remove the # if it exists
+  let hexColor = color.startsWith('#') ? color.substring(1) : color;
+  
+  // Convert to RGB
+  let r = parseInt(hexColor.substring(0, 2), 16);
+  let g = parseInt(hexColor.substring(2, 4), 16);
+  let b = parseInt(hexColor.substring(4, 6), 16);
+  
+  // Apply the shade (positive percent brightens, negative darkens)
+  r = Math.min(255, Math.max(0, Math.round(r + (r * percent / 100))));
+  g = Math.min(255, Math.max(0, Math.round(g + (g * percent / 100))));
+  b = Math.min(255, Math.max(0, Math.round(b + (b * percent / 100))));
+  
+  // Convert back to hex
+  const rHex = r.toString(16).padStart(2, '0');
+  const gHex = g.toString(16).padStart(2, '0');
+  const bHex = b.toString(16).padStart(2, '0');
+  
+  return `#${rHex}${gHex}${bHex}`;
+}
 import { BackButton } from "@/components/back-button";
 import { ShareCampDialog } from "@/components/share-camp-dialog";
 import { CampMetaFieldsDisplay } from "@/components/camp-meta-fields-display";
@@ -274,19 +297,20 @@ function CampViewPage(props: { id?: string }) {
   
   // Define hero background style based on organization colors
   // Convert the organization colors to variables for easier use
-  // For this organization, primary_color is #000000 (black) and secondary_color is #c89b63 (gold/bronze)
-  const primaryColor = organization?.primary_color || organization?.primaryColor || '#000000';
-  const secondaryColor = organization?.secondary_color || organization?.secondaryColor || '#c89b63';
+  const primaryColor = organization?.primary_color || organization?.primaryColor || 'hsl(var(--primary))';
+  const secondaryColor = organization?.secondary_color || organization?.secondaryColor || primaryColor;
   
   // For the gradient background when no banner image is present
-  // If primary is black, create a nice dark gradient with secondary color
   let gradientStart = primaryColor;
   let gradientEnd = secondaryColor;
   
-  // Create a special gradient if the primary color is black
-  if (primaryColor === '#000000') {
-    gradientStart = '#333333'; // Dark gray instead of pure black
-    gradientEnd = secondaryColor;
+  // Create a more visually appealing gradient if the colors are identical
+  if (gradientStart === gradientEnd) {
+    // Create a slightly different shade for the gradient end
+    const color = gradientStart.startsWith('#') ? gradientStart : 'hsl(var(--primary))';
+    gradientEnd = color.startsWith('#') 
+      ? shadeColor(color, -15) // Darken by 15%
+      : 'hsl(var(--primary-foreground))';
   }
   
   const heroBgStyle = organization && (organization.banner_image_url || organization.bannerImageUrl)
@@ -956,7 +980,7 @@ function CampViewPage(props: { id?: string }) {
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight break-words max-w-full drop-shadow-md" 
                   style={{
                     textShadow: `0 2px 4px rgba(0,0,0,0.5)`,
-                    color: 'white',
+                    color: 'var(--color-foreground, white)',
                     borderBottom: `3px solid ${secondaryColor}`
                   }}>
                 {camp.name}
