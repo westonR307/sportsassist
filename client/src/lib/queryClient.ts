@@ -8,19 +8,44 @@ async function throwIfResNotOk(res: Response) {
 }
 
 export async function apiRequest(
-  method: string,
   url: string,
-  data?: unknown | undefined,
+  options: {
+    method?: string;
+    body?: string;
+    headers?: Record<string, string>;
+  } = {}
 ): Promise<Response> {
-  const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
-
-  await throwIfResNotOk(res);
-  return res;
+  const method = options.method || 'GET';
+  const headers = {
+    ...options.headers,
+    ...(options.body ? { "Content-Type": "application/json" } : {})
+  };
+  
+  console.log(`API Request: ${method} ${url}`);
+  console.log('Request Headers:', headers);
+  console.log('Request Body:', options.body);
+  
+  try {
+    const res = await fetch(url, {
+      method,
+      headers,
+      body: options.body,
+      credentials: "include",
+    });
+    
+    console.log(`Response Status: ${res.status} ${res.statusText}`);
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`API Error: ${res.status} ${res.statusText}`, errorText);
+      throw new Error(`${res.status}: ${errorText || res.statusText}`);
+    }
+    
+    return res;
+  } catch (error) {
+    console.error(`API Request Failed: ${method} ${url}`, error);
+    throw error;
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -29,16 +54,37 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
-      credentials: "include",
-    });
-
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+    const url = queryKey[0] as string;
+    console.log(`Query Request: GET ${url}`);
+    
+    try {
+      const res = await fetch(url, {
+        credentials: "include",
+      });
+      
+      console.log(`Query Response Status: ${res.status} ${res.statusText}`);
+      
+      if (res.status === 401) {
+        console.warn(`Unauthorized response for: ${url}`);
+        if (unauthorizedBehavior === "returnNull") {
+          return null;
+        }
+        throw new Error("Unauthorized: You need to log in to access this resource");
+      }
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error(`Query Error: ${res.status} ${res.statusText}`, errorText);
+        throw new Error(`${res.status}: ${errorText || res.statusText}`);
+      }
+      
+      const data = await res.json();
+      console.log(`Query Data: ${url}`, data);
+      return data;
+    } catch (error) {
+      console.error(`Query Request Failed: ${url}`, error);
+      throw error;
     }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
 
 export const queryClient = new QueryClient({

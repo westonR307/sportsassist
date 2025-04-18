@@ -61,15 +61,23 @@ export function CampMessageReplyDialog({
   async function onSubmit(data: ReplyFormValues) {
     setIsSubmitting(true);
     try {
-      await apiRequest(`/api/camp-messages/${messageId}/replies`, {
+      console.log("Sending reply to message ID:", messageId);
+      
+      const requestBody = {
+        content: data.content,
+        // These are optional flags that the backend might use:
+        replyToAll: true, // All recipients will see this reply
+        recipientId: null, // No specific recipient (reply to all)
+      };
+      
+      console.log("Reply request body:", requestBody);
+      
+      const response = await apiRequest(`/api/camp-messages/${messageId}/replies`, {
         method: "POST",
-        body: JSON.stringify({
-          content: data.content,
-          // These are optional flags that the backend might use:
-          replyToAll: true, // All recipients will see this reply
-          recipientId: null, // No specific recipient (reply to all)
-        }),
+        body: JSON.stringify(requestBody),
       });
+      
+      console.log("Reply sent response:", response);
 
       // Reset form and close dialog
       form.reset();
@@ -86,11 +94,19 @@ export function CampMessageReplyDialog({
       });
     } catch (error) {
       console.error("Error sending reply:", error);
-      toast({
-        title: "Error",
-        description: "Failed to send reply. Please try again.",
-        variant: "destructive",
-      });
+      if (error instanceof Error) {
+        toast({
+          title: "Error",
+          description: `Failed to send reply: ${error.message}`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to send reply. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }

@@ -86,20 +86,28 @@ export function NewCampMessageDialog({
       }
 
       const campId = parseInt(data.campId);
+      console.log("Sending new message for camp:", campId);
+      console.log("Current user:", user);
       
-      await apiRequest(`/api/camps/${campId}/messages`, {
+      const requestBody = {
+        subject: data.subject,
+        content: data.content,
+        sendToAll: data.sendToAll,
+        organizationId: organizationId,
+        senderId: user.id,
+        senderName: user.first_name && user.last_name ? 
+          `${user.first_name} ${user.last_name}` : 
+          user.username,
+      };
+      
+      console.log("Request body:", requestBody);
+      
+      const response = await apiRequest(`/api/camps/${campId}/messages`, {
         method: "POST",
-        body: JSON.stringify({
-          subject: data.subject,
-          content: data.content,
-          sendToAll: data.sendToAll,
-          organizationId: organizationId,
-          senderId: user.id,
-          senderName: user.first_name && user.last_name ? 
-            `${user.first_name} ${user.last_name}` : 
-            user.username,
-        }),
+        body: JSON.stringify(requestBody),
       });
+      
+      console.log("Message sent response:", response);
 
       // Reset form and close dialog
       form.reset();
@@ -116,11 +124,19 @@ export function NewCampMessageDialog({
       });
     } catch (error) {
       console.error("Error sending message:", error);
-      toast({
-        title: "Error",
-        description: "Failed to send message. Please try again.",
-        variant: "destructive",
-      });
+      if (error instanceof Error) {
+        toast({
+          title: "Error",
+          description: `Failed to send message: ${error.message}`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to send message. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
