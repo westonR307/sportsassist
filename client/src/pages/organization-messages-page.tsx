@@ -72,9 +72,24 @@ export default function OrganizationMessagesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCamp, setSelectedCamp] = useState<number | "all">("all");
   
+  // Fetch organization data
+  const { data: organization, isLoading: isLoadingOrg } = useQuery<any>({
+    queryKey: user?.organizationId ? [`/api/organizations/${user.organizationId}`] : null,
+    enabled: !!user?.organizationId,
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    onError: (error) => {
+      toast({
+        title: "Error fetching organization",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+    },
+  });
+  
   // Fetch all camps
   const { data: camps } = useQuery<CampBasicInfo[]>({
-    queryKey: ["/api/camps/basic-info"],
+    queryKey: ["/api/camps"],
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchInterval: false,
@@ -88,9 +103,9 @@ export default function OrganizationMessagesPage() {
   });
   
   // Fetch all camp messages for organization
-  const { data: messages, isLoading } = useQuery<CampMessage[]>({
-    queryKey: organization ? [`/api/organizations/${organization.id}/camp-messages`] : null,
-    enabled: !!organization?.id,
+  const { data: messages, isLoading: isLoadingMessages } = useQuery<CampMessage[]>({
+    queryKey: user?.organizationId ? [`/api/organizations/${user.organizationId}/camp-messages`] : null,
+    enabled: !!user?.organizationId,
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchInterval: false,
@@ -160,7 +175,7 @@ export default function OrganizationMessagesPage() {
           </div>
 
           <div className="rounded-md border">
-            {isLoading ? (
+            {isLoadingMessages ? (
               <div className="flex justify-center items-center p-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>

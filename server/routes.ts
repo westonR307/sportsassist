@@ -4558,7 +4558,28 @@ export async function registerRoutes(app: Express) {
       });
     } catch (error: any) {
       console.error("Error removing organization logo:", error);
-      res.status(500).json({ message: error.message || "Failed to remove logo" });
+    }
+  });
+  
+  // Get all camp messages for an organization
+  app.get("/api/organizations/:orgId/camp-messages", async (req, res) => {
+    try {
+      if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+      
+      const orgId = parseInt(req.params.orgId);
+      
+      // Check if user has permission to view messages for this organization
+      if (req.user.organizationId !== orgId && req.user.role !== 'platform_admin') {
+        return res.status(403).json({ message: "Not authorized to view messages for this organization" });
+      }
+      
+      console.log(`Fetching camp messages for organization ${orgId}`);
+      
+      const messages = await storage.getOrganizationCampMessages(orgId);
+      res.json(messages);
+    } catch (error: any) {
+      console.error("Error fetching organization camp messages:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch organization camp messages" });
     }
   });
   
