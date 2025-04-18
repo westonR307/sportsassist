@@ -1,9 +1,13 @@
 
 import { Redis } from 'ioredis';
 
+// Track Redis availability
+let redisAvailable = false;
+
 // Configure Redis client with better error handling and reconnection
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
   maxRetriesPerRequest: 3,
+  connectTimeout: 1000, // Shorter timeout for faster fallback
   retryStrategy(times) {
     const delay = Math.min(times * 50, 2000);
     return delay;
@@ -21,12 +25,24 @@ const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
 // Handle Redis connection errors
 redis.on('error', (error) => {
   console.error('Redis connection error:', error);
+  redisAvailable = false;
 });
 
 // Log when Redis reconnects
 redis.on('reconnecting', () => {
   console.log('Redis reconnecting...');
 });
+
+// Mark Redis as available when connected
+redis.on('connect', () => {
+  console.log('Redis connected successfully');
+  redisAvailable = true;
+});
+
+// Helper function to check if Redis is available
+export function isRedisAvailable() {
+  return redisAvailable;
+}
 
 // Basic cache operations
 export async function cacheGet(key: string) {

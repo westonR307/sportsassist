@@ -1,6 +1,6 @@
 import { db } from './db';
 import { Camp, Organization, Registration } from '@shared/schema';
-import { cacheGetJson, cacheSetJson, getCacheKey, cacheDeletePattern, getListCacheKey } from './cache';
+import { cacheGetJson, cacheSetJson, getCacheKey, cacheDeletePattern, getListCacheKey, isRedisAvailable } from './cache';
 import { eq, and, isNull, SQL, sql } from 'drizzle-orm';
 import { camps, organizations, registrations, campSports, sports } from '@shared/tables';
 
@@ -19,17 +19,25 @@ const CACHE_TTL = {
 /**
  * Gets a camp by ID with caching
  * Uses a 5-minute cache timeout for non-changing camp data
+ * Gracefully falls back to database query if Redis is unavailable
  */
 export async function getCachedCamp(campId: number): Promise<Camp | null> {
   const cacheKey = getCacheKey('camp', campId);
   
-  // Try to get from cache first
-  const cachedCamp = await cacheGetJson<Camp>(cacheKey);
-  if (cachedCamp) {
-    return cachedCamp;
+  // Only try to get from cache if Redis is available
+  if (isRedisAvailable()) {
+    try {
+      const cachedCamp = await cacheGetJson<Camp>(cacheKey);
+      if (cachedCamp) {
+        return cachedCamp;
+      }
+    } catch (error: any) {
+      // Log error but continue to fallback database query
+      console.warn(`Error retrieving camp from cache: ${error.message}`);
+    }
   }
   
-  // If not in cache, fetch from database
+  // If not in cache or Redis unavailable, fetch from database
   const campResult = await db.select()
     .from(camps)
     .where(eq(camps.id, campId))
@@ -40,8 +48,15 @@ export async function getCachedCamp(campId: number): Promise<Camp | null> {
     return null;
   }
   
-  // Cache the result for 5 minutes
-  await cacheSetJson(cacheKey, camp, CACHE_TTL.MEDIUM);
+  // Only try to cache if Redis is available
+  if (isRedisAvailable()) {
+    try {
+      // Cache the result for 5 minutes
+      await cacheSetJson(cacheKey, camp, CACHE_TTL.MEDIUM);
+    } catch (error: any) {
+      console.warn(`Failed to cache camp: ${error.message}`);
+    }
+  }
   
   return camp;
 }
@@ -49,6 +64,7 @@ export async function getCachedCamp(campId: number): Promise<Camp | null> {
 /**
  * Gets all camps with caching and filtering options
  * Uses an efficient cache structure with appropriate timeouts
+ * Gracefully falls back to database query if Redis is unavailable
  */
 export async function getCachedCamps(filters: {
   organizationId?: number;
@@ -60,13 +76,20 @@ export async function getCachedCamps(filters: {
   // Generate a cache key based on the filters
   const cacheKey = getListCacheKey('camps', filters);
   
-  // Try to get from cache first
-  const cachedCamps = await cacheGetJson<any[]>(cacheKey);
-  if (cachedCamps) {
-    return cachedCamps;
+  // Only try to get from cache if Redis is available
+  if (isRedisAvailable()) {
+    try {
+      const cachedCamps = await cacheGetJson<any[]>(cacheKey);
+      if (cachedCamps) {
+        return cachedCamps;
+      }
+    } catch (error: any) {
+      // Log error but continue to fallback database query
+      console.warn(`Error retrieving camps from cache: ${error.message}`);
+    }
   }
   
-  // If not in cache, fetch from database with filters
+  // If not in cache or Redis unavailable, fetch from database with filters
   let query = db.select().from(camps);
   
   // Build conditions array
@@ -143,13 +166,20 @@ export async function getCachedCamps(filters: {
     };
   }));
   
-  // Cache the result with appropriate TTL
-  // Use shorter cache time for filtered queries that might change more often
-  const cacheTtl = filters.status || filters.search 
-    ? CACHE_TTL.SHORT   // 1 minute for filtered queries
-    : CACHE_TTL.MEDIUM; // 5 minutes for basic organization queries
-  
-  await cacheSetJson(cacheKey, enrichedCamps, cacheTtl);
+  // Only try to cache if Redis is available
+  if (isRedisAvailable()) {
+    try {
+      // Cache the result with appropriate TTL
+      // Use shorter cache time for filtered queries that might change more often
+      const cacheTtl = filters.status || filters.search 
+        ? CACHE_TTL.SHORT   // 1 minute for filtered queries
+        : CACHE_TTL.MEDIUM; // 5 minutes for basic organization queries
+      
+      await cacheSetJson(cacheKey, enrichedCamps, cacheTtl);
+    } catch (error: any) {
+      console.warn(`Failed to cache camps: ${error.message}`);
+    }
+  }
   
   return enrichedCamps;
 }
@@ -157,6 +187,7 @@ export async function getCachedCamps(filters: {
 /**
  * Gets camps by organization ID with caching
  * Uses a 5-minute cache timeout for camp lists
+ * Gracefully falls back to database query if Redis is unavailable
  */
 export async function getCachedOrgCamps(organizationId: number, includeDeleted: boolean = false): Promise<Camp[]> {
   return getCachedCamps({
@@ -168,20 +199,28 @@ export async function getCachedOrgCamps(organizationId: number, includeDeleted: 
 /**
  * Gets an organization by ID with caching
  * Uses a 1-hour cache timeout for organization data which changes less frequently
+ * Gracefully falls back to database query if Redis is unavailable
  */
 export async function getCachedOrganization(organizationId: number): Promise<Organization | null> {
   const cacheKey = getCacheKey('organization', organizationId);
   
-  // Try to get from cache first
-  const cachedOrg = await cacheGetJson<Organization>(cacheKey);
-  if (cachedOrg) {
-    console.log(`Cache hit for organization ${organizationId}`);
-    return cachedOrg;
+  // Only try to get from cache if Redis is available
+  if (isRedisAvailable()) {
+    try {
+      const cachedOrg = await cacheGetJson<Organization>(cacheKey);
+      if (cachedOrg) {
+        console.log(`Cache hit for organization ${organizationId}`);
+        return cachedOrg;
+      }
+    } catch (error: any) {
+      // Log error but continue to fallback database query
+      console.warn(`Error retrieving organization from cache: ${error.message}`);
+    }
   }
   
-  console.log(`Cache miss for organization ${organizationId}, fetching from database`);
+  console.log(`Cache miss or Redis unavailable for organization ${organizationId}, fetching from database`);
   
-  // If not in cache, fetch from database
+  // Fetch from database (fallback)
   const orgResult = await db.select()
     .from(organizations)
     .where(eq(organizations.id, organizationId))
@@ -192,9 +231,16 @@ export async function getCachedOrganization(organizationId: number): Promise<Org
     return null;
   }
   
-  // Cache the result for 1 hour - organization data is fairly static
-  await cacheSetJson(cacheKey, org, CACHE_TTL.LONG);
-  console.log(`Cached organization ${organizationId} for ${CACHE_TTL.LONG} seconds`);
+  // Only try to cache if Redis is available
+  if (isRedisAvailable()) {
+    try {
+      // Cache the result for 1 hour - organization data is fairly static
+      await cacheSetJson(cacheKey, org, CACHE_TTL.LONG);
+      console.log(`Cached organization ${organizationId} for ${CACHE_TTL.LONG} seconds`);
+    } catch (error: any) {
+      console.warn(`Failed to cache organization: ${error.message}`);
+    }
+  }
   
   return org;
 }
@@ -202,25 +248,40 @@ export async function getCachedOrganization(organizationId: number): Promise<Org
 /**
  * Gets all organizations with caching
  * This is called frequently from the UI and benefits from longer caching
+ * Gracefully falls back to database query if Redis is unavailable
  */
 export async function getCachedOrganizations(): Promise<Organization[]> {
   const cacheKey = 'organizations:all';
   
-  // Try to get from cache first
-  const cachedOrgs = await cacheGetJson<Organization[]>(cacheKey);
-  if (cachedOrgs) {
-    console.log('Cache hit for all organizations');
-    return cachedOrgs;
+  // Only try to get from cache if Redis is available
+  if (isRedisAvailable()) {
+    try {
+      const cachedOrgs = await cacheGetJson<Organization[]>(cacheKey);
+      if (cachedOrgs) {
+        console.log('Cache hit for all organizations');
+        return cachedOrgs;
+      }
+    } catch (error: any) {
+      // Log error but continue to fallback database query
+      console.warn(`Error retrieving organizations from cache: ${error.message}`);
+    }
   }
   
-  console.log('Cache miss for all organizations, fetching from database');
+  console.log('Cache miss or Redis unavailable for all organizations, fetching from database');
   
-  // If not in cache, fetch from database
+  // Fetch from database (fallback)
   const orgs = await db.select().from(organizations);
   
-  // Cache the result for 1 hour - organization lists change infrequently
-  await cacheSetJson(cacheKey, orgs, CACHE_TTL.LONG);
-  console.log(`Cached all organizations for ${CACHE_TTL.LONG} seconds`);
+  // Only try to cache if Redis is available
+  if (isRedisAvailable()) {
+    try {
+      // Cache the result for 1 hour - organization lists change infrequently
+      await cacheSetJson(cacheKey, orgs, CACHE_TTL.LONG);
+      console.log(`Cached all organizations for ${CACHE_TTL.LONG} seconds`);
+    } catch (error: any) {
+      console.warn(`Failed to cache organizations: ${error.message}`);
+    }
+  }
   
   return orgs;
 }
@@ -228,52 +289,98 @@ export async function getCachedOrganizations(): Promise<Organization[]> {
 /**
  * Gets registrations for a camp with caching
  * Uses a 1-minute cache timeout as registration data changes more frequently
+ * Gracefully falls back to database query if Redis is unavailable
  */
 export async function getCachedCampRegistrations(campId: number): Promise<Registration[]> {
   const cacheKey = getCacheKey('camp', campId, 'registrations');
   
-  // Try to get from cache first
-  const cachedRegistrations = await cacheGetJson<Registration[]>(cacheKey);
-  if (cachedRegistrations) {
-    return cachedRegistrations;
+  // Only try to get from cache if Redis is available
+  if (isRedisAvailable()) {
+    try {
+      const cachedRegistrations = await cacheGetJson<Registration[]>(cacheKey);
+      if (cachedRegistrations) {
+        return cachedRegistrations;
+      }
+    } catch (error: any) {
+      // Log error but continue to fallback database query
+      console.warn(`Error retrieving camp registrations from cache: ${error.message}`);
+    }
   }
   
-  // If not in cache, fetch from database
+  // If not in cache or Redis unavailable, fetch from database
   const registrationsList = await db.select()
     .from(registrations)
     .where(eq(registrations.campId, campId));
   
-  // Cache the result for 1 minute
-  await cacheSetJson(cacheKey, registrationsList, CACHE_TTL.SHORT);
+  // Only try to cache if Redis is available
+  if (isRedisAvailable()) {
+    try {
+      // Cache the result for 1 minute
+      await cacheSetJson(cacheKey, registrationsList, CACHE_TTL.SHORT);
+    } catch (error: any) {
+      console.warn(`Failed to cache camp registrations: ${error.message}`);
+    }
+  }
   
   return registrationsList;
 }
 
 /**
  * Invalidates all related camp caches when a camp is updated
+ * Gracefully handles Redis unavailability
  */
 export async function invalidateCampCaches(campId: number) {
-  // Delete the specific camp cache
-  await cacheDeletePattern(getCacheKey('camp', campId));
-  
-  // Delete any cache entries containing this camp's registrations
-  await cacheDeletePattern(getCacheKey('camp', campId, 'registrations'));
-  
-  // Also delete any organization camps lists that might include this camp
-  await cacheDeletePattern('organization:camps:list:*');
-  await cacheDeletePattern('camps:list:*');
+  // Only attempt to invalidate cache if Redis is available
+  if (!isRedisAvailable()) {
+    console.log(`Redis unavailable, skipping cache invalidation for camp ${campId}`);
+    return;
+  }
+
+  try {
+    // Delete the specific camp cache
+    await cacheDeletePattern(getCacheKey('camp', campId));
+    
+    // Delete any cache entries containing this camp's registrations
+    await cacheDeletePattern(getCacheKey('camp', campId, 'registrations'));
+    
+    // Also delete any organization camps lists that might include this camp
+    await cacheDeletePattern('organization:camps:list:*');
+    await cacheDeletePattern('camps:list:*');
+    
+    console.log(`Successfully invalidated caches for camp ${campId}`);
+  } catch (error: any) {
+    console.warn(`Error invalidating cache for camp ${campId}: ${error.message}`);
+    // Continue execution, allowing the application to function without cache invalidation
+  }
 }
 
 /**
  * Invalidates all related organization caches when an organization is updated
+ * Gracefully handles Redis unavailability
  */
 export async function invalidateOrganizationCaches(organizationId: number) {
-  // Delete the specific organization cache
-  await cacheDeletePattern(getCacheKey('organization', organizationId));
-  
-  // Delete any cache entries containing this organization's camps
-  await cacheDeletePattern(getListCacheKey('organization:camps', { orgId: organizationId }));
-  await cacheDeletePattern(getListCacheKey('organization:camps', { orgId: organizationId, includeDeleted: true }));
-  await cacheDeletePattern(getListCacheKey('camps', { organizationId }));
-  await cacheDeletePattern(getListCacheKey('camps', { organizationId, includeDeleted: true }));
+  // Only attempt to invalidate cache if Redis is available
+  if (!isRedisAvailable()) {
+    console.log(`Redis unavailable, skipping cache invalidation for organization ${organizationId}`);
+    return;
+  }
+
+  try {
+    // Delete the specific organization cache
+    await cacheDeletePattern(getCacheKey('organization', organizationId));
+    
+    // Delete any cache entries containing this organization's camps
+    await cacheDeletePattern(getListCacheKey('organization:camps', { orgId: organizationId }));
+    await cacheDeletePattern(getListCacheKey('organization:camps', { orgId: organizationId, includeDeleted: true }));
+    await cacheDeletePattern(getListCacheKey('camps', { organizationId }));
+    await cacheDeletePattern(getListCacheKey('camps', { organizationId, includeDeleted: true }));
+    
+    // Delete the all organizations cache too
+    await cacheDeletePattern('organizations:all');
+    
+    console.log(`Successfully invalidated caches for organization ${organizationId}`);
+  } catch (error: any) {
+    console.warn(`Error invalidating cache for organization ${organizationId}: ${error.message}`);
+    // Continue execution, allowing the application to function without cache invalidation
+  }
 }
