@@ -4,12 +4,16 @@ import { cacheGetJson, cacheSetJson, getCacheKey, cacheDeletePattern, getListCac
 import { eq, and, isNull, SQL, sql } from 'drizzle-orm';
 import { camps, organizations, registrations, campSports, sports } from '@shared/tables';
 
-// Cache TTL values (in seconds)
+// Optimized Cache TTL values (in seconds) to reduce database load
 const CACHE_TTL = {
-  SHORT: 60,        // 1 minute
-  MEDIUM: 300,      // 5 minutes
-  LONG: 1800,       // 30 minutes
-  VERY_LONG: 7200,  // 2 hours
+  SHORT: 120,       // 2 minutes (was 1 minute)
+  MEDIUM: 600,      // 10 minutes (was 5 minutes)
+  LONG: 3600,       // 1 hour (was 30 minutes)
+  VERY_LONG: 14400, // 4 hours (was 2 hours)
+  // Add specialized TTLs for different content types
+  STATIC: 86400,    // 24 hours for truly static content
+  USER: 300,        // 5 minutes for user data
+  CONFIG: 3600,     // 1 hour for configuration data
 };
 
 /**
@@ -163,7 +167,7 @@ export async function getCachedOrgCamps(organizationId: number, includeDeleted: 
 
 /**
  * Gets an organization by ID with caching
- * Uses a 30-minute cache timeout for organization data which changes less frequently
+ * Uses a 1-hour cache timeout for organization data which changes less frequently
  */
 export async function getCachedOrganization(organizationId: number): Promise<Organization | null> {
   const cacheKey = getCacheKey('organization', organizationId);
@@ -171,8 +175,11 @@ export async function getCachedOrganization(organizationId: number): Promise<Org
   // Try to get from cache first
   const cachedOrg = await cacheGetJson<Organization>(cacheKey);
   if (cachedOrg) {
+    console.log(`Cache hit for organization ${organizationId}`);
     return cachedOrg;
   }
+  
+  console.log(`Cache miss for organization ${organizationId}, fetching from database`);
   
   // If not in cache, fetch from database
   const orgResult = await db.select()
@@ -185,10 +192,37 @@ export async function getCachedOrganization(organizationId: number): Promise<Org
     return null;
   }
   
-  // Cache the result for 30 minutes
+  // Cache the result for 1 hour - organization data is fairly static
   await cacheSetJson(cacheKey, org, CACHE_TTL.LONG);
+  console.log(`Cached organization ${organizationId} for ${CACHE_TTL.LONG} seconds`);
   
   return org;
+}
+
+/**
+ * Gets all organizations with caching
+ * This is called frequently from the UI and benefits from longer caching
+ */
+export async function getCachedOrganizations(): Promise<Organization[]> {
+  const cacheKey = 'organizations:all';
+  
+  // Try to get from cache first
+  const cachedOrgs = await cacheGetJson<Organization[]>(cacheKey);
+  if (cachedOrgs) {
+    console.log('Cache hit for all organizations');
+    return cachedOrgs;
+  }
+  
+  console.log('Cache miss for all organizations, fetching from database');
+  
+  // If not in cache, fetch from database
+  const orgs = await db.select().from(organizations);
+  
+  // Cache the result for 1 hour - organization lists change infrequently
+  await cacheSetJson(cacheKey, orgs, CACHE_TTL.LONG);
+  console.log(`Cached all organizations for ${CACHE_TTL.LONG} seconds`);
+  
+  return orgs;
 }
 
 /**

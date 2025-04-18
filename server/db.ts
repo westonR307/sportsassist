@@ -18,14 +18,16 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL must be set. Did you forget to provision a database?");
 }
 
-// Create a pool with better error handling and connection management
+// Create a pool with optimized settings to reduce compute hours
 const poolConfig = {
   connectionString: process.env.DATABASE_URL,
-  max: 20, // Connection pool size
-  idleTimeoutMillis: 30000, // Close idle connections after 30 seconds
-  connectionTimeoutMillis: 5000, // Connection timeout
-  maxUses: 7500, // Maximum number of times to use a connection before releasing it
+  max: 10, // Reduced connection pool size to minimize open connections
+  min: 2, // Maintain at least 2 connections to avoid cold starts
+  idleTimeoutMillis: 10000, // Close idle connections after 10 seconds (reduced from 30s)
+  connectionTimeoutMillis: 3000, // Reduced connection timeout
+  maxUses: 5000, // Reduced max uses to prevent connection leaks
   keepAlive: true, // Keep connections alive
+  application_name: 'sports_camp_app', // For better identification in logs
 };
 
 // Create the connection pool
