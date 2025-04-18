@@ -32,8 +32,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, ArrowLeft } from "lucide-react";
+import { Loader2, Search, ArrowLeft, MessageSquarePlus, Reply } from "lucide-react";
 import { BackButton } from "@/components/back-button";
+import { NewCampMessageDialog } from "@/components/new-camp-message-dialog";
+import { CampMessageReplyDialog } from "@/components/camp-message-reply-dialog";
 
 import { format } from "date-fns";
 
@@ -71,6 +73,9 @@ export default function OrganizationMessagesPage() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCamp, setSelectedCamp] = useState<number | "all">("all");
+  const [showNewMessageDialog, setShowNewMessageDialog] = useState(false);
+  const [showReplyDialog, setShowReplyDialog] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState<CampMessage | null>(null);
   
   // Fetch organization data
   const { data: organization, isLoading: isLoadingOrg } = useQuery<any>({
@@ -139,11 +144,27 @@ export default function OrganizationMessagesPage() {
         <BackButton />
       </div>
       <Card>
-        <CardHeader>
-          <CardTitle>Organization Messages</CardTitle>
-          <CardDescription>
-            View and manage messages sent across all your camps
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Organization Messages</CardTitle>
+            <CardDescription>
+              View and manage messages sent across all your camps
+            </CardDescription>
+          </div>
+          <Button 
+            onClick={() => setShowNewMessageDialog(true)}
+            className="hidden sm:flex items-center gap-1"
+          >
+            <MessageSquarePlus className="h-4 w-4" />
+            New Message
+          </Button>
+          <Button 
+            onClick={() => setShowNewMessageDialog(true)}
+            className="sm:hidden"
+            size="icon"
+          >
+            <MessageSquarePlus className="h-4 w-4" />
+          </Button>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4 mb-4">
@@ -185,9 +206,23 @@ export default function OrganizationMessagesPage() {
                   <div key={message.id} className="p-4 hover:bg-muted/50">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="text-base font-medium">{message.subject}</h3>
-                      <Badge variant="outline">
-                        {format(new Date(message.createdAt), "MMM d, yyyy")}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="flex items-center gap-1"
+                          onClick={() => {
+                            setSelectedMessage(message);
+                            setShowReplyDialog(true);
+                          }}
+                        >
+                          <Reply className="h-3 w-3" />
+                          Reply
+                        </Button>
+                        <Badge variant="outline">
+                          {format(new Date(message.createdAt), "MMM d, yyyy")}
+                        </Badge>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                       <span>From: {message.senderName}</span>
@@ -240,6 +275,27 @@ export default function OrganizationMessagesPage() {
         </CardContent>
         <CardFooter className="flex justify-between"></CardFooter>
       </Card>
+
+      {/* New Message Dialog */}
+      {user?.organizationId && camps && (
+        <NewCampMessageDialog
+          open={showNewMessageDialog}
+          onOpenChange={setShowNewMessageDialog}
+          organizationId={user.organizationId}
+          camps={camps}
+        />
+      )}
+
+      {/* Reply Dialog */}
+      {selectedMessage && user?.organizationId && (
+        <CampMessageReplyDialog
+          open={showReplyDialog}
+          onOpenChange={setShowReplyDialog}
+          messageId={selectedMessage.id}
+          messageSubject={selectedMessage.subject}
+          organizationId={user.organizationId}
+        />
+      )}
     </div>
   );
 }

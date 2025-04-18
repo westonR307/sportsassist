@@ -63,7 +63,12 @@ export function CampMessageReplyDialog({
     try {
       await apiRequest(`/api/camp-messages/${messageId}/replies`, {
         method: "POST",
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          content: data.content,
+          // These are optional flags that the backend might use:
+          replyToAll: true, // All recipients will see this reply
+          recipientId: null, // No specific recipient (reply to all)
+        }),
       });
 
       // Reset form and close dialog
@@ -93,11 +98,11 @@ export function CampMessageReplyDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Reply to Message</DialogTitle>
           <DialogDescription>
-            Replying to: "{messageSubject}"
+            <span className="font-medium">Re: {messageSubject}</span>
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -111,7 +116,7 @@ export function CampMessageReplyDialog({
                   <FormControl>
                     <Textarea
                       placeholder="Type your reply here..."
-                      className="min-h-[120px]"
+                      className="min-h-[150px]"
                       {...field}
                     />
                   </FormControl>

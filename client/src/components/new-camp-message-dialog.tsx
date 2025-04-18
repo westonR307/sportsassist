@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
 
 import {
   Dialog,
@@ -22,8 +23,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
@@ -36,10 +37,10 @@ import {
 } from "@/components/ui/select";
 
 const messageSchema = z.object({
+  campId: z.string().min(1, "Please select a camp"),
   subject: z.string().min(1, "Subject is required"),
   content: z.string().min(1, "Message content is required"),
-  campId: z.string().min(1, "Camp is required"),
-  sentToAll: z.boolean().default(true),
+  sendToAll: z.boolean().default(true),
 });
 
 type MessageFormValues = z.infer<typeof messageSchema>;
@@ -62,6 +63,7 @@ export function NewCampMessageDialog({
   organizationId,
   camps,
 }: NewCampMessageDialogProps) {
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -69,22 +71,33 @@ export function NewCampMessageDialog({
   const form = useForm<MessageFormValues>({
     resolver: zodResolver(messageSchema),
     defaultValues: {
+      campId: "",
       subject: "",
       content: "",
-      campId: "",
-      sentToAll: true,
+      sendToAll: true,
     },
   });
 
   async function onSubmit(data: MessageFormValues) {
     setIsSubmitting(true);
     try {
-      await apiRequest(`/api/camps/${data.campId}/messages`, {
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
+      const campId = parseInt(data.campId);
+      
+      await apiRequest(`/api/camps/${campId}/messages`, {
         method: "POST",
         body: JSON.stringify({
           subject: data.subject,
           content: data.content,
-          sentToAll: data.sentToAll,
+          sendToAll: data.sendToAll,
+          organizationId: organizationId,
+          senderId: user.id,
+          senderName: user.first_name && user.last_name ? 
+            `${user.first_name} ${user.last_name}` : 
+            user.username,
         }),
       });
 
@@ -117,9 +130,9 @@ export function NewCampMessageDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Send New Message</DialogTitle>
+          <DialogTitle>New Camp Message</DialogTitle>
           <DialogDescription>
-            Create a new message to send to camp participants
+            Send a message to camp participants and staff
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -129,14 +142,14 @@ export function NewCampMessageDialog({
               name="campId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Camp</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
+                  <FormLabel>Select Camp</FormLabel>
+                  <Select 
+                    onValueChange={field.onChange} 
                     defaultValue={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select camp" />
+                        <SelectValue placeholder="Select a camp" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -151,6 +164,7 @@ export function NewCampMessageDialog({
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name="subject"
@@ -164,12 +178,13 @@ export function NewCampMessageDialog({
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name="content"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Message Content</FormLabel>
+                  <FormLabel>Message</FormLabel>
                   <FormControl>
                     <Textarea
                       placeholder="Type your message here..."
@@ -181,9 +196,10 @@ export function NewCampMessageDialog({
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
-              name="sentToAll"
+              name="sendToAll"
               render={({ field }) => (
                 <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                   <FormControl>
@@ -195,12 +211,13 @@ export function NewCampMessageDialog({
                   <div className="space-y-1 leading-none">
                     <FormLabel>Send to all participants</FormLabel>
                     <p className="text-sm text-muted-foreground">
-                      If unchecked, you'll be able to select specific recipients after creating the message
+                      If unchecked, you'll be able to select specific recipients after sending
                     </p>
                   </div>
                 </FormItem>
               )}
             />
+
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
