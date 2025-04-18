@@ -2146,22 +2146,8 @@ function CampViewPage(props: { id?: string }) {
       );
     }
   } else {
-    // For camp creators and admins - check if we're coming from a route that already has a layout applied
-    // The issue is that both protected-route.tsx and this component were applying layouts
-    // Protected routes that directly access /camp/ don't have layout applied by ProtectedRoute, but dashboard routes do
-    // We need to check if we're on a route that will have a layout applied by ProtectedRoute
-    
-    // Any route that comes through /dashboard/ will already have a layout from ProtectedRoute
-    // Direct access to /camp/ routes do not have layouts yet
-    const routeAlreadyHasLayout = location.startsWith('/dashboard/');
-    
-    if (routeAlreadyHasLayout) {
-      // For routes that already have a layout, just render content
-      return renderContent();
-    } else {
-      // For direct access or non-dashboard routes, apply the CreatorLayout
-      return <CreatorLayout title={camp?.name || "Camp Details"}>{renderContent()}</CreatorLayout>;
-    }
+    // For camp creators and admins, use the CreatorLayout with nav for consistency
+    return <CreatorLayout title={camp?.name || "Camp Details"}>{renderContent()}</CreatorLayout>;
   }
 }
 

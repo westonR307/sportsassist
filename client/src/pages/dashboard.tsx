@@ -57,24 +57,17 @@ interface Organization {
   secondaryColor?: string | null;
   buttonColor?: string | null;
   createdAt?: Date;
-  // Support for snake_case properties from API
-  primary_color?: string | null;
-  secondary_color?: string | null;
-  button_color?: string | null;
 }
 
 // Helper function to get organization colors for a camp
 const getOrganizationColors = (organizations: Organization[] | undefined, organizationId: number | undefined) => {
   const orgs = Array.isArray(organizations) ? organizations : [];
   const organization = orgs.find(org => org?.id === organizationId);
-  
-  // Handle both camelCase and snake_case property versions for maximum compatibility
-  // This ensures we properly handle API response format differences
   return {
     organization,
     colors: {
-      primaryColor: organization?.primaryColor || organization?.primary_color || '#BA0C2F',
-      secondaryColor: organization?.secondaryColor || organization?.secondary_color || '#cc0000',
+      primaryColor: organization?.primaryColor || '#BA0C2F',
+      secondaryColor: organization?.secondaryColor || '#cc0000',
     }
   };
 };
@@ -535,8 +528,6 @@ function CampsDashboard() {
             const primaryColor = orgColors.colors.primaryColor;
             const secondaryColor = orgColors.colors.secondaryColor;
             
-            console.log(`Camp ${camp.id} org colors:`, { primaryColor, secondaryColor, orgId: camp.organizationId });
-            
             // Calculate date ranges and format for better display
             const now = new Date();
             const startDate = new Date(camp.startDate);
@@ -578,7 +569,7 @@ function CampsDashboard() {
                 <div 
                   className="h-6 w-full flex items-center justify-end px-2" 
                   style={{ 
-                    backgroundColor: primaryColor || '#BA0C2F',
+                    backgroundColor: primaryColor,
                     color: "#ffffff"
                   }}
                 >
@@ -649,7 +640,7 @@ function CampsDashboard() {
                 <div 
                   className="h-6 w-full flex items-center justify-end px-2" 
                   style={{ 
-                    backgroundColor: primaryColor || '#BA0C2F',
+                    backgroundColor: primaryColor,
                     color: "#ffffff"
                   }}
                 >
