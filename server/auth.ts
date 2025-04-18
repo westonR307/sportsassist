@@ -296,8 +296,8 @@ export function setupAuth(app: Express) {
       const userData = {
         username, // Use generated or provided username
         email,
-        password: "", // Set empty password
-        passwordHash: hashedPassword, // Store the hash in passwordHash field
+        password: hashedPassword, // Pass the hashed password
+        passwordHash: hashedPassword, // Also store in passwordHash for backward compatibility
         role: role || "parent",
         ...otherFields,
         ...(organizationId ? { organizationId } : {})

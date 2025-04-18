@@ -409,14 +409,20 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(insertUser: InsertUser & { organizationId?: number }): Promise<User> {
+  async createUser(insertUser: InsertUser & { organizationId?: number, passwordHash?: string }): Promise<User> {
     // Ensure we're using the hashed password format consistently
     console.log("Full insert user data:", insertUser);
     
+    // Make sure we have a password hash
+    const passwordHash = insertUser.passwordHash || insertUser.password || '';
+    if (!passwordHash) {
+      throw new Error("Password hash is required");
+    }
+    
     const [user] = await db.insert(users).values({
-      username: insertUser.username.toLowerCase(),
-      password: insertUser.password, // This should already be hashed when passed in
-      passwordHash: insertUser.password, // Match the password field for backward compatibility
+      username: insertUser.username?.toLowerCase() || '',
+      password: passwordHash, // This should already be hashed when passed in
+      passwordHash: passwordHash, // Match the password field for backward compatibility
       email: insertUser.email,
       role: insertUser.role,
       organizationId: insertUser.organizationId,
