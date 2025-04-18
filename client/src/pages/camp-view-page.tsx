@@ -4,6 +4,7 @@ import { DashboardLayout } from "./dashboard";
 import { CreatorLayout } from "@/components/creator-layout";
 import { ParentLayout } from "@/components/parent-layout";
 import { SimpleLayout } from "@/components/simple-layout";
+import { AppLayout } from "@/components/app-layout";
 import { BackButton } from "@/components/back-button";
 import { ShareCampDialog } from "@/components/share-camp-dialog";
 import { CampMetaFieldsDisplay } from "@/components/camp-meta-fields-display";
@@ -898,17 +899,9 @@ function CampViewPage(props: { id?: string }) {
     }
   });
 
-  // Determine which layout to use based on user role and permissions
-  const getLayout = () => {
-    if (isParent) {
-      return ParentLayout;
-    } else if (hasPermission) {
-      return CreatorLayout;
-    }
-    return SimpleLayout;
-  };
-
-  const Layout = getLayout();
+  // We will now use AppLayout consistently for all camp views
+  // This ensures we have only one menu being shown
+  const Layout = AppLayout;
 
   const renderContent = () => {
     if (isLoading) {
@@ -2140,7 +2133,7 @@ function CampViewPage(props: { id?: string }) {
 
   // Simple wrapper for the content
   return (
-    <Layout>
+    <Layout showBackButton={true}>
       <div className="p-4 md:p-6">
         {renderContent()}
       </div>
