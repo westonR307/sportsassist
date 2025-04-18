@@ -2125,19 +2125,12 @@ function CampViewPage(props: { id?: string }) {
     );
   };
 
-  // Determine the appropriate rendering approach based on user role and route
-  // Most routes should be coming through Router in App.tsx with the appropriate layout
-
-  // Use simple wrapper for parent/public views, CreatorLayout for admin views
-  if (isParent || !user) {
-    return (
-      <div className="p-4 md:p-6">
-        {renderContent()}
-      </div>
-    );
-  } else {
-    return <CreatorLayout title={camp?.name || "Camp Details"}>{renderContent()}</CreatorLayout>;
-  }
+  // Simple wrapper for the content
+  return (
+    <div className="p-4 md:p-6">
+      {renderContent()}
+    </div>
+  );
 }
 
 export default CampViewPage;
