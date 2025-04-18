@@ -898,13 +898,12 @@ function CampViewPage(props: { id?: string }) {
     }
   });
 
-  // Determine which layout to use
+  // Determine which layout to use based on user role and permissions
   const getLayout = () => {
-    if (hasPermission) {
-      return CreatorLayout;
-    }
     if (isParent) {
       return ParentLayout;
+    } else if (hasPermission) {
+      return CreatorLayout;
     }
     return SimpleLayout;
   };
