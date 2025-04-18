@@ -290,6 +290,18 @@ export async function registerRoutes(app: Express) {
   
   // Register custom field routes
   registerCustomFieldRoutes(app, storage);
+  
+  // Add all organizations endpoint with caching
+  app.get("/api/organizations", async (req, res) => {
+    try {
+      console.log("Fetching all organizations (with caching)");
+      const organizations = await getCachedOrganizations();
+      res.json(organizations);
+    } catch (error) {
+      console.error("Error fetching all organizations:", error);
+      res.status(500).json({ message: "Failed to fetch organizations" });
+    }
+  });
 
   // Serve uploaded files from the uploads directory
   app.use('/uploads', (req, res, next) => {
@@ -801,7 +813,7 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Get organization details
+  // Get organization details with caching
   app.get("/api/organizations/:orgId", async (req, res) => {
     try {
       // Get authenticated user's organization ID
@@ -814,7 +826,9 @@ export async function registerRoutes(app: Express) {
         throw new HttpError(403, "Not authorized to access this organization");
       }
 
-      const organization = await storage.getOrganization(requestedOrgId);
+      // Use the cached organization data
+      console.log(`Fetching organization data (with caching) for ID: ${requestedOrgId}`);
+      const organization = await getCachedOrganization(requestedOrgId);
       
       if (!organization) {
         throw new HttpError(404, "Organization not found");
@@ -887,6 +901,10 @@ export async function registerRoutes(app: Express) {
       
       // Update the organization with all the provided fields, using the right method
       const updatedOrganization = await storage.updateOrganizationProfile(orgId, updateObj);
+      
+      // Invalidate the organization cache after update
+      await invalidateOrganizationCaches(orgId);
+      console.log(`Invalidated cache for organization ID: ${orgId} after update`);
       
       res.json(updatedOrganization);
     } catch (error) {
