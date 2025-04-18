@@ -247,11 +247,20 @@ export function setupAuth(app: Express) {
       if (role === "camp_creator" && organizationName) {
         try {
           console.log(`Creating organization: ${organizationName}`);
-          const organization = await storage.createOrganization({
-            name: organizationName,
-            description: organizationDescription || '',
-            // Note: Contact email is stored in the user's email field
-          });
+          
+          // Import monitorQuery function directly here since we don't have it from a module
+          // in this file
+          const { monitorQuery } = await import('./db');
+          
+          const organization = await monitorQuery(
+            "POST /api/register - createOrganization",
+            () => storage.createOrganization({
+              name: organizationName,
+              description: organizationDescription || '',
+              // Note: Contact email is stored in the user's email field
+            }),
+            400 // Higher threshold for organization creation as it's a complex operation
+          );
           
           console.log("Organization created successfully:", organization);
           organizationId = organization.id;
@@ -280,7 +289,15 @@ export function setupAuth(app: Express) {
         organizationId
       });
       
-      const user = await storage.createUser(userData);
+      // Import monitorQuery if we haven't already
+      const { monitorQuery } = 'monitorQuery' in this ? this : await import('./db');
+
+      // Use monitor query for user creation as well
+      const user = await monitorQuery(
+        "POST /api/register - createUser",
+        () => storage.createUser(userData),
+        300 // 300ms threshold for user creation
+      );
       console.log("User created successfully:", user);
       
       // Log the user in
