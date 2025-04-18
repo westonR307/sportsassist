@@ -898,9 +898,9 @@ function CampViewPage(props: { id?: string }) {
     }
   });
 
-  // We will now use AppLayout consistently for all camp views
-  // This ensures we have only one menu being shown
-  const Layout = AppLayout;
+  // We will now use DashboardLayout consistently for all camp views
+  // This ensures we have only one menu being shown - the same one as on the dashboard
+  const Layout = DashboardLayout;
 
   const renderContent = () => {
     if (isLoading) {
