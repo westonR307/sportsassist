@@ -2132,7 +2132,7 @@ function CampViewPage(props: { id?: string }) {
 
   // Simple wrapper for the content
   return (
-    <Layout showBackButton={true}>
+    <Layout>
       <div className="p-4 md:p-6">
         {renderContent()}
       </div>
