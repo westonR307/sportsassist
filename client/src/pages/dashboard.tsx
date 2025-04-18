@@ -567,19 +567,23 @@ function CampsDashboard() {
             const frontCard = (
               <Card className="h-full border-0 shadow-none">
                 <div 
-                  className="h-2 w-full" 
-                  style={{ backgroundColor: primaryColor }}
-                />
+                  className="h-6 w-full flex items-center justify-end px-2" 
+                  style={{ 
+                    backgroundColor: primaryColor,
+                    color: "#ffffff"
+                  }}
+                >
+                  {canManageCamp && (
+                    <Badge className="h-4 text-[10px] bg-white/20 text-white hover:bg-white/30 border-none">
+                      Manager
+                    </Badge>
+                  )}
+                </div>
                 
                 <CardHeader className="p-3 pb-1">
                   <div className="space-y-1">
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-base truncate">{camp.name}</CardTitle>
-                      {canManageCamp ? (
-                        <Badge className="h-5 text-xs bg-green-100 text-green-800 hover:bg-green-200">
-                          Manager
-                        </Badge>
-                      ) : null}
                     </div>
                     <CardDescription className="line-clamp-1 text-xs">
                       {camp.description}
@@ -634,20 +638,22 @@ function CampsDashboard() {
             const backCard = (
               <Card className="h-full border-0 shadow-none overflow-y-auto">
                 <div 
-                  className="h-2 w-full" 
-                  style={{ backgroundColor: primaryColor }}
-                />
+                  className="h-6 w-full flex items-center justify-end px-2" 
+                  style={{ 
+                    backgroundColor: primaryColor,
+                    color: "#ffffff"
+                  }}
+                >
+                  <Badge 
+                    variant="secondary"
+                    className="capitalize h-4 text-[10px] bg-white/20 text-white hover:bg-white/30 border-none"
+                  >
+                    {camp.visibility}
+                  </Badge>
+                </div>
                 
                 <CardHeader className="p-3 pb-1">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-base">{camp.name}</CardTitle>
-                    <Badge 
-                      variant={camp.visibility === 'public' ? 'default' : 'outline'}
-                      className="capitalize h-5 text-xs"
-                    >
-                      {camp.visibility}
-                    </Badge>
-                  </div>
+                  <CardTitle className="text-base">{camp.name}</CardTitle>
                 </CardHeader>
                 
                 <CardContent className="p-3 text-xs space-y-3">
