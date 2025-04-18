@@ -4,7 +4,6 @@ import { DashboardLayout } from "./dashboard";
 import { CreatorLayout } from "@/components/creator-layout";
 import { ParentLayout } from "@/components/parent-layout";
 import { SimpleLayout } from "@/components/simple-layout";
-import { AppLayout } from "@/components/app-layout";
 import { BackButton } from "@/components/back-button";
 import { ShareCampDialog } from "@/components/share-camp-dialog";
 import { CampMetaFieldsDisplay } from "@/components/camp-meta-fields-display";
