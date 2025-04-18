@@ -129,14 +129,21 @@ function AuthPage() {
       return;
     }
 
-    // Create a username from the email if not provided
-    const username = data.email.split('@')[0];
+    // Create a username from the email with a random suffix to ensure uniqueness
+    const usernameBase = data.email.split('@')[0];
+    const randomSuffix = Math.floor(Math.random() * 10000);
+    const username = `${usernameBase}${randomSuffix}`;
 
-    // Combine data with derived username
+    // Combine data with derived username - ensure it's a string
     const fullData = {
       ...data,
-      username
+      username: username // Explicitly set as string
     };
+
+    console.log("Submitting registration data:", {
+      ...fullData,
+      password: "[REDACTED]"
+    });
 
     registerMutation.mutate(fullData);
   };

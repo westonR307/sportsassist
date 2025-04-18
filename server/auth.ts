@@ -141,6 +141,19 @@ export function setupAuth(app: Express) {
 
   app.post("/api/login", (req, res, next) => {
     console.log("Login request received for:", req.body.email);
+    
+    // Validate that email is provided
+    if (!req.body.email || typeof req.body.email !== 'string') {
+      console.log("Login failed: Email is required and must be a string");
+      return res.status(400).json({ message: "Email is required" });
+    }
+    
+    // Validate that password is provided
+    if (!req.body.password || typeof req.body.password !== 'string') {
+      console.log("Login failed: Password is required and must be a string");
+      return res.status(400).json({ message: "Password is required" });
+    }
+    
     passport.authenticate("local", (err, user, info) => {
       if (err) {
         console.error("Login error:", err);
@@ -239,7 +252,14 @@ export function setupAuth(app: Express) {
       const hashedPassword = await hashPassword(password);
       
       // Generate a username if not provided
-      const username = req.body.username || (email.split('@')[0] + Math.floor(Math.random() * 10000));
+      // Make sure the username is a string type
+      let username: string;
+      if (req.body.username && typeof req.body.username === 'string') {
+        username = req.body.username;
+      } else {
+        username = email.split('@')[0] + Math.floor(Math.random() * 10000);
+      }
+      console.log(`Generated username: ${username}`);
       
       let organizationId: number | undefined = undefined;
       
