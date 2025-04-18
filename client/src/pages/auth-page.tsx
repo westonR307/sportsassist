@@ -130,14 +130,24 @@ function AuthPage() {
     }
 
     // Create a username from the email with a random suffix to ensure uniqueness
-    const usernameBase = data.email.split('@')[0];
-    const randomSuffix = Math.floor(Math.random() * 10000);
-    const username = `${usernameBase}${randomSuffix}`;
+    const usernameBase = String(data.email.split('@')[0]);
+    const randomSuffix = String(Math.floor(Math.random() * 10000));
+    const username = usernameBase + randomSuffix; // Ensure string concatenation not addition
 
-    // Combine data with derived username - ensure it's a string
+    // Extra validation to ensure username is a string
+    if (typeof username !== 'string') {
+      console.error("Username not generated as a string:", username);
+      registerForm.setError('email', {
+        type: 'manual',
+        message: 'Error generating username from email. Please try again.'
+      });
+      return;
+    }
+
+    // Combine data with derived username
     const fullData = {
       ...data,
-      username: username // Explicitly set as string
+      username: username.toLowerCase() // Ensure lowercase string
     };
 
     console.log("Submitting registration data:", {
