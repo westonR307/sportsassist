@@ -3221,17 +3221,23 @@ export async function registerRoutes(app: Express) {
   
   // Get all camp messages for an organization
   app.get("/api/organizations/camp-messages", async (req, res) => {
+    console.log("API endpoint /api/organizations/camp-messages was called");
     if (!req.user) {
+      console.log("Unauthorized - user not authenticated");
       return res.status(401).json({ message: "Unauthorized" });
     }
     
     const organizationId = req.user.organizationId;
+    console.log(`User organizationId: ${organizationId}`);
     if (!organizationId) {
+      console.log("User is not associated with an organization");
       return res.status(403).json({ message: "Not associated with an organization" });
     }
     
     try {
+      console.log(`Fetching camp messages for organization ${organizationId}`);
       const messages = await storage.getOrganizationCampMessages(organizationId);
+      console.log(`Retrieved ${messages.length} messages`);
       res.json(messages);
     } catch (error) {
       console.error("Error fetching organization camp messages:", error);
