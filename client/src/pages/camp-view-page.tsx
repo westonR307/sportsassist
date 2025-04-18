@@ -2146,8 +2146,16 @@ function CampViewPage(props: { id?: string }) {
       );
     }
   } else {
-    // For camp creators and admins, use the CreatorLayout with nav for consistency
-    return <CreatorLayout title={camp?.name || "Camp Details"}>{renderContent()}</CreatorLayout>;
+    // For camp creators and admins - check if we're coming from a route that already has a layout applied
+    const isRouteWithLayout = location.includes('/dashboard/camps/');
+    
+    if (isRouteWithLayout) {
+      // If coming from the dashboard, the route already has CreatorLayout applied via protected-route.tsx
+      return renderContent();
+    } else {
+      // For direct access or other routes, apply the CreatorLayout
+      return <CreatorLayout title={camp?.name || "Camp Details"}>{renderContent()}</CreatorLayout>;
+    }
   }
 }
 
