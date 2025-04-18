@@ -147,22 +147,22 @@ function Router() {
       <ProtectedRoute 
         path="/camp/:id" 
         component={CampViewPage}
-        showNavigation={user?.role !== "parent"} // Only show AppLayout navigation if not a parent
+        showNavigation={false} // Don't show any navigation, let camp-view-page control the layout
       />
       <ProtectedRoute 
         path="/camp/slug/:id" 
         component={CampViewPage}
-        showNavigation={user?.role !== "parent"} // Only show AppLayout navigation if not a parent
+        showNavigation={false} // Don't show any navigation, let camp-view-page control the layout
       />
       <ProtectedRoute 
         path="/register/camp/:id" 
         component={CampViewPage}
-        showNavigation={user?.role !== "parent"} // Only show AppLayout navigation if not a parent
+        showNavigation={false} // Don't show any navigation, let camp-view-page control the layout
       />
       <ProtectedRoute 
         path="/register/camp/slug/:id" 
         component={CampViewPage}
-        showNavigation={user?.role !== "parent"} // Only show AppLayout navigation if not a parent
+        showNavigation={false} // Don't show any navigation, let camp-view-page control the layout
       />
       <ProtectedRoute 
         path="/dashboard/reports" 
