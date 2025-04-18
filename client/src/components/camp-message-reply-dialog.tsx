@@ -28,6 +28,8 @@ import { Loader2 } from "lucide-react";
 
 const replySchema = z.object({
   content: z.string().min(1, "Reply content is required"),
+  replyToAll: z.boolean().default(false),
+  specificRecipientId: z.number().optional(),
 });
 
 type ReplyFormValues = z.infer<typeof replySchema>;
@@ -55,6 +57,8 @@ export function CampMessageReplyDialog({
     resolver: zodResolver(replySchema),
     defaultValues: {
       content: "",
+      replyToAll: false,
+      specificRecipientId: undefined
     },
   });
 
@@ -65,9 +69,8 @@ export function CampMessageReplyDialog({
       
       const requestBody = {
         content: data.content,
-        // These are optional flags that the backend might use:
-        replyToAll: true, // All recipients will see this reply
-        recipientId: null, // No specific recipient (reply to all)
+        replyToAll: data.replyToAll,
+        recipientId: data.replyToAll ? null : data.specificRecipientId // Only set specific recipient if not replying to all
       };
       
       console.log("Reply request body:", requestBody);
@@ -140,6 +143,36 @@ export function CampMessageReplyDialog({
                 </FormItem>
               )}
             />
+            
+            <FormField
+              control={form.control}
+              name="replyToAll"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Reply to all participants</FormLabel>
+                    {field.value && (
+                      <p className="text-sm text-amber-600 mt-1">
+                        All recipients of the original message will receive this reply. 
+                        Uncheck this to reply only to the sender.
+                      </p>
+                    )}
+                    {!field.value && (
+                      <p className="text-sm text-muted-foreground">
+                        Only the sender will receive this reply. Check this to send to all recipients.
+                      </p>
+                    )}
+                  </div>
+                </FormItem>
+              )}
+            />
+            
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
