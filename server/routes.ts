@@ -830,9 +830,13 @@ export async function registerRoutes(app: Express) {
         throw new HttpError(403, "Not authorized to access this organization");
       }
 
-      // Use the cached organization data
+      // Use the cached organization data with query monitoring
       console.log(`Fetching organization data (with caching) for ID: ${requestedOrgId}`);
-      const organization = await getCachedOrganization(requestedOrgId);
+      const organization = await monitorQuery(
+        `GET /api/organizations/${requestedOrgId} - getCachedOrganization`,
+        () => getCachedOrganization(requestedOrgId),
+        250 // 250ms threshold for this endpoint, as it's frequently accessed
+      );
       
       if (!organization) {
         throw new HttpError(404, "Organization not found");
@@ -1345,8 +1349,12 @@ export async function registerRoutes(app: Express) {
         console.log("Unauthenticated user - showing all public camps");
       }
       
-      // Get camps from storage
-      let camps = await storage.listCamps(organizationId, includeDeleted);
+      // Get camps from storage with query monitoring
+      let camps = await monitorQuery(
+        `GET /api/camps - listCamps (${organizationId ? `orgId=${organizationId}` : 'all'})`,
+        () => storage.listCamps(organizationId, includeDeleted),
+        400 // This is a more expensive query that retrieves many records, so use higher threshold
+      );
       
       // Apply additional filters based on query parameters
       if (status) {
@@ -1455,8 +1463,12 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ message: "Invalid camp ID format" });
       }
       
-      // Get the camp with its sports and schedule information
-      const camp = await storage.getCamp(campId);
+      // Get the camp with its sports and schedule information with query monitoring
+      const camp = await monitorQuery(
+        `GET /api/camps/${campId} - getCamp`,
+        () => storage.getCamp(campId),
+        300 // 300ms threshold for camp detail retrieval
+      );
       
       if (!camp) {
         console.log(`Camp not found with ID: ${campId}`);
@@ -2614,8 +2626,12 @@ export async function registerRoutes(app: Express) {
     try {
       const campId = parseInt(req.params.id);
       
-      // First check if the camp exists
-      const camp = await storage.getCamp(campId);
+      // First check if the camp exists with query monitoring
+      const camp = await monitorQuery(
+        `GET /api/camps/${campId}/registrations - getCamp`,
+        () => storage.getCamp(campId),
+        200 // 200ms threshold for retrieving camp data
+      );
       if (!camp) {
         return res.status(404).json({ message: "Camp not found" });
       }
@@ -2627,8 +2643,12 @@ export async function registerRoutes(app: Express) {
                           ['camp_creator', 'manager', 'coach', 'volunteer'].includes(req.user.role);
         
         if (isOrgStaff) {
-          // Organization staff can see all registrations with complete athlete info
-          const registrations = await storage.getRegistrationsWithChildInfo(campId);
+          // Organization staff can see all registrations with complete athlete info - this is a data-intensive operation
+          const registrations = await monitorQuery(
+            `GET /api/camps/${campId}/registrations - getRegistrationsWithChildInfo`,
+            () => storage.getRegistrationsWithChildInfo(campId),
+            350 // 350ms threshold as this is a complex join operation
+          );
           
           // Fetch and attach custom field responses for each registration
           const registrationsWithCustomFields = await Promise.all(
@@ -3847,8 +3867,12 @@ export async function registerRoutes(app: Express) {
     const campId = parseInt(req.params.id);
     
     try {
-      // Verify camp exists
-      const camp = await storage.getCamp(campId);
+      // Verify camp exists with query monitoring
+      const camp = await monitorQuery(
+        `POST /api/camps/${campId}/register - getCamp`,
+        () => storage.getCamp(campId),
+        200 // 200ms threshold for camp retrieval during registration
+      );
       if (!camp) {
         return res.status(404).json({ message: "Camp not found" });
       }
@@ -3872,8 +3896,12 @@ export async function registerRoutes(app: Express) {
         });
       }
       
-      // Check if camp is full and waitlist is enabled
-      const registrations = await storage.getRegistrationsByCamp(campId);
+      // Check if camp is full and waitlist is enabled with query monitoring
+      const registrations = await monitorQuery(
+        `POST /api/camps/${campId}/register - getRegistrationsByCamp`,
+        () => storage.getRegistrationsByCamp(campId),
+        200 // 200ms threshold for getting registrations
+      );
       const isWaitlist = registrations.length >= camp.capacity;
       
       if (isWaitlist && !camp.waitlistEnabled) {
@@ -3905,19 +3933,23 @@ export async function registerRoutes(app: Express) {
         }
       }
       
-      // Create a skeleton registration
-      const registration = await storage.createRegistration({
-        campId,
-        parentId: req.user.id,
-        childId: childId || null,
-        status: isWaitlist ? "waitlisted" : "pending",
-        registrationDate: new Date(),
-        paymentStatus: "unpaid",
-        paymentAmount: camp.price,
-        notes: req.body.notes || "",
-        emergencyContact: req.body.emergencyContact || "",
-        emergencyPhone: req.body.emergencyPhone || ""
-      });
+      // Create a skeleton registration with query monitoring
+      const registration = await monitorQuery(
+        `POST /api/camps/${campId}/register - createRegistration`,
+        () => storage.createRegistration({
+          campId,
+          parentId: req.user.id,
+          childId: childId || null,
+          status: isWaitlist ? "waitlisted" : "pending",
+          registrationDate: new Date(),
+          paymentStatus: "unpaid",
+          paymentAmount: camp.price,
+          notes: req.body.notes || "",
+          emergencyContact: req.body.emergencyContact || "",
+          emergencyPhone: req.body.emergencyPhone || ""
+        }),
+        300 // 300ms threshold for creating registration - this is a more complex operation
+      );
       
       // Process custom field responses if they exist
       if (customFieldResponses && Object.keys(customFieldResponses).length > 0) {
