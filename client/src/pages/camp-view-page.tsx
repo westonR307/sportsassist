@@ -2130,13 +2130,11 @@ function CampViewPage(props: { id?: string }) {
     );
   };
 
-  // Simple wrapper for the content
+  // Return the content directly without any layout - the layout will be provided by ProtectedRoute
   return (
-    <Layout>
-      <div className="p-4 md:p-6">
-        {renderContent()}
-      </div>
-    </Layout>
+    <div className="p-4 md:p-6">
+      {renderContent()}
+    </div>
   );
 }
 

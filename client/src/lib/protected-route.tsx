@@ -33,6 +33,11 @@ function getPageTitleFromPath(path: string): string {
     return 'Document Editor';
   }
   
+  // Camp view pages
+  if (path === '/dashboard/camps/:id' || path === '/dashboard/camps/slug/:id') {
+    return 'Camp Details';
+  }
+  
   // Default title if no match
   return 'Dashboard';
 }
@@ -125,6 +130,8 @@ export function ProtectedRoute({
           // Check if this is a dashboard-type route to use CreatorLayout
           const isCreatorDashboardRoute = path === '/dashboard' || 
                                         path === '/dashboard/camps' || 
+                                        path === '/dashboard/camps/:id' ||
+                                        path === '/dashboard/camps/slug/:id' ||
                                         path === '/dashboard/reports' ||
                                         path === '/dashboard/team' ||
                                         path === '/dashboard/messages' ||
