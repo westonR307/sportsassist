@@ -44,16 +44,18 @@ const registerSchema = insertUserSchema.pick({
   role: true
 }).extend({
   password: z.string().min(8, "Password must be at least 8 characters"),
-  organizationName: z.string().min(1, "Organization name is required for camp creators").optional(),
+  organizationName: z.string().min(1, "Organization name is required").optional(),
   organizationDescription: z.string().optional(),
-}).refine((data) => {
+}).superRefine((data, ctx) => {
   if (data.role === 'camp_creator') {
-    return !!data.organizationName && data.organizationName.trim().length > 0;
+    if (!data.organizationName || data.organizationName.trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Organization name is required for camp creators",
+        path: ["organizationName"]
+      });
+    }
   }
-  return true;
-}, {
-  message: "Organization name is required for camp creators",
-  path: ["organizationName"]
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
