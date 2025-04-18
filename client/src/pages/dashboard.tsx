@@ -578,7 +578,7 @@ function CampsDashboard() {
                 <div 
                   className="h-6 w-full flex items-center justify-end px-2" 
                   style={{ 
-                    backgroundColor: primaryColor,
+                    backgroundColor: primaryColor || '#BA0C2F',
                     color: "#ffffff"
                   }}
                 >
@@ -649,7 +649,7 @@ function CampsDashboard() {
                 <div 
                   className="h-6 w-full flex items-center justify-end px-2" 
                   style={{ 
-                    backgroundColor: primaryColor,
+                    backgroundColor: primaryColor || '#BA0C2F',
                     color: "#ffffff"
                   }}
                 >
