@@ -2,7 +2,7 @@ import { publicRoles } from "@shared/schema";
 import express, { Request, Response, NextFunction } from "express";
 import type { Express } from "express";
 import { createServer } from "http";
-import { db, pool } from "./db";
+import { db, pool, monitorQuery, isSlowQuery } from "./db";
 import { eq, inArray, gt, and, gte, lte, isNull, or, sql, desc } from "drizzle-orm";
 import fetch from "node-fetch";
 import { campStaff } from "@shared/tables";
@@ -295,7 +295,11 @@ export async function registerRoutes(app: Express) {
   app.get("/api/organizations", async (req, res) => {
     try {
       console.log("Fetching all organizations (with caching)");
-      const organizations = await getCachedOrganizations();
+      const organizations = await monitorQuery(
+        "GET /api/organizations - getCachedOrganizations",
+        () => getCachedOrganizations(),
+        300 // 300ms threshold for this endpoint
+      );
       res.json(organizations);
     } catch (error) {
       console.error("Error fetching all organizations:", error);
