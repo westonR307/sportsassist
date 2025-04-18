@@ -55,7 +55,7 @@ function AuthPage() {
   const { user, isLoading, loginMutation, registerMutation } = useAuth();
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<string>("login");
-  
+
   // Initialize forms before any conditional returns
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -75,7 +75,7 @@ function AuthPage() {
       organizationDescription: "",
     },
   });
-  
+
   // Handle redirection in useEffect to avoid state updates during render
   useEffect(() => {
     if (user) {
@@ -90,7 +90,7 @@ function AuthPage() {
       }
     }
   }, [user, setLocation]);
-  
+
   // Show loading state while checking authentication
   if (isLoading) {
     return (
@@ -99,7 +99,7 @@ function AuthPage() {
       </div>
     );
   }
-  
+
   // Return null immediately if user is authenticated - redirects handled above
   if (user) {
     return null;
@@ -118,16 +118,16 @@ function AuthPage() {
       });
       return;
     }
-    
+
     // Create a username from the email if not provided
     const username = data.email.split('@')[0];
-    
+
     // Combine data with derived username
     const fullData = {
       ...data,
       username
     };
-    
+
     registerMutation.mutate(fullData);
   };
 
@@ -137,13 +137,13 @@ function AuthPage() {
       <div className="flex items-center justify-center w-full p-6 md:w-1/2">
         <div className="w-full max-w-md">
           <h1 className="mb-6 text-3xl font-bold text-center">SportsAssist</h1>
-          
+
           <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Register</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="login">
               <Card>
                 <CardHeader>
@@ -211,7 +211,7 @@ function AuthPage() {
                 </CardFooter>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="register">
               <Card>
                 <CardHeader>
@@ -301,7 +301,7 @@ function AuthPage() {
                           </FormItem>
                         )}
                       />
-                      
+
                       {/* Organization fields are always rendered but conditionally displayed */}
                       <div className={`space-y-4 border p-4 rounded-md border-primary/20 bg-primary/5 ${registerForm.watch("role") === "camp_creator" ? "block" : "hidden"}`}>
                         <h3 className="text-md font-medium">Organization Information</h3>
@@ -318,7 +318,7 @@ function AuthPage() {
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={registerForm.control}
                           name="organizationDescription"
@@ -337,7 +337,7 @@ function AuthPage() {
                           )}
                         />
                       </div>
-                      
+
                       <Button 
                         type="submit" 
                         className="w-full" 
@@ -371,7 +371,7 @@ function AuthPage() {
           </Tabs>
         </div>
       </div>
-      
+
       {/* Right side: Hero section */}
       <div className="hidden w-1/2 bg-primary md:block">
         <div className="flex flex-col items-center justify-center h-full p-12 text-primary-foreground">
