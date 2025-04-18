@@ -57,6 +57,10 @@ interface Organization {
   secondaryColor?: string | null;
   buttonColor?: string | null;
   createdAt?: Date;
+  // Support for snake_case properties from API
+  primary_color?: string | null;
+  secondary_color?: string | null;
+  button_color?: string | null;
 }
 
 // Helper function to get organization colors for a camp

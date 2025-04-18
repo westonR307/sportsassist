@@ -138,11 +138,13 @@ function Router() {
         path="/dashboard/camps/:id" 
         component={CampViewPage}
         requiredRoles={["camp_creator" as const, "platform_admin" as const]} 
+        // Remove layout from the component since it will be handled by ProtectedRoute
       />
       <ProtectedRoute 
         path="/dashboard/camps/slug/:id" 
         component={CampViewPage}
         requiredRoles={["camp_creator" as const, "platform_admin" as const]} 
+        // Remove layout from the component since it will be handled by ProtectedRoute
       />
       <ProtectedRoute 
         path="/camp/:id" 
