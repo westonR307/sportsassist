@@ -1,45 +1,51 @@
+
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
 import * as schema from "@shared/schema";
 import * as tables from "@shared/tables";
 
-// Configure Neon with websocket constructor
+// Configure WebSocket for Neon
 neonConfig.webSocketConstructor = ws;
-// Add error handling to avoid crash on websocket errors
+
+// More robust WebSocket configuration
 neonConfig.wsRetryStartDelayMs = 100; // Start retry delay in milliseconds
 neonConfig.wsRetryBackoffFactor = 1.5; // Exponential backoff factor
+neonConfig.wsRetryMaxDelayMs = 5000; // Maximum delay between retries
 neonConfig.wsMaxRetries = 5; // Maximum number of retries
 
 if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
+  throw new Error("DATABASE_URL must be set. Did you forget to provision a database?");
 }
 
-// Safely handle connection errors
-const handlePoolError = (err: Error) => {
-  console.error("Database pool error:", err.message);
-  
-  // Don't exit the process - allow reconnection to happen
-  console.info("Attempting to recover from database error...");
+// Create a pool with better error handling and connection management
+const poolConfig = {
+  connectionString: process.env.DATABASE_URL,
+  max: 20, // Connection pool size
+  idleTimeoutMillis: 30000, // Close idle connections after 30 seconds
+  connectionTimeoutMillis: 5000, // Connection timeout
+  maxUses: 7500, // Maximum number of times to use a connection before releasing it
+  keepAlive: true, // Keep connections alive
 };
 
-// Create a more resilient pool configuration
-export const pool = new Pool({ 
-  connectionString: process.env.DATABASE_URL,
-  max: 20, // Increased from default 10 connections for high traffic
-  idleTimeoutMillis: 30000, // Connection idle timeout (30 seconds)
-  connectionTimeoutMillis: 3000, // Connection acquisition timeout (3 seconds)
-  allowExitOnIdle: false, // Don't exit on idle
+// Create the connection pool
+export const pool = new Pool(poolConfig);
+
+// Add error handler to the pool
+pool.on('error', (err: Error) => {
+  console.error('Unexpected database pool error:', err);
+  // Don't exit the process - let the connection pool handle reconnection
 });
 
-// Register the error handler
-pool.on('error', handlePoolError);
+// Add connection error handler
+pool.on('connect', (client) => {
+  client.on('error', (err: Error) => {
+    console.error('Database client error:', err);
+  });
+});
 
-// Create a drizzle instance with merged schemas
-// Combine schema and tables into a single schema object
+// Create drizzle instance with merged schemas
 const mergedSchema = { ...schema, ...tables };
 
-// Create the db instance with the merged schema
+// Export database instance
 export const db = drizzle(pool, { schema: mergedSchema });
