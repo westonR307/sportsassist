@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { DashboardLayout } from "./dashboard";
 import { CreatorLayout } from "@/components/creator-layout";
-import { ParentSidebar } from "@/components/parent-sidebar";
+import { ParentLayout } from "@/components/parent-layout";
+import { SimpleLayout } from "@/components/simple-layout";
 import { BackButton } from "@/components/back-button";
 import { ShareCampDialog } from "@/components/share-camp-dialog";
 import { CampMetaFieldsDisplay } from "@/components/camp-meta-fields-display";
@@ -896,6 +897,19 @@ function CampViewPage(props: { id?: string }) {
       });
     }
   });
+
+  // Determine which layout to use
+  const getLayout = () => {
+    if (hasPermission) {
+      return CreatorLayout;
+    }
+    if (isParent) {
+      return ParentLayout;
+    }
+    return SimpleLayout;
+  };
+
+  const Layout = getLayout();
 
   const renderContent = () => {
     if (isLoading) {
@@ -2127,9 +2141,11 @@ function CampViewPage(props: { id?: string }) {
 
   // Simple wrapper for the content
   return (
-    <div className="p-4 md:p-6">
-      {renderContent()}
-    </div>
+    <Layout>
+      <div className="p-4 md:p-6">
+        {renderContent()}
+      </div>
+    </Layout>
   );
 }
 
