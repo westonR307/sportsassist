@@ -2128,25 +2128,14 @@ function CampViewPage(props: { id?: string }) {
   // Determine the appropriate rendering approach based on user role and route
   // Most routes should be coming through Router in App.tsx with the appropriate layout
 
-  if (isParent) {
-    // For parent users, determine if we should use the parent dashboard layout
-    if (location.includes('/dashboard/camp/') || location.includes('/dashboard/register/camp/')) {
-      // If it's a dashboard route, use plain content as parent dashboard layout is already applied
-      return renderContent();
-    } else if (location.includes('/camp/') || location.includes('/register/camp/')) {
-      // If coming through /camp/ routes, content is already wrapped in AppLayout
-      // Just render content without additional wrapper
-      return renderContent();
-    } else {
-      // Fallback for direct access - just simple padding, no parent dashboard or regular layout
-      return (
-        <div className="p-4 md:p-6">
-          {renderContent()}
-        </div>
-      );
-    }
+  // Use simple wrapper for parent/public views, CreatorLayout for admin views
+  if (isParent || !user) {
+    return (
+      <div className="p-4 md:p-6">
+        {renderContent()}
+      </div>
+    );
   } else {
-    // For camp creators and admins, use the CreatorLayout with nav for consistency
     return <CreatorLayout title={camp?.name || "Camp Details"}>{renderContent()}</CreatorLayout>;
   }
 }
