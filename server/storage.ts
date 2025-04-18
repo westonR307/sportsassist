@@ -4538,12 +4538,25 @@ export class DatabaseStorage implements IStorage {
       console.log(`Fetching replies for message ${messageId}`);
       
       const replies = await db
-        .select()
+        .select({
+          ...campMessageReplies,
+          sentBy: {
+            username: users.username,
+            first_name: users.first_name,
+            last_name: users.last_name
+          }
+        })
         .from(campMessageReplies)
+        .leftJoin(users, eq(campMessageReplies.senderId, users.id))
         .where(eq(campMessageReplies.messageId, messageId))
         .orderBy(asc(campMessageReplies.createdAt));
       
       console.log(`Found ${replies.length} replies for message ${messageId}`);
+      
+      if (replies.length > 0) {
+        console.log('Sample reply:', JSON.stringify(replies[0], null, 2));
+      }
+      
       return replies;
     } catch (error) {
       console.error(`Error getting camp message replies for message ${messageId}:`, error);
