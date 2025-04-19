@@ -116,12 +116,13 @@ export default function OrganizationPublicProfile({ slug }: OrganizationPublicPa
     secondaryColor
   });
   
-  // Helper function to convert hex to hsl for CSS Variables
+  // Helper function to convert hex to hsl for CSS Variables (matching creator-layout.tsx)
   const hexToHSL = (hex: string): string => {
     try {
       // Check if hex is valid
       if (!hex || typeof hex !== 'string' || !hex.startsWith('#')) {
-        return 'var(--primary)'; // Return default CSS variable if invalid
+        console.log("Invalid hex color format:", hex);
+        return '221 83% 53%'; // Default primary color in HSL
       }
       
       // Remove the # if present
@@ -129,7 +130,8 @@ export default function OrganizationPublicProfile({ slug }: OrganizationPublicPa
       
       // Validate hex length
       if (hex.length !== 6) {
-        return 'var(--primary)'; // Return default CSS variable if invalid format
+        console.log("Invalid hex color length:", hex, "length:", hex.length);
+        return '221 83% 53%'; // Default primary color in HSL
       }
       
       // Parse the hex values
@@ -139,7 +141,8 @@ export default function OrganizationPublicProfile({ slug }: OrganizationPublicPa
       
       // Check if parsing was successful
       if (isNaN(r) || isNaN(g) || isNaN(b)) {
-        return 'var(--primary)'; // Return default CSS variable if parsing failed
+        console.log("Failed to parse hex color:", hex, "r:", r, "g:", g, "b:", b);
+        return '221 83% 53%'; // Default primary color in HSL
       }
       
       // Find min and max values for lightness calculation
@@ -178,23 +181,42 @@ export default function OrganizationPublicProfile({ slug }: OrganizationPublicPa
       return `${hue} ${saturation}% ${lightness}%`;
     } catch (error) {
       console.error("Error converting hex to HSL:", error);
-      return 'var(--primary)'; // Return default CSS variable on error
+      return '221 83% 53%'; // Default primary color in HSL
     }
   };
   
-  // Convert colors to HSL format for CSS Variables, with fallbacks to default theme variables
-  const primaryHSL = primaryColor && primaryColor.startsWith('#') ? hexToHSL(primaryColor) : 'var(--primary)';
-  const secondaryHSL = secondaryColor && secondaryColor.startsWith('#') ? hexToHSL(secondaryColor) : primaryHSL;
+  // Convert colors to HSL format for CSS Variables
+  const primaryHSL = hexToHSL(primaryColor);
+  const secondaryHSL = secondaryColor ? hexToHSL(secondaryColor) : primaryHSL;
   
   // Log HSL conversions for debugging
-  console.log("Organization colors after HSL conversion:", {
+  console.log("Organization colors:", {
     primaryColor,
     primaryHSL,
     secondaryColor,
     secondaryHSL
   });
   
-  // Define a style object with the theme colors
+  // Apply the organization colors to document root for consistency with creator-layout.tsx
+  React.useEffect(() => {
+    if (primaryColor && secondaryColor) {
+      document.documentElement.style.setProperty('--primary', primaryHSL);
+      document.documentElement.style.setProperty('--secondary', secondaryHSL);
+      document.documentElement.style.setProperty('--border', primaryHSL);
+      document.documentElement.style.setProperty('--ring', primaryHSL);
+    }
+    
+    // Cleanup when unmounting
+    return () => {
+      // Reset to default theme colors on unmount if needed
+      document.documentElement.style.removeProperty('--primary');
+      document.documentElement.style.removeProperty('--secondary');
+      document.documentElement.style.removeProperty('--border');
+      document.documentElement.style.removeProperty('--ring');
+    };
+  }, [primaryColor, secondaryColor, primaryHSL, secondaryHSL]);
+  
+  // Define a style object with the theme colors (fallback for components that don't use CSS vars)
   const orgStyles = {
     '--primary': primaryHSL,
     '--primary-foreground': '#ffffff',

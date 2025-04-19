@@ -438,11 +438,21 @@ export default function OrganizationProfilePage() {
     return validHexColor.test(color);
   };
 
-  // Handle form submission
+  // Handle form submission - Manual save only when Save button is clicked
   const onSubmit = (data: OrganizationProfileData) => {
     console.log('Form submitted with data:', data);
     const changedData = getChangedFields(data);
     console.log('Submitting changed fields:', changedData);
+    
+    // Only proceed if there are changes to save
+    if (Object.keys(changedData).length === 0) {
+      toast({
+        title: 'No Changes Detected',
+        description: 'No changes were made to save.',
+        variant: 'default',
+      });
+      return;
+    }
     
     // Validate color fields before submission
     if (changedData.primaryColor && !validateColorFormat(changedData.primaryColor)) {
@@ -472,7 +482,7 @@ export default function OrganizationProfilePage() {
       return;
     }
     
-    // If validation passes, submit the changes
+    // If validation passes, submit the changes - manual save only
     updateProfileMutation.mutate(changedData);
     
     // Also upload any files that were selected
