@@ -14,7 +14,7 @@ type AuthContextType = {
   error: Error | null;
   refreshUser: () => void;
   loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
-  logoutMutation: UseMutationResult<void, Error, void>;
+  logoutMutation: UseMutationResult<any, Error, void>;
   registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
 };
 
@@ -109,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logoutMutation = useMutation({
     mutationFn: async () => {
       await apiRequest("POST", "/api/logout", undefined);
-      return true;
+      return undefined;
     },
     onSuccess: () => {
       // Clear all cached queries first to prevent data leakage between users
