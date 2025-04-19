@@ -68,9 +68,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async (credentials: any) => {
-      console.log("Registration payload:", JSON.stringify(credentials));
-      const res = await apiRequest("POST", "/api/register", credentials);
-      return await res.json();
+      console.log("Register mutation sending data:", {
+        ...credentials,
+        password: "[REDACTED]"
+      });
+      
+      try {
+        const res = await apiRequest("POST", "/api/register", credentials);
+        const data = await res.json();
+        console.log("Registration API response:", {
+          status: res.status,
+          data: { ...data, password: data.password ? "[REDACTED]" : undefined }
+        });
+        return data;
+      } catch (error) {
+        console.error("Registration API error:", error);
+        throw error;
+      }
     },
     onSuccess: (user: SelectUser) => {
       // Clear all cached queries first to prevent data leakage between users

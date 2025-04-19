@@ -129,16 +129,20 @@ function AuthPage() {
       return;
     }
 
-    // IMPORTANT FIX: Let the server generate the username entirely
-    // We're removing the client-side username generation which might be
-    // causing inconsistencies with server validation requirements
+    // Prepare user data, including first_name and last_name which are needed by the server
+    const registrationData = {
+      ...data,
+      first_name: data.first_name || '',
+      last_name: data.last_name || '',
+      // Let the server generate the username
+    };
 
     console.log("Submitting registration data:", {
-      ...data,
+      ...registrationData,
       password: "[REDACTED]"
     });
 
-    registerMutation.mutate(data);
+    registerMutation.mutate(registrationData);
   };
 
   return (
