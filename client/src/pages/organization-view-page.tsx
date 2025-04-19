@@ -126,16 +126,66 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
     );
   }
 
+  // Helper function to convert hex to hsl for CSS Variables
+  const hexToHSL = (hex: string): string => {
+    // Remove the # if present
+    hex = hex.replace(/^#/, '');
+    
+    // Parse the hex values
+    let r = parseInt(hex.slice(0, 2), 16) / 255;
+    let g = parseInt(hex.slice(2, 4), 16) / 255;
+    let b = parseInt(hex.slice(4, 6), 16) / 255;
+    
+    // Find min and max values for lightness calculation
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    
+    // Calculate lightness
+    let lightness = (max + min) / 2;
+    
+    // Calculate saturation
+    let saturation = 0;
+    if (max !== min) {
+      saturation = lightness > 0.5 
+        ? (max - min) / (2.0 - max - min) 
+        : (max - min) / (max + min);
+    }
+    
+    // Calculate hue
+    let hue = 0;
+    if (max !== min) {
+      if (max === r) {
+        hue = (g - b) / (max - min) + (g < b ? 6 : 0);
+      } else if (max === g) {
+        hue = (b - r) / (max - min) + 2;
+      } else {
+        hue = (r - g) / (max - min) + 4;
+      }
+      hue *= 60;
+    }
+    
+    // Convert to integers (degrees, percentage, percentage)
+    hue = Math.round(hue);
+    saturation = Math.round(saturation * 100);
+    lightness = Math.round(lightness * 100);
+    
+    return `${hue} ${saturation}% ${lightness}%`;
+  };
+  
+  // Convert colors to HSL format for CSS Variables
+  const primaryHSL = organization.primaryColor ? hexToHSL(organization.primaryColor) : 'var(--primary)';
+  const secondaryHSL = organization.secondaryColor ? hexToHSL(organization.secondaryColor) : primaryHSL;
+  
   // Define CSS variables for organization branding
   const orgStyles = {
     '--banner-height': '300px',
     '--header-height': '120px',
     '--header-padding': '30px',
-    '--primary': organization.primaryColor || 'hsl(var(--primary))',
+    '--primary': primaryHSL,
     '--primary-foreground': '#ffffff',
-    '--secondary': organization.secondaryColor || 'hsl(var(--secondary))',
-    '--border': organization.primaryColor || 'hsl(var(--primary))',
-    '--ring': organization.primaryColor || 'hsl(var(--primary))',
+    '--secondary': secondaryHSL,
+    '--border': primaryHSL,
+    '--ring': primaryHSL,
   } as React.CSSProperties;
 
   // Hero background style with or without banner

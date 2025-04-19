@@ -110,13 +110,63 @@ export default function OrganizationPublicProfile({ slug }: OrganizationPublicPa
   const primaryColor = organization.primaryColor || '#3730a3';
   const secondaryColor = organization.secondaryColor || '#1e3a8a';
   
+  // Helper function to convert hex to hsl for CSS Variables
+  const hexToHSL = (hex: string): string => {
+    // Remove the # if present
+    hex = hex.replace(/^#/, '');
+    
+    // Parse the hex values
+    let r = parseInt(hex.slice(0, 2), 16) / 255;
+    let g = parseInt(hex.slice(2, 4), 16) / 255;
+    let b = parseInt(hex.slice(4, 6), 16) / 255;
+    
+    // Find min and max values for lightness calculation
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    
+    // Calculate lightness
+    let lightness = (max + min) / 2;
+    
+    // Calculate saturation
+    let saturation = 0;
+    if (max !== min) {
+      saturation = lightness > 0.5 
+        ? (max - min) / (2.0 - max - min) 
+        : (max - min) / (max + min);
+    }
+    
+    // Calculate hue
+    let hue = 0;
+    if (max !== min) {
+      if (max === r) {
+        hue = (g - b) / (max - min) + (g < b ? 6 : 0);
+      } else if (max === g) {
+        hue = (b - r) / (max - min) + 2;
+      } else {
+        hue = (r - g) / (max - min) + 4;
+      }
+      hue *= 60;
+    }
+    
+    // Convert to integers (degrees, percentage, percentage)
+    hue = Math.round(hue);
+    saturation = Math.round(saturation * 100);
+    lightness = Math.round(lightness * 100);
+    
+    return `${hue} ${saturation}% ${lightness}%`;
+  };
+  
+  // Convert colors to HSL format for CSS Variables
+  const primaryHSL = hexToHSL(primaryColor);
+  const secondaryHSL = hexToHSL(secondaryColor);
+  
   // Define a style object with the theme colors
   const orgStyles = {
-    '--primary': primaryColor,
+    '--primary': primaryHSL,
     '--primary-foreground': '#ffffff',
-    '--secondary': secondaryColor,
-    '--border': primaryColor,
-    '--ring': primaryColor,
+    '--secondary': secondaryHSL,
+    '--border': primaryHSL,
+    '--ring': primaryHSL,
   } as React.CSSProperties;
 
   return (
