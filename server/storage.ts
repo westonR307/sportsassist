@@ -415,22 +415,41 @@ export class DatabaseStorage implements IStorage {
       password: "[REDACTED]"
     });
     
-    // Simple implementation as in the working version
-    const [user] = await db.insert(users).values({
-      username: insertUser.username.toLowerCase(),
-      password: insertUser.password,
-      email: insertUser.email,
-      role: insertUser.role,
-      organizationId: insertUser.organizationId,
-      first_name: insertUser.first_name,
-      last_name: insertUser.last_name,
-    }).returning();
+    try {
+      // Set up the user data object with all fields
+      const userData = {
+        username: insertUser.username.toLowerCase(),
+        password: insertUser.password,
+        passwordHash: insertUser.password, // This field is duplicated for backward compatibility
+        email: insertUser.email.toLowerCase(),
+        role: insertUser.role,
+        organizationId: insertUser.organizationId,
+        first_name: insertUser.first_name,
+        last_name: insertUser.last_name,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
     
-    console.log("User created successfully:", {
-      ...user,
-      password: "[REDACTED]"
-    });
-    return user;
+      // Insert the user
+      const [user] = await db.insert(users).values(userData).returning();
+      
+      console.log("User created successfully:", {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role
+      });
+      
+      return user;
+    } catch (error: any) {
+      console.error("Error creating user in storage:", {
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        constraint: error.constraint
+      });
+      throw error;
+    }
   }
 
   async updateUserRole(userId: number, newRole: Role): Promise<User> {
