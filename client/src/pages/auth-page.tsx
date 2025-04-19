@@ -44,9 +44,10 @@ const registerSchema = insertUserSchema.pick({
   role: true
 }).extend({
   password: z.string().min(8, "Password must be at least 8 characters"),
-  organizationName: z.string().min(1, "Organization name is required").optional(),
+  organizationName: z.string().optional(),
   organizationDescription: z.string().optional(),
 }).superRefine((data, ctx) => {
+  // Only validate organization fields if role is camp_creator
   if (data.role === 'camp_creator') {
     if (!data.organizationName || data.organizationName.trim().length === 0) {
       ctx.addIssue({
