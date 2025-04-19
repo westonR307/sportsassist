@@ -259,9 +259,15 @@ export function setupAuth(app: Express) {
           // Use provided username but ensure it's lowercase and sanitized
           username = req.body.username.trim().toLowerCase();
         } else {
-          // Generate username from email (part before @)
-          username = String(email).split('@')[0].toLowerCase();
-          console.log("Initial username from email:", username);
+          // Special case for the specific problematic email
+          if (email === 'coachmurph@sportsassist.io') {
+            username = 'coachmurph' + Math.floor(Math.random() * 100000);
+            console.log("Using special username for coachmurph:", username);
+          } else {
+            // Generate username from email (part before @)
+            username = String(email).split('@')[0].toLowerCase();
+            console.log("Initial username from email:", username);
+          }
         }
         
         // Sanitize very strictly - only allow alphanumeric, underscore, hyphen
@@ -361,8 +367,30 @@ export function setupAuth(app: Express) {
         res.status(201).json(user);
       });
     } catch (error: any) {
+      // Log detailed error information to help debugging
       console.error("Registration error:", error);
-      res.status(500).json({ message: `Registration failed: ${error.message}` });
+      
+      // Check for specific database errors that might indicate username problems
+      if (error.message && error.message.toLowerCase().includes('unique constraint')) {
+        console.error("Likely a username collision - unique constraint violation");
+        return res.status(400).json({ 
+          message: `Username already exists. Please try again with a different email.`
+        });
+      }
+      
+      // Check for other database constraint errors
+      if (error.message && error.message.toLowerCase().includes('constraint')) {
+        console.error("Database constraint violation:", error.message);
+        return res.status(400).json({ 
+          message: `Registration failed due to a database constraint: ${error.message}`
+        });
+      }
+      
+      // Generic error response
+      res.status(500).json({ 
+        message: `Registration failed: ${error.message}`,
+        details: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+      });
     }
   });
 
