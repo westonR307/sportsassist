@@ -255,33 +255,25 @@ export function setupAuth(app: Express) {
       let username: string;
       
       try {
-        if (req.body.username && typeof req.body.username === 'string') {
-          // Use provided username but ensure it's lowercase and sanitized
-          username = req.body.username.trim().toLowerCase();
-        } else {
-          // Generate a username that will always work for any email
-          // Use user prefix with a random number instead of email-based usernames
-          // This ensures consistent behavior for all email formats
-          username = 'user' + Math.floor(Math.random() * 10000000);
-          console.log("Generated generic username:", username);
-        }
+        // Just use a consistent and simple approach for all username generation
+        // This minimizes the risk of validation failures
+        const randomNum = Math.floor(Math.random() * 10000000);
+        username = 'user' + randomNum;
+        console.log("Generated simple username:", username);
         
-        // Sanitize very strictly - only allow alphanumeric, underscore, hyphen
-        // This ensures the username meets any database constraints
+        // We'll leave this in as a backup validation in case someone tries to manipulate the
+        // username format through the API directly, but we should never need it
+        // since we're generating a known-good format above
         username = username.replace(/[^a-z0-9_-]/g, '');
         console.log("Username after sanitization:", username);
         
-        // Ensure we have a valid base even if all characters were removed
-        if (username.length === 0) {
+        // Ensure username is valid, but this should never be triggered
+        // with our standardized format
+        if (username.length === 0 || !username.match(/^[a-z0-9_-]+$/)) {
           username = 'user' + Math.floor(Math.random() * 10000000);
-          console.log("Empty username after sanitization, using fallback");
+          console.log("Invalid username format, using fallback");
         }
         
-        // Always add a random suffix to greatly reduce chance of collision if not already present
-        if (!username.match(/\d+$/)) {
-          const randomSuffix = Math.floor(Math.random() * 10000);
-          username = username + randomSuffix;
-        }
         console.log("Final username:", username);
       } catch (error) {
         // If any step above fails, use a reliable fallback
