@@ -1265,7 +1265,7 @@ export default function OrganizationProfilePage() {
                   </Button>
                   <Button 
                     type="submit" 
-                    disabled={updateProfileMutation.isPending || !form.formState.isDirty}
+                    disabled={updateProfileMutation.isPending}
                     className="flex items-center gap-1"
                   >
                     {updateProfileMutation.isPending ? (
