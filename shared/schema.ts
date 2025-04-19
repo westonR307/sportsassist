@@ -95,8 +95,17 @@ const createUtcSafeDateTransformer = (fieldName: string) => {
 };
 
 // Define schemas
-export const insertUserSchema = createInsertSchema(users, {
-  passwordHash: z.string().optional(), // Make it optional in schema since we'll set it in the backend
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  passwordHash: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  email: z.string().email("Valid email address is required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  role: z.enum(publicRoles),
+  organizationName: z.string().optional(),
+  organizationDescription: z.string().optional(),
   profile_photo: z.string().optional(),
   phone_number: z.string().optional(),
   address: z.string().optional(),
@@ -104,11 +113,17 @@ export const insertUserSchema = createInsertSchema(users, {
   state: z.string().optional(),
   zip_code: z.string().optional(),
   onboarding_completed: z.boolean().optional(),
-  preferred_contact: z.enum(["email", "sms", "app"]).optional()
-}).extend({
-  role: z.enum(publicRoles),
-  organizationName: z.string().optional(),
-  organizationDescription: z.string().optional(),
+  preferred_contact: z.enum(["email", "sms", "app"]).optional(),
+}).superRefine((data, ctx) => {
+  if (data.role === 'camp_creator') {
+    if (!data.organizationName?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Organization name is required for camp creators",
+        path: ["organizationName"]
+      });
+    }
+  }
 });
 
 export const insertInvitationSchema = createInsertSchema(invitations).omit({
