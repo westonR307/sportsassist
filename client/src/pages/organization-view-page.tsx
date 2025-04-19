@@ -64,6 +64,38 @@ interface OrganizationViewPageProps {
   slugOrName: string;
 }
 
+// Helper function to calculate color brightness (0-255)
+// Higher values are brighter (closer to white)
+function calculateColorBrightness(hexColor: string): number {
+  try {
+    if (!hexColor || typeof hexColor !== 'string' || !hexColor.startsWith('#')) {
+      return 150; // Default medium brightness
+    }
+    
+    // Remove the # if present
+    const hex = hexColor.replace(/^#/, '');
+    
+    // Parse the hex values to RGB
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    
+    // Calculate perceived brightness using the formula: (0.299*R + 0.587*G + 0.114*B)
+    // This formula accounts for human perception of color (we perceive green as brighter than red or blue)
+    return (0.299 * r + 0.587 * g + 0.114 * b);
+  } catch (error) {
+    console.error("Error calculating color brightness:", error);
+    return 150; // Default medium brightness
+  }
+}
+
+// Function to determine if text should be light or dark based on background
+function getTextColorForBackground(hexColor: string): string {
+  const brightness = calculateColorBrightness(hexColor);
+  // If brightness is above 160 (relatively bright background), use dark text
+  return brightness > 160 ? '#333333' : '#ffffff';
+}
+
 export default function OrganizationViewPage({ slugOrName }: OrganizationViewPageProps) {
   // All hook declarations must come first, before any conditional returns
   const [activeTab, setActiveTab] = useState('about');
@@ -79,6 +111,18 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
     queryKey: [`/api/organizations/public/${slugOrName}/camps`],
     enabled: !!slugOrName && !!organization?.id,
   });
+  
+  // Calculate text color based on the organization's primary color brightness
+  // For light backgrounds (like light blue) we use dark text (#333333)
+  // For dark backgrounds we use white text (#ffffff)
+  const textColor = organization?.primaryColor 
+    ? getTextColorForBackground(organization.primaryColor)
+    : '#ffffff';
+    
+  // Define a muted version of the text color for less important text
+  const textColorMuted = textColor === '#ffffff' 
+    ? 'rgba(255, 255, 255, 0.8)'  // slightly transparent white
+    : 'rgba(51, 51, 51, 0.8)';    // slightly transparent dark gray
 
   // Helper function to convert hex to hsl for CSS Variables
   const hexToHSL = (hex: string): string => {
@@ -147,6 +191,38 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
       console.error("Error converting hex to HSL:", error);
       return '221 83% 53%'; // Default primary color in HSL
     }
+  };
+  
+  // Helper function to calculate color brightness (0-255)
+  // Higher values are brighter (closer to white)
+  const getColorBrightness = (hexColor: string): number => {
+    try {
+      if (!hexColor || typeof hexColor !== 'string' || !hexColor.startsWith('#')) {
+        return 150; // Default medium brightness
+      }
+      
+      // Remove the # if present
+      const hex = hexColor.replace(/^#/, '');
+      
+      // Parse the hex values to RGB
+      const r = parseInt(hex.slice(0, 2), 16);
+      const g = parseInt(hex.slice(2, 4), 16);
+      const b = parseInt(hex.slice(4, 6), 16);
+      
+      // Calculate perceived brightness using the formula: (0.299*R + 0.587*G + 0.114*B)
+      // This formula accounts for human perception of color (we perceive green as brighter than red or blue)
+      return (0.299 * r + 0.587 * g + 0.114 * b);
+    } catch (error) {
+      console.error("Error calculating color brightness:", error);
+      return 150; // Default medium brightness
+    }
+  };
+  
+  // Function to determine if text should be light or dark based on background
+  const getTextColorForBackground = (hexColor: string): string => {
+    const brightness = getColorBrightness(hexColor);
+    // If brightness is above 160 (relatively bright background), use dark text
+    return brightness > 160 ? '#333333' : '#ffffff';
   };
   
   // Set default HSL values always, regardless of whether the organization data is loaded
@@ -338,94 +414,168 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
       {/* Main content area */}
       <div className="flex-1 py-8" style={{ background: heroBgStyle.background || (organization.bannerImageUrl ? 'rgba(0,0,0,0.9)' : 'var(--primary)') }}>
         <div className="container mx-auto px-4">
+          {/* No code here - we'll move color calculations to the top of the component */}
+            
           {/* Organization Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             {/* Active Camps Stat */}
-            <div className="bg-black/20 rounded-lg border border-white/10 p-6 flex flex-col items-center justify-center text-white text-center">
+            <div 
+              className="rounded-lg border p-6 flex flex-col items-center justify-center text-center"
+              style={{ 
+                backgroundColor: 'rgba(0,0,0,0.1)', 
+                borderColor: textColor === '#ffffff' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                color: textColor
+              }}
+            >
               <div className="text-amber-300 mb-2">
                 <Trophy className="h-6 w-6" />
               </div>
               <div className="text-3xl font-bold mb-1">
                 {camps?.length || 0}
               </div>
-              <div className="text-white/80 text-sm">
+              <div className="text-sm" style={{ color: textColorMuted }}>
                 Active Camps
               </div>
             </div>
             
             {/* Total Participants Stat */}
-            <div className="bg-black/20 rounded-lg border border-white/10 p-6 flex flex-col items-center justify-center text-white text-center">
+            <div 
+              className="rounded-lg border p-6 flex flex-col items-center justify-center text-center"
+              style={{ 
+                backgroundColor: 'rgba(0,0,0,0.1)', 
+                borderColor: textColor === '#ffffff' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                color: textColor
+              }}
+            >
               <div className="text-amber-300 mb-2">
                 <Star className="h-6 w-6" />
               </div>
               <div className="text-3xl font-bold mb-1">
                 {camps?.reduce((total, camp) => total + (camp.registeredCount || 0), 0) || 0}
               </div>
-              <div className="text-white/80 text-sm">
+              <div className="text-sm" style={{ color: textColorMuted }}>
                 Total Participants
               </div>
             </div>
             
             {/* Sports Offered Stat */}
-            <div className="bg-black/20 rounded-lg border border-white/10 p-6 flex flex-col items-center justify-center text-white text-center">
+            <div 
+              className="rounded-lg border p-6 flex flex-col items-center justify-center text-center"
+              style={{ 
+                backgroundColor: 'rgba(0,0,0,0.1)', 
+                borderColor: textColor === '#ffffff' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                color: textColor
+              }}
+            >
               <div className="text-amber-300 mb-2">
                 <CalendarRange className="h-6 w-6" />
               </div>
               <div className="text-3xl font-bold mb-1">
                 {new Set(camps?.map(camp => camp.sportName).filter(Boolean)).size || 0}
               </div>
-              <div className="text-white/80 text-sm">
+              <div className="text-sm" style={{ color: textColorMuted }}>
                 Sports Offered
               </div>
             </div>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-            <TabsList className="grid w-full max-w-xl mx-auto grid-cols-4 bg-white/20 text-white">
-              <TabsTrigger value="about" className="flex gap-2 items-center justify-center data-[state=active]:bg-white/30 data-[state=active]:text-white">
+            <TabsList 
+              className="grid w-full max-w-xl mx-auto grid-cols-4"
+              style={{ 
+                backgroundColor: 'rgba(255,255,255,0.2)', 
+                color: textColor 
+              }}
+            >
+              <TabsTrigger 
+                value="about" 
+                className="flex gap-2 items-center justify-center" 
+                style={{ 
+                  color: textColor,
+                  ['--tw-data-active-bg' as any]: 'rgba(255,255,255,0.3)',
+                  ['--tw-data-active-color' as any]: textColor
+                }}
+              >
                 <Info className="h-4 w-4" />
                 <span className="hidden sm:inline">About</span>
               </TabsTrigger>
-              <TabsTrigger value="camps" className="flex gap-2 items-center justify-center data-[state=active]:bg-white/30 data-[state=active]:text-white">
+              <TabsTrigger 
+                value="camps" 
+                className="flex gap-2 items-center justify-center" 
+                style={{ 
+                  color: textColor,
+                  ['--tw-data-active-bg' as any]: 'rgba(255,255,255,0.3)',
+                  ['--tw-data-active-color' as any]: textColor
+                }}
+              >
                 <Calendar className="h-4 w-4" />
                 <span className="hidden sm:inline">Camps</span>
               </TabsTrigger>
-              <TabsTrigger value="features" className="flex gap-2 items-center justify-center data-[state=active]:bg-white/30 data-[state=active]:text-white">
+              <TabsTrigger 
+                value="features" 
+                className="flex gap-2 items-center justify-center" 
+                style={{ 
+                  color: textColor,
+                  ['--tw-data-active-bg' as any]: 'rgba(255,255,255,0.3)',
+                  ['--tw-data-active-color' as any]: textColor
+                }}
+              >
                 <Star className="h-4 w-4" />
                 <span className="hidden sm:inline">Features</span>
               </TabsTrigger>
-              <TabsTrigger value="contact" className="flex gap-2 items-center justify-center data-[state=active]:bg-white/30 data-[state=active]:text-white">
+              <TabsTrigger 
+                value="contact" 
+                className="flex gap-2 items-center justify-center" 
+                style={{ 
+                  color: textColor,
+                  ['--tw-data-active-bg' as any]: 'rgba(255,255,255,0.3)',
+                  ['--tw-data-active-color' as any]: textColor
+                }}
+              >
                 <MessageCircle className="h-4 w-4" />
                 <span className="hidden sm:inline">Contact</span>
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="about" className="mx-auto max-w-4xl">
-              <Card className="bg-white/20 border-white/10 backdrop-blur-sm text-white">
+              <Card 
+                className="backdrop-blur-sm border" 
+                style={{ 
+                  backgroundColor: 'rgba(255,255,255,0.2)', 
+                  borderColor: textColor === '#ffffff' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                  color: textColor 
+                }}
+              >
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2" style={{ color: textColor }}>
                     <Info className="h-5 w-5" />
                     About {organization.displayName || organization.name}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="prose prose-sm max-w-none prose-invert">
+                <CardContent className="prose prose-sm max-w-none" style={{ color: textColor }}>
                   {organization.missionStatement && (
-                    <div className="mb-6 p-4 bg-white/10 rounded-lg border border-white/20">
-                      <h3 className="text-xl font-bold mb-2 text-white">
+                    <div 
+                      className="mb-6 p-4 rounded-lg border"
+                      style={{ 
+                        backgroundColor: 'rgba(255,255,255,0.1)',
+                        borderColor: textColor === '#ffffff' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)',
+                      }}
+                    >
+                      <h3 className="text-xl font-bold mb-2" style={{ color: textColor }}>
                         Our Mission
                       </h3>
-                      <p className="italic text-white/90">{organization.missionStatement}</p>
+                      <p className="italic" style={{ color: textColorMuted }}>{organization.missionStatement}</p>
                     </div>
                   )}
 
                   {organization.aboutText ? (
                     <div>
                       {organization.aboutText.split('\n').map((paragraph, i) => (
-                        <p key={i} className="text-white/90">{paragraph}</p>
+                        <p key={i} style={{ color: textColorMuted }}>{paragraph}</p>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-white/70">No detailed information has been provided by this organization.</p>
+                    <p style={{ color: textColorMuted }}>No detailed information has been provided by this organization.</p>
                   )}
                 </CardContent>
               </Card>
