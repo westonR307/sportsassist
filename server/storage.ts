@@ -409,90 +409,28 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(insertUser: InsertUser & { organizationId?: number, passwordHash?: string }): Promise<User> {
-    // Ensure we're using the hashed password format consistently
-    console.log("Full insert user data:", {
+  async createUser(insertUser: InsertUser & { organizationId?: number }): Promise<User> {
+    console.log("Creating user with data:", {
       ...insertUser,
-      password: "[REDACTED]",
-      passwordHash: "[REDACTED]"
+      password: "[REDACTED]"
     });
     
-    // Make sure we have a password hash
-    const passwordHash = insertUser.passwordHash || insertUser.password || '';
-    if (!passwordHash) {
-      throw new Error("Password hash is required");
-    }
-
-    // Maximum number of attempts to handle possible username collisions
-    const MAX_ATTEMPTS = 3;
-    let attempts = 0;
-    let lastError: any = null;
-
-    while (attempts < MAX_ATTEMPTS) {
-      attempts++;
-      try {
-        // Ensure we have a valid username - generate a new one on each attempt
-        let username = insertUser.username;
-        if (!username) {
-          // Use timestamp plus random number to virtually guarantee uniqueness
-          const timestamp = Date.now();
-          const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-          username = `user${timestamp}${randomSuffix}`;
-          console.log(`Generated username (attempt ${attempts}):`, username);
-        }
-        
-        // Double-check username is valid before inserting
-        if (!username.match(/^[a-z0-9_-]+$/)) {
-          console.error("Invalid username format detected:", username);
-          throw new Error("Username must contain only lowercase letters, numbers, underscores, and hyphens");
-        }
-        
-        // Insert user with the validated username
-        const [user] = await db.insert(users).values({
-          username: username.toLowerCase(),
-          password: passwordHash, // This should already be hashed when passed in
-          passwordHash: passwordHash, // Match the password field for backward compatibility
-          email: insertUser.email,
-          role: insertUser.role,
-          organizationId: insertUser.organizationId,
-          first_name: insertUser.first_name,
-          last_name: insertUser.last_name,
-        }).returning();
-        
-        console.log("User created successfully on attempt", attempts, "with data:", {
-          ...user,
-          password: "[REDACTED]",
-          passwordHash: "[REDACTED]"
-        });
-        return user;
-      } catch (error: any) {
-        lastError = error;
-        console.error(`Error creating user (attempt ${attempts}):`, error.message);
-        
-        // If this is a unique constraint violation (likely on username or email)
-        if (error.message && error.message.toLowerCase().includes('unique constraint')) {
-          console.log("Unique constraint violation - retrying with new username");
-          
-          // If it's specifically a username constraint, clear it so we generate a new one
-          if (error.message.toLowerCase().includes('username')) {
-            insertUser.username = undefined;
-          } 
-          // If it's an email constraint, we should stop retrying because the email is provided by the user
-          else if (error.message.toLowerCase().includes('email')) {
-            throw new Error("A user with this email already exists");
-          }
-          // Otherwise continue to next attempt with a new username
-          continue;
-        } else {
-          // For other errors, don't retry
-          throw error;
-        }
-      }
-    }
+    // Simple implementation as in the working version
+    const [user] = await db.insert(users).values({
+      username: insertUser.username.toLowerCase(),
+      password: insertUser.password,
+      email: insertUser.email,
+      role: insertUser.role,
+      organizationId: insertUser.organizationId,
+      first_name: insertUser.first_name,
+      last_name: insertUser.last_name,
+    }).returning();
     
-    // If we've exhausted all attempts
-    console.error("Failed to create user after", MAX_ATTEMPTS, "attempts");
-    throw lastError || new Error("Failed to create user after multiple attempts");
+    console.log("User created successfully:", {
+      ...user,
+      password: "[REDACTED]"
+    });
+    return user;
   }
 
   async updateUserRole(userId: number, newRole: Role): Promise<User> {
