@@ -411,16 +411,34 @@ export class DatabaseStorage implements IStorage {
 
   async createUser(insertUser: InsertUser & { organizationId?: number, passwordHash?: string }): Promise<User> {
     // Ensure we're using the hashed password format consistently
-    console.log("Full insert user data:", insertUser);
+    console.log("Full insert user data:", {
+      ...insertUser,
+      password: "[REDACTED]",
+      passwordHash: "[REDACTED]"
+    });
     
     // Make sure we have a password hash
     const passwordHash = insertUser.passwordHash || insertUser.password || '';
     if (!passwordHash) {
       throw new Error("Password hash is required");
     }
+
+    // Ensure we have a valid username
+    if (!insertUser.username) {
+      // Generate a username if one wasn't provided
+      const randomSuffix = Math.floor(10000000 + Math.random() * 90000000);
+      insertUser.username = 'user' + randomSuffix;
+      console.log("Generated username in storage layer:", insertUser.username);
+    }
+    
+    // Double-check username is valid before inserting
+    if (!insertUser.username.match(/^[a-z0-9_-]+$/)) {
+      console.error("Invalid username format detected:", insertUser.username);
+      throw new Error("Username must contain only lowercase letters, numbers, underscores, and hyphens");
+    }
     
     const [user] = await db.insert(users).values({
-      username: insertUser.username?.toLowerCase() || '',
+      username: insertUser.username.toLowerCase(),
       password: passwordHash, // This should already be hashed when passed in
       passwordHash: passwordHash, // Match the password field for backward compatibility
       email: insertUser.email,
@@ -430,7 +448,11 @@ export class DatabaseStorage implements IStorage {
       last_name: insertUser.last_name,
     }).returning();
     
-    console.log("User created with data:", user);
+    console.log("User created with data:", {
+      ...user,
+      password: "[REDACTED]",
+      passwordHash: "[REDACTED]"
+    });
     return user;
   }
 
