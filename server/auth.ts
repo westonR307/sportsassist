@@ -259,16 +259,11 @@ export function setupAuth(app: Express) {
           // Use provided username but ensure it's lowercase and sanitized
           username = req.body.username.trim().toLowerCase();
         } else {
-          // Create a valid username that will always work
-          if (email === 'coachmurph@sportsassist.io') {
-            // Use alphanumeric prefix for the special case
-            username = 'user' + Math.floor(Math.random() * 10000000);
-            console.log("Using generic username for coachmurph:", username);
-          } else {
-            // Generate username from email (part before @)
-            username = String(email).split('@')[0].toLowerCase();
-            console.log("Initial username from email:", username);
-          }
+          // Generate a username that will always work for any email
+          // Use user prefix with a random number instead of email-based usernames
+          // This ensures consistent behavior for all email formats
+          username = 'user' + Math.floor(Math.random() * 10000000);
+          console.log("Generated generic username:", username);
         }
         
         // Sanitize very strictly - only allow alphanumeric, underscore, hyphen
@@ -278,14 +273,16 @@ export function setupAuth(app: Express) {
         
         // Ensure we have a valid base even if all characters were removed
         if (username.length === 0) {
-          username = 'user';
+          username = 'user' + Math.floor(Math.random() * 10000000);
           console.log("Empty username after sanitization, using fallback");
         }
         
-        // Always add a random suffix to greatly reduce chance of collision
-        const randomSuffix = Math.floor(Math.random() * 10000);
-        username = username + randomSuffix;
-        console.log("Final username with suffix:", username);
+        // Always add a random suffix to greatly reduce chance of collision if not already present
+        if (!username.match(/\d+$/)) {
+          const randomSuffix = Math.floor(Math.random() * 10000);
+          username = username + randomSuffix;
+        }
+        console.log("Final username:", username);
       } catch (error) {
         // If any step above fails, use a reliable fallback
         console.error("Error generating username:", error);
@@ -375,18 +372,7 @@ export function setupAuth(app: Express) {
       if (error.message && error.message.toLowerCase().includes('unique constraint')) {
         console.error("Likely a username collision - unique constraint violation");
         return res.status(400).json({ 
-          message: `Username already exists. Please try again with a different email.`
-        });
-      }
-      
-      // Check for pattern match errors (username validation)
-      if (error.message && (
-          error.message.toLowerCase().includes('did not match expected pattern') ||
-          error.message.toLowerCase().includes('pattern')
-      )) {
-        console.error("Pattern match error - likely username format issue:", error.message);
-        return res.status(400).json({ 
-          message: "Registration failed due to invalid username format. Please try again with a different email address."
+          message: `Registration failed: This username or email is already in use. Please try again.`
         });
       }
       
@@ -394,7 +380,15 @@ export function setupAuth(app: Express) {
       if (error.message && error.message.toLowerCase().includes('constraint')) {
         console.error("Database constraint violation:", error.message);
         return res.status(400).json({ 
-          message: `Registration failed due to a database constraint: ${error.message}`
+          message: `Registration failed due to a database constraint. Please try again.`
+        });
+      }
+      
+      // Check for any other validation errors
+      if (error.message) {
+        console.error("Validation or pattern error:", error.message);
+        return res.status(400).json({ 
+          message: "Registration failed. Please try again or contact support if the issue persists."
         });
       }
       
