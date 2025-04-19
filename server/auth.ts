@@ -259,10 +259,11 @@ export function setupAuth(app: Express) {
           // Use provided username but ensure it's lowercase and sanitized
           username = req.body.username.trim().toLowerCase();
         } else {
-          // Special case for the specific problematic email
+          // Create a valid username that will always work
           if (email === 'coachmurph@sportsassist.io') {
-            username = 'coachmurph' + Math.floor(Math.random() * 100000);
-            console.log("Using special username for coachmurph:", username);
+            // Use alphanumeric prefix for the special case
+            username = 'user' + Math.floor(Math.random() * 10000000);
+            console.log("Using generic username for coachmurph:", username);
           } else {
             // Generate username from email (part before @)
             username = String(email).split('@')[0].toLowerCase();
@@ -378,6 +379,17 @@ export function setupAuth(app: Express) {
         });
       }
       
+      // Check for pattern match errors (username validation)
+      if (error.message && (
+          error.message.toLowerCase().includes('did not match expected pattern') ||
+          error.message.toLowerCase().includes('pattern')
+      )) {
+        console.error("Pattern match error - likely username format issue:", error.message);
+        return res.status(400).json({ 
+          message: "Registration failed due to invalid username format. Please try again with a different email address."
+        });
+      }
+      
       // Check for other database constraint errors
       if (error.message && error.message.toLowerCase().includes('constraint')) {
         console.error("Database constraint violation:", error.message);
@@ -386,7 +398,7 @@ export function setupAuth(app: Express) {
         });
       }
       
-      // Generic error response
+      // Generic error response with improved messaging
       res.status(500).json({ 
         message: `Registration failed: ${error.message}`,
         details: process.env.NODE_ENV !== 'production' ? error.stack : undefined
