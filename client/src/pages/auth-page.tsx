@@ -129,36 +129,16 @@ function AuthPage() {
       return;
     }
 
-    // Generate a random username that will always work
-    // This is handled server-side now, but we provide a username 
-    // to ensure consistency in the registration process
-    const randomSuffix = String(Math.floor(Math.random() * 10000000));
-    let username = 'user' + randomSuffix;
-    
-    console.log("Generated random username:", username);
-
-    // Extra validation to ensure username is a string
-    if (typeof username !== 'string') {
-      console.error("Username not generated as a string:", username);
-      registerForm.setError('email', {
-        type: 'manual',
-        message: 'Error generating username from email. Please try again.'
-      });
-      return;
-    }
-
-    // Combine data with derived username (already lowercase and sanitized)
-    const fullData = {
-      ...data,
-      username: username
-    };
+    // IMPORTANT FIX: Let the server generate the username entirely
+    // We're removing the client-side username generation which might be
+    // causing inconsistencies with server validation requirements
 
     console.log("Submitting registration data:", {
-      ...fullData,
+      ...data,
       password: "[REDACTED]"
     });
 
-    registerMutation.mutate(fullData);
+    registerMutation.mutate(data);
   };
 
   return (

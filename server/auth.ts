@@ -255,26 +255,23 @@ export function setupAuth(app: Express) {
       let username: string;
       
       try {
-        // Just use a consistent and simple approach for all username generation
-        // This minimizes the risk of validation failures
-        const randomNum = Math.floor(Math.random() * 10000000);
-        username = 'user' + randomNum;
-        console.log("Generated simple username:", username);
+        // IMPORTANT: Server-side username generation that is fully controlled.
+        // Generate a simple, predictable format that will always pass validation.
         
-        // We'll leave this in as a backup validation in case someone tries to manipulate the
-        // username format through the API directly, but we should never need it
-        // since we're generating a known-good format above
-        username = username.replace(/[^a-z0-9_-]/g, '');
-        console.log("Username after sanitization:", username);
+        // First we create a unique random suffix with enough digits to avoid collisions
+        const randomSuffix = Math.floor(10000000 + Math.random() * 90000000);
         
-        // Ensure username is valid, but this should never be triggered
-        // with our standardized format
-        if (username.length === 0 || !username.match(/^[a-z0-9_-]+$/)) {
-          username = 'user' + Math.floor(Math.random() * 10000000);
-          console.log("Invalid username format, using fallback");
+        // Then create a username with a consistent prefix followed by digits
+        username = 'user' + randomSuffix;
+        
+        console.log("Final username (server-generated):", username);
+        
+        // Verification step - just to be 100% certain
+        if (!username.match(/^[a-z][a-z0-9_-]+$/)) {
+          console.error("Critical error: Server-generated username failed validation check");
+          // This should never happen with our carefully controlled format
+          username = 'user' + Date.now(); // Timestamp-based fallback as last resort
         }
-        
-        console.log("Final username:", username);
       } catch (error) {
         // If any step above fails, use a reliable fallback
         console.error("Error generating username:", error);
