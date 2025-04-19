@@ -65,6 +65,7 @@ interface OrganizationViewPageProps {
 }
 
 export default function OrganizationViewPage({ slugOrName }: OrganizationViewPageProps) {
+  // All hook declarations must come first, before any conditional returns
   const [activeTab, setActiveTab] = useState('about');
 
   // Fetch organization by slug or name
@@ -78,53 +79,6 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
     queryKey: [`/api/organizations/public/${slugOrName}/camps`],
     enabled: !!slugOrName && !!organization?.id,
   });
-
-  // Set the page title when organization data is loaded
-  useEffect(() => {
-    if (organization) {
-      document.title = `${organization.displayName || organization.name} - SportsAssist.io`;
-    }
-    return () => {
-      document.title = 'SportsAssist.io';
-    };
-  }, [organization]);
-
-  // Show loading state
-  if (isOrgLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] p-4">
-        <Skeleton className="h-16 w-16 rounded-full mb-4" />
-        <Skeleton className="h-8 w-64 mb-2" />
-        <Skeleton className="h-4 w-48 mb-8" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-3xl">
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-32 w-full" />
-        </div>
-      </div>
-    );
-  }
-
-  // Show error state
-  if (orgError || !organization) {
-    return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center p-6">
-        <Building className="h-16 w-16 text-muted-foreground mb-4" />
-        <h1 className="text-2xl font-bold mb-2">Organization Not Found</h1>
-        <p className="text-muted-foreground mb-6">
-          We couldn't find the organization you're looking for.
-          It may have been removed or you might have followed an invalid link.
-        </p>
-        <div className="flex space-x-4">
-          <Button asChild variant="outline">
-            <Link href="/browse">Browse Organizations</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/">Return Home</Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   // Helper function to convert hex to hsl for CSS Variables
   const hexToHSL = (hex: string): string => {
@@ -195,25 +149,42 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
     }
   };
   
-  // Convert colors to HSL format for CSS Variables
-  const primaryHSL = organization.primaryColor ? hexToHSL(organization.primaryColor) : '221 83% 53%';
-  const secondaryHSL = organization.secondaryColor ? hexToHSL(organization.secondaryColor) : primaryHSL;
+  // Set default HSL values always, regardless of whether the organization data is loaded
+  const defaultPrimaryHSL = '221 83% 53%'; // Default blue
+  const defaultSecondaryHSL = '221 83% 53%';
   
-  // Apply colors to the document root element
+  // Safely compute HSL values (with fallbacks)
+  const primaryHSL = organization?.primaryColor ? hexToHSL(organization.primaryColor) : defaultPrimaryHSL;
+  const secondaryHSL = organization?.secondaryColor ? hexToHSL(organization.secondaryColor) : primaryHSL;
+  
+  // Always-called effect for page title
   useEffect(() => {
     if (organization) {
-      console.log("Organization colors:", {
-        primaryColor: organization.primaryColor,
-        primaryHSL,
-        secondaryColor: organization.secondaryColor,
-        secondaryHSL
-      });
-      
+      document.title = `${organization.displayName || organization.name} - SportsAssist.io`;
+    } else {
+      document.title = 'SportsAssist.io';
+    }
+    return () => {
+      document.title = 'SportsAssist.io';
+    };
+  }, [organization]);
+  
+  // Always-called effect for CSS variables
+  useEffect(() => {
+    // Only apply if we have organization data
+    if (organization) {
       // Apply the styles to document root for consistent colors across the application
       document.documentElement.style.setProperty('--primary', primaryHSL);
       document.documentElement.style.setProperty('--secondary', secondaryHSL);
       document.documentElement.style.setProperty('--border', primaryHSL);
       document.documentElement.style.setProperty('--ring', primaryHSL);
+      
+      console.log("Applied organization colors:", {
+        primaryColor: organization.primaryColor,
+        primaryHSL,
+        secondaryColor: organization.secondaryColor,
+        secondaryHSL
+      });
     }
     
     // Cleanup when component unmounts
@@ -236,8 +207,45 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
     '--border': primaryHSL,
     '--ring': primaryHSL,
   } as React.CSSProperties;
+  
+  // Show loading state
+  if (isOrgLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-4">
+        <Skeleton className="h-16 w-16 rounded-full mb-4" />
+        <Skeleton className="h-8 w-64 mb-2" />
+        <Skeleton className="h-4 w-48 mb-8" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-3xl">
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-32 w-full" />
+        </div>
+      </div>
+    );
+  }
 
-  // Hero background style with or without banner
+  // Show error state
+  if (orgError || !organization) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center p-6">
+        <Building className="h-16 w-16 text-muted-foreground mb-4" />
+        <h1 className="text-2xl font-bold mb-2">Organization Not Found</h1>
+        <p className="text-muted-foreground mb-6">
+          We couldn't find the organization you're looking for.
+          It may have been removed or you might have followed an invalid link.
+        </p>
+        <div className="flex space-x-4">
+          <Button asChild variant="outline">
+            <Link href="/browse">Browse Organizations</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/">Return Home</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Hero background style with or without banner - only after we know organization exists
   const heroBgStyle = organization.bannerImageUrl 
     ? { 
         backgroundImage: `url(${organization.bannerImageUrl})`,

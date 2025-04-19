@@ -66,6 +66,7 @@ interface OrganizationPublicPageProps {
 }
 
 export default function OrganizationPublicProfile({ slug }: OrganizationPublicPageProps) {
+  // Always declare hooks at the top level, never conditionally
   const [activeTab, setActiveTab] = React.useState('about');
   
   // Fetch organization data
@@ -78,42 +79,6 @@ export default function OrganizationPublicProfile({ slug }: OrganizationPublicPa
   const { data: camps, isLoading: campsLoading } = useQuery<Camp[]>({
     queryKey: [`/api/organizations/public/${slug}/camps`],
     enabled: !!slug,
-  });
-  
-  if (orgLoading || campsLoading) {
-    return (
-      <AppLayout>
-        <div className="flex justify-center items-center min-h-[50vh]">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
-      </AppLayout>
-    );
-  }
-  
-  if (orgError || !organization) {
-    return (
-      <AppLayout>
-        <div className="container mx-auto p-6 text-center">
-          <h1 className="text-2xl font-bold mb-4">Organization Not Found</h1>
-          <p className="text-muted-foreground">
-            We couldn't find the organization you're looking for.
-          </p>
-          <Button asChild className="mt-4">
-            <Link href="/">Return Home</Link>
-          </Button>
-        </div>
-      </AppLayout>
-    );
-  }
-  
-  // Use organization colors for styling or fallback to defaults
-  const primaryColor = organization.primaryColor || '#3730a3';
-  const secondaryColor = organization.secondaryColor || '#1e3a8a';
-  
-  // Log organization colors for debugging
-  console.log("Organization colors:", {
-    primaryColor,
-    secondaryColor
   });
   
   // Helper function to convert hex to hsl for CSS Variables (matching creator-layout.tsx)
@@ -185,20 +150,21 @@ export default function OrganizationPublicProfile({ slug }: OrganizationPublicPa
     }
   };
   
-  // Convert colors to HSL format for CSS Variables
+  // Default values for when organization data is loading or not available
+  const defaultPrimaryColor = '#3730a3';
+  const defaultSecondaryColor = '#1e3a8a';
+  
+  // Safely access organization colors with defaults
+  const primaryColor = organization?.primaryColor || defaultPrimaryColor;
+  const secondaryColor = organization?.secondaryColor || defaultSecondaryColor;
+  
+  // Convert colors to HSL format for CSS Variables (safely)
   const primaryHSL = hexToHSL(primaryColor);
   const secondaryHSL = secondaryColor ? hexToHSL(secondaryColor) : primaryHSL;
   
-  // Log HSL conversions for debugging
-  console.log("Organization colors:", {
-    primaryColor,
-    primaryHSL,
-    secondaryColor,
-    secondaryHSL
-  });
-  
-  // Apply the organization colors to document root for consistency with creator-layout.tsx
+  // Always declare useEffect hook, never conditionally
   React.useEffect(() => {
+    // Only apply styles if we have valid colors
     if (primaryColor && secondaryColor) {
       document.documentElement.style.setProperty('--primary', primaryHSL);
       document.documentElement.style.setProperty('--secondary', secondaryHSL);
@@ -224,6 +190,34 @@ export default function OrganizationPublicProfile({ slug }: OrganizationPublicPa
     '--border': primaryHSL,
     '--ring': primaryHSL,
   } as React.CSSProperties;
+  
+  // Loading state
+  if (orgLoading || campsLoading) {
+    return (
+      <AppLayout>
+        <div className="flex justify-center items-center min-h-[50vh]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
+    );
+  }
+  
+  // Error or no organization data
+  if (orgError || !organization) {
+    return (
+      <AppLayout>
+        <div className="container mx-auto p-6 text-center">
+          <h1 className="text-2xl font-bold mb-4">Organization Not Found</h1>
+          <p className="text-muted-foreground">
+            We couldn't find the organization you're looking for.
+          </p>
+          <Button asChild className="mt-4">
+            <Link href="/">Return Home</Link>
+          </Button>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col" style={orgStyles}>
