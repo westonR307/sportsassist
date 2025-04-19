@@ -128,53 +128,102 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
 
   // Helper function to convert hex to hsl for CSS Variables
   const hexToHSL = (hex: string): string => {
-    // Remove the # if present
-    hex = hex.replace(/^#/, '');
-    
-    // Parse the hex values
-    let r = parseInt(hex.slice(0, 2), 16) / 255;
-    let g = parseInt(hex.slice(2, 4), 16) / 255;
-    let b = parseInt(hex.slice(4, 6), 16) / 255;
-    
-    // Find min and max values for lightness calculation
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    
-    // Calculate lightness
-    let lightness = (max + min) / 2;
-    
-    // Calculate saturation
-    let saturation = 0;
-    if (max !== min) {
-      saturation = lightness > 0.5 
-        ? (max - min) / (2.0 - max - min) 
-        : (max - min) / (max + min);
-    }
-    
-    // Calculate hue
-    let hue = 0;
-    if (max !== min) {
-      if (max === r) {
-        hue = (g - b) / (max - min) + (g < b ? 6 : 0);
-      } else if (max === g) {
-        hue = (b - r) / (max - min) + 2;
-      } else {
-        hue = (r - g) / (max - min) + 4;
+    try {
+      // Check if hex is valid
+      if (!hex || typeof hex !== 'string' || !hex.startsWith('#')) {
+        console.log("Invalid hex color format:", hex);
+        return '221 83% 53%'; // Default primary color in HSL
       }
-      hue *= 60;
+      
+      // Remove the # if present
+      hex = hex.replace(/^#/, '');
+      
+      // Validate hex length
+      if (hex.length !== 6) {
+        console.log("Invalid hex color length:", hex, "length:", hex.length);
+        return '221 83% 53%'; // Default primary color in HSL
+      }
+      
+      // Parse the hex values
+      let r = parseInt(hex.slice(0, 2), 16) / 255;
+      let g = parseInt(hex.slice(2, 4), 16) / 255;
+      let b = parseInt(hex.slice(4, 6), 16) / 255;
+      
+      // Check if parsing was successful
+      if (isNaN(r) || isNaN(g) || isNaN(b)) {
+        console.log("Failed to parse hex color:", hex, "r:", r, "g:", g, "b:", b);
+        return '221 83% 53%'; // Default primary color in HSL
+      }
+      
+      // Find min and max values for lightness calculation
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      
+      // Calculate lightness
+      let lightness = (max + min) / 2;
+      
+      // Calculate saturation
+      let saturation = 0;
+      if (max !== min) {
+        saturation = lightness > 0.5 
+          ? (max - min) / (2.0 - max - min) 
+          : (max - min) / (max + min);
+      }
+      
+      // Calculate hue
+      let hue = 0;
+      if (max !== min) {
+        if (max === r) {
+          hue = (g - b) / (max - min) + (g < b ? 6 : 0);
+        } else if (max === g) {
+          hue = (b - r) / (max - min) + 2;
+        } else {
+          hue = (r - g) / (max - min) + 4;
+        }
+        hue *= 60;
+      }
+      
+      // Convert to integers (degrees, percentage, percentage)
+      hue = Math.round(hue);
+      saturation = Math.round(saturation * 100);
+      lightness = Math.round(lightness * 100);
+      
+      return `${hue} ${saturation}% ${lightness}%`;
+    } catch (error) {
+      console.error("Error converting hex to HSL:", error);
+      return '221 83% 53%'; // Default primary color in HSL
     }
-    
-    // Convert to integers (degrees, percentage, percentage)
-    hue = Math.round(hue);
-    saturation = Math.round(saturation * 100);
-    lightness = Math.round(lightness * 100);
-    
-    return `${hue} ${saturation}% ${lightness}%`;
   };
   
   // Convert colors to HSL format for CSS Variables
-  const primaryHSL = organization.primaryColor ? hexToHSL(organization.primaryColor) : 'var(--primary)';
+  const primaryHSL = organization.primaryColor ? hexToHSL(organization.primaryColor) : '221 83% 53%';
   const secondaryHSL = organization.secondaryColor ? hexToHSL(organization.secondaryColor) : primaryHSL;
+  
+  // Apply colors to the document root element
+  useEffect(() => {
+    if (organization) {
+      console.log("Organization colors:", {
+        primaryColor: organization.primaryColor,
+        primaryHSL,
+        secondaryColor: organization.secondaryColor,
+        secondaryHSL
+      });
+      
+      // Apply the styles to document root for consistent colors across the application
+      document.documentElement.style.setProperty('--primary', primaryHSL);
+      document.documentElement.style.setProperty('--secondary', secondaryHSL);
+      document.documentElement.style.setProperty('--border', primaryHSL);
+      document.documentElement.style.setProperty('--ring', primaryHSL);
+    }
+    
+    // Cleanup when component unmounts
+    return () => {
+      document.documentElement.style.removeProperty('--primary');
+      document.documentElement.style.removeProperty('--secondary');
+      document.documentElement.style.removeProperty('--border');
+      document.documentElement.style.removeProperty('--ring');
+    };
+  }, [organization, primaryHSL, secondaryHSL]);
   
   // Define CSS variables for organization branding
   const orgStyles = {
