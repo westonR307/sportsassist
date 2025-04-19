@@ -226,7 +226,6 @@ export function setupAuth(app: Express) {
   
   app.post("/api/register", async (req, res, next) => {
     console.log("Registration request received for email:", req.body.email);
-    console.log("Registration request body:", req.body);
     
     try {
       // Check if email already exists
@@ -235,12 +234,9 @@ export function setupAuth(app: Express) {
         console.log(`Email already exists: ${req.body.email}`);
         return res.status(400).json({ message: "Email already exists" });
       }
-      
+
       // Get user data from request
       const { email, password, role, organizationName, organizationDescription, ...otherFields } = req.body;
-      
-      console.log("Other fields from registration:", otherFields);
-      console.log(`Organization data - Name: ${organizationName}, Description: ${organizationDescription}`);
       
       // Check if the role is valid
       if (role && !["camp_creator", "parent", "athlete"].includes(role)) {
@@ -251,57 +247,20 @@ export function setupAuth(app: Express) {
       // Create the user
       const hashedPassword = await hashPassword(password);
       
-      // Generate a username from email if not provided
-      let username: string;
-      
-      try {
-        // IMPORTANT: Server-side username generation that is fully controlled.
-        // Generate a simple, predictable format that will always pass validation.
-        
-        // First we create a unique random suffix with enough digits to avoid collisions
-        const randomSuffix = Math.floor(10000000 + Math.random() * 90000000);
-        
-        // Then create a username with a consistent prefix followed by digits
-        username = 'user' + randomSuffix;
-        
-        console.log("Final username (server-generated):", username);
-        
-        // Verification step - just to be 100% certain
-        if (!username.match(/^[a-z][a-z0-9_-]+$/)) {
-          console.error("Critical error: Server-generated username failed validation check");
-          // This should never happen with our carefully controlled format
-          username = 'user' + Date.now(); // Timestamp-based fallback as last resort
-        }
-      } catch (error) {
-        // If any step above fails, use a reliable fallback
-        console.error("Error generating username:", error);
-        username = 'user' + Math.floor(Math.random() * 1000000);
-        console.log("Using error fallback username:", username);
-      }
-      
+      // Generate a timestamp-based username
+      const timestamp = Date.now();
+      const username = `user${timestamp}`;
       console.log(`Generated username: ${username}`);
       
+      // Handle organization creation for camp creators
       let organizationId: number | undefined = undefined;
-      
-      // If this is a camp_creator and they provided organization info, create the organization first
       if (role === "camp_creator" && organizationName) {
         try {
           console.log(`Creating organization: ${organizationName}`);
-          
-          // Import monitorQuery function directly here since we don't have it from a module
-          // in this file
-          const { monitorQuery } = await import('./db');
-          
-          const organization = await monitorQuery(
-            "POST /api/register - createOrganization",
-            () => storage.createOrganization({
-              name: organizationName,
-              description: organizationDescription || '',
-              // Note: Contact email is stored in the user's email field
-            }),
-            400 // Higher threshold for organization creation as it's a complex operation
-          );
-          
+          const organization = await storage.createOrganization({
+            name: organizationName,
+            description: organizationDescription || '',
+          });
           console.log("Organization created successfully:", organization);
           organizationId = organization.id;
         } catch (orgError: any) {
@@ -312,80 +271,55 @@ export function setupAuth(app: Express) {
         }
       }
       
-      // Create user data with organization if applicable
+      // Create user data
       const userData = {
-        username, // Use generated or provided username
+        username,
         email,
-        password: hashedPassword, // Pass the hashed password
-        passwordHash: hashedPassword, // Also store in passwordHash for backward compatibility
+        password: hashedPassword,
+        passwordHash: hashedPassword, // For backward compatibility
         role: role || "parent",
         ...otherFields,
         ...(organizationId ? { organizationId } : {})
       };
       
-      console.log(`Creating user with data:`, {
+      console.log("Creating user with data:", {
         ...userData,
-        password: "REDACTED",
-        passwordHash: "REDACTED",
-        organizationId,
-        username_length: username.length,
-        username_pattern: username.match(/^[a-z0-9_-]+$/) ? "valid" : "invalid"
+        password: "[REDACTED]",
+        passwordHash: "[REDACTED]"
       });
-      
-      // Import monitorQuery if we haven't already
-      const { monitorQuery } = 'monitorQuery' in this ? this : await import('./db');
 
-      // Use monitor query for user creation as well
-      const user = await monitorQuery(
-        "POST /api/register - createUser",
-        () => storage.createUser(userData),
-        300 // 300ms threshold for user creation
-      );
-      console.log("User created successfully:", user);
-      
+      // Create the user
+      const user = await storage.createUser(userData);
+      console.log("User created successfully:", {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role
+      });
+
       // Log the user in
       req.login(user, (err) => {
         if (err) {
-          console.error("Error logging in new user:", err);
+          console.error("Session creation error:", err);
           return next(err);
         }
-        
         console.log(`User ${user.email} registered and logged in successfully`);
         res.status(201).json(user);
       });
     } catch (error: any) {
-      // Log detailed error information to help debugging
-      console.error("Registration error:", error);
-      
-      // Check for specific database errors that might indicate username problems
-      if (error.message && error.message.toLowerCase().includes('unique constraint')) {
-        console.error("Likely a username collision - unique constraint violation");
-        return res.status(400).json({ 
-          message: `Registration failed: This username or email is already in use. Please try again.`
-        });
-      }
-      
-      // Check for other database constraint errors
-      if (error.message && error.message.toLowerCase().includes('constraint')) {
-        console.error("Database constraint violation:", error.message);
-        return res.status(400).json({ 
-          message: `Registration failed due to a database constraint. Please try again.`
-        });
-      }
-      
-      // Check for any other validation errors
-      if (error.message) {
-        console.error("Validation or pattern error:", error.message);
-        return res.status(400).json({ 
-          message: "Registration failed. Please try again or contact support if the issue persists."
-        });
-      }
-      
-      // Generic error response with improved messaging
-      res.status(500).json({ 
-        message: `Registration failed: ${error.message}`,
-        details: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+      console.error("Registration error:", {
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        constraint: error.constraint
       });
+      
+      // Special case for unique constraint violations (email or username)
+      if (error.code === '23505') {
+        return res.status(400).json({ message: "Username or email already exists" });
+      }
+      
+      res.status(500).json({ message: "Registration failed. Please try again later." });
     }
   });
 
