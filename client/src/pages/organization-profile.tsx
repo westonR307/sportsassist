@@ -431,62 +431,48 @@ export default function OrganizationProfilePage() {
     return changed;
   };
 
-  // Create a debounced version of the mutation function
-  const debouncedMutation = useCallback(
-    debounce((data: OrganizationProfileData) => {
-      const changedData = getChangedFields(data);
-      
-      // Validate color field
-      const validHexColor = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
-      if (changedData.primaryColor && !validHexColor.test(changedData.primaryColor)) {
-        toast({
-          title: 'Invalid Color Format',
-          description: 'Primary color must be a valid hex color (e.g., #3730a3).',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      if (changedData.secondaryColor && !validHexColor.test(changedData.secondaryColor)) {
-        toast({
-          title: 'Invalid Color Format',
-          description: 'Secondary color must be a valid hex color (e.g., #1e3a8a).',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      if (changedData.buttonColor && !validHexColor.test(changedData.buttonColor)) {
-        toast({
-          title: 'Invalid Color Format',
-          description: 'Button color must be a valid hex color (e.g., #fbbf24).',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      console.log('Auto-saving changes:', changedData);
-      updateProfileMutation.mutate(changedData);
-    }, 1000),
-    [updateProfileMutation, getChangedFields, toast]
-  );
-
-  // Auto-save when form values change
-  useEffect(() => {
-    const subscription = form.watch((value) => {
-      if (value.name) {
-        debouncedMutation(value as OrganizationProfileData);
-      }
-    });
-    
-    return () => subscription.unsubscribe();
-  }, [form, debouncedMutation]);
+  // Helper function to validate color format
+  const validateColorFormat = (color: string | undefined | null): boolean => {
+    if (!color) return true;
+    const validHexColor = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+    return validHexColor.test(color);
+  };
 
   // Handle form submission
   const onSubmit = (data: OrganizationProfileData) => {
     console.log('Form submitted with data:', data);
     const changedData = getChangedFields(data);
     console.log('Submitting changed fields:', changedData);
+    
+    // Validate color fields before submission
+    if (changedData.primaryColor && !validateColorFormat(changedData.primaryColor)) {
+      toast({
+        title: 'Invalid Color Format',
+        description: 'Primary color must be a valid hex color (e.g., #3730a3).',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    if (changedData.secondaryColor && !validateColorFormat(changedData.secondaryColor)) {
+      toast({
+        title: 'Invalid Color Format',
+        description: 'Secondary color must be a valid hex color (e.g., #1e3a8a).',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    if (changedData.buttonColor && !validateColorFormat(changedData.buttonColor)) {
+      toast({
+        title: 'Invalid Color Format',
+        description: 'Button color must be a valid hex color (e.g., #fbbf24).',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // If validation passes, submit the changes
     updateProfileMutation.mutate(changedData);
     
     // Also upload any files that were selected
