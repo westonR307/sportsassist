@@ -254,22 +254,37 @@ export function setupAuth(app: Express) {
       // Generate a username from email if not provided
       let username: string;
       
-      if (req.body.username && typeof req.body.username === 'string') {
-        // Use provided username but ensure it's lowercase
-        username = req.body.username.trim().toLowerCase();
-      } else {
-        // Generate username from email (simple, just use the part before @)
-        username = email.split('@')[0].toLowerCase();
+      try {
+        if (req.body.username && typeof req.body.username === 'string') {
+          // Use provided username but ensure it's lowercase and sanitized
+          username = req.body.username.trim().toLowerCase();
+        } else {
+          // Generate username from email (part before @)
+          username = String(email).split('@')[0].toLowerCase();
+          console.log("Initial username from email:", username);
+        }
+        
+        // Sanitize very strictly - only allow alphanumeric, underscore, hyphen
+        // This ensures the username meets any database constraints
+        username = username.replace(/[^a-z0-9_-]/g, '');
+        console.log("Username after sanitization:", username);
+        
+        // Ensure we have a valid base even if all characters were removed
+        if (username.length === 0) {
+          username = 'user';
+          console.log("Empty username after sanitization, using fallback");
+        }
+        
+        // Always add a random suffix to greatly reduce chance of collision
+        const randomSuffix = Math.floor(Math.random() * 10000);
+        username = username + randomSuffix;
+        console.log("Final username with suffix:", username);
+      } catch (error) {
+        // If any step above fails, use a reliable fallback
+        console.error("Error generating username:", error);
+        username = 'user' + Math.floor(Math.random() * 1000000);
+        console.log("Using error fallback username:", username);
       }
-      
-      // Sanitize to ensure only valid characters remain (alphanumeric, underscore, hyphen)
-      username = username.replace(/[^a-z0-9_-]/g, '');
-      
-      // Add a random number suffix to reduce chances of collision
-      if (username.length === 0) {
-        username = 'user';
-      }
-      username = username + Math.floor(Math.random() * 10000);
       
       console.log(`Generated username: ${username}`);
       
@@ -318,7 +333,10 @@ export function setupAuth(app: Express) {
       console.log(`Creating user with data:`, {
         ...userData,
         password: "REDACTED",
-        organizationId
+        passwordHash: "REDACTED",
+        organizationId,
+        username_length: username.length,
+        username_pattern: username.match(/^[a-z0-9_-]+$/) ? "valid" : "invalid"
       });
       
       // Import monitorQuery if we haven't already
