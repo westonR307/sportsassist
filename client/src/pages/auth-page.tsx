@@ -129,11 +129,11 @@ function AuthPage() {
       return;
     }
 
-    // Prepare user data, including first_name and last_name which are needed by the server
+    // Prepare user data with empty first_name and last_name fields which are needed by the server
     const registrationData = {
       ...data,
-      first_name: data.first_name || '',
-      last_name: data.last_name || '',
+      first_name: '',  // These will be filled out later in the profile
+      last_name: '',   // These will be filled out later in the profile
       // Let the server generate the username
     };
 

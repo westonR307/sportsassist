@@ -409,7 +409,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(insertUser: InsertUser & { organizationId?: number }): Promise<User> {
+  async createUser(insertUser: InsertUser & { organizationId?: number } & { first_name?: string, last_name?: string }): Promise<User> {
     console.log("Creating user with data:", {
       ...insertUser,
       password: "[REDACTED]"
@@ -418,14 +418,14 @@ export class DatabaseStorage implements IStorage {
     try {
       // Set up the user data object with all fields
       const userData = {
-        username: insertUser.username.toLowerCase(),
+        username: insertUser.username ? insertUser.username.toLowerCase() : `user${Date.now()}`,
         password: insertUser.password,
         passwordHash: insertUser.password, // This field is duplicated for backward compatibility
         email: insertUser.email.toLowerCase(),
         role: insertUser.role,
         organizationId: insertUser.organizationId,
-        first_name: insertUser.first_name,
-        last_name: insertUser.last_name,
+        first_name: insertUser.first_name || "",
+        last_name: insertUser.last_name || "",
         createdAt: new Date(),
         updatedAt: new Date()
       };
