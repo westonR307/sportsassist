@@ -99,22 +99,11 @@ export const insertUserSchema = z.object({
   email: z.string().email("Valid email address is required"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   role: z.enum(publicRoles),
-  username: z.string().optional(),
   organizationName: z.string().optional(),
   organizationDescription: z.string().optional(),
-  first_name: z.string().optional(),
-  last_name: z.string().optional(),
-  profile_photo: z.string().optional(),
-  phone_number: z.string().optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  zip_code: z.string().optional(),
-  onboarding_completed: z.boolean().optional(),
-  preferred_contact: z.enum(["email", "sms", "app"]).optional(),
 }).refine((data) => {
-  if (data.role === 'camp_creator') {
-    return !!data.organizationName?.trim();
+  if (data.role === 'camp_creator' && !data.organizationName?.trim()) {
+    return false;
   }
   return true;
 }, {
