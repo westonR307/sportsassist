@@ -251,26 +251,25 @@ export function setupAuth(app: Express) {
       // Create the user
       const hashedPassword = await hashPassword(password);
       
-      // Generate a username if not provided
-      // Make sure the username is a properly formatted string type
+      // Generate a username from email if not provided
       let username: string;
+      
       if (req.body.username && typeof req.body.username === 'string') {
-        // Ensure username follows a safe pattern: alphanumeric, underscore, and hyphen only
+        // Use provided username but ensure it's lowercase
         username = req.body.username.trim().toLowerCase();
-        // Remove any characters that aren't alphanumeric, underscore, or hyphen
-        username = username.replace(/[^a-z0-9_-]/g, '');
       } else {
-        // Generate a clean username from email
-        const emailBase = String(email).split('@')[0];
-        const sanitizedBase = emailBase.replace(/[^a-z0-9_-]/g, '').toLowerCase();
-        const randomSuffix = Math.floor(Math.random() * 10000);
-        username = `${sanitizedBase}${randomSuffix}`;
+        // Generate username from email (simple, just use the part before @)
+        username = email.split('@')[0].toLowerCase();
       }
       
-      // Ensure username isn't empty after sanitization
-      if (!username || username.length === 0) {
-        username = `user${Math.floor(Math.random() * 1000000)}`;
+      // Sanitize to ensure only valid characters remain (alphanumeric, underscore, hyphen)
+      username = username.replace(/[^a-z0-9_-]/g, '');
+      
+      // Add a random number suffix to reduce chances of collision
+      if (username.length === 0) {
+        username = 'user';
       }
+      username = username + Math.floor(Math.random() * 10000);
       
       console.log(`Generated username: ${username}`);
       

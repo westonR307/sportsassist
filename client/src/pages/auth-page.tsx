@@ -129,10 +129,19 @@ function AuthPage() {
       return;
     }
 
-    // Create a username from the email with a random suffix to ensure uniqueness
-    const usernameBase = String(data.email.split('@')[0]);
+    // Create a username from the email with proper formatting
+    // Convert email prefix to lowercase and sanitize it for valid characters
+    const usernameBase = String(data.email.split('@')[0]).toLowerCase();
+    const sanitizedBase = usernameBase.replace(/[^a-z0-9_-]/g, '');
+    
+    // Add a random number suffix (as a string) to avoid collisions
     const randomSuffix = String(Math.floor(Math.random() * 10000));
-    const username = usernameBase + randomSuffix; // Ensure string concatenation not addition
+    let username = sanitizedBase + randomSuffix;
+    
+    // If sanitization removed all characters, use a fallback
+    if (sanitizedBase.length === 0) {
+      username = 'user' + randomSuffix;
+    }
 
     // Extra validation to ensure username is a string
     if (typeof username !== 'string') {
@@ -144,10 +153,10 @@ function AuthPage() {
       return;
     }
 
-    // Combine data with derived username
+    // Combine data with derived username (already lowercase and sanitized)
     const fullData = {
       ...data,
-      username: username.toLowerCase() // Ensure lowercase string
+      username: username
     };
 
     console.log("Submitting registration data:", {
