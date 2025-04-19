@@ -36,14 +36,13 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-import { insertUserSchema, InsertUser } from "@shared/schema";
+import { InsertUser } from "@shared/schema";
 
-const registerSchema = insertUserSchema.pick({
-  email: true,
-  password: true,
-  role: true
-}).extend({
+// Create a custom register schema instead of using pick on insertUserSchema
+const registerSchema = z.object({
+  email: z.string().email("Valid email address is required"),
   password: z.string().min(8, "Password must be at least 8 characters"),
+  role: z.enum(["parent", "camp_creator", "athlete"]),
   organizationName: z.string().optional(),
   organizationDescription: z.string().optional(),
 }).superRefine((data, ctx) => {
@@ -130,31 +129,13 @@ function AuthPage() {
       return;
     }
 
-    // Create a username from the email with proper formatting
-    let usernameBase;
+    // Generate a random username that will always work
+    // This is handled server-side now, but we provide a username 
+    // to ensure consistency in the registration process
+    const randomSuffix = String(Math.floor(Math.random() * 10000000));
+    let username = 'user' + randomSuffix;
     
-    // Special case for the problematic email
-    if (data.email === 'coachmurph@sportsassist.io') {
-      usernameBase = 'coachmurph';
-      console.log("Using special base for coachmurph email");
-    } else {
-      // Convert email prefix to lowercase
-      usernameBase = String(data.email.split('@')[0]).toLowerCase();
-    }
-    
-    // Sanitize for valid characters
-    const sanitizedBase = usernameBase.replace(/[^a-z0-9_-]/g, '');
-    
-    // Add a random number suffix (as a string) to avoid collisions
-    const randomSuffix = String(Math.floor(Math.random() * 100000));
-    let username = sanitizedBase + randomSuffix;
-    
-    // If sanitization removed all characters, use a fallback
-    if (sanitizedBase.length === 0) {
-      username = 'user' + randomSuffix;
-    }
-    
-    console.log("Generated username:", username);
+    console.log("Generated random username:", username);
 
     // Extra validation to ensure username is a string
     if (typeof username !== 'string') {
