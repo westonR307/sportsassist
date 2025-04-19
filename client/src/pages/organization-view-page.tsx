@@ -192,38 +192,7 @@ export default function OrganizationViewPage({ slugOrName }: OrganizationViewPag
       return '221 83% 53%'; // Default primary color in HSL
     }
   };
-  
-  // Helper function to calculate color brightness (0-255)
-  // Higher values are brighter (closer to white)
-  const getColorBrightness = (hexColor: string): number => {
-    try {
-      if (!hexColor || typeof hexColor !== 'string' || !hexColor.startsWith('#')) {
-        return 150; // Default medium brightness
-      }
-      
-      // Remove the # if present
-      const hex = hexColor.replace(/^#/, '');
-      
-      // Parse the hex values to RGB
-      const r = parseInt(hex.slice(0, 2), 16);
-      const g = parseInt(hex.slice(2, 4), 16);
-      const b = parseInt(hex.slice(4, 6), 16);
-      
-      // Calculate perceived brightness using the formula: (0.299*R + 0.587*G + 0.114*B)
-      // This formula accounts for human perception of color (we perceive green as brighter than red or blue)
-      return (0.299 * r + 0.587 * g + 0.114 * b);
-    } catch (error) {
-      console.error("Error calculating color brightness:", error);
-      return 150; // Default medium brightness
-    }
-  };
-  
-  // Function to determine if text should be light or dark based on background
-  const getTextColorForBackground = (hexColor: string): string => {
-    const brightness = getColorBrightness(hexColor);
-    // If brightness is above 160 (relatively bright background), use dark text
-    return brightness > 160 ? '#333333' : '#ffffff';
-  };
+  // Note: We're using the global functions defined outside the component
   
   // Set default HSL values always, regardless of whether the organization data is loaded
   const defaultPrimaryHSL = '221 83% 53%'; // Default blue
