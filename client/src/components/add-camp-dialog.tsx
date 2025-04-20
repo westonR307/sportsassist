@@ -392,12 +392,25 @@ export function AddCampDialog({
         
         // If this is a virtual camp, we don't need physical location fields
         if (data.isVirtual) {
+          console.log("Processing virtual camp in mutation - setting empty location fields");
           // Set all location fields to empty values for virtual camps
           requestData.streetAddress = "";
           requestData.city = "";
           requestData.state = "";
           requestData.zipCode = "";
           requestData.additionalLocationDetails = "";
+          
+          // Ensure virtual meeting URL is present
+          if (!requestData.virtualMeetingUrl) {
+            console.error("Missing virtual meeting URL for virtual camp");
+            setSubmitting(false);
+            toast({
+              title: "Missing meeting URL",
+              description: "Please provide a virtual meeting URL for online camps.",
+              variant: "destructive",
+            });
+            return;
+          }
         } else {
           // Ensure location fields are properly set for in-person camps
           if (!requestData.streetAddress || !requestData.city || !requestData.state || !requestData.zipCode) {
@@ -1038,33 +1051,65 @@ export function AddCampDialog({
                   // Set schedulingType
                   form.setValue("schedulingType", selectedSchedulingType);
 
-                  // Handle virtual meeting URL for virtual camps
-                  if (data.isVirtual && (!data.virtualMeetingUrl || !data.virtualMeetingUrl.trim())) {
-                    form.setValue("virtualMeetingUrl", "https://meet.google.com/example");
+                  // Handle virtual camps first - this needs to be handled before any other validation
+                  if (data.isVirtual) {
+                    console.log("Processing virtual camp");
+                    
+                    // For virtual camps, ensure we have a meeting URL
+                    if (!data.virtualMeetingUrl || !data.virtualMeetingUrl.trim()) {
+                      form.setValue("virtualMeetingUrl", "https://meet.google.com/example");
+                    }
                     
                     // Clear location field validation errors for virtual camps
                     form.clearErrors("streetAddress");
                     form.clearErrors("city");
                     form.clearErrors("state");
                     form.clearErrors("zipCode");
-                  } else if (!data.isVirtual) {
+                    
+                    // Set empty values for physical location fields and clear any errors
+                    form.setValue("streetAddress", "", { shouldValidate: false });
+                    form.setValue("city", "", { shouldValidate: false });
+                    form.setValue("state", "", { shouldValidate: false });
+                    form.setValue("zipCode", "", { shouldValidate: false });
+                    form.setValue("additionalLocationDetails", "", { shouldValidate: false });
+                    
+                  } else {
+                    console.log("Processing in-person camp, validating location fields");
                     // For non-virtual camps, set to empty string instead of null to maintain type safety
                     form.setValue("virtualMeetingUrl", "");
                     // Also clear any validation errors related to the virtual meeting URL field
                     form.clearErrors("virtualMeetingUrl");
                     
                     // For non-virtual camps, validate location fields if they're empty
+                    let hasLocationErrors = false;
+                    
                     if (!data.streetAddress || !data.streetAddress.trim()) {
                       form.setError("streetAddress", { type: "manual", message: "Street address is required for in-person camps" });
+                      hasLocationErrors = true;
                     }
                     if (!data.city || !data.city.trim()) {
                       form.setError("city", { type: "manual", message: "City is required for in-person camps" });
+                      hasLocationErrors = true;
                     }
                     if (!data.state || !data.state.trim()) {
                       form.setError("state", { type: "manual", message: "State is required for in-person camps" });
+                      hasLocationErrors = true;
                     }
                     if (!data.zipCode || !data.zipCode.trim()) {
                       form.setError("zipCode", { type: "manual", message: "ZIP code is required for in-person camps" });
+                      hasLocationErrors = true;
+                    }
+                    
+                    // If we have location errors, stop form submission and focus the location tab
+                    if (hasLocationErrors) {
+                      console.log("Location errors found, switching to location tab");
+                      setCurrentTab("location");
+                      toast({
+                        title: "Missing location information",
+                        description: "Please provide complete location details for in-person camps.",
+                        variant: "destructive",
+                      });
+                      return;
                     }
                   }
 
