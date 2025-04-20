@@ -24,17 +24,24 @@ const CACHE_TTL = {
 export async function getCachedCamp(campId: number): Promise<Camp | null> {
   const cacheKey = getCacheKey('camp', campId);
   
+  console.log(`Redis availability status: ${isRedisAvailable()}`);
+  
   // Only try to get from cache if Redis is available
   if (isRedisAvailable()) {
     try {
+      console.log(`Attempting to get camp ${campId} from Redis cache with key: ${cacheKey}`);
       const cachedCamp = await cacheGetJson<Camp>(cacheKey);
       if (cachedCamp) {
+        console.log(`Redis cache hit for camp ${campId}`);
         return cachedCamp;
       }
+      console.log(`Redis cache miss for camp ${campId}`);
     } catch (error: any) {
       // Log error but continue to fallback database query
       console.warn(`Error retrieving camp from cache: ${error.message}`);
     }
+  } else {
+    console.log(`Redis not available, skipping cache lookup for camp ${campId}`);
   }
   
   // If not in cache or Redis unavailable, fetch from database

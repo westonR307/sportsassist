@@ -8,19 +8,21 @@ let redis: Redis | null = null;
 // Function to create Redis client with better error handling
 function createRedisClient() {
   try {
-    // Try to create a Redis client
+    // Use Upstash Redis configuration
     const client = new Redis({
-      host: process.env.REDIS_HOST || '127.0.0.1',
+      host: process.env.REDIS_HOST || 'improved-urchin-24369.upstash.io',
       port: Number(process.env.REDIS_PORT) || 6379,
-      maxRetriesPerRequest: 1,
-      connectTimeout: 1000, // Shorter timeout for faster fallback
+      password: process.env.REDIS_PASSWORD || 'AV8xAAIjcDE2MjY1YTgwZjdkNDA0MjBiYWUxNGUxMWE5NzllY2ZlNXAxMA',
+      tls: { rejectUnauthorized: false }, // Required for secure connections
+      maxRetriesPerRequest: 2,
+      connectTimeout: 2000, // Allow more time for cloud-based Redis
       enableOfflineQueue: false, // Don't queue commands when disconnected
       retryStrategy(times) {
         if (times > 5) {
           console.log(`Redis retry limit reached after ${times} attempts, using fallback storage`);
           return null; // Stop retrying after 5 attempts
         }
-        const delay = Math.min(times * 100, 3000);
+        const delay = Math.min(times * 300, 3000);
         return delay;
       },
       reconnectOnError(err) {
