@@ -1327,26 +1327,20 @@ export async function registerRoutes(app: Express) {
       const status = req.query.status as string | undefined;
       const type = req.query.type as string | undefined;
       const search = req.query.search as string | undefined;
+      const view = req.query.view as string | undefined;
       
       // If explicitly set in the query, override the default includeDeleted
       if (req.query.includeDeleted === 'true') {
         includeDeleted = true;
       }
       
-      // Check if we should filter by organization
-      if (req.user) {
-        const userType = req.user.role;
-        
-        // For organization staff members (camp creators, managers), show only their organization camps
-        if (['camp_creator', 'manager', 'coach', 'volunteer'].includes(userType) && req.user.organizationId) {
-          console.log(`Filtering camps for ${userType} with organization ID ${req.user.organizationId}`);
-          organizationId = req.user.organizationId;
-        } else {
-          console.log("Showing all camps (public view)");
-        }
+      // Only filter by organization if specifically requesting "my-camps" view
+      // The available-camps-page.tsx should always show all public camps
+      if (view === 'my-camps' && req.user && req.user.organizationId) {
+        console.log(`Filtering camps for user's organization ID ${req.user.organizationId} (my-camps view)`);
+        organizationId = req.user.organizationId;
       } else {
-        // For unauthenticated users, show all public camps
-        console.log("Unauthenticated user - showing all public camps");
+        console.log("Showing all public camps (available-camps view)");
       }
       
       // Get camps from storage with query monitoring
