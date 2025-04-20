@@ -1,5 +1,5 @@
 // Test script to verify Redis connection to Upstash
-const Redis = require('ioredis');
+import Redis from 'ioredis';
 
 // Define Redis connection details
 const redisHost = process.env.REDIS_HOST || 'improved-urchin-24369.upstash.io';
