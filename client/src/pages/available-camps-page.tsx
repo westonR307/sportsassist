@@ -589,7 +589,7 @@ function CompactCampCard({ camp }: CampCardProps) {
         description: "Please log in or register to sign up for camps",
         variant: "default",
       });
-      navigate("/auth");
+      setLocation("/auth");
       return;
     }
     
