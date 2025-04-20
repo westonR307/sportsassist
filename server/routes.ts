@@ -1334,13 +1334,23 @@ export async function registerRoutes(app: Express) {
         includeDeleted = true;
       }
       
-      // Only filter by organization if specifically requesting "my-camps" view
-      // The available-camps-page.tsx should always show all public camps
-      if (view === 'my-camps' && req.user && req.user.organizationId) {
-        console.log(`Filtering camps for user's organization ID ${req.user.organizationId} (my-camps view)`);
-        organizationId = req.user.organizationId;
+      // Check if we should filter by organization
+      if (req.user) {
+        const userType = req.user.role;
+        
+        // For dashboard and organization-specific views, filter by organization
+        if (view === 'my-camps' || view === 'dashboard' || req.path.includes('/dashboard/')) {
+          if (['camp_creator', 'manager', 'coach', 'volunteer'].includes(userType) && req.user.organizationId) {
+            console.log(`Filtering camps for ${userType} with organization ID ${req.user.organizationId} (dashboard/my-camps view)`);
+            organizationId = req.user.organizationId;
+          }
+        } else {
+          // For find-camps/available-camps, show all public camps
+          console.log("Showing all public camps (available-camps view)");
+        }
       } else {
-        console.log("Showing all public camps (available-camps view)");
+        // For unauthenticated users, show all public camps
+        console.log("Unauthenticated user - showing all public camps");
       }
       
       // Get camps from storage with query monitoring
