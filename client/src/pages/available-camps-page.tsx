@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
+import { useLocation } from "wouter";
 import {
   Select,
   SelectContent,
@@ -510,6 +511,8 @@ interface CampCardProps {
 function CompactCampCard({ camp }: CampCardProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const [_, setLocation] = useLocation();
   const isVirtual = camp.isVirtual;
   const now = new Date();
   const startDate = new Date(camp.startDate);
@@ -545,11 +548,14 @@ function CompactCampCard({ camp }: CampCardProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/camps"] });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Registration failed",
-        description: error.message || "Failed to register for this camp",
-        variant: "destructive",
-      });
+      // Don't show error toast for authentication errors since we're redirecting
+      if (!error.message.includes("Authentication required")) {
+        toast({
+          title: "Registration failed",
+          description: error.message || "Failed to register for this camp",
+          variant: "destructive",
+        });
+      }
     },
   });
   
@@ -574,6 +580,20 @@ function CompactCampCard({ camp }: CampCardProps) {
   const handleRegister = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Check if the user is authenticated
+    if (!user) {
+      // Redirect to auth page if not authenticated
+      toast({
+        title: "Authentication required",
+        description: "Please log in or register to sign up for camps",
+        variant: "default",
+      });
+      navigate("/auth");
+      return;
+    }
+    
+    // User is authenticated, proceed with registration
     registerMutation.mutate(camp.id);
   };
   
