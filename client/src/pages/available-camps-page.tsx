@@ -465,9 +465,10 @@ function CompactCampCard({ camp }: CampCardProps) {
     queryKey: ['/api/organizations'],
     enabled: true,
   });
-  const { colors } = getOrganizationColors(orgList, camp.organizationId);
+  const { organization, colors } = getOrganizationColors(orgList, camp.organizationId);
   const primaryColor = colors.primaryColor;
   const secondaryColor = colors.secondaryColor;
+  const organizationName = organization?.name || "Unknown Organization";
   
   // Determine schedule type badge text
   const hasFixedSchedule = camp.defaultStartTime && camp.defaultEndTime;
@@ -538,6 +539,13 @@ function CompactCampCard({ camp }: CampCardProps) {
             <div className="flex-1">
               <div className="flex items-start flex-wrap gap-2">
                 <h3 className="font-medium text-lg">{camp.name}</h3>
+                
+                {/* Organization badge */}
+                <Badge variant="outline" className="flex items-center gap-1 h-5" style={{ borderColor: primaryColor, backgroundColor: `${primaryColor}10` }}>
+                  <Building2 className="h-3 w-3" />
+                  <span>{organizationName}</span>
+                </Badge>
+                
                 {showStartingSoon && (
                   <Badge variant="destructive" className="text-[10px] h-5 flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
