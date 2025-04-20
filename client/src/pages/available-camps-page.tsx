@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { 
   Calendar, User, ArrowRight, Clock, MapPin, Search, Filter, 
   Laptop, Calendar as CalendarIcon, Banknote, Map, Calendar as CalIcon, 
-  Users, ChevronDown, ChevronUp, Plus, DollarSign
+  Users, ChevronDown, ChevronUp, Plus, DollarSign, Building2
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Badge } from "@/components/ui/badge";
@@ -83,6 +83,7 @@ export default function AvailableCampsPage() {
   const [selectedType, setSelectedType] = useState<string>("any_type");
   const [selectedCity, setSelectedCity] = useState<string>("any_city");
   const [selectedState, setSelectedState] = useState<string>("any_state");
+  const [selectedOrganization, setSelectedOrganization] = useState<string>("any_organization");
   const [showVirtualOnly, setShowVirtualOnly] = useState(false);
   const [ageRange, setAgeRange] = useState<[number, number]>([5, 18]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
@@ -105,7 +106,7 @@ export default function AvailableCampsPage() {
   });
   
   // Get organizations map for styling - enable for all users
-  const { data: organizations = [] } = useQuery({
+  const { data: organizations = [] } = useQuery<Organization[]>({
     queryKey: ['/api/organizations'],
     // No longer requiring the user to be authenticated
   });
@@ -180,9 +181,13 @@ export default function AvailableCampsPage() {
     // Virtual only filter
     const matchesVirtual = !showVirtualOnly || camp.isVirtual;
     
+    // Organization filter
+    const matchesOrganization = selectedOrganization === "any_organization" || 
+      camp.organizationId?.toString() === selectedOrganization;
+    
     return matchesSearch && hasSport && hasSkillLevel && matchesType && 
            matchesCity && matchesState && matchesAgeRange && 
-           matchesPrice && matchesDateRange && matchesVirtual;
+           matchesPrice && matchesDateRange && matchesVirtual && matchesOrganization;
   });
 
   // Get unique sports from available camps
@@ -252,6 +257,20 @@ export default function AvailableCampsPage() {
                   <SelectItem value="beginner">{skillLevelNames.beginner}</SelectItem>
                   <SelectItem value="intermediate">{skillLevelNames.intermediate}</SelectItem>
                   <SelectItem value="advanced">{skillLevelNames.advanced}</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={selectedOrganization} onValueChange={setSelectedOrganization}>
+                <SelectTrigger className="w-full md:w-[180px]">
+                  <SelectValue placeholder="Organization" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any_organization">Any Organization</SelectItem>
+                  {organizations.map((org: Organization) => (
+                    <SelectItem key={org.id} value={org.id.toString()}>
+                      {org.name || "Unnamed Organization"}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               
@@ -421,11 +440,11 @@ export default function AvailableCampsPage() {
               <CalendarIcon size={48} className="text-muted-foreground mb-4" />
               <h3 className="text-xl font-semibold mb-2">No matching camps found</h3>
               <p className="text-muted-foreground text-center max-w-md mb-6">
-                {searchQuery || selectedSport !== "all_sports" || selectedSkillLevel !== "any_level" || selectedType !== "any_type" || showVirtualOnly
+                {searchQuery || selectedSport !== "all_sports" || selectedSkillLevel !== "any_level" || selectedType !== "any_type" || selectedOrganization !== "any_organization" || showVirtualOnly
                   ? "Try adjusting your filters to find more camps."
                   : "There are no upcoming camps available at this time. Check back later for new opportunities."}
               </p>
-              {(searchQuery || selectedSport !== "all_sports" || selectedSkillLevel !== "any_level" || selectedType !== "any_type" || showVirtualOnly) && (
+              {(searchQuery || selectedSport !== "all_sports" || selectedSkillLevel !== "any_level" || selectedType !== "any_type" || selectedOrganization !== "any_organization" || showVirtualOnly) && (
                 <Button 
                   variant="outline"
                   onClick={() => {
@@ -433,6 +452,7 @@ export default function AvailableCampsPage() {
                     setSelectedSport("all_sports");
                     setSelectedSkillLevel("any_level");
                     setSelectedType("any_type");
+                    setSelectedOrganization("any_organization");
                     setShowVirtualOnly(false);
                   }}
                 >
