@@ -188,10 +188,11 @@ export function AddCampDialog({
     resolver: zodResolver(z.object({
       name: z.string().min(1, "Name is required"),
       description: z.string().min(1, "Description is required"),
-      streetAddress: z.string().optional(),
-      city: z.string().optional(),
-      state: z.string().optional(),
-      zipCode: z.string().optional(),
+      // Make all location fields truly optional - their validation will be handled conditionally
+      streetAddress: z.string().optional().or(z.literal("")),
+      city: z.string().optional().or(z.literal("")),
+      state: z.string().optional().or(z.literal("")),
+      zipCode: z.string().optional().or(z.literal("")),
       additionalLocationDetails: z.string().optional().nullable(),
       startDate: z.string().or(z.date()),
       endDate: z.string().or(z.date()),
@@ -1501,7 +1502,16 @@ export function AddCampDialog({
                           <FormControl>
                             <Checkbox
                               checked={field.value}
-                              onCheckedChange={field.onChange}
+                              onCheckedChange={(checked) => {
+                                field.onChange(checked);
+                                // Clear location errors when virtual camp is selected
+                                if (checked) {
+                                  form.clearErrors("streetAddress");
+                                  form.clearErrors("city");
+                                  form.clearErrors("state");
+                                  form.clearErrors("zipCode");
+                                }
+                              }}
                             />
                           </FormControl>
                           <div className="space-y-1 leading-none">
