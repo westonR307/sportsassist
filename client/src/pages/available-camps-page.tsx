@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { ParentLayout } from "@/components/parent-layout";
 import { Separator } from "@/components/ui/separator";
@@ -110,6 +110,24 @@ export default function AvailableCampsPage() {
     queryKey: ['/api/organizations'],
     // No longer requiring the user to be authenticated
   });
+  
+  // Create a map of unique organizations by name for the filter dropdown
+  // We'll store the first organization ID for each unique name
+  const uniqueOrganizationsByName = useMemo(() => {
+    // Create a map to store unique organizations by name
+    const orgMap = new Map<string, any>();
+    
+    // Add each organization to the map with name as key
+    organizations.forEach(org => {
+      const name = org.name || "Unnamed Organization";
+      if (!orgMap.has(name)) {
+        orgMap.set(name, org);
+      }
+    });
+    
+    // Convert map values to array
+    return Array.from(orgMap.values());
+  }, [organizations]);
 
   // Get today's date
   const now = new Date();
@@ -283,17 +301,12 @@ export default function AvailableCampsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="any_organization">Any Organization</SelectItem>
-                  {/* Create a unique list of organizations by name to avoid duplicates */}
-                  {organizations
-                    .filter((org, index, self) => 
-                      index === self.findIndex(o => (o.name === org.name && o.name !== null))
-                    )
-                    .map((org: Organization) => (
-                      <SelectItem key={org.id} value={org.id.toString()}>
-                        {org.name || "Unnamed Organization"}
-                      </SelectItem>
-                    ))
-                  }
+                  {/* Use the uniqueOrganizationsByName list to display organization options */}
+                  {uniqueOrganizationsByName.map((org) => (
+                    <SelectItem key={(org as Organization).id} value={(org as Organization).id.toString()}>
+                      {(org as Organization).name || "Unnamed Organization"}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               
