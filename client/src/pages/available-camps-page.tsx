@@ -182,8 +182,25 @@ export default function AvailableCampsPage() {
     const matchesVirtual = !showVirtualOnly || camp.isVirtual;
     
     // Organization filter
-    const matchesOrganization = selectedOrganization === "any_organization" || 
-      camp.organizationId?.toString() === selectedOrganization;
+    // For organization filtering, we need to handle multiple organizations with the same name
+    const matchesOrganization = selectedOrganization === "any_organization" || (() => {
+      if (selectedOrganization && camp.organizationId) {
+        // First, try direct ID match
+        if (camp.organizationId.toString() === selectedOrganization) {
+          return true;
+        }
+        
+        // If no direct match, find the selected organization
+        const selectedOrg = organizations.find(org => org.id.toString() === selectedOrganization);
+        if (selectedOrg && selectedOrg.name) {
+          // Find all orgs with the same name as the selected org
+          const orgsWithSameName = organizations.filter(org => org.name === selectedOrg.name);
+          // Check if camp's organization is one of them
+          return orgsWithSameName.some(org => org.id === camp.organizationId);
+        }
+      }
+      return false;
+    })();
     
     return matchesSearch && hasSport && hasSkillLevel && matchesType && 
            matchesCity && matchesState && matchesAgeRange && 
@@ -266,11 +283,17 @@ export default function AvailableCampsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="any_organization">Any Organization</SelectItem>
-                  {organizations.map((org: Organization) => (
-                    <SelectItem key={org.id} value={org.id.toString()}>
-                      {org.name || "Unnamed Organization"}
-                    </SelectItem>
-                  ))}
+                  {/* Create a unique list of organizations by name to avoid duplicates */}
+                  {organizations
+                    .filter((org, index, self) => 
+                      index === self.findIndex(o => (o.name === org.name && o.name !== null))
+                    )
+                    .map((org: Organization) => (
+                      <SelectItem key={org.id} value={org.id.toString()}>
+                        {org.name || "Unnamed Organization"}
+                      </SelectItem>
+                    ))
+                  }
                 </SelectContent>
               </Select>
               
