@@ -115,11 +115,11 @@ export default function AvailableCampsPage() {
   const now = new Date();
   
   // Filter out past camps (end date before today)
-  // For unauthenticated users, only show camps with public visibility
-  // For authenticated users, also show camps from their organization
+  // Always show public camps, regardless of the user's authentication status
+  // This page is meant to show all available camps to everyone
   const availableCamps = camps.filter(camp => 
     new Date(camp.endDate) >= now && 
-    (camp.visibility === "public" || (user && camp.organizationId === user.organizationId))
+    camp.visibility === "public"
   );
   
   // Initialize filter options from available camps 
