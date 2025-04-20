@@ -3,41 +3,77 @@ import { Redis } from 'ioredis';
 
 // Track Redis availability
 let redisAvailable = false;
+let redis: Redis | null = null;
 
-// Configure Redis client with better error handling and reconnection
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
-  maxRetriesPerRequest: 3,
-  connectTimeout: 1000, // Shorter timeout for faster fallback
-  retryStrategy(times) {
-    const delay = Math.min(times * 50, 2000);
-    return delay;
-  },
-  reconnectOnError(err) {
-    const targetError = 'READONLY';
-    if (err.message.includes(targetError)) {
-      // Only reconnect when the error contains "READONLY"
-      return true;
-    }
-    return false;
+// Function to create Redis client with better error handling
+function createRedisClient() {
+  try {
+    // Try to create a Redis client
+    const client = new Redis({
+      host: process.env.REDIS_HOST || '127.0.0.1',
+      port: Number(process.env.REDIS_PORT) || 6379,
+      maxRetriesPerRequest: 1,
+      connectTimeout: 1000, // Shorter timeout for faster fallback
+      enableOfflineQueue: false, // Don't queue commands when disconnected
+      retryStrategy(times) {
+        if (times > 5) {
+          console.log(`Redis retry limit reached after ${times} attempts, using fallback storage`);
+          return null; // Stop retrying after 5 attempts
+        }
+        const delay = Math.min(times * 100, 3000);
+        return delay;
+      },
+      reconnectOnError(err) {
+        // Only reconnect for specific errors
+        const targetErrors = ['READONLY', 'CONNECTION', 'TIMEOUT'];
+        for (const errorType of targetErrors) {
+          if (err.message.includes(errorType)) {
+            return true;
+          }
+        }
+        return false;
+      }
+    });
+
+    // Handle Redis connection errors
+    client.on('error', (error) => {
+      console.error('Redis connection error:', error);
+      redisAvailable = false;
+    });
+
+    // Log when Redis reconnects
+    client.on('reconnecting', () => {
+      console.log('Redis reconnecting...');
+    });
+
+    // Mark Redis as available when connected
+    client.on('connect', () => {
+      console.log('Redis connected successfully');
+      redisAvailable = true;
+    });
+
+    // Handle Redis connection close
+    client.on('close', () => {
+      console.log('Redis connection closed');
+      redisAvailable = false;
+    });
+
+    return client;
+  } catch (error) {
+    console.error('Failed to create Redis client:', error);
+    redisAvailable = false;
+    return null;
   }
-});
+}
 
-// Handle Redis connection errors
-redis.on('error', (error) => {
-  console.error('Redis connection error:', error);
+// Create Redis client
+try {
+  redis = createRedisClient();
+} catch (error) {
+  console.error('Error initializing Redis:', error);
+  redis = null;
   redisAvailable = false;
-});
-
-// Log when Redis reconnects
-redis.on('reconnecting', () => {
-  console.log('Redis reconnecting...');
-});
-
-// Mark Redis as available when connected
-redis.on('connect', () => {
-  console.log('Redis connected successfully');
-  redisAvailable = true;
-});
+}
 
 // Helper function to check if Redis is available
 export function isRedisAvailable() {
@@ -46,8 +82,10 @@ export function isRedisAvailable() {
 
 // Basic cache operations
 export async function cacheGet(key: string) {
+  if (!redis || !redisAvailable) return null;
+  
   try {
-    return await redis.get(key);
+    return await redis?.get(key) || null;
   } catch (error) {
     console.error(`Cache get error for key ${key}:`, error);
     return null;
@@ -55,16 +93,20 @@ export async function cacheGet(key: string) {
 }
 
 export async function cacheSet(key: string, value: string, expireSeconds = 3600) {
+  if (!redis || !redisAvailable) return;
+  
   try {
-    await redis.set(key, value, 'EX', expireSeconds);
+    await redis?.set(key, value, 'EX', expireSeconds);
   } catch (error) {
     console.error(`Cache set error for key ${key}:`, error);
   }
 }
 
 export async function cacheDelete(key: string) {
+  if (!redis || !redisAvailable) return;
+  
   try {
-    await redis.del(key);
+    await redis?.del(key);
   } catch (error) {
     console.error(`Cache delete error for key ${key}:`, error);
   }
@@ -72,8 +114,10 @@ export async function cacheDelete(key: string) {
 
 // Advanced caching operations
 export async function cacheGetJson<T>(key: string): Promise<T | null> {
+  if (!redis || !redisAvailable) return null;
+  
   try {
-    const data = await redis.get(key);
+    const data = await redis?.get(key) || null;
     if (!data) return null;
     return JSON.parse(data) as T;
   } catch (error) {
@@ -83,9 +127,11 @@ export async function cacheGetJson<T>(key: string): Promise<T | null> {
 }
 
 export async function cacheSetJson<T>(key: string, value: T, expireSeconds = 3600) {
+  if (!redis || !redisAvailable) return;
+  
   try {
     const serialized = JSON.stringify(value);
-    await redis.set(key, serialized, 'EX', expireSeconds);
+    await redis?.set(key, serialized, 'EX', expireSeconds);
   } catch (error) {
     console.error(`Cache set JSON error for key ${key}:`, error);
   }
@@ -93,10 +139,12 @@ export async function cacheSetJson<T>(key: string, value: T, expireSeconds = 360
 
 // Pattern-based cache operations
 export async function cacheDeletePattern(pattern: string) {
+  if (!redis || !redisAvailable) return;
+  
   try {
-    const keys = await redis.keys(pattern);
+    const keys = await redis?.keys(pattern) || [];
     if (keys.length > 0) {
-      await redis.del(...keys);
+      await redis?.del(...keys);
       console.log(`Deleted ${keys.length} keys matching pattern: ${pattern}`);
     }
   } catch (error) {
