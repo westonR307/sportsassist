@@ -52,14 +52,20 @@ const editCampSchema = z.object({
   endDate: z.string().min(1, "End date is required"),
   registrationStartDate: z.string().min(1, "Registration start date is required"),
   registrationEndDate: z.string().min(1, "Registration end date is required"),
-  streetAddress: z.string().min(1, "Street address is required"),
-  city: z.string().min(1, "City is required"),
-  state: z.string().min(1, "State is required"),
-  zipCode: z.string().min(1, "Zip code is required"),
+  streetAddress: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zipCode: z.string().optional(),
   price: z.coerce.number().min(0, "Price must be a positive number"),
   capacity: z.coerce.number().int().min(1, "Capacity must be at least 1"),
   type: z.enum(["one_on_one", "group", "team", "virtual"]),
   visibility: z.enum(["public", "private"]),
+  isVirtual: z.boolean().optional().default(false),
+  virtualMeetingUrl: z.union([
+    z.string().url("Please enter a valid URL"),
+    z.string().length(0),
+    z.literal("")
+  ]).optional(),
 });
 
 type FormValues = z.infer<typeof editCampSchema>;
@@ -121,6 +127,8 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
       capacity: camp.capacity,
       type: camp.type,
       visibility: camp.visibility,
+      isVirtual: camp.isVirtual || false,
+      virtualMeetingUrl: camp.virtualMeetingUrl || "",
     },
   });
 

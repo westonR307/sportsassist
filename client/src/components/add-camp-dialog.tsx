@@ -188,10 +188,10 @@ export function AddCampDialog({
     resolver: zodResolver(z.object({
       name: z.string().min(1, "Name is required"),
       description: z.string().min(1, "Description is required"),
-      streetAddress: z.string().min(1, "Street address is required").optional(),
-      city: z.string().min(1, "City is required").optional(),
-      state: z.string().length(2, "Please use 2-letter state code").optional(),
-      zipCode: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format").optional(),
+      streetAddress: z.string().optional(),
+      city: z.string().optional(),
+      state: z.string().optional(),
+      zipCode: z.string().optional(),
       additionalLocationDetails: z.string().optional().nullable(),
       startDate: z.string().or(z.date()),
       endDate: z.string().or(z.date()),
@@ -388,6 +388,28 @@ export function AddCampDialog({
           schedulingType: selectedSchedulingType, // Explicitly set the scheduling type
           customRegistrationEnabled: data.customRegistrationEnabled || false, // Include custom registration flag
         };
+        
+        // If this is a virtual camp, we don't need physical location fields
+        if (data.isVirtual) {
+          // Set all location fields to empty values for virtual camps
+          requestData.streetAddress = "";
+          requestData.city = "";
+          requestData.state = "";
+          requestData.zipCode = "";
+          requestData.additionalLocationDetails = "";
+        } else {
+          // Ensure location fields are properly set for in-person camps
+          if (!requestData.streetAddress || !requestData.city || !requestData.state || !requestData.zipCode) {
+            console.error("Missing location data for in-person camp");
+            setSubmitting(false);
+            toast({
+              title: "Missing location information",
+              description: "Please provide complete location details for in-person camps.",
+              variant: "destructive",
+            });
+            return;
+          }
+        }
 
         // Handle different scheduling types
         if (selectedSchedulingType === 'fixed') {
@@ -1018,11 +1040,31 @@ export function AddCampDialog({
                   // Handle virtual meeting URL for virtual camps
                   if (data.isVirtual && (!data.virtualMeetingUrl || !data.virtualMeetingUrl.trim())) {
                     form.setValue("virtualMeetingUrl", "https://meet.google.com/example");
+                    
+                    // Clear location field validation errors for virtual camps
+                    form.clearErrors("streetAddress");
+                    form.clearErrors("city");
+                    form.clearErrors("state");
+                    form.clearErrors("zipCode");
                   } else if (!data.isVirtual) {
                     // For non-virtual camps, set to empty string instead of null to maintain type safety
                     form.setValue("virtualMeetingUrl", "");
                     // Also clear any validation errors related to the virtual meeting URL field
                     form.clearErrors("virtualMeetingUrl");
+                    
+                    // For non-virtual camps, validate location fields if they're empty
+                    if (!data.streetAddress || !data.streetAddress.trim()) {
+                      form.setError("streetAddress", { type: "manual", message: "Street address is required for in-person camps" });
+                    }
+                    if (!data.city || !data.city.trim()) {
+                      form.setError("city", { type: "manual", message: "City is required for in-person camps" });
+                    }
+                    if (!data.state || !data.state.trim()) {
+                      form.setError("state", { type: "manual", message: "State is required for in-person camps" });
+                    }
+                    if (!data.zipCode || !data.zipCode.trim()) {
+                      form.setError("zipCode", { type: "manual", message: "ZIP code is required for in-person camps" });
+                    }
                   }
 
                   // Ensure additionalLocationDetails is properly set to an empty string if null or undefined
