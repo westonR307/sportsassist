@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -144,6 +145,32 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
           registrationStartDate: new Date(values.registrationStartDate).toISOString(),
           registrationEndDate: new Date(values.registrationEndDate).toISOString(),
         };
+        
+        // Handle virtual camps - clear location fields if it's a virtual camp
+        if (values.isVirtual) {
+          // For virtual camps, set empty values for physical location fields
+          formattedValues.streetAddress = "";
+          formattedValues.city = "";
+          formattedValues.state = "";
+          formattedValues.zipCode = "";
+          
+          // Ensure virtual meeting URL is set
+          if (!formattedValues.virtualMeetingUrl) {
+            formattedValues.virtualMeetingUrl = "https://meet.google.com/example";
+          } else if (!formattedValues.virtualMeetingUrl.startsWith('http')) {
+            // URL doesn't start with http/https, prepend https://
+            formattedValues.virtualMeetingUrl = `https://${formattedValues.virtualMeetingUrl}`;
+          }
+        } else {
+          // For in-person camps, clear the virtual meeting URL
+          formattedValues.virtualMeetingUrl = "";
+          
+          // Validate location fields
+          if (!formattedValues.streetAddress || !formattedValues.city || 
+              !formattedValues.state || !formattedValues.zipCode) {
+            throw new Error("Location fields are required for in-person camps");
+          }
+        }
 
         console.log("Making PATCH request with values:", formattedValues);
         // The apiRequest function automatically parses JSON responses
@@ -364,61 +391,108 @@ export function EditCampDialog({ open, onOpenChange, camp }: EditCampDialogProps
               <TabsContent value="location" className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="streetAddress"
+                  name="isVirtual"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Street Address</FormLabel>
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                       <FormControl>
-                        <Input {...field} />
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(checked: boolean) => {
+                            field.onChange(checked);
+                            // Clear location errors when virtual camp is selected
+                            if (checked) {
+                              form.clearErrors("streetAddress");
+                              form.clearErrors("city");
+                              form.clearErrors("state");
+                              form.clearErrors("zipCode");
+                            }
+                          }}
+                        />
                       </FormControl>
-                      <FormMessage />
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          This is a virtual camp (conducted online)
+                        </FormLabel>
+                      </div>
                     </FormItem>
                   )}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
+                {form.watch('isVirtual') ? (
                   <FormField
                     control={form.control}
-                    name="city"
+                    name="virtualMeetingUrl"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>City</FormLabel>
+                        <FormLabel>Virtual Meeting URL</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} placeholder="https://zoom.us/j/123456789" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                ) : (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="streetAddress"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Street Address</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="state"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>State</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="city"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>City</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                <FormField
-                  control={form.control}
-                  name="zipCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Zip Code</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                      <FormField
+                        control={form.control}
+                        name="state"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>State</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="zipCode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Zip Code</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
               </TabsContent>
 
               <TabsContent value="details" className="space-y-4">
