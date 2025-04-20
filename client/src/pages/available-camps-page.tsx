@@ -114,19 +114,19 @@ export default function AvailableCampsPage() {
   // Create a map of unique organizations by name for the filter dropdown
   // We'll store the first organization ID for each unique name
   const uniqueOrganizationsByName = useMemo(() => {
-    // Create a map to store unique organizations by name
-    const orgMap = new Map<string, any>();
+    // Create an object to store unique organizations by name
+    const orgMap: Record<string, any> = {};
     
-    // Add each organization to the map with name as key
+    // Add each organization to the object with name as key
     organizations.forEach(org => {
       const name = org.name || "Unnamed Organization";
-      if (!orgMap.has(name)) {
-        orgMap.set(name, org);
+      if (!orgMap[name]) {
+        orgMap[name] = org;
       }
     });
     
-    // Convert map values to array
-    return Array.from(orgMap.values());
+    // Convert object values to array
+    return Object.values(orgMap);
   }, [organizations]);
 
   // Get today's date
