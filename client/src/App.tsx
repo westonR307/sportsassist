@@ -93,7 +93,7 @@ function Router() {
       
       <Route path="/auth" component={AuthPage} />
       <Route path="/login" component={() => <Redirect to="/auth" />} />
-      <Route path="/find-camps" component={FindCampsPage} />
+      <Route path="/find-camps" component={AvailableCampsPage} />
       <Route path="/organization/:slugOrName">
         {({slugOrName}) => (
           <OrganizationViewPage slugOrName={slugOrName} />
