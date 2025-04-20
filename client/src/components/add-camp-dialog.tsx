@@ -273,7 +273,7 @@ export function AddCampDialog({
       console.log("Initial skillLevel set to", mappedSkillLevel);
     }
   }, [form, skillLevel]);
-  
+
   // Effect to check for duplicate camp data from localStorage
   useEffect(() => {
     if (open) {
@@ -389,7 +389,7 @@ export function AddCampDialog({
           schedulingType: selectedSchedulingType, // Explicitly set the scheduling type
           customRegistrationEnabled: data.customRegistrationEnabled || false, // Include custom registration flag
         };
-        
+
         // If this is a virtual camp, we don't need physical location fields
         if (data.isVirtual) {
           console.log("Processing virtual camp in mutation - setting empty location fields");
@@ -399,7 +399,7 @@ export function AddCampDialog({
           requestData.state = "";
           requestData.zipCode = "";
           requestData.additionalLocationDetails = "";
-          
+
           // Ensure virtual meeting URL is present
           if (!requestData.virtualMeetingUrl) {
             console.error("Missing virtual meeting URL for virtual camp");
@@ -484,11 +484,11 @@ export function AddCampDialog({
             await Promise.all(sessionPromises);
             console.log("All sessions created successfully!");
           }
-          
+
           // Associate selected custom fields with the camp if custom registration is enabled
           if (data.customRegistrationEnabled && selectedCustomFields.length > 0 && responseData.id) {
             console.log(`Associating ${selectedCustomFields.length} custom fields with camp ${responseData.id}`);
-            
+
             // Create a batch of promises to associate custom fields
             const customFieldPromises = selectedCustomFields.map((fieldId, index) => {
               return apiRequest("POST", `/api/camps/${responseData.id}/custom-fields`, {
@@ -497,7 +497,7 @@ export function AddCampDialog({
                 order: index // Use the array index as the display order
               });
             });
-            
+
             try {
               await Promise.all(customFieldPromises);
               console.log("All custom fields associated successfully!");
@@ -529,7 +529,7 @@ export function AddCampDialog({
 
       // Initialize an array to track all post-creation promises
       const promises: Promise<any>[] = [];
-      
+
       // Save custom meta fields
       if (data.id) {
         // We already have the promises array initialized above
@@ -565,29 +565,29 @@ export function AddCampDialog({
                   notes: "", // Add required fields based on the server API endpoint
                   creatorId: user?.id // Add the creator ID from the authenticated user
                 };
-                
+
                 console.log("Sending availability slot with data:", slotData);
-                
+
                 // Calculate duration in minutes for better data consistency
                 const calculateDurationMinutes = () => {
                   const [startHours, startMinutes] = slot.startTime.split(':').map(part => parseInt(part, 10));
                   const [endHours, endMinutes] = slot.endTime.split(':').map(part => parseInt(part, 10));
-                  
+
                   const startTotalMinutes = startHours * 60 + startMinutes;
                   const endTotalMinutes = endHours * 60 + endMinutes;
-                  
+
                   return endTotalMinutes - startTotalMinutes;
                 };
-                
+
                 const enhancedSlotData = {
                   ...slotData,
                   durationMinutes: calculateDurationMinutes(),
                   bufferBefore: 0,
                   bufferAfter: 0
                 };
-                
+
                 console.log("Sending enhanced availability slot with data:", enhancedSlotData);
-                
+
                 // Use apiRequest helper instead of raw fetch for more consistent error handling
                 const slotPromise = apiRequest<any>('POST', `/api/camps/${data.id}/availability-slots`, enhancedSlotData)
                   .then((jsonResponse: any) => {
@@ -604,7 +604,7 @@ export function AddCampDialog({
                     }
                     throw slotError; // Re-throw to mark this promise as rejected
                   });
-                
+
                 slotPromises.push(slotPromise);
               } catch (slotError) {
                 console.error(`Error preparing slot with date ${slot.date}:`, slotError);
@@ -617,9 +617,9 @@ export function AddCampDialog({
               Promise.allSettled(slotPromises).then(results => {
                 const successful = results.filter(r => r.status === 'fulfilled').length;
                 const failed = results.filter(r => r.status === 'rejected').length;
-                
+
                 console.log(`All availability slots processed - ${successful} successful, ${failed} failed`);
-                
+
                 if (successful > 0) {
                   toast({
                     title: "Success",
@@ -663,7 +663,7 @@ export function AddCampDialog({
                 });
                 throw error; // Re-throw to mark this promise as rejected
               });
-            
+
             promises.push(staffPromise);
           } catch (error) {
             console.error("Error preparing staff assignment save:", error);
@@ -750,7 +750,7 @@ export function AddCampDialog({
               });
               throw error; // Re-throw to mark this promise as rejected
             });
-            
+
             // Add to the promises array that was defined outside
             promises.push(docPromise);
           } catch (error) {
@@ -845,7 +845,7 @@ export function AddCampDialog({
         });
         return;
       }
-      
+
       // Type check to ensure the value is one of the valid enum values
       if (mappedSkillLevel === "beginner" || 
           mappedSkillLevel === "intermediate" || 
@@ -1054,35 +1054,35 @@ export function AddCampDialog({
                   // Handle virtual camps first - this needs to be handled before any other validation
                   if (data.isVirtual) {
                     console.log("Processing virtual camp");
-                    
+
                     // For virtual camps, ensure we have a meeting URL
                     if (!data.virtualMeetingUrl || !data.virtualMeetingUrl.trim()) {
                       form.setValue("virtualMeetingUrl", "https://meet.google.com/example");
                     }
-                    
+
                     // Clear location field validation errors for virtual camps
                     form.clearErrors("streetAddress");
                     form.clearErrors("city");
                     form.clearErrors("state");
                     form.clearErrors("zipCode");
-                    
+
                     // Set empty values for physical location fields and clear any errors
                     form.setValue("streetAddress", "", { shouldValidate: false });
                     form.setValue("city", "", { shouldValidate: false });
                     form.setValue("state", "", { shouldValidate: false });
                     form.setValue("zipCode", "", { shouldValidate: false });
                     form.setValue("additionalLocationDetails", "", { shouldValidate: false });
-                    
+
                   } else {
                     console.log("Processing in-person camp, validating location fields");
                     // For non-virtual camps, set to empty string instead of null to maintain type safety
                     form.setValue("virtualMeetingUrl", "");
                     // Also clear any validation errors related to the virtual meeting URL field
                     form.clearErrors("virtualMeetingUrl");
-                    
+
                     // For non-virtual camps, validate location fields if they're empty
                     let hasLocationErrors = false;
-                    
+
                     if (!data.streetAddress || !data.streetAddress.trim()) {
                       form.setError("streetAddress", { type: "manual", message: "Street address is required for in-person camps" });
                       hasLocationErrors = true;
@@ -1099,7 +1099,7 @@ export function AddCampDialog({
                       form.setError("zipCode", { type: "manual", message: "ZIP code is required for in-person camps" });
                       hasLocationErrors = true;
                     }
-                    
+
                     // If we have location errors, stop form submission and focus the location tab
                     if (hasLocationErrors) {
                       console.log("Location errors found, switching to location tab");
@@ -1474,8 +1474,8 @@ export function AddCampDialog({
                                 {...field}
                                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                               >
+                                <option value="one_on_one">One-on-One</option>
                                 <option value="group">Group</option>
-                                <option value="one_on-one">One-on-One</option>
                                 <option value="team">Team</option>
                               </select>
                             </FormControl>
@@ -1786,14 +1786,14 @@ export function AddCampDialog({
                                   Enable waitlist when camp reaches capacity
                                 </FormLabel>
                                 <p className="text-sm text-muted-foreground">
-                                  If checked, parents can join a waitlist when the camp is full
+                                  If checked, parents can join awaitlist when the camp is full
                                 </p>
                               </div>
                             </FormItem>
                           )}
                         />
                       )}
-                      
+
                       {/* Custom Registration Form Option */}
                       <FormField
                         control={form.control}
