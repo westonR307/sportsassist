@@ -462,7 +462,7 @@ function CampsDashboard() {
   }, []);
   
   const { data: camps = [], isLoading } = useQuery<CampWithPermissions[], Error, CampWithPermissions[]>({
-    queryKey: ["/api/camps", { view: 'dashboard' }],
+    queryKey: ["/api/camps"],
     staleTime: 5000, // Only refetch after 5 seconds
     refetchOnMount: true,
     refetchOnWindowFocus: false,

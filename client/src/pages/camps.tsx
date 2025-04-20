@@ -96,9 +96,6 @@ export default function CampsPage() {
   const queryUrl = React.useMemo(() => {
     const url = new URL("/api/camps", window.location.origin);
     
-    // Add 'my-camps' view parameter to ensure organization users only see their camps
-    url.searchParams.append('view', 'my-camps');
-    
     if (filters.search) url.searchParams.append('search', filters.search);
     if (filters.status) url.searchParams.append('status', filters.status);
     if (filters.type) url.searchParams.append('type', filters.type);

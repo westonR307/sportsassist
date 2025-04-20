@@ -1327,7 +1327,6 @@ export async function registerRoutes(app: Express) {
       const status = req.query.status as string | undefined;
       const type = req.query.type as string | undefined;
       const search = req.query.search as string | undefined;
-      const view = req.query.view as string | undefined;
       
       // If explicitly set in the query, override the default includeDeleted
       if (req.query.includeDeleted === 'true') {
@@ -1338,17 +1337,12 @@ export async function registerRoutes(app: Express) {
       if (req.user) {
         const userType = req.user.role;
         
-        // For dashboard and organization-specific views, filter by organization
-        if (view === 'my-camps' || view === 'dashboard' || req.path.includes('/dashboard/')) {
-          if (['camp_creator', 'manager', 'coach', 'volunteer'].includes(userType) && req.user.organizationId) {
-            console.log(`Filtering camps for ${userType} with organization ID ${req.user.organizationId} (dashboard/my-camps view)`);
-            organizationId = req.user.organizationId;
-          } else {
-            console.log(`User role ${userType} or missing organization ID: ${req.user.organizationId}, not filtering by org`);
-          }
+        // For organization staff members (camp creators, managers), show only their organization camps
+        if (['camp_creator', 'manager', 'coach', 'volunteer'].includes(userType) && req.user.organizationId) {
+          console.log(`Filtering camps for ${userType} with organization ID ${req.user.organizationId}`);
+          organizationId = req.user.organizationId;
         } else {
-          // For find-camps/available-camps, show all public camps
-          console.log("Showing all public camps (available-camps view)");
+          console.log("Showing all camps (public view)");
         }
       } else {
         // For unauthenticated users, show all public camps
