@@ -98,25 +98,27 @@ export default function AvailableCampsPage() {
   // Min-max prices from available camps
   const [priceMinMax, setPriceMinMax] = useState<[number, number]>([0, 1000]);
 
-  // Get all camps
+  // Get all camps - enable query for all users (authenticated or not)
   const { data: camps = [], isLoading } = useQuery<ExtendedCamp[]>({
     queryKey: ["/api/camps"],
-    enabled: !!user,
+    // No longer requiring the user to be authenticated
   });
   
-  // Get organizations map for styling
+  // Get organizations map for styling - enable for all users
   const { data: organizations = [] } = useQuery({
     queryKey: ['/api/organizations'],
-    enabled: !!user,
+    // No longer requiring the user to be authenticated
   });
 
   // Get today's date
   const now = new Date();
   
   // Filter out past camps (end date before today)
+  // For unauthenticated users, only show camps with public visibility
+  // For authenticated users, also show camps from their organization
   const availableCamps = camps.filter(camp => 
     new Date(camp.endDate) >= now && 
-    (camp.visibility === "public" || camp.organizationId === user?.organizationId)
+    (camp.visibility === "public" || (user && camp.organizationId === user.organizationId))
   );
   
   // Initialize filter options from available camps 
