@@ -1343,6 +1343,8 @@ export async function registerRoutes(app: Express) {
           if (['camp_creator', 'manager', 'coach', 'volunteer'].includes(userType) && req.user.organizationId) {
             console.log(`Filtering camps for ${userType} with organization ID ${req.user.organizationId} (dashboard/my-camps view)`);
             organizationId = req.user.organizationId;
+          } else {
+            console.log(`User role ${userType} or missing organization ID: ${req.user.organizationId}, not filtering by org`);
           }
         } else {
           // For find-camps/available-camps, show all public camps
